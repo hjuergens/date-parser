@@ -1,0 +1,25 @@
+second wednesday after date
+three month after second wedensday of third quarter
+every friday the 13th of month
+5. in january
+first sunday after 26 of the second month of quarter
+
+
+{n,m}th	day			of	...					period?					
+		week
+		month
+		year
+		quarter
+		decade
+		...
+		
+n	days		after	date				date [shift]
+	weeks		before	period(begin|end)
+	months
+	years
+	quarters
+	...
+	
+every	{n,m}	weekday						set
+none			monthname
+				day_of_month

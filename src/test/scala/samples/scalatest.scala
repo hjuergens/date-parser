@@ -28,12 +28,11 @@ clear and concise. Here's an example:
 import scala.collection.mutable.Stack
 import org.scalatest.Assertions
 import org.junit.Test
-import scala.collection.mutable
 
 class StackSuite extends Assertions {
 
   @Test def stackShouldPopValuesIinLastInFirstOutOrder() {
-    val stack = new mutable.Stack[Int]
+    val stack = new Stack[Int]
     stack.push(1)
     stack.push(2)
     assert(stack.pop() === 2)
@@ -41,7 +40,7 @@ class StackSuite extends Assertions {
   }
 
   @Test def stackShouldThrowNoSuchElementExceptionIfAnEmptyStackIsPopped() {
-    val emptyStack = new mutable.Stack[String]
+    val emptyStack = new Stack[String]
     intercept[NoSuchElementException] {
       emptyStack.pop()
     }
@@ -66,7 +65,7 @@ class ListSuite extends FunSuite  {
   }
 
   test("A non-empty list should not be empty") {
-    List(1, 2, 3) should not be 'empty
+    List(1, 2, 3) should not be ('empty)
     List("fee", "fie", "foe", "fum") should not be ('empty)
   }
 

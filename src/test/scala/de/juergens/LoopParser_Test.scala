@@ -13,15 +13,15 @@ import Assert._
 class LoopParser_Test {
 
   @Before
-  def setUp(): Unit = {
+  def setUp: Unit = {
   }
 
   @After
-  def tearDown(): Unit = {
+  def tearDown: Unit = {
   }
 
   @Test
-  def statement() = {
+  def statement = {
     val parser = new LoopParser()
     val result = parser.parseAll(parser.statement, "for i in 0 to 6 {}")
     println(result)

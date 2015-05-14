@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>date-parser</artifactId>
+        <groupId>de.juergens</groupId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>dp-jflex</artifactId>
+
+    <repositories>
+        <repository>
+            <id>oss-sonatype</id>
+            <name>oss-sonatype</name>
+            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>Codehaus Snapshots</id>
+            <url>http://snapshots.repository.codehaus.org/</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+        </repository>
+        <repository>
+            <id>apache.snapshots</id>
+            <name>Apache Snapshot Repository</name>
+            <url>
+                http://people.apache.org/repo/m2-snapshot-repository
+            </url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>sonatype-nexus-snapshots</id>
+            <name>Sonatype Nexus Snapshots</name>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>sonatype-nexus-snapshots</id>
+            <name>Sonatype Nexus Snapshots</name>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </pluginRepository>
+        <!--pluginRepository>
+            <id>emustudio-repository</id>
+            <name>emuStudio Repository</name>
+            <url>http://emustudio.sf.net/repository/</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </pluginRepository-->
+        <!--pluginRepository>
+            <id>cdh.thirdparty.repo</id>
+            <url>https://repository.cloudera.com/content/repositories/third-party</url>
+            <name>CDH Third Party Repository</name>
+        </pluginRepository-->
+        <pluginRepository>
+            <id>cdh.snapshots.repo</id>
+            <url>https://repository.cloudera.com/content/repositories/snapshots</url>
+            <name>CDH Snapshots Repository</name>
+        </pluginRepository>
+    </pluginRepositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>net.sourceforge.czt.dev</groupId>
+            <artifactId>java-cup-runtime</artifactId>
+            <version>0.11-a-czt01-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>de.jflex</groupId>
+            <artifactId>jflex</artifactId>
+            <version>1.6.1</version>
+        </dependency>
+    </dependencies>
+    <build>
+        <plugins>
+            <!--plugin>
+                <groupId>edu.tum.cs</groupId>
+                <artifactId>cup-maven-plugin</artifactId>
+                <version>1.0.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin-->
+
+            <plugin>
+                <groupId>net.sourceforge.czt.dev</groupId>
+                <!--artifactId>cup-maven-plugin</artifactId-->
+                <artifactId>cup-maven-plugin</artifactId>
+                <version>1.6-SNAPSHOT</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>de.jflex</groupId>
+                <artifactId>maven-jflex-plugin</artifactId>
+                <version>1.4.3</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

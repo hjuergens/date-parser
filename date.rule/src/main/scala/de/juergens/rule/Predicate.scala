@@ -1,6 +1,9 @@
 package de.juergens.rule
 
-   trait Predicate[T] {
+import java.util.function.Predicate
+import java.util.function
+
+trait Predicate[T] {
       def evaluate(t: T): Boolean
    }
 
@@ -21,4 +24,20 @@ package de.juergens.rule
 
       override def toString = "NOT" + predicate
    }
+
+object Predicate {
+  implicit class Implementation[T](func:(T)=>Boolean) extends java.util.function.Predicate[T] with Predicate[T]{
+    def test(t: T): Boolean = func(t)
+
+    def evaluate(t: T): Boolean = func(t)
+
+    def apply(t: T): Boolean = func(t)
+
+    override def and(other: function.Predicate[_ >: T]): function.Predicate[T] = super.and(other)
+
+    override def negate(): function.Predicate[T] = super.negate()
+
+    override def or(other: function.Predicate[_ >: T]): function.Predicate[T] = super.or(other)
+  }
+}
 

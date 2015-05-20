@@ -56,25 +56,35 @@ object DateComponent {
 
 abstract class NamedDateComponent extends DateComponent
 
-abstract class WeekDay extends NamedDateComponent {
+abstract class WeekDay(nr:Int) extends NamedDateComponent {
   override final def toString: String = this match {
     case WeekDay(name) => name
   }
+
+  override def hashCode() = nr
+
+  override def equals(obj: scala.Any): Boolean = obj match {
+    case i:Int => i == hashCode()
+    case wd : WeekDay => wd.hashCode() == hashCode()
+    case _ => false
+  }
 }
 
-case object Monday extends WeekDay
+import java.util.Calendar._
 
-case object Tuesday extends WeekDay
+case object Monday extends WeekDay(MONDAY)
 
-case object Wednesday extends WeekDay
+case object Tuesday extends WeekDay(TUESDAY)
 
-case object Thursday extends WeekDay
+case object Wednesday extends WeekDay(WEDNESDAY)
 
-case object Friday extends WeekDay
+case object Thursday extends WeekDay(THURSDAY)
 
-case object Saturday extends WeekDay
+case object Friday extends WeekDay(FRIDAY)
 
-case object Sunday extends WeekDay
+case object Saturday extends WeekDay(SATURDAY)
+
+case object Sunday extends WeekDay(SUNDAY)
 
 case class Day(day: Int) extends DateComponent
 

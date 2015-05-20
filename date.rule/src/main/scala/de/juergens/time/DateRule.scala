@@ -6,18 +6,23 @@
 
 package de.juergens.time
 
-abstract class DateRule {
-  def evaluate(anchor: Date, t: Date): Boolean
+import de.juergens.rule.Predicate
+import de.juergens.rule.Predicate.Implementation
+
+sealed abstract class DateRule {
+  def evaluate(anchor: Date)(t: Date): Boolean
+
+  def test(anchor: Date) : Predicate[Date] = evaluate(anchor) _
 
   def date(anchor: Date, calendar: Calendar): Date = {
-    def predicate(t: Date) = evaluate(anchor, t)
+    def predicate(t: Date) = evaluate(anchor)(t)
     val shifter = new DateShifter(predicate)
     shifter.next(anchor)
   }
 }
 
 case class ShiftRule(shifter: Shifter) extends DateRule {
-  def evaluate(anchor: Date, t: Date): Boolean = {
+  def evaluate(anchor: Date)(t: Date): Boolean = {
     val date = shifter.shift(anchor)
     t == date
   }
@@ -26,7 +31,7 @@ case class ShiftRule(shifter: Shifter) extends DateRule {
 }
 
 case class FixRule(number: Int, component: DateComponent) extends DateRule {
-  def evaluate(anchor: Date, t: Date): Boolean = {
+  def evaluate(anchor: Date)(t: Date): Boolean = {
     t == component
   }
 
@@ -34,19 +39,19 @@ case class FixRule(number: Int, component: DateComponent) extends DateRule {
 }
 
 case class UnionRule(rules: List[DateRule]) extends DateRule {
-  def evaluate(anchor: Date, t: Date): Boolean = rules.foldLeft(false)((b, r) => b | r.evaluate(anchor, t))
+  def evaluate(anchor: Date)(t: Date): Boolean = rules.foldLeft(false)((b, r) => b | r.evaluate(anchor)(t))
 
   override def toString = rules.mkString("|")
 }
 
 case class IntersectionRule(rules: List[DateRule]) extends DateRule {
-  def evaluate(anchor: Date, t: Date): Boolean = rules.foldRight(true)((r, b) => b & r.evaluate(anchor, t))
+  def evaluate(anchor: Date)(t: Date): Boolean = rules.foldRight(true)((r, b) => b & r.evaluate(anchor)(t))
 
   override def toString = rules.mkString("&")
 }
 
 case class ListRule(rules: List[DateRule]) extends DateRule {
-  def evaluate(anchor: Date, t: Date): Boolean = {
+  def evaluate(anchor: Date)(t: Date): Boolean = {
     t == rules.foldLeft(anchor)((d, s) => s.date(d, null))
   }
     override def toString = rules.mkString("(", ">", ")")

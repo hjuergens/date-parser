@@ -2,7 +2,7 @@ package de.juergens.dateparser;
 
 
 import org.antlr.v4.runtime.*;
-import org.junit.Test;
+import org.testng.annotations.*;
 
 /**
  * Created by haj on 4/20/2015.

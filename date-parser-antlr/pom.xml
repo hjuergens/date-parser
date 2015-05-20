@@ -29,7 +29,7 @@
         <maven.compiler.source>1.6</maven.compiler.source>
         <maven.compiler.target>1.6</maven.compiler.target>
         <encoding>UTF-8</encoding>
-        <scala.version>2.11.6</scala.version>
+        <!--<scala.version>2.11.6</scala.version>-->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -55,12 +55,13 @@
 
         <!-- Test -->
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.11</version>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <version>6.8.8</version>
             <scope>test</scope>
         </dependency>
 
+        <!--
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
@@ -80,7 +81,7 @@
             <version>2.2.4</version>
             <scope>test</scope>
         </dependency>
-
+-->
     </dependencies>
 
     <build>
@@ -115,35 +116,15 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>org.scala-tools</groupId>
-                <artifactId>maven-scala-plugin</artifactId>
-                <version>2.15.2</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>compile</goal>
-                            <goal>testCompile</goal>
-                        </goals>
-
-                        <!-- configuration>
-                          <args>
-                              <arg>-feature</arg>
-                            <arg>-make:transitive</arg>
-                            <arg>-dependencyfile</arg>
-                            <arg>${project.build.directory}/.scala_dependencies</arg>
-                          </args>
-                        </configuration -->
-                    </execution>
-                </executions>
-            </plugin>
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.18.1</version>
-
                 <configuration>
+                    <parallel>methods</parallel>
+                    <threadCount>10</threadCount>
+                    <!--
                     <useFile>false</useFile>
                     <disableXmlReport>true</disableXmlReport>
                     <argLine>-DfailIfNoTests=false</argLine>
@@ -155,7 +136,7 @@
                         <include>**/*Test.*</include>
                         <include>**/*Suite.*</include>
                     </includes>
-
+                    -->
                 </configuration>
 
             </plugin>

@@ -21,6 +21,12 @@
     </license>
   </licenses>
 
+  <scm>
+    <connection>scm:git:git://github.com/hjuergens/date-parser.git</connection>
+    <developerConnection>scm:git:git@github.com:hjuergens/date-parser.git</developerConnection>
+    <url>http://github.com/hjuergens/date-parser/</url>
+  </scm>
+
   <properties>
     <maven.compiler.source>1.5</maven.compiler.source>
     <maven.compiler.target>1.5</maven.compiler.target>

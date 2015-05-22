@@ -3,7 +3,7 @@
   <groupId>de.juergens</groupId>
   <artifactId>date-parser</artifactId>
     <packaging>pom</packaging>
-    <version>1.0-SNAPSHOT</version>
+    <version>0.1-SNAPSHOT</version>
     <modules>
         <module>date.rule</module>
         <module>date-parser-antlr</module>

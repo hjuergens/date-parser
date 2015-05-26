@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-package de.juergens
+package de.juergens.util
 
 import scala.math._
 

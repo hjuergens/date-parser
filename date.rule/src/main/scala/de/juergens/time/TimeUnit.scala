@@ -9,7 +9,7 @@ package de.juergens.time
  *
  * @author juergens
  */
-abstract sealed class TimeUnit extends DateComponent {
+abstract sealed class TimeUnit {
   override final def toString: String = this match {
     case TimeUnit(name) => name
   }
@@ -32,18 +32,18 @@ case object YearUnit extends TimeUnit
 
 object TimeUnit {
   def apply(str: String): TimeUnit = str match {
-    case "day"     => DayUnit
-    case "week"    => WeekUnit
-    case "month"   => MonthUnit
-    case "quarter" => QuarterUnit
-    case "year"    => YearUnit
+    case "day" | "days"        | "day(s)"     => DayUnit
+    case "week" | "weeks"      | "week(s)"    => WeekUnit
+    case "month" | "months"    | "month(s)"   => MonthUnit
+    case "quarter" | "quarters"| "quarter(s)" => QuarterUnit
+    case "year" | "years"      | "year(s)"    => YearUnit
   }
 
   def unapply(unit: TimeUnit): Option[String] = PartialFunction.condOpt(unit) {
-    case DayUnit     => "day"
-    case WeekUnit    => "week"
-    case MonthUnit   => "month"
-    case QuarterUnit => "quarter"
-    case YearUnit    => "year"
+    case DayUnit     => "day(s)"
+    case WeekUnit    => "week(s)"
+    case MonthUnit   => "month(s)"
+    case QuarterUnit => "quarter(s)"
+    case YearUnit    => "year(s)"
   }
 }

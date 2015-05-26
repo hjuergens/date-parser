@@ -1,0 +1,41 @@
+second wednesday after date : (date)=>date
+("second") => ordinal
+("wednesday") => attribute
+("after") => direction : (date | interval) => date
+(ordinal~attribute~direction) => seek : (date)=>date
+
+three months after second wednesday of third quarter : (date)(next) => (date)
+("three") => cardinal
+(cardinal~("months")) => period
+(period~direction) : seek : (date) => date  "three months after"
+(ordinal~attribute~("of")) : (interval) => date, (stream)=>stream   "second wednesday of"
+("third") => ordinal
+("quarter"|"spring"|"ramadan"|"week") => period_with_fixed_anchors=anchoredPeriod
+(ordinal~anchoredPeriod) => anchoredPeriod : (date)(direction=next) => interval
+
+seek : (date) => date
+period : (date)(direction=next) => date
+attribute : (date) => boolean, (direction) => seek
+direction: (attribute) => (date) => date
+anchoredPeriod : (date)(direction=next) => interval
+
+every friday the 13th of month : (date)(next) => date, ()(next) => stream
+friday the 13th : (date) => bool, (date)(next) => date
+5. in january : (date) => bool
+first sunday after 26 of the second month of quarter :
+next third wednesday of quarter : (date)=>date
+third wednesday of every quarter : (date)=>date, ()(next) => stream
+five weeks ago = seek : (date) => date
+for five days : (date) => collection[date]
+
+every second weekend after 14. of month : (date)(direction=next) => collection[date]
+("every") => collector
+(ordinal~attribute) = (date)=>attribute
+(collector~attribute) => collection
+
+second weekend after 14. of month : attribute
+("second weekend after") : seek
+(ordinal~attribute) = (direction) => seek
+(attribute~direction) : seek
+("14. of month") : attribute
+(seek~attribute) => attribute

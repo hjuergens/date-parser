@@ -1,0 +1,13 @@
+# relative dates
+#    Relative dates are those that are relative to the current date.
+
+next thursday
+last wednesday
+today
+tomorrow
+yesterday
+next week
+next month
+next year
+3 days from now
+three weeks ago

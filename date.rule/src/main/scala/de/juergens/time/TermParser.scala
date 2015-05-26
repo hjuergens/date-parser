@@ -7,8 +7,6 @@
 package de.juergens.time
 
 import scala.util.parsing.combinator._
-import de.juergens.time.{Date => _}
-import de.juergens.time.{EnrichedDate => Date}
 
 class TermParser extends JavaTokenParsers {
 

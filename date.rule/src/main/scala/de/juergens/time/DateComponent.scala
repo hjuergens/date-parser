@@ -5,10 +5,6 @@
  */
 package de.juergens.time
 
-import de.juergens.time.{Date => _, _}
-import de.juergens.time.{EnrichedDate => Date}
-import de.juergens.time.EnrichedDate.{ExtendedDate => Date}
-import de.juergens.time.EnrichedDate.isLeap
 /**
  *
  * @author juergens
@@ -57,6 +53,8 @@ object DateComponent {
 abstract class NamedDateComponent extends DateComponent
 
 abstract class WeekDay(nr:Int) extends NamedDateComponent {
+  def distance(weekDay: WeekDay): Int = weekDay.hashCode() - hashCode()
+
   override final def toString: String = this match {
     case WeekDay(name) => name
   }
@@ -72,7 +70,7 @@ abstract class WeekDay(nr:Int) extends NamedDateComponent {
 
 import java.util.Calendar._
 
-case object Monday extends WeekDay(MONDAY)
+case object Monday extends WeekDay(MONDAY)/*2*/
 
 case object Tuesday extends WeekDay(TUESDAY)
 
@@ -82,22 +80,22 @@ case object Thursday extends WeekDay(THURSDAY)
 
 case object Friday extends WeekDay(FRIDAY)
 
-case object Saturday extends WeekDay(SATURDAY)
+case object Saturday extends WeekDay(SATURDAY) /*7*/
 
-case object Sunday extends WeekDay(SUNDAY)
+case object Sunday extends WeekDay(SUNDAY) /*1*/
 
 case class Day(day: Int) extends DateComponent
 
 object WeekDay {
 
-  def apply(str: String): WeekDay = str match {
-    case "monday"    => Monday
-    case "tuesday"   => Tuesday
-    case "wednesday" => Wednesday
-    case "thursday"  => Thursday
-    case "friday"    => Friday
-    case "saturday"  => Saturday
-    case "sunday"    => Sunday
+  def apply(any: Any): WeekDay = any match {
+    case "monday"    | MONDAY => Monday
+    case "tuesday"   | TUESDAY => Tuesday
+    case "wednesday" | WEDNESDAY => Wednesday
+    case "thursday"  | THURSDAY => Thursday
+    case "friday"    | FRIDAY => Friday
+    case "saturday"  | SATURDAY => Saturday
+    case "sunday"    | SUNDAY => Sunday
   }
 
   def unapply(weekDay: WeekDay): Option[String] = PartialFunction.condOpt(weekDay) {
@@ -189,7 +187,7 @@ object Month {
   def daysIn(month: Month, aYear: Int): Int = {
     month match {
       case Jan => 31
-      case Feb => if (isLeap(aYear)) 29 else 28
+      case Feb => if (DateComponent.isLeap(aYear)) 29 else 28
       case Mar => 31
       case Apr => 30
       case May => 31

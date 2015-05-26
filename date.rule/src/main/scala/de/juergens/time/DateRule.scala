@@ -6,17 +6,23 @@
 
 package de.juergens.time
 
+import de.juergens.time.Date.date2EnrichedDate
 import de.juergens.rule.Predicate
 import de.juergens.rule.Predicate.Implementation
+import de.juergens.time.impl.DateShifter
 
 sealed abstract class DateRule {
   def evaluate(anchor: Date)(t: Date): Boolean
+  /*
+  protected def makePredicate(anchor:Date) = new Predicate[Date] {
+    override def evaluate(t: Date): Boolean = evaluate(anchor)(t)
+  }
+  */
 
   def test(anchor: Date) : Predicate[Date] = evaluate(anchor) _
 
   def date(anchor: Date, calendar: Calendar): Date = {
-    def predicate(t: Date) = evaluate(anchor)(t)
-    val shifter = new DateShifter(predicate)
+    val shifter = new DateShifter(test(anchor))
     shifter.next(anchor)
   }
 }

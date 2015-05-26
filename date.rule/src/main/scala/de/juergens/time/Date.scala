@@ -1,28 +1,43 @@
 package de.juergens.time
 
+import de.juergens.time
+
 
 trait Date
 
+trait EnrichedDate extends Date with Ordered[Date] {
+  type D <: EnrichedDate
+
+  def +(days: Int): D
+  def -(days: Int): D
+
+  def year: Int
+
+  def month: Int
+
+  def dayOfMonth: Int
+
+  override final def equals(obj: scala.Any): Boolean = obj match {
+    case date : EnrichedDate => year == date.year && month == date.month && dayOfMonth == date.dayOfMonth
+  }
+}
+
 object Date {
+  // TODO
+  def daysIn(year: Int, month: Int): Int = impl.Joda.daysIn(year, month)
 
-  def apply(year:Int, month:Int, dayOfMonth:Int) : Date = {
-    impl.SimpleDate(year,month,dayOfMonth)
+  // TODO
+  def isValid(year: Int, month: Int, dayOfMonth: Int) : Boolean = impl.Joda.isValid(year, month, dayOfMonth)
+
+  def unapply(any :Any) : Option[(Int,Int,Int)] = PartialFunction.condOpt(any) {
+    case jd : EnrichedDate => (jd.year, jd.month ,jd.dayOfMonth)
   }
-
-  def unapply(any :Any) : Option[(Int,Int,Int)] = PartialFunction.condOpt(any){
-    case date : impl.SimpleDate => (date.year ,date.month ,date.dayOfMonth)
+  def apply(year:Int, month:Int, dayOfMonth:Int) : time.EnrichedDate = {
+    impl.Joda(year,month,dayOfMonth)
   }
-
-//  def isValid(year :Int , month :Int, day :Int) : Boolean = true
-//  def daysIn(year : Int, month : Int) : Int = 30
-//  def isLeap(year:Int) : Boolean = false
-//
-//  implicit class ExtendedDate(date:Date) extends Date {
-//    def +(days : Int) : Date = { date }
-//    def -(days : Int) : Date = { date }
-//    def year : Int = 0
-//    def month : Int = 0
-//    def day : Int = 0
-//  }
+  implicit def date2EnrichedDate(date:Date) : EnrichedDate = {
+    val Date(year,month,dayOfMonth) = date
+    Date(year,month,dayOfMonth)
+  }
 }
 

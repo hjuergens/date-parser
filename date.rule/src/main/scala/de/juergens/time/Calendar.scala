@@ -1,7 +1,5 @@
 package de.juergens.time
 
-import de.juergens.time.TimeUnit
-
 case class Period(count:Int, unit:TimeUnit)
 object Period {
   val Infinity : Period = new Period(Int.MaxValue, null)

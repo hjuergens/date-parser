@@ -6,19 +6,49 @@
 
 package de.juergens.rule
 
-import de.juergens.time.{WeekDay, Date}
 import java.util.Calendar
 
-case class WeekDayRule(weekDay:WeekDay) extends /* WeekDay with*/ Predicate[Date] {
+import de.juergens.time.{Date, WeekDay}
+//
 
-  val calendar = Calendar.getInstance()
+import de.juergens.Attribute
+
+case class WeekDayPredicate(weekDay:WeekDay, calendar : Calendar = Calendar.getInstance()) extends Predicate[Date] {
+
+  override def toString: String = "is " + weekDay + "?"
 
   def evaluate(t: Date): Boolean = {
     val Date(y,m,d) = t
     calendar.set(Calendar.YEAR, y)
-    calendar.set(Calendar.MONTH, m)
-    calendar.set(Calendar.DAY_OF_MONTH, m)
+    calendar.set(Calendar.MONTH, m-1)
+    calendar.set(Calendar.DAY_OF_MONTH, d)
+    //calendar.set(y,m-1,d)
     weekDay equals calendar.get(Calendar.DAY_OF_WEEK)
+  }
+
+  /*
+  val evaluate : (Date) => Boolean = new ((Date) => Boolean){
+        override def toString = ""
+    override def apply(t: Date): Boolean = {
+      val Date(y,m,d) = t
+      calendar.set(Calendar.YEAR, y)
+      calendar.set(Calendar.MONTH, m-1)
+      calendar.set(Calendar.DAY_OF_MONTH, d)
+      //calendar.set(y,m-1,d)
+      weekDay equals calendar.get(Calendar.DAY_OF_WEEK)
+    }
+  }
+  */
+}
+
+object WeekDayPredicate {
+  def weekDay(calendar : Calendar = Calendar.getInstance())(date:Date) : WeekDay = {
+    val Date(y,m,d) = date
+    calendar.set(Calendar.YEAR, y)
+    calendar.set(Calendar.MONTH, m-1)
+    calendar.set(Calendar.DAY_OF_MONTH, d)
+    //calendar.set(y,m-1,d)
+    WeekDay( calendar.get(Calendar.DAY_OF_WEEK) )
   }
 }
 

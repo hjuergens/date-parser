@@ -3,7 +3,7 @@
   <groupId>de.juergens</groupId>
   <artifactId>date-parser</artifactId>
     <packaging>pom</packaging>
-    <version>1.0-SNAPSHOT</version>
+    <version>0.1-SNAPSHOT</version>
     <modules>
         <module>date.rule</module>
         <module>date-parser-antlr</module>
@@ -20,6 +20,12 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
+
+  <scm>
+    <connection>scm:git:git://github.com/hjuergens/date-parser.git</connection>
+    <developerConnection>scm:git:git@github.com:hjuergens/date-parser.git</developerConnection>
+    <url>http://github.com/hjuergens/date-parser/</url>
+  </scm>
 
   <properties>
     <maven.compiler.source>1.5</maven.compiler.source>

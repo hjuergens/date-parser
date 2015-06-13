@@ -1,170 +1,238 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>de.juergens</groupId>
-  <artifactId>date-parser</artifactId>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>de.juergens</groupId>
+    <artifactId>date-parser</artifactId>
     <packaging>pom</packaging>
-    <version>0.1-SNAPSHOT</version>
+    <version>0.0.2-SNAPSHOT</version>
     <modules>
         <module>date.rule</module>
         <module>date-parser-antlr</module>
         <module>dp-jflex</module>
     </modules>
     <name>${project.artifactId}</name>
-  <description>Date Parser</description>
-  <inceptionYear>2015</inceptionYear>
+    <description>Date Parser</description>
+    <inceptionYear>2015</inceptionYear>
 
-  <licenses>
-    <license>
-      <name>The GNU Lesser General Public License, Version 3.0</name>
-      <url>http://www.gnu.org/licenses/lgpl-3.0.txt</url>
-      <distribution>repo</distribution>
-    </license>
-  </licenses>
+    <prerequisites>
+        <maven>3.3.3</maven>
+    </prerequisites>
 
-  <scm>
-    <connection>scm:git:git://github.com/hjuergens/date-parser.git</connection>
-    <developerConnection>scm:git:git@github.com:hjuergens/date-parser.git</developerConnection>
-    <url>http://github.com/hjuergens/date-parser/</url>
-  </scm>
+    <!-- Licensing -->
+    <licenses>
+        <license>
+            <name>The GNU Lesser General Public License, Version 3.0</name>
+            <url>http://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
 
-  <properties>
-    <maven.compiler.source>1.5</maven.compiler.source>
-    <maven.compiler.target>1.5</maven.compiler.target>
-    <encoding>UTF-8</encoding>
-    <scala.version>2.11.1</scala.version>
-  </properties>
+    <organization>
+        <name>private</name>
+    </organization>
 
-  <dependencies>
-    <dependency>
-      <groupId>org.scala-lang</groupId>
-      <artifactId>scala-library</artifactId>
-      <version>${scala.version}</version>
-    </dependency>
-    <!-- dependency>
-        <groupId>org.scala-lang</groupId>
-        <artifactId>scala-parser-combinators</artifactId>
-        <version>2.11.0-M4</version>
-    </dependency -->
-      <dependency>
-          <groupId>org.scala-lang.modules</groupId>
-          <artifactId>scala-parser-combinators_2.11</artifactId>
-          <version>1.0.2</version>
-      </dependency>
+    <scm>
+        <connection>scm:git:git://github.com/hjuergens/date-parser.git</connection>
+        <developerConnection>scm:git:git@github.com:hjuergens/date-parser.git</developerConnection>
+        <url>http://github.com/hjuergens/date-parser/</url>
+    </scm>
 
-      <!--dependency>
-          <groupId>org.scala-lang</groupId>
-          <artifactId>scala-compiler-bundle</artifactId>
-          <version>2.11.2</version>
-      </dependency-->
+    <repositories>
+        <repository>
+            <id>oss.sonatype.org</id>
+            <name>oss.sonatype.org</name>
+            <url>https://oss.sonatype.org/content/repositories/releases</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+        </repository>
+    </repositories>
 
-      <dependency>
-        <groupId>joda-time</groupId>
-        <artifactId>joda-time</artifactId>
-        <version>2.7</version>
-    </dependency>
 
-    <dependency>
-            <groupId>com.joestelmach</groupId>
-            <artifactId>natty</artifactId>
-            <version>0.10.1</version>
-    </dependency>
-    <dependency>
-	<groupId>org.apache.poi</groupId>
-	<artifactId>poi</artifactId>
-	<version>3.12-beta1</version>
-    </dependency>
-    <!-- Allows configuration of holiday dates and a simple API to figure out if a date is a holiday. --> 
-    <dependency>
-	<groupId>nz.co.senanque</groupId>
-	<artifactId>madura-date-time</artifactId>
-	<version>1.6.0</version>
-    </dependency>
-    <dependency>
-            <groupId>org.mnode.ical4j</groupId>
-            <artifactId>ical4j</artifactId>
-            <version>2.0-alpha1</version>
-    </dependency>
-    
-    <!-- Test -->
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.11</version>
-      <scope>test</scope>
-    </dependency>
-    <!--
-    <dependency>
-      <groupId>org.scala-tools.testing</groupId>
-      <artifactId>specs_${scala.version}</artifactId>
-      <version>1.6.5</version>
-      <scope>test</scope>
-    </dependency>
-    -->
-    <dependency>
-      <groupId>org.scalatest</groupId>
-      <artifactId>scalatest_2.11</artifactId>
-      <version>2.2.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-	<groupId>org.scala-tools.testing</groupId>
-	<artifactId>specs_2.10</artifactId>
-	<version>1.6.9</version>
-    </dependency>
 
-    
-  </dependencies>
+    <distributionManagement>
+        <site>
+            <id>hjuergens.git.server</id>
+            <url>scm:git:git@github.com:hjuergens/date-parser.git</url>
+        </site>
+    </distributionManagement>
 
-  <build>
-    <sourceDirectory>src/main/scala</sourceDirectory>
-    <testSourceDirectory>src/test/scala</testSourceDirectory>
-    
-    <plugins>
-      <plugin>
-        <groupId>org.scala-tools</groupId>
-        <artifactId>maven-scala-plugin</artifactId>
-        <version>2.15.2</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>compile</goal>
-              <goal>testCompile</goal>
-            </goals>
-            
-            <!-- configuration>
-              <args>
-                  <arg>-feature</arg>
-                <arg>-make:transitive</arg>
-                <arg>-dependencyfile</arg>
-                <arg>${project.build.directory}/.scala_dependencies</arg>
-              </args>
-            </configuration -->
-          </execution>
-        </executions>
-      </plugin>
-      
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.18.1</version>
-        
-        <configuration>
-          <useFile>false</useFile>
-          <disableXmlReport>true</disableXmlReport>
-          <argLine>-DfailIfNoTests=false</argLine>
-          <argLine>-Xmx512m</argLine>
-        
-          <includes>
-            <include>**/*Unit.java</include>
-            <include>**/*Spec.java</include>
-            <include>**/*Test.*</include>
-            <include>**/*Suite.*</include>
-          </includes>
+    <properties>
+        <maven.compiler.source>1.5</maven.compiler.source>
+        <maven.compiler.target>1.5</maven.compiler.target>
+        <encoding>UTF-8</encoding>
+        <scala.version>2.11.1</scala.version>
+    </properties>
 
-        </configuration>
-        
-      </plugin>
+    <dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+            <version>${scala.version}</version>
+        </dependency>
+        <!-- dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-parser-combinators</artifactId>
+            <version>2.11.0-M4</version>
+        </dependency -->
+        <dependency>
+            <groupId>org.scala-lang.modules</groupId>
+            <artifactId>scala-parser-combinators_2.11</artifactId>
+            <version>1.0.2</version>
+        </dependency>
 
-    </plugins>
-  </build>
+        <!--dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-compiler-bundle</artifactId>
+            <version>2.11.2</version>
+        </dependency-->
+
+        <!--<dependency>-->
+            <!--<groupId>joda-time</groupId>-->
+            <!--<artifactId>joda-time</artifactId>-->
+            <!--<version>2.7</version>-->
+        <!--</dependency>-->
+
+        <!--<dependency>-->
+            <!--<groupId>com.joestelmach</groupId>-->
+            <!--<artifactId>natty</artifactId>-->
+            <!--<version>0.10.1</version>-->
+        <!--</dependency>-->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi</artifactId>
+            <version>3.12-beta1</version>
+        </dependency>
+
+        <!-- Allows configuration of holiday dates and a simple API to figure out if a date is a holiday. -->
+        <!--<dependency>-->
+            <!--<groupId>nz.co.senanque</groupId>-->
+            <!--<artifactId>madura-date-time</artifactId>-->
+            <!--<version>1.6.0</version>-->
+        <!--</dependency>-->
+        <!--<dependency>-->
+            <!--<groupId>org.mnode.ical4j</groupId>-->
+            <!--<artifactId>ical4j</artifactId>-->
+            <!--<version>2.0-alpha1</version>-->
+        <!--</dependency>-->
+
+        <!-- Test -->
+        <!--
+        <dependency>
+          <groupId>org.scala-tools.testing</groupId>
+          <artifactId>specs_${scala.version}</artifactId>
+          <version>1.6.5</version>
+          <scope>test</scope>
+        </dependency>
+        -->
+        <!--<dependency>-->
+            <!--<groupId>org.scalatest</groupId>-->
+            <!--<artifactId>scalatest_2.11</artifactId>-->
+            <!--<version>2.2.0</version>-->
+            <!--<scope>test</scope>-->
+        <!--</dependency>-->
+        <!--<dependency>-->
+            <!--<groupId>org.scala-tools.testing</groupId>-->
+            <!--<artifactId>specs_2.10</artifactId>-->
+            <!--<version>1.6.9</version>-->
+        <!--</dependency>-->
+
+
+    </dependencies>
+    </dependencyManagement>
+
+    <build>
+
+        <sourceDirectory>src/main/scala</sourceDirectory>
+        <testSourceDirectory>src/test/scala</testSourceDirectory>
+
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-site-plugin</artifactId>
+                    <version>3.4</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-project-info-reports-plugin</artifactId>
+                    <version>2.8</version>
+                </plugin>
+                <plugin>
+                    <groupId>net.alchim31.maven</groupId>
+                    <artifactId>scala-maven-plugin</artifactId>
+                    <version>3.1.5</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>2.0.2</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>taglist-maven-plugin</artifactId>
+                    <version>2.4</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-pmd-plugin</artifactId>
+                    <version>3.4</version>
+                </plugin>
+                <plugin>
+                    <groupId>net.sourceforge.pmd</groupId>
+                    <artifactId>pmd-scala</artifactId>
+                    <version>5.3.2</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
+            <!--<plugin>-->
+                <!--<groupId>org.scala-tools</groupId>-->
+                <!--<artifactId>maven-scala-plugin</artifactId>-->
+                <!--<version>2.15.2</version>-->
+                <!--<executions>-->
+                    <!--<execution>-->
+                        <!--<goals>-->
+                            <!--<goal>compile</goal>-->
+                            <!--<goal>testCompile</goal>-->
+                        <!--</goals>-->
+
+                        <!--&lt;!&ndash; configuration>-->
+                          <!--<args>-->
+                              <!--<arg>-feature</arg>-->
+                            <!--<arg>-make:transitive</arg>-->
+                            <!--<arg>-dependencyfile</arg>-->
+                            <!--<arg>${project.build.directory}/.scala_dependencies</arg>-->
+                          <!--</args>-->
+                        <!--</configuration &ndash;&gt;-->
+                    <!--</execution>-->
+                <!--</executions>-->
+            <!--</plugin>-->
+
+            <!--plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.18.1</version>
+
+                <configuration>
+                    <useFile>false</useFile>
+                    <disableXmlReport>true</disableXmlReport>
+                    <argLine>-DfailIfNoTests=false</argLine>
+                    <argLine>-Xmx512m</argLine>
+
+                    <includes>
+                        <include>**/*Unit.java</include>
+                        <include>**/*Spec.java</include>
+                        <include>**/*Test.*</include>
+                        <include>**/*Suite.*</include>
+                    </includes>
+
+                </configuration>
+
+            </plugin-->
+
+        </plugins>
+    </build>
 </project>

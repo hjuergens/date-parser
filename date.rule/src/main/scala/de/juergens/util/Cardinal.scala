@@ -1,5 +1,7 @@
 package de.juergens.util
 
+import scala.language.implicitConversions
+
 /**
  * Created by juergens on 25.05.15.
  */
@@ -24,7 +26,8 @@ object Cardinal {
   implicit def int2Cardinal(x:Int) : Cardinal = Cardinal(x)
 }
 
-case class Cardinal(toInt : Int) extends AnyVal {
+case class
+Cardinal(toInt : Int) extends AnyVal {
   def unary_- : Cardinal = Cardinal(-toInt)
 
   override def toString: String = toInt.toString + "."

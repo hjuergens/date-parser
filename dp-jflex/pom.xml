@@ -5,11 +5,19 @@
     <parent>
         <artifactId>date-parser</artifactId>
         <groupId>de.juergens</groupId>
-        <version>0.1-SNAPSHOT</version>
+        <version>0.0.2-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>dp-jflex</artifactId>
+    <version>0.0.2-SNAPSHOT</version>
+    <name>${project.artifactId}</name>
+
+    <description>
+        Date Rule Interpreter for date descriptions like \"next sunday\" and \"the day before christmas\" based on
+        jflex
+    </description>
+
 
     <repositories>
         <repository>

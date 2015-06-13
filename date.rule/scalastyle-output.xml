@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<checkstyle version="5.0">
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/time/DateComponent.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/test/scala/samples/SimpleParser$Test.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/time/package.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/test/scala/de/juergens/text/DateRuleParserTestNG.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/time/impl/Date.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/test/scala/de/juergens/time/SpecialRuleTest.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/time/Shifter.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/time/DateRule.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/test/scala/samples/junit.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/samples/LoopParser.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/test/scala/de/juergens/RelativeDatesTestNG.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/time/TimeUnit.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/test/scala/de/juergens/util/IntervalTest.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/text/DateParser.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/rule/Predicate.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/App.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/test/scala/samples/LoopParser_Test.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/test/scala/de/juergens/time/RuleParserTest.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/util/Cardinal.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/RuleParser.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/time/Calendar.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/util/Direction.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/text/DateRuleParser.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/samples/SimpleScala.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/text/SimpleParser.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/util/Sign.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/util/Ordinal.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/test/scala/samples/scalatest.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/time/TermParser.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/time/Seek.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/time/WeekDaySeek.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/util/Interval.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/time/Date.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/rule/Rule.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/time/impl/Shifter.scala">
+  <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
+ </file>
+</checkstyle>

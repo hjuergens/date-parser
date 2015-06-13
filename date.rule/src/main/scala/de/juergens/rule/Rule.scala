@@ -6,24 +6,35 @@
 
 package de.juergens.rule
 
+import java.time.LocalDate
 import java.util.Calendar
 
-import de.juergens.time.{Date, WeekDay}
+import de.juergens.time.WeekDay
+
 //
 
-import de.juergens.Attribute
 
-case class WeekDayPredicate(weekDay:WeekDay, calendar : Calendar = Calendar.getInstance()) extends Predicate[Date] {
+import java.time.temporal.{ChronoField, Temporal}
+
+case class WeekDayPredicate(weekDay: WeekDay, calendar: Calendar = Calendar.getInstance()) extends Predicate[Temporal] {
 
   override def toString: String = "is " + weekDay + "?"
 
-  def evaluate(t: Date): Boolean = {
-    val Date(y,m,d) = t
-    calendar.set(Calendar.YEAR, y)
-    calendar.set(Calendar.MONTH, m-1)
-    calendar.set(Calendar.DAY_OF_MONTH, d)
-    //calendar.set(y,m-1,d)
-    weekDay equals calendar.get(Calendar.DAY_OF_WEEK)
+  def evaluate(t: Temporal): Boolean = {
+    require(t.isSupported(ChronoField.DAY_OF_WEEK), s"$t has to support day-of-week")
+    t.ensuring(_.isSupported(ChronoField.DAY_OF_WEEK))
+
+
+    assert(t.isInstanceOf[LocalDate])
+    t.asInstanceOf[LocalDate].getDayOfWeek // FIXME remove instanceOf
+
+    t.get(ChronoField.DAY_OF_WEEK) == weekDay
+    //    val Date(y,m,d) = t
+    //    calendar.set(Calendar.YEAR, y)
+    //    calendar.set(Calendar.MONTH, m-1)
+    //    calendar.set(Calendar.DAY_OF_MONTH, d)
+    //    //calendar.set(y,m-1,d)
+    //    weekDay equals calendar.get(Calendar.DAY_OF_WEEK)
   }
 
   /*
@@ -41,14 +52,14 @@ case class WeekDayPredicate(weekDay:WeekDay, calendar : Calendar = Calendar.getI
   */
 }
 
-object WeekDayPredicate {
-  def weekDay(calendar : Calendar = Calendar.getInstance())(date:Date) : WeekDay = {
-    val Date(y,m,d) = date
-    calendar.set(Calendar.YEAR, y)
-    calendar.set(Calendar.MONTH, m-1)
-    calendar.set(Calendar.DAY_OF_MONTH, d)
-    //calendar.set(y,m-1,d)
-    WeekDay( calendar.get(Calendar.DAY_OF_WEEK) )
-  }
-}
+//object WeekDayPredicate {
+//  def weekDay(calendar : Calendar = Calendar.getInstance())(date:Temporal) : WeekDay = {
+//    val Date(y,m,d) = date
+//    calendar.set(Calendar.YEAR, y)
+//    calendar.set(Calendar.MONTH, m-1)
+//    calendar.set(Calendar.DAY_OF_MONTH, d)
+//    //calendar.set(y,m-1,d)
+//    WeekDay( calendar.get(Calendar.DAY_OF_WEEK) )
+//  }
+//}
 

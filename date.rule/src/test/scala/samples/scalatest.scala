@@ -25,11 +25,15 @@ http://www.scalatest.org/
 One way to use ScalaTest is to help make JUnit or TestNG tests more
 clear and concise. Here's an example:
 */
-import scala.collection.mutable.Stack
-import org.scalatest.{MustMatchers, Assertions}
+
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
+import org.scalatest.{Assertions, MustMatchers}
+
 import scala.collection.mutable
 
+@RunWith(classOf[org.junit.runners.JUnit4])
 class StackSuite extends Assertions {
 
   @Test def stackShouldPopValuesIinLastInFirstOutOrder() {
@@ -51,17 +55,16 @@ class StackSuite extends Assertions {
 /*
 Here's an example of a FunSuite with ShouldMatchers mixed in:
 */
+
 import org.scalatest.FunSuite
 import org.scalatest.matchers.ShouldMatchers
 
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 class ListSuite extends FunSuite with ShouldMatchers {
 
   test("An empty list should be empty") {
-    List() should be ('empty)
-    Nil should be ('empty)
+    List() should be('empty)
+    Nil should be('empty)
   }
 
   test("A non-empty list should not be empty") {
@@ -85,16 +88,18 @@ A Map
 - should only contain keys and values that were added to it
 - should report its size as the number of key/value pairs it contains
 */
-import org.scalatest._
-import enablers.Size._
 
+import org.scalatest._
+import org.scalatest.enablers.Size._
+
+@RunWith(classOf[JUnitRunner])
 class MapSpec extends FunSpec with MustMatchers {
-  implicit val sz : org.scalatest.enablers.Size[Map[Nothing,Nothing]] = org.scalatest.enablers.Size.sizeOfGenTraversable[Map[Nothing,Nothing]]
+  implicit val sz: org.scalatest.enablers.Size[Map[Nothing, Nothing]] = org.scalatest.enablers.Size.sizeOfGenTraversable[Map[Nothing, Nothing]]
 
   describe("A Map") {
 
     it("should only contain keys and values that were added to it") {
-      Map("ho" -> 12) must (not contain key ("hi") and not contain value (13))
+      Map("ho" -> 12) must (not contain key("hi") and not contain value(13))
       Map("hi" -> 13) must (contain key "hi" and contain value 13)
     }
 

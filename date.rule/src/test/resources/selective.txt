@@ -1,0 +1,60 @@
+second wednesday after date
+three month after second wednesday of third quarter
+every friday the 13th of month
+5. in january
+first sunday after 26 of the second month of quarter
+
+1.
+2.
+...
+first
+second
+third
+4th
+...
+          => ordinal
+
+
+every <ordinal> => ... => stream
+
+
+<ordinal>[,<ordinal> | and <ordinal>]
+<ordinal>[,<ordinal> | or <ordinal>]
+
+monday (x)or wednesday   -> every monday | every wednesday
+(next) -> min {next monday, next wednesday}
+
+monday and wednesday     -> every monday & every wednesday
+(next) -> next monday, next wednesday
+
+next monday or wednesday   -> monday | wednesday
+next (monday or wednesday) -> monday | wednesday
+monday and wednesday     -> monday & wednesday
+next monday xor wednesday -> monday | wednesday
+
+every first and third wednesday or monday in june
+first and third wednesday or every monday in june
+
+successor function: (Date) => (Date)
+stream == (anchor, successor function)
+
+Set[Stream] => (anchor,fu
+
+{n,m}th	day			of	...					period?
+		week
+		month
+		year
+		quarter
+		decade
+--------------------------------------------------
+period:
+next two years
+previous month
+previous two months
+last summer
+following <??> season
+last quarter
+next february
+june 2016
+summer 66
+next Schaltjahr

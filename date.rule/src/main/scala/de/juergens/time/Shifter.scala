@@ -1,12 +1,16 @@
 package de.juergens.time
 
-import de.juergens.util
+import java.time.temporal.TemporalAdjuster
 
+import de.juergens.util
 
 /**
  *
  */
-trait Shifter {
-  def direction : util.Direction
-  def shift(t: Date): Date
- }
+@FunctionalInterface
+trait Shifter extends TemporalAdjuster {
+  @deprecated
+  def direction: util.Direction
+
+  def shift(t: java.time.LocalDate): java.time.LocalDate
+}

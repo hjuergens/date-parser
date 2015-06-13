@@ -1,33 +1,35 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>de.juergens</groupId>
         <artifactId>date-parser</artifactId>
-        <version>0.1-SNAPSHOT</version>
+        <version>0.0.2-SNAPSHOT</version>
     </parent>
 
     <artifactId>date.rule</artifactId>
-    <version>0.1-SNAPSHOT</version>
+    <version>0.0.2-SNAPSHOT</version>
     <name>${project.artifactId}</name>
 
-    <description>Date Rule Interpreter</description>
+    <description>
+        Date Rule Interpreter for date descriptions like &quot;next sunday&quot; and &quot;the day before christmas&quot;
+        based on
+        java.time and scala-parser-combinators
+    </description>
+
     <inceptionYear>2010</inceptionYear>
 
-    <licenses>
-        <license>
-            <name>My License</name>
-            <url>http://....</url>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
-
     <properties>
-        <maven.compiler.source>1.5</maven.compiler.source>
-        <maven.compiler.target>1.5</maven.compiler.target>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
         <encoding>UTF-8</encoding>
         <scala.version>2.11.2</scala.version>
+        <scala.compat.version>2.11</scala.compat.version>
+        <scoverage.plugin.version>1.0.4</scoverage.plugin.version>
+        <scoverage.scalacPluginVersion>1.0.4</scoverage.scalacPluginVersion>
+        <surefire.version>2.18.1</surefire.version>
+        <disable.surefire>false</disable.surefire>
     </properties>
 
     <pluginRepositories>
@@ -35,6 +37,22 @@
             <id>scala-tools.org</id>
             <name>Scala-Tools Maven2 Repository</name>
             <url>https://oss.sonatype.org/content/groups/scala-tools/</url>
+        </pluginRepository>
+        <pluginRepository>
+            <id>maven.org-maven2</id>
+            <name>Central Repository</name>
+            <url>http://repo1.maven.org/maven2/</url>
+        </pluginRepository>
+        <pluginRepository>
+            <id>eclemma.org-jacoco</id>
+            <name>JaCoCo Snapshots Repository</name>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
         </pluginRepository>
     </pluginRepositories>
 
@@ -49,38 +67,51 @@
             <groupId>org.scala-lang.modules</groupId>
             <artifactId>scala-parser-combinators_2.11</artifactId>
             <version>1.0.3</version>
+            <scope>compile</scope>
         </dependency>
 
-        <dependency>
-            <groupId>com.joestelmach</groupId>
-            <artifactId>natty</artifactId>
-            <version>0.10.1</version>
-        </dependency>
+        <!--<dependency>-->
+        <!--<groupId>com.joestelmach</groupId>-->
+        <!--<artifactId>natty</artifactId>-->
+        <!--<version>0.10.1</version>-->
+        <!--</dependency>-->
 
         <!-- Allows configuration of holiday dates and a simple API to figure out if a date is a holiday. -->
-        <dependency>
-            <groupId>nz.co.senanque</groupId>
-            <artifactId>madura-date-time</artifactId>
-            <version>1.6.0</version>
-        </dependency>
+        <!--<dependency>-->
+        <!--<groupId>nz.co.senanque</groupId>-->
+        <!--<artifactId>madura-date-time</artifactId>-->
+        <!--<version>1.6.0</version>-->
+        <!--</dependency>-->
 
-        <dependency>
-            <groupId>org.mnode.ical4j</groupId>
-            <artifactId>ical4j</artifactId>
-            <version>2.0-alpha1</version>
-        </dependency>
+        <!--<dependency>-->
+        <!--<groupId>org.mnode.ical4j</groupId>-->
+        <!--<artifactId>ical4j</artifactId>-->
+        <!--<version>2.0-alpha1</version>-->
+        <!--</dependency>-->
 
-        <dependency>
-            <groupId>de.jflex</groupId>
-            <artifactId>maven-jflex-plugin</artifactId>
-            <version>1.4.3-r1</version>
-        </dependency>
+        <!--<dependency>-->
+        <!--<groupId>de.jflex</groupId>-->
+        <!--<artifactId>maven-jflex-plugin</artifactId>-->
+        <!--<version>1.4.3-r1</version>-->
+        <!--<exclusions>-->
+        <!--<exclusion>-->
+        <!--<artifactId>plexus-utils</artifactId>-->
+        <!--<groupId>org.codehaus.plexus</groupId>-->
+        <!--</exclusion>-->
+        <!--</exclusions>-->
+        <!--</dependency>-->
 
         <!-- Test -->
+        <!--<dependency>-->
+        <!--<groupId>org.specs2</groupId>-->
+        <!--<artifactId>specs2_2.11</artifactId>-->
+        <!--<version>2.4.4-scalaz-7.0.6</version>-->
+        <!--<scope>test</scope>-->
+        <!--</dependency>-->
         <dependency>
             <groupId>org.specs2</groupId>
             <artifactId>specs2_2.11</artifactId>
-            <version>2.4.4-scalaz-7.0.6</version>
+            <version>2.4.2</version>
             <scope>test</scope>
         </dependency>
 
@@ -90,50 +121,254 @@
             <version>2.2.4</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <version>6.9.4</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.11</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
         <sourceDirectory>src/main/scala</sourceDirectory>
         <testSourceDirectory>src/test/scala</testSourceDirectory>
+
         <plugins>
             <plugin>
-                <groupId>org.scala-tools</groupId>
-                <artifactId>maven-scala-plugin</artifactId>
-                <version>2.15.2</version>
-                <executions>
-                    <execution>
-                        <id>scala-compile</id>
-                        <goals>
-                            <goal>compile</goal>
-                            <goal>testCompile</goal>
-                        </goals>
-                        <configuration>
-                            <args>
-                                <arg>-make:transitive</arg>
-                                <arg>-dependencyfile</arg>
-                                <arg>${project.build.directory}/.scala_dependencies</arg>
-                            </args>
-                        </configuration>
-                    </execution>
-                </executions>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <version>3.2.0</version>
             </plugin>
+
+            <!-- surefire -->
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.6</version>
+                <version>${surefire.version}</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.maven.surefire</groupId>
+                        <artifactId>surefire-junit47</artifactId>
+                        <version>${surefire.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.maven.surefire</groupId>
+                        <artifactId>surefire-testng</artifactId>
+                        <version>${surefire.version}</version>
+                    </dependency>
+                </dependencies>
                 <configuration>
-                    <useFile>false</useFile>
-                    <disableXmlReport>true</disableXmlReport>
-                    <!-- If you have classpath issue like NoDefClassError,... -->
-                    <!-- useManifestOnlyJar>false</useManifestOnlyJar -->
-                    <includes>
-                        <include>**/*Test.*</include>
-                        <include>**/*Suite.*</include>
-                    </includes>
+                    <skipTests>${disable.surefire}</skipTests>
+                    <parallel>methods</parallel>
+                    <threadCount>10</threadCount>
                 </configuration>
             </plugin>
 
+            <!-- ScalaTest -->
+            <plugin>
+                <groupId>org.scalatest</groupId>
+                <artifactId>scalatest-maven-plugin</artifactId>
+                <version>1.0</version>
+                <configuration>
+                    <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
+                    <junitxml>.</junitxml>
+                    <!--<filereports>WDF TestSuite.txt</filereports>-->
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>test</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>pre-site</phase>
+                        <goals>
+                            <goal>reporter</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
 
+            <!-- scala style -->
+            <!-- default phase of execution is verify -->
+            <plugin>
+                <groupId>org.scalastyle</groupId>
+                <artifactId>scalastyle-maven-plugin</artifactId>
+                <version>0.7.0</version>
+                <configuration>
+                    <verbose>true</verbose>
+                    <failOnViolation>true</failOnViolation>
+                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                    <failOnWarning>false</failOnWarning>
+                    <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
+                    <testSourceDirectory>${project.build.testSourceDirectory}</testSourceDirectory>
+                    <configLocation>${project.parent.basedir}/project/scalastyle_config.xml</configLocation>
+                    <outputFile>${project.build.directory}/site/scalastyle-output.xml</outputFile>
+                    <outputEncoding>UTF-8</outputEncoding>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>scalastyle</id>
+                        <phase>process-sources</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- pmd -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <configuration>
+                    <linkXRef>true</linkXRef>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>net.sourceforge.pmd</groupId>
+                        <artifactId>pmd-scala</artifactId>
+                        <version>5.3.2</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+
+            <!-- scoverage -->
+            <plugin>
+                <groupId>org.scoverage</groupId>
+                <artifactId>scoverage-maven-plugin</artifactId>
+                <version>${scoverage.plugin.version}</version>
+                <configuration>
+                    <minimumCoverage>5</minimumCoverage>
+                    <failOnMinimumCoverage>true</failOnMinimumCoverage>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- taglist -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>taglist-maven-plugin</artifactId>
+                <configuration>
+                    <tagListOptions>
+                        <tagClasses>
+                            <tagClass>
+                                <displayName>Todo Work</displayName>
+                                <tags>
+                                    <tag>
+                                        <matchString>todo</matchString>
+                                        <matchType>ignoreCase</matchType>
+                                    </tag>
+                                    <tag>
+                                        <matchString>FIXME</matchString>
+                                        <matchType>exact</matchType>
+                                    </tag>
+                                </tags>
+                            </tagClass>
+                        </tagClasses>
+                    </tagListOptions>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
+
+    <url>https://github.com/hjuergens/date-parser</url>
+
+    <reporting>
+        <plugins>
+            <!-- Surefire -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-report-plugin</artifactId>
+                <version>${surefire.version}</version>
+            </plugin>
+
+            <!-- scala style -->
+            <!-- default phase of execution is verify -->
+            <plugin>
+                <groupId>org.scalastyle</groupId>
+                <artifactId>scalastyle-maven-plugin</artifactId>
+                <version>0.7.0</version>
+                <configuration>
+                    <outputFile>${project.build.directory}/site/scalastyle-output.xml</outputFile>
+                </configuration>
+            </plugin>
+
+            <!-- ScalaDoc -->
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <version>3.1.5</version>
+                <configuration>
+                    <args>
+                        <arg>-feature</arg>
+                        <arg>-unchecked</arg>
+                        <arg>-deprecation</arg>
+                        <arg>-explaintypes</arg>
+                    </args>
+                </configuration>
+            </plugin>
+
+            <!-- Coverage -->
+            <!--<plugin>-->
+            <!--<groupId>org.scoverage</groupId>-->
+            <!--<artifactId>scoverage-maven-plugin</artifactId>-->
+            <!--<version>${scoverage.plugin.version}</version>-->
+            <!--</plugin>-->
+
+            <!-- JXR -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jxr-plugin</artifactId>
+                <version>2.3</version>
+            </plugin>
+            <!-- PMD -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <version>3.4</version>
+            </plugin>
+
+            <!-- taglist -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>taglist-maven-plugin</artifactId>
+                <version>2.4</version>
+                <configuration>
+                    <tagListOptions>
+                        <tagClasses>
+                            <tagClass>
+                                <displayName>Todo Work</displayName>
+                                <tags>
+                                    <tag>
+                                        <matchString>todo</matchString>
+                                        <matchType>ignoreCase</matchType>
+                                    </tag>
+                                    <tag>
+                                        <matchString>FIXME</matchString>
+                                        <matchType>exact</matchType>
+                                    </tag>
+                                </tags>
+                            </tagClass>
+                        </tagClasses>
+                    </tagListOptions>
+                </configuration>
+            </plugin>
+        </plugins>
+    </reporting>
 </project>

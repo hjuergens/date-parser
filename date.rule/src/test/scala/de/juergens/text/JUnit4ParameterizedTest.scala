@@ -1,0 +1,71 @@
+package de.juergens.text
+
+import java.io.{File, FilenameFilter}
+import java.{io => jio, lang => jl, util => ju}
+
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.junit.runners.Parameterized
+import org.junit.runners.Parameterized.Parameters
+import org.testng.annotations.{DataProvider => DataProviderNG, Test => TestNG}
+
+import scala.collection.JavaConversions._
+
+@RunWith(value = classOf[Parameterized])
+class JUnit4ParameterizedTest(textFile: jio.File) {
+  @Test
+  def pushTest = {
+    println("file: " + textFile)
+    for( lineArray <- lines) {
+      test(lineArray(0).toString)
+    }
+
+  }
+
+//  @Parameter
+
+  import scala.io.Source
+
+  @DataProviderNG(name = "lines in text file", parallel = true)
+  def lines: java.util.Iterator[Array[Object]] =
+    Source.fromURI {
+      textFile.toURI
+    }.getLines().filterNot(_.trim.startsWith("#")).filterNot(_.isEmpty).map(Array[Object](_))
+
+
+  @TestNG(groups = Array { "seek"  }, dataProvider = "lines in text file", timeOut = 1000)
+  def test(line: String) {
+    val parser = new DateRuleParser
+    parser.parseAll(parser.seekWeekDay, line).get
+  }
+
+}
+
+
+
+
+
+// NOTE: Defined AFTER companion class to prevent:
+// Class com.openmip.drm.JUnit4ParameterizedTest has no public
+// constructor TestCase(String name) or TestCase()
+object JUnit4ParameterizedTest {
+
+  // NOTE: Must return collection of Array[AnyRef] (NOT Array[Any]).
+//  @Parameters
+//  def parameters: ju.Collection[Array[jio.File]] = {
+//    val list = new ju.ArrayList[Array[jio.File]]()
+//    (1 to 10).foreach(n => list.add(Array(n)))
+//    list
+//  }
+
+  @Parameters(name = "{index}: {0}")
+  def listTextFiles: java.lang.Iterable[Array[AnyRef]] = {
+    val dir = new File(getClass.getResource("/").getFile)
+    val files = (dir.listFiles(new FilenameFilter {
+      def accept(dir: File, name: String): Boolean = name.endsWith("txt")
+    }))
+    files.map(Array[AnyRef](_)).toSeq
+  }
+
+}
+

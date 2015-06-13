@@ -39,10 +39,3 @@ second weekend after 14. of month : attribute
 (attribute~direction) : seek
 ("14. of month") : attribute
 (seek~attribute) => attribute
-
-day after  : seek
-the day before  : seek
-the monday after  : seek
-the monday before  : seek
-2 fridays before  : seek
-4 tuesdays after  : seek

@@ -7,16 +7,19 @@
 package de.juergens.time.impl
 
 
-import de.juergens.rule.Predicate
+import java.time.temporal.{ChronoUnit, Temporal}
+import java.time.{LocalDate => Date}
+
+import de.juergens.time.Date.EnrichedLocalDate
 import de.juergens.time._
-import de.juergens.time.Date.date2EnrichedDate
 import de.juergens.util.{Direction, Up}
+
 import scala.language.implicitConversions
 
 /**
  * @param predicate The Condition the DateShifter tries to meet by increasing or decreasing input dates.
  */
-case class DateShifter(predicate: (Date) => Boolean, direction:Direction = Up) extends Shifter/*extends Serializable*/ {
+case class DateShifter(predicate: (Temporal) => Boolean, direction:Direction = Up) extends Shifter/*extends Serializable*/ {
 
   /**
    * helper method for moving dates until a condition is true
@@ -65,83 +68,80 @@ case class DateShifter(predicate: (Date) => Boolean, direction:Direction = Up) e
 
   override def shift(t: Date): Date = moveDateUntil(direction * 1)(t)
 
+  override def adjustInto(temporal: Temporal): Temporal = {
+    var l = temporal
+    while(!predicate(l)) l = l.plus(1,ChronoUnit.DAYS)
+    l
+  }
 }
 
 abstract class TimeUnitShifter extends Shifter {
   val timeUnit : TimeUnit
   def step : Int
   override val direction = Direction(step)
+
+  final def shift(t: Date) = java.time.LocalDate.from(adjustInto(t))
 }
 
 case class WeekShifter(step: Int) extends TimeUnitShifter {
   val timeUnit = WeekUnit
   
-  def shift(t: Date) = t + step * 7
-
   override def toString = "%+d".format(step) + " " + WeekUnit.toString
+
+  override def adjustInto(temporal: Temporal): Temporal = temporal.plus(step, ChronoUnit.WEEKS)
 }
 
 case class DayShifter(step: Int) extends TimeUnitShifter {
   val timeUnit = DayUnit 
   
-  def shift(t: Date) = t + step * 1
-
   override def toString = "%+d".format(step) + " " + DayUnit.toString
-}
 
-case class QuarterShifter(step: Int) extends TimeUnitShifter {
-  val timeUnit = QuarterUnit 
-  
-  private val monthShifter = MonthShifter(3 * step)
-
-  def shift(t: Date) = monthShifter.shift(t)
-
-  override def toString = "%+d".format(step) + " " + QuarterUnit.toString
+  override def adjustInto(temporal: Temporal): Temporal = temporal.plus(step, ChronoUnit.DAYS)
 }
 
 case class YearShifter(step: Int) extends TimeUnitShifter {
   val timeUnit = YearUnit
   
-  def shift(t: Date) = {
-    val Date(year, month, day) = t
-    val newYear = year + step
-    val shiftedDay = day min Month.daysIn(Month(month), newYear)
-    Date(year + step, month, shiftedDay)
-  }
-
   override def toString = "%+d".format(step) + " " + YearUnit.toString
+
+  override def adjustInto(temporal: Temporal): Temporal = temporal.plus(step, ChronoUnit.YEARS)
 }
 
 case class MonthShifter(step: Int) extends TimeUnitShifter {
   val timeUnit = MonthUnit
-  
-  def shift(t: Date) = {
-    var newDay = t.dayOfMonth
-    var newMonth = t.month + step
-    var newYear = t.year
 
-    // tritt nur bei Subtraktion auf
-    if (newMonth < 1)
-      newYear += ((newMonth / 12) - 1) // DIV 12
 
-    // tritt nur bei Addition auf
-    if (newMonth > 12)
-      newYear += ((newMonth - 1) / 12) // DIV 12
-
-    newMonth %= 12 // MOD 12
-
-    // Die Berechnung newMonth % 12 kann 0 ergeben. Damit muss zumindest der
-    // Fall newMonth == 0 abgefangen werden!
-    if (newMonth < 1)
-      newMonth += 12
-
-    if (!Date.isValid(newYear, newMonth, newDay)) {
-      newDay = Date.daysIn(newYear, newMonth)
-    }
-    Date(newYear, newMonth, newDay)
-  }
+  //  def shift(t: Date) = {
+//    var newDay = t.getDayOfMonth
+//    var newMonth = t.getMonthValue + step
+//    var newYear = t.getYear
+//
+//    // tritt nur bei Subtraktion auf
+//    if (newMonth < 1)
+//      newYear += ((newMonth / 12) - 1) // DIV 12
+//
+//    // tritt nur bei Addition auf
+//    if (newMonth > 12)
+//      newYear += ((newMonth - 1) / 12) // DIV 12
+//
+//    newMonth %= 12 // MOD 12
+//
+//    // Die Berechnung newMonth % 12 kann 0 ergeben. Damit muss zumindest der
+//    // Fall newMonth == 0 abgefangen werden!
+//    if (newMonth < 1)
+//      newMonth += 12
+//
+//    if (!Date.isValid(newYear, newMonth, newDay)) {
+//      newDay = Date.daysIn(newYear, newMonth)
+//    }
+//    Date.of(newYear, newMonth, newDay)
+//  }
 
   override def toString = "%+d".format(step) + " " + MonthUnit.toString
+
+  override def adjustInto(temporal: Temporal): Temporal = temporal.plus(step, ChronoUnit.MONTHS)
+
+//  override def shift(t: time.Date): time.Date = adjustInto(t)
 }
 
 
@@ -151,6 +151,8 @@ case class DateComponentShifter(val step: Int, dateComponent: DateComponent) ext
   override def toString = "%+d".format(step) + " " + dateComponent.toString
 
   override def direction = Direction(step)
+
+  override def adjustInto(temporal: Temporal): Temporal = ???
 }
 
 
@@ -159,7 +161,6 @@ object TimeUnitShifter {
     case DayUnit                => DayShifter(step)
     case WeekUnit               => WeekShifter(step)
     case MonthUnit              => MonthShifter(step)
-    case QuarterUnit            => QuarterShifter(step)
     case YearUnit               => YearShifter(step)
     //case dc: NamedDateComponent => new DateComponentShifter(step, dc)
   }

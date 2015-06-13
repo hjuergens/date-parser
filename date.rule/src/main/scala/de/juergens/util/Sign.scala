@@ -4,12 +4,13 @@ package de.juergens.util
  * Created by juergens on 20.05.15.
  */
 sealed abstract class Sign {
-   def *(i: Int): Int
+  override final def toString: String = this match {
+    case Sign(name) => name
+  }
 
-   override final def toString: String = this match {
-      case Sign(name) => name
-   }
+  def *(i: Int): Int
 }
+
 object Plus extends Sign {
   def *(i: Int) = i
 }

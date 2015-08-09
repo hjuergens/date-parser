@@ -1,0 +1,8 @@
+# TemporalAmount
+2 years
+3 months
+4 days
+# 6 hours
+8 days
+2 years and 3 months
+7 years, 3 months and 5 days

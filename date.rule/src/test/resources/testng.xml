@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+
+<suite name="Suite1" verbose="1"  parallel="false" >
+    <test name="text.files"  verbose="1"  annotations="JDK" >
+        <parameter name="line" value="three day after next sunday" />
+        <classes>
+            <class name="de.juergens.text.PeriodTest" />
+            <class name="de.juergens.text.PrefixesTest" />
+            <class name="de.juergens.text.DateRuleParserTestNG" />
+        </classes>
+    </test>
+
+</suite>

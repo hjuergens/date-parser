@@ -1,0 +1,4 @@
+# fixrule.txt
+quarter 3
+friday 2
+june 99

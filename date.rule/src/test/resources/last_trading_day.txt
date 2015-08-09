@@ -1,0 +1,56 @@
+
+2 London business days prior to the 3rd Wednesday of the delivery month.
+
+10:00 - Two business days prior to the third Wednesday of the delivery month
+
+Two exchange days prior to the third Wednesday of respective settlement month.
+
+Trading in setteling contract ends 11:00 AM Brussels time.
+
+10:00 London time 2 London business days prior to the 3rd Wednesday of the delivery month.
+
+11:00 - Two business days prior to the third Wednesday of the delivery month
+
+The second London bank business day prior to the third Wednesday of the contract month
+
+two business days prior to the third Wednesday of the expiring month
+
+Two business days prior to the third Wednesday of the contract month
+
+the 2nd TIFFE business day immediately preceding the 3rd Wednesday of the contract month
+
+the 2nd London business day immediately preceding the 3rd wedenesday of the contract month
+
+11:00 The third Wednesday of the delivery month
+
+The GBP short sterling futures contract has a last trading day of the 3rd Wednesday which corresponds to the fixing date since GBP Libor fixes same day.
+
+10:00 London time Third Wednesday of the delivery month (no gap).
+
+Last business day of the delivery month.
+
+The 2nd London business day immediately preceding the 3rd Wednesday of the contract month.
+
+The second London bank business day prior to the third Wednesday of the contract expiry month, at 11:00am London time.
+
+The second London bank business day prior to the third Wednesday of the contract expiry month, at 11:00am London time.
+
+The second London banking day prior to the third Wednesday of the contract month. If the determined day is a Bourse or bank holiday in Montreal or Toronto, the last trading day shall be the previous bank business day. Per Canadian Derivatives Exchange BAX contract specification.
+
+On a CAD CDOR based "IMM" trade since CDOR resets same day the IMM Payment/Reset dates following the last trading day of the BAX contract on the Montreal exchange which is (ignoring holidays) the Monday prior to the 3rd Wednesday
+
+12:00 noon on the business day immediately prior to settlement day (2nd Friday of delivery month)
+
+One Sydney business day preceding the second Friday of the relevant settlement month.
+
+the first Wednesady after the ninth day of the relevant Settlement Month.
+
+Trading will cease at 12 noon on the final trading day.
+
+The first Wednesday after the ninth day of the relevant settlement month.
+
+The last business day of the calendar month.
+
+Trading shall cease at 4.30pm on the last business of the expiry month
+
+

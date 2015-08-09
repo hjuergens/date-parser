@@ -1,0 +1,4 @@
+04.2013
+October 2007
+# DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM.yyyy");
+# YearMonth ym = YearMonth.parse(date, formatter);

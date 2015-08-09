@@ -12,14 +12,18 @@ import org.junit._
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
+import org.testng.annotations.{Parameters => ParametersNG}
 import org.testng.annotations.{DataProvider => DataProviderNG, Test => TestNG}
 import org.testng.annotations.{DataProvider => DataProviderNG, Test => TestNG, _}
 import scala.collection.JavaConversions._
 import scala.io.Source
 
+@Ignore
 @TestNG
 @RunWith(value = classOf[Parameterized])
 class HighSophisticatedTest(line: String) {
+
+  val parser = new DateRuleParser
 
   @Before
   def before {
@@ -32,16 +36,15 @@ class HighSophisticatedTest(line: String) {
 
   @Test(timeout = 1000)
   def test() : Unit =  {
-    val parser = new DateRuleParser
     parser.parseAll(parser.adjuster, line).get
   }
 
   @DataProviderNG(name = "lines in text file", parallel = true)
   def lines = HighSophisticatedTest.linesNG
 
+  @ParametersNG( Array("line") )
   @TestNG(dataProvider = "lines in text file", timeOut = 1000)
   def test(_line:String) : Unit =  {
-    val parser = new DateRuleParser
     parser.parseAll(parser.adjuster, _line).get
   }
 }

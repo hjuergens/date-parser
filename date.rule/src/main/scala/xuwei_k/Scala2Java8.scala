@@ -2,7 +2,7 @@ package xuwei_k
 
 import java.util.function._
 import scala.language.implicitConversions
-
+// scalastyle:off
 trait Scala2Java8{
   implicit def biConsumer[A, B](f: (A, B) => Unit): BiConsumer[A, B] = new BiConsumer[A, B]{ override def accept(a: A, b: B) = f(a, b) }
   implicit def biFunction[A, B, C](f: (A, B) => C): BiFunction[A, B, C] = new BiFunction[A, B, C]{ override def apply(a: A, b: B) = f(a, b) }
@@ -50,4 +50,5 @@ trait Scala2Java8{
 }
 
 object Scala2Java8 extends Scala2Java8
+// scalastyle:on
 

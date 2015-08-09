@@ -8,6 +8,7 @@ import de.juergens.util.Direction
 /**
  * Created by juergens on 27.05.15.
  */
+@deprecated("will be replayed by TemporalAdjuster","0.0.3")
 trait Seek extends Shifter with ((Temporal)=>Temporal)
 
 
@@ -17,8 +18,6 @@ object Seek {
     override def adjustInto(temporal: Temporal): Temporal = temporalAdjuster.adjustInto(temporal)
 
     override def apply(t: Temporal): Temporal = adjustInto(t)
-
-    override def shift(t: LocalDate): LocalDate = LocalDate.from(adjustInto(t))
 
     @deprecated
     override def direction: Direction = de.juergens.util.Up

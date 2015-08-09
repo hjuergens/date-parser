@@ -4,11 +4,11 @@
  * and open the template in the editor.
  */
 
-package de.juergens.text
+package samples
 
 import scala.util.parsing.combinator._
 
-object SimpleParser extends RegexParsers {
+object SimpleWordParser extends RegexParsers {
 
   def word: Parser[String] = """[a-z]+""".r ^^ {
     _.toString

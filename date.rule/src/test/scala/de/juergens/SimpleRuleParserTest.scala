@@ -9,12 +9,14 @@ package de.juergens
 import org.junit._
 import org.scalatest.Assertions._
 
-import de.juergens.time.{EnrichedDate=>Date}
 import de.juergens.time.Calendar
 import scala.util.parsing.input.CharSequenceReader
-
+import java.time.{LocalDate => Date}
 @Ignore
-class RuleParserTest {
+@deprecated("concerning old parser", "0.0.3")
+class SimpleRuleParserTest {
+
+  def Date(y:Int,m:Int,d:Int) = java.time.LocalDate.of(y,m,d)
 
   @Before
   def setUp(): Unit = {
@@ -26,7 +28,7 @@ class RuleParserTest {
 
    @Test
    def factor() {
-      val parser = new RuleParser
+      val parser = new SimpleRuleParser
 
       {
          parser.month(new CharSequenceReader("march"))
@@ -58,7 +60,7 @@ class RuleParserTest {
 
    @Test
    def expr() {
-      val parser = new RuleParser
+      val parser = new SimpleRuleParser
 
       {
          // "march > wednesday 3 | june > wednesday 3 | september > wednesday 3 | december > wednesday 3 "
@@ -79,7 +81,7 @@ class RuleParserTest {
 
    @Test
    def timeUnit() {
-      val parser = new RuleParser
+      val parser = new SimpleRuleParser
 
       {
          val result = parser.parse(parser.timeUnit, "year").get.toString
@@ -94,7 +96,7 @@ class RuleParserTest {
 
    @Test
    def weekDay() {
-      val parser = new RuleParser
+      val parser = new SimpleRuleParser
 
       {
          val result = parser.parse(parser.weekDay, "wednesday").get.toString
@@ -104,7 +106,7 @@ class RuleParserTest {
 
    @Test
    def fixRule() {
-      val parser = new RuleParser
+      val parser = new SimpleRuleParser
 
       {
          val result = parser.parseAll(parser.fixRule, "month 3").get.toString
@@ -120,13 +122,13 @@ class RuleParserTest {
 
    @Test
    def shift() {
-      val parser = new RuleParser
+      val parser = new SimpleRuleParser
       assert("(+,1)" == parser.parse(parser.shift, "+1").get.toString)
    }
 
    @Test
    def shiftRule() {
-      val parser = new RuleParser
+      val parser = new SimpleRuleParser
 
       {
          val result = parser.parse(parser.shiftRule, "year +1").get.toString
@@ -172,9 +174,9 @@ class RuleParserTest {
 
    def doMaturityTest(start: Date, ruleStr: String, expectedDate: Date) = {
       expect(expectedDate, ruleStr) {
-         val parser = new RuleParser
+         val parser = new SimpleRuleParser
          val rule = parser.parse(parser.expr, ruleStr).get
-         println("*=" + rule.evaluate(start, expectedDate))
+         println("*=" + rule.evaluate(start)(expectedDate))
          rule.date(start, Calendar.calendarForward)
       }
    }

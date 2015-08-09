@@ -27,7 +27,7 @@ class TermParser extends JavaTokenParsers {
     case "Y" => YearUnit
   }
 
-  def date: Parser[Date] = dayOfMonth~"-"~month~"-"~year ^^ { case dayOfMonth~"-"~month~"-"~year => Date(year,month,dayOfMonth) }
+  def date: Parser[java.time.LocalDate] = dayOfMonth~"-"~month~"-"~year ^^ { case dayOfMonth~"-"~month~"-"~year => Date(year,month,dayOfMonth) }
 
   def year: Parser[Year] = """\d\d\d\d""".r ^^ {
     str => str.toInt
@@ -69,7 +69,7 @@ class TermParser extends JavaTokenParsers {
 
   // TODO parser for future, consider rollover
   private def thirdWednesday(y:Year,m:Month) = 15
-  def future: Parser[(Date,Date)] = deliveryMonth ~ wholeNumber ^^ { case dm ~ y =>
+  def future: Parser[(java.time.LocalDate,java.time.LocalDate)] = deliveryMonth ~ wholeNumber ^^ { case dm ~ y =>
     val beginDayOfMonth = thirdWednesday(2000+y.toInt, dm)
     val endDayOfMonth = thirdWednesday(2000+y.toInt, dm+3)
     (Date(2000+y.toInt, dm, beginDayOfMonth),Date(2000+y.toInt, dm+3, endDayOfMonth))

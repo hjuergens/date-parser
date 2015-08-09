@@ -1,42 +1,24 @@
-today
-tomorrow
-yesterday
-Today
-Tomorrow
-Yesterday
+4. may after
 
-day after
-day before
+next quarter
+previous quarter
 
-day after tomorrow
-day before yesterday
+first Wednesday in June
+last Sunday in August
+third wednesday in next quarter
+next third wednesday in quarter
+every third wednesday in every quarter
 
-next sunday
-previous thursday
-
-second wednesday after
+first or last day of the month
+first day of next month
+first or last day of the year
+first day of next year
 
 three months after second wednesday of third quarter
 
 three days after next sunday
 
-next Thursday
-previous Wednesday
-
-first Wednesday in June
-last Sunday in August
-
 Friday After Next
-
-third wednesday in next quarter
-next third wednesday in quarter
-every third wednesday in every quarter
-
-​
-first or last day of the month
-first day of next month
-first or last day of the year
-first day of next year
 
 second weekend after 14. of month
 

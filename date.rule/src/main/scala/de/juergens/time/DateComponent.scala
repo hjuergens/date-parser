@@ -30,6 +30,7 @@ object DateComponent {
 
 abstract class NamedDateComponent extends DateComponent
 
+@deprecated("use java.time.DayOfWeek instead","0.0.3")
 abstract class WeekDay(nr: Int) extends NamedDateComponent {
   val dayOfWeek: DayOfWeek
 
@@ -89,13 +90,13 @@ case class Day(day: Int) extends DateComponent
 object WeekDay {
 
   def apply(any: Any): WeekDay = any match {
-    case "monday" | MONDAY => Monday
-    case "tuesday" | TUESDAY => Tuesday
-    case "wednesday" | WEDNESDAY => Wednesday
-    case "thursday" | THURSDAY => Thursday
-    case "friday" | FRIDAY => Friday
-    case "saturday" | SATURDAY => Saturday
-    case "sunday" | SUNDAY => Sunday
+    case "monday" | MONDAY | DayOfWeek.MONDAY => Monday
+    case "tuesday" | TUESDAY | DayOfWeek.TUESDAY  => Tuesday
+    case "wednesday" | WEDNESDAY | DayOfWeek.WEDNESDAY  => Wednesday
+    case "thursday" | THURSDAY | DayOfWeek.THURSDAY  => Thursday
+    case "friday" | FRIDAY | DayOfWeek.FRIDAY  => Friday
+    case "saturday" | SATURDAY | DayOfWeek.SATURDAY  => Saturday
+    case "sunday" | SUNDAY | DayOfWeek.SUNDAY  => Sunday
   }
 
   def unapply(weekDay: WeekDay): Option[String] = PartialFunction.condOpt(weekDay) {

@@ -6,9 +6,9 @@
     <packaging>pom</packaging>
     <version>0.0.2-SNAPSHOT</version>
     <modules>
-        <module>date.rule</module>
         <module>date-parser-antlr</module>
         <module>dp-jflex</module>
+        <module>date.rule</module>
     </modules>
     <name>${project.artifactId}</name>
     <description>Date Parser</description>
@@ -58,8 +58,8 @@
     </distributionManagement>
 
     <properties>
-        <maven.compiler.source>1.5</maven.compiler.source>
-        <maven.compiler.target>1.5</maven.compiler.target>
+        <maven.compiler.source>1.6</maven.compiler.source>
+        <maven.compiler.target>1.6</maven.compiler.target>
         <encoding>UTF-8</encoding>
         <scala.version>2.11.1</scala.version>
     </properties>
@@ -162,12 +162,12 @@
                 <plugin>
                     <groupId>net.alchim31.maven</groupId>
                     <artifactId>scala-maven-plugin</artifactId>
-                    <version>3.1.5</version>
+                    <version>3.2.1</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>2.0.2</version>
+                    <version>3.3</version>
                 </plugin>
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>

@@ -95,7 +95,7 @@ abstract class Border[@specialized(Int, Double) T](comparator: Comparator[T]) /*
    final def signum(implicit n: Numeric[T]) = n.times(comparator.signum, point)
 }
 
-class LowerBorder[@specialized(Int, Double) T <% Ordered[T]](val point: T) extends Border[T](new Leq[T]()) with Ordered[LowerBorder[T]] {
+class LowerBorder[T <% Ordered[T]](val point: T) extends Border[T](new Leq[T]()) with Ordered[LowerBorder[T]] {
    def compare(that: LowerBorder[T]): Int = this.point compare that.point
 
    /**intersection */
@@ -110,7 +110,7 @@ class LowerBorder[@specialized(Int, Double) T <% Ordered[T]](val point: T) exten
    def -(rhs: LowerBorder[T]) = /*if(this.point >= rhs.point) new EmptyInterval[T] else*/ Interval(rhs, this)
 }
 
-class UpperBorder[@specialized(Int, Double) T <% Ordered[T]](val point: T) extends Border[T](new Geq[T]()) with Ordered[UpperBorder[T]] {
+class UpperBorder[T <% Ordered[T]](val point: T) extends Border[T](new Geq[T]()) with Ordered[UpperBorder[T]] {
    def compare(that: UpperBorder[T]): Int = that.point compare this.point
 
    /**intersection */
@@ -153,7 +153,7 @@ abstract class Interval[@specialized(Int, Double) T <% Ordered[T]] {
       else "Ø"
 }
 
-class IntervalAsIntersection[@specialized(Int, Double) T <% Ordered[T]](val b: Border[T]*) extends Interval[T] {
+class IntervalAsIntersection[T <% Ordered[T]](val b: Border[T]*) extends Interval[T] {
    val b1 = null
    val b2 = null
 
@@ -166,7 +166,7 @@ class IntervalAsIntersection[@specialized(Int, Double) T <% Ordered[T]](val b: B
    override def toString = (b).toList.sortWith(_.point < _.point).mkString(",")
 }
 
-private final class EmptyInterval[@specialized(Int, Double) T <% Ordered[T]] extends Interval[T] {
+private final class EmptyInterval[T <% Ordered[T]] extends Interval[T] {
    val b1 = null
    val b2 = null
 
@@ -180,7 +180,7 @@ private final class EmptyInterval[@specialized(Int, Double) T <% Ordered[T]] ext
 object Interval {
    //   class IntervalImpl[@specialized(Int, Double) T <% Ordered[T]](val b1: Border[T], val b2: Border[T]) extends Interval
 
-   def apply[@specialized(Int, Double) T <% Ordered[T]](a: LowerBorder[T], b: LowerBorder[T]) = {
+   def apply[T <% Ordered[T]](a: LowerBorder[T], b: LowerBorder[T]) = {
       if (b < a) new IntervalAsIntersection[T](b, -a /*-a,b*/) else new EmptyInterval[T]()
       //      if (b < a) new Interval {
       //         val b1 = a
@@ -188,7 +188,7 @@ object Interval {
       //      } else new EmptyInterval[T]()
    }
 
-   def apply[@specialized(Int, Double) T <% Ordered[T]](a: UpperBorder[T], b: UpperBorder[T]) = {
+   def apply[T <% Ordered[T]](a: UpperBorder[T], b: UpperBorder[T]) = {
       if (b < a) new IntervalAsIntersection[T](-a, b) else new EmptyInterval[T]()
       //      if (b < a) new Interval {
       //         val b1 = a
@@ -196,7 +196,7 @@ object Interval {
       //      } else new EmptyInterval[T]()
    }
 
-   def empty[@specialized(Int, Double) T <% Ordered[T]]: Interval[T] = new EmptyInterval[T]()
+   def empty[T <% Ordered[T]]: Interval[T] = new EmptyInterval[T]()
 
    //   def empty[Double] : Interval[Double] = new EmptyInterval[Double]()
 }

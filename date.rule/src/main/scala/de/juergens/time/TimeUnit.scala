@@ -7,7 +7,7 @@ package de.juergens.time
 
 import java.time.temporal._
 import de.juergens.time.{Date => _ }
-import java.time.{Duration, LocalDate => Date}
+import java.time.Duration
 
 import de.juergens.time.{Date => _}
 
@@ -15,6 +15,7 @@ import de.juergens.time.{Date => _}
  *
  * @author juergens
  */
+@deprecated("use ChronoUnit instead","0.0.3")
 abstract sealed class TimeUnit {
   protected val _chronoUnit: ChronoUnit
 
@@ -63,11 +64,11 @@ case object YearUnit extends TimeUnit {
 }
 
 object TimeUnit {
-  def apply(str: String): TimeUnit = str match {
-    case "day" | "days" | "day(s)" => DayUnit
-    case "week" | "weeks" | "week(s)" => WeekUnit
-    case "month" | "months" | "month(s)" => MonthUnit
-    case "year" | "years" | "year(s)" => YearUnit
+  def apply(str: String): ChronoUnit = str match {
+    case "day" | "days" | "day(s)" => DayUnit._chronoUnit
+    case "week" | "weeks" | "week(s)" => WeekUnit._chronoUnit
+    case "month" | "months" | "month(s)" => MonthUnit._chronoUnit
+    case "year" | "years" | "year(s)" => YearUnit._chronoUnit
   }
 
   def unapply(unit: TimeUnit): Option[String] = PartialFunction.condOpt(unit) {

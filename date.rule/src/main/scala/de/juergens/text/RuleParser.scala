@@ -1,5 +1,7 @@
 package de.juergens.text
 
+import java.time.temporal.TemporalUnit
+
 import de.juergens.time.impl.{DateComponentShifter, TimeUnitShifter}
 import de.juergens.time.{UnionRule, _}
 import de.juergens.util.Sign
@@ -34,7 +36,7 @@ class RuleParser extends JavaTokenParsers {
 
   def month: Parser[Month] = ("Jan" | "Feb" | "Mar" | "march" | "Apr" | "april" | "May" | "Jun" | "june" | "Jul" | "Aug" | "Sep" | "september" | "Oct" | "Nov" | "Dec" | "december") ^^ {    Month(_)  }
 
-  def timeUnit: Parser[TimeUnit] = ("year" | "month" | "week" | "day") ^^ {    TimeUnit(_)  }
+  def timeUnit: Parser[TemporalUnit] = ("year" | "month" | "week" | "day") ^^ {    TimeUnit(_)  }
 
 
 

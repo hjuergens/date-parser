@@ -70,6 +70,23 @@
             <scope>compile</scope>
         </dependency>
 
+        <dependency>
+            <groupId>net.time4j</groupId>
+            <artifactId>time4j-range</artifactId>
+            <version>4.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.threeten</groupId>
+            <artifactId>threeten-extra</artifactId>
+            <version>0.9</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.ibm.icu</groupId>
+            <artifactId>icu4j</artifactId>
+            <version>55.1</version>
+        </dependency>
         <!--<dependency>-->
         <!--<groupId>com.joestelmach</groupId>-->
         <!--<artifactId>natty</artifactId>-->
@@ -135,6 +152,13 @@
             <version>4.11</version>
             <scope>test</scope>
         </dependency>
+
+            <dependency>
+                <groupId>org.json</groupId>
+                <artifactId>json</artifactId>
+                <version>20141113</version>
+                <scope>test</scope>
+            </dependency>
     </dependencies>
 
     <build>
@@ -145,7 +169,35 @@
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
-                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>scala-compile-first</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>scala-test-compile</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- surefire -->
@@ -165,10 +217,18 @@
                     </dependency>
                 </dependencies>
                 <configuration>
-                    <skipTests>${disable.surefire}</skipTests>
-                    <parallel>methods</parallel>
-                    <threadCount>10</threadCount>
+                    <threadCount>3</threadCount>
                 </configuration>
+                <!--<configuration>-->
+                    <!--&lt;!&ndash;<skipTests>true</skipTests>&ndash;&gt;-->
+                    <!--<includes>-->
+                        <!--<include>**/*Suite*.class</include>-->
+                        <!--<include>**/*Test*.class</include>-->
+                        <!--<include>**/*Tests*.class</include>-->
+                        <!--<include>**/*Spec*.class</include>-->
+                        <!--<include>**/*Specs*.class</include>-->
+                    <!--</includes>-->
+                <!--</configuration>-->
             </plugin>
 
             <!-- ScalaTest -->
@@ -179,7 +239,7 @@
                 <configuration>
                     <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
                     <junitxml>.</junitxml>
-                    <!--<filereports>WDF TestSuite.txt</filereports>-->
+                    <!--<parallel>true</parallel>-->
                 </configuration>
                 <executions>
                     <execution>
@@ -211,7 +271,7 @@
                     <failOnWarning>false</failOnWarning>
                     <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
                     <testSourceDirectory>${project.build.testSourceDirectory}</testSourceDirectory>
-                    <configLocation>${project.parent.basedir}/project/scalastyle_config.xml</configLocation>
+                    <configLocation>${project.parent.basedir}/scalastyle_config.xml</configLocation>
                     <outputFile>${project.build.directory}/site/scalastyle-output.xml</outputFile>
                     <outputEncoding>UTF-8</outputEncoding>
                 </configuration>

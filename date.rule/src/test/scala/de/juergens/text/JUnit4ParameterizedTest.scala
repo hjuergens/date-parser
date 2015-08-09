@@ -36,7 +36,7 @@ class JUnit4ParameterizedTest(textFile: jio.File) {
   @TestNG(groups = Array { "seek"  }, dataProvider = "lines in text file", timeOut = 1000)
   def test(line: String) {
     val parser = new DateRuleParser
-    parser.parseAll(parser.seekWeekDay, line).get
+    parser.parseAll(parser.rule, line).get
   }
 
 }

@@ -1,5 +1,6 @@
 package de.juergens.time
 
+import java.time.LocalDate
 import java.time.temporal.TemporalAdjuster
 
 import de.juergens.util
@@ -12,5 +13,5 @@ trait Shifter extends TemporalAdjuster {
   @deprecated
   def direction: util.Direction
 
-  def shift(t: java.time.LocalDate): java.time.LocalDate
+  final def shift(t: LocalDate) = LocalDate.from(adjustInto(t))
 }

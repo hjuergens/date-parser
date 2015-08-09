@@ -8,7 +8,7 @@ package de.juergens.rule
 
 import java.time.LocalDate
 import java.util.Calendar
-
+import java.util.function
 import de.juergens.time.WeekDay
 
 //
@@ -16,9 +16,12 @@ import de.juergens.time.WeekDay
 
 import java.time.temporal.{ChronoField, Temporal}
 
-case class WeekDayPredicate(weekDay: WeekDay, calendar: Calendar = Calendar.getInstance()) extends Predicate[Temporal] {
+case class WeekDayPredicate(weekDay: WeekDay, calendar: Calendar = Calendar.getInstance())
+  extends function.Predicate[Temporal] {
 
   override def toString: String = "is " + weekDay + "?"
+
+  override def test(t: Temporal): Boolean = evaluate(t)
 
   def evaluate(t: Temporal): Boolean = {
     require(t.isSupported(ChronoField.DAY_OF_WEEK), s"$t has to support day-of-week")
@@ -28,7 +31,7 @@ case class WeekDayPredicate(weekDay: WeekDay, calendar: Calendar = Calendar.getI
     assert(t.isInstanceOf[LocalDate])
     t.asInstanceOf[LocalDate].getDayOfWeek // FIXME remove instanceOf
 
-    t.get(ChronoField.DAY_OF_WEEK) == weekDay
+    t.get(ChronoField.DAY_OF_WEEK) equals weekDay
     //    val Date(y,m,d) = t
     //    calendar.set(Calendar.YEAR, y)
     //    calendar.set(Calendar.MONTH, m-1)

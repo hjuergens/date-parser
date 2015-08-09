@@ -25,7 +25,7 @@ sealed abstract class DateRule {
 
   def date(anchor: LocalDate, calendar: Calendar): LocalDate = {
     val shifter = new DateShifter(test(anchor))
-    shifter.next(anchor)
+    LocalDate.from(shifter.adjustInto(anchor))
   }
 }
 

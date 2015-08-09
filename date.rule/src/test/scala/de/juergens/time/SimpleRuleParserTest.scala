@@ -6,17 +6,17 @@
 
 package de.juergens.time
 
-import de.juergens.time.{Date => _}
-import java.time.{LocalDate => Date}
-
 import de.juergens.text.RuleParser
 import org.junit._
 import org.scalatest.Assertions._
+import java.time.{LocalDate => Date}
+
 
 import scala.util.parsing.input.CharSequenceReader
 
-
-class RuleParserTest {
+@Ignore
+@deprecated("concerning old parser", "0.0.3")
+class SimpleRuleParserTest {
 
   @Test
   @Ignore

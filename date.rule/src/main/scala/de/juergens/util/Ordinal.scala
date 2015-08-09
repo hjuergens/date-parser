@@ -22,7 +22,8 @@ object Ordinal {
     def unapply(x: Any): Option[Ordinal] = condOpt(x){k andThen h}.map(Ordinal(_))
   }
 
-  implicit def int2Ordinal(x:Int) : Ordinal = Ordinal(x)
+  implicit def ordinal2Int(x:Ordinal) : Int = x.toInt
+  implicit def ordinal2Long(x:Ordinal) : Long = x.toInt
 
   def ordinal(i :Int) : String = {
     val sufixes = Array[String]( "th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th" )
@@ -32,6 +33,21 @@ object Ordinal {
     }
 
   }
+
+  implicit object OrdinalNumeric extends math.Numeric[Ordinal] {
+    val num = math.Numeric.IntIsIntegral
+    def plus(x: Ordinal, y: Ordinal) =  Ordinal(num.plus(x,y))
+    def minus(x: Ordinal, y: Ordinal) = Ordinal(num.minus(x,y))
+    def times(x: Ordinal, y: Ordinal) = Ordinal(num.times(x,y))
+    def negate(x: Ordinal): Ordinal =   Ordinal(num.negate(x))
+    def fromInt(x: Int) = Ordinal(x)
+    def toInt(x: Ordinal) = x
+    def toLong(x: Ordinal) = toInt(x)
+    def toFloat(x: Ordinal) = toInt(x)
+    def toDouble(x: Ordinal) = toInt(x)
+    def compare(x:Ordinal,y:Ordinal) = num.compare(x,y)
+  }
+  assert(Down * Ordinal(1) == Ordinal(-1))
 }
 
 case class Ordinal(toInt : Int) extends AnyVal {

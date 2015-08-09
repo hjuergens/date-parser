@@ -1,5 +1,8 @@
 package de.juergens.text
 
+import java.time.{YearMonth, Year, LocalDate, DayOfWeek}
+import java.time.temporal._
+
 import de.juergens.time.Seek.SeekExtended
 import de.juergens.time._
 import de.juergens.time.impl.DayShifter
@@ -17,11 +20,11 @@ class DateRuleParserTestNG extends DateRuleParser {
   @Test
   def weekDayTest() : Unit = {
     val isMonday  = parseAll(attribute, "monday").get
-    assertEquals(isMonday.toString(), "is monday?")
+//    assertEquals(isMonday.toString(), "is monday?")
     assertTrue( isMonday.test(Date(2015,5,18)) )
 
     val isFriday  = parseAll(attribute, "friday").get
-    assertEquals(isFriday.toString(), "is friday?")
+//    assertEquals(isFriday.toString(), "is friday?")
     assertTrue( isFriday.test(Date(2015,5,22)) )
   }
 
@@ -36,12 +39,46 @@ class DateRuleParserTestNG extends DateRuleParser {
   }
 
   @Test
-  def nextWeek():Unit = {
-    // TimeUnitShifter
-    val nextWeek = parseAll(unknown, "next week").get.shift _
+  def nextWeek() : Unit = {
+    val nextWeek = parseAll(adjuster, "next week").get
+
     assertEquals( nextWeek(Date(2015,5,27)),Date(2015,5,31) )
+    assertTrue( nextWeek(Date(2015,5,27)).get(ChronoField.DAY_OF_WEEK) == DayOfWeek.SUNDAY.getValue )
+
     assertEquals( nextWeek(Date(2015,5,31)),Date(2015,6,7)  )
+    assertTrue( nextWeek(Date(2015,5,31)).get(ChronoField.DAY_OF_WEEK) == DayOfWeek.SUNDAY.getValue )
+
     assertEquals( nextWeek(Date(2015,6,1) ),Date(2015,6,7)  )
+    assertTrue( nextWeek(Date(2015,6,1)).get(ChronoField.DAY_OF_WEEK) == DayOfWeek.SUNDAY.getValue )
+  }
+
+  @Test
+  def previousWeek() : Unit = {
+    val previousWeek = parseAll(adjuster, "previous week").get
+
+    object IsSaturday extends TemporalQuery[Boolean] {
+      def isSaturday(t: TemporalAccessor) = DayOfWeek.from(t) == DayOfWeek.SATURDAY
+      override def queryFrom(temporal: TemporalAccessor) = isSaturday(temporal)
+    }
+
+    {
+      val previous = previousWeek(Date(2015,5,29))
+      assertEquals( previous, Date(2015,5,23) )
+      assertTrue( previous.query(IsSaturday) )
+    }
+
+    {
+      val previous = previousWeek(Date(2015,5,30))
+      assertEquals( previous, Date(2015,5,23) )
+      assertTrue( previous.query(IsSaturday) )
+    }
+
+    {
+      val previous = previousWeek(Date(2015,5,31))
+      assertEquals( previous, Date(2015,5,30) )
+      assertTrue( previous.query(IsSaturday) )
+    }
+
   }
 
   @Test
@@ -80,15 +117,25 @@ class DateRuleParserTestNG extends DateRuleParser {
   }
 
   @Test
-  @Ignore
-  def test() : Unit = {
-    val anchor = Date(2015,5,23) // saturday
-//    assert(Saturday == WeekDayPredicate.weekDay()(anchor))
+  def seekMonthTest():Unit = {
 
+    // TODO 4. may versus fourth of may (4.may)
+    val forthMayAfter = parseAll(seekMonth, "4. may after").get
 
-
-    //val nextThirdWednesdayInQarter = parseAll(?, "next third wednesday in quarter")
-
-    //val thirdWednesdayInNextQuarter = parseAll(?, "third wednesday in next quarter")
+    assertEquals(forthMayAfter(Date(2015,5,22)), Date(2019,5,31))
   }
+
+  @Test
+  def lastSundayInAugustTest():Unit = {
+
+    val lastSundayInAugust = parseAll(adjuster_, "last sunday in august").get
+
+    assertEquals(lastSundayInAugust(Date(2015,5,22)), Date(2015,8,30))
+    assertEquals(lastSundayInAugust(Date(2015,9,17)), Date(2015,8,30))
+
+    val firstSundayInAugust = parseAll(adjuster_, "first sunday in august").get
+    assertEquals(firstSundayInAugust(Date(2015,5,22)), Date(2015,8,2))
+    assertEquals(firstSundayInAugust(Date(2015,9,17)), Date(2015,8,2))
+  }
+
 }

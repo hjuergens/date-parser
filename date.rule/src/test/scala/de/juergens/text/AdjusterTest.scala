@@ -11,6 +11,7 @@ import org.junit._
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
+import org.testng.Reporter
 import scala.collection.JavaConversions._
 import scala.io.Source
 
@@ -26,12 +27,12 @@ class AdjusterTest(line: String) {
 
   @Before
   def before {
-    println( s"length=${line.length}")
-    println("line: " + line)
+    Reporter.log( s"length=${line.length}")
+    Reporter.log("line: " + line)
   }
 
   @After
-  def after { println("line: " + line) }
+  def after { Reporter.log("line: " + line) }
 
   @Test(timeout = 1500)
   def test() : Unit =  { test(line) }
@@ -54,12 +55,12 @@ object AdjusterTest {
 
   @org.junit.BeforeClass
   def before {
-    println(s"textFile=$textFile")
+    Reporter.log(s"textFile=$textFile")
   }
 
   @org.junit.AfterClass
   def after {
-    println(s"textFile=$textFile")
+    Reporter.log(s"textFile=$textFile")
   }
 
   private[text] def _lines : Iterator[Array[Object]] = {

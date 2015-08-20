@@ -1,83 +1,109 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
  */
 
 package de.juergens.text
 
-import java.time.LocalDate
+import java.time._
+import java.time.temporal._
 
-import de.juergens.time._
+import de.juergens.time.{Period => _}
+import org.threeten.extra.DayOfMonth
 
 import scala.util.parsing.combinator._
 
 class TermParser extends JavaTokenParsers {
 
-  type DayOfMonth = Int
-  type Month = Int
-  type Year = Int
+  def term: Parser[Any] = period | date
 
-  def term: Parser[Any] = standardPeriod | date
+  def standardPeriod: Parser[Period] = wholeNumber ~ timeUnit ^^
+    {
+      case number ~ ChronoUnit.DAYS    => Period.ofDays(number.toInt)
+      case number ~ ChronoUnit.WEEKS   => Period.ofWeeks(number.toInt)
+      case number ~ ChronoUnit.MONTHS  => Period.ofMonths(number.toInt)
+      case number ~ ChronoUnit.YEARS   => Period.ofYears(number.toInt)
+    }
 
-  def standardPeriod: Parser[Period] = wholeNumber ~ timeUnit ^^ {case number ~ timeUnit => Period(number.toInt, timeUnit)} | infinityPeriod
+  private def infinityPeriod: Parser[Period] = "Infinity" ^^
+    { _ => Period.ofYears(Integer.MAX_VALUE) }
 
-  def infinityPeriod: Parser[Period] = "Infinity" ^^ { case "Infinity" => Period.Infinity }
+  private def periodSum : Parser[Period] = (standardPeriod*)  ^^
+    { _.foldRight(Period.ZERO)((p,s) => p plus s) }
 
-  def timeUnit: Parser[TimeUnit] = ("D" | "W" | "M" | "Y") ^^ {
-    case "D" => DayUnit
-    case "W" => WeekUnit
-    case "M" => MonthUnit
-    case "Y" => YearUnit
-  }
+  private def periodDiff : Parser[Period] = periodSum ~ "-" ~ standardPeriod  ^^
+    {
+      case lhs ~ _ ~ rhs => lhs minus rhs
+    }
 
-  def date: Parser[LocalDate] = dayOfMonth~"-"~month~"-"~year ^^ { case dayOfMonth~"-"~month~"-"~year => LocalDate.of(year,month,dayOfMonth) }
+  def period  : Parser[Period] = infinityPeriod | periodSum | periodDiff
 
-  def year: Parser[Year] = """\d\d\d\d""".r ^^ {
-    str => str.toInt
-  }
+  def timeUnit: Parser[ChronoUnit] = ("D" | "W" | "M" | "Y") ^^
+    {
+      case "D" => ChronoUnit.DAYS
+      case "W" => ChronoUnit.WEEKS
+      case "M" => ChronoUnit.MONTHS
+      case "Y" => ChronoUnit.YEARS
+    }
 
-  def month: Parser[Month] = """\w{1,3}""".r ^^ {
-    case "Jan" => 1
-    case "Feb" => 2
-    case "Mar" => 3
-    case "Apr" => 4
-    case "May" => 5
-    case "Jun" => 6
-    case "Jul" => 7
-    case "Aug" => 8
-    case "Sep" => 9
-    case "Oct" => 10
-    case "Nov" => 11
-    case "Dec" => 12
-  }
+  def date: Parser[LocalDate] = year~"-"~month~"-"~dayOfMonth ^^
+    { case year~"-"~month~"-"~dayOfMonth => LocalDate.of(year.getValue,month,dayOfMonth.getValue) }
 
-  def dayOfMonth: Parser[DayOfMonth] = """\d?\d""".r ^^ { _.toInt }
+  def year: Parser[Year] = """\d\d\d\d""".r ^^
+    { str => Year.of(str.toInt) }
 
-  def fra: Parser[(Period,Period)] = wholeNumber ~ "x" ~ wholeNumber ^^ { case shortLeg ~ "x" ~ longLeg => (Period(shortLeg.toInt, MonthUnit),Period(longLeg.toInt, MonthUnit))}
+  def month: Parser[Month] = """\w{1,3}""".r ^^
+    {
+      case "Jan" => Month.JANUARY
+      case "Feb" => Month.FEBRUARY
+      case "Mar" => Month.MARCH
+      case "Apr" => Month.APRIL
+      case "May" => Month.MAY
+      case "Jun" => Month.JUNE
+      case "Jul" => Month.JULY
+      case "Aug" => Month.AUGUST
+      case "Sep" => Month.SEPTEMBER
+      case "Oct" => Month.OCTOBER
+      case "Nov" => Month.NOVEMBER
+      case "Dec" => Month.DECEMBER
+    }
 
-  def deliveryMonth : Parser[Month]  = """\w{1,3}""".r ^^ {
-    case "F" => 1
-    case "G" => 2
-    case "H" => 3
-    case "J" => 4
-    case "K" => 5
-    case "M" => 6
-    case "N" => 7
-    case "Q" => 8
-    case "U" => 9
-    case "V" => 10
-    case "X" => 11
-    case "Z" => 12
-  }
+  def dayOfMonth: Parser[DayOfMonth] = """\d?\d""".r ^^
+    { str => DayOfMonth.of(str.toInt) }
 
-  // TODO parser for future, consider rollover
-  private def thirdWednesday(y:Year,m:Month) = 15
-  def future: Parser[(LocalDate,LocalDate)] = deliveryMonth ~ wholeNumber ^^ { case dm ~ y =>
-    val beginDayOfMonth = thirdWednesday(2000+y.toInt, dm)
-    val endDayOfMonth = thirdWednesday(2000+y.toInt, dm+3)
-    (LocalDate.of(2000+y.toInt, dm, beginDayOfMonth),LocalDate.of(2000+y.toInt, dm+3, endDayOfMonth))
-  }
+  /** notation of foward rate agreements, e.g 3X6 */
+  def fra: Parser[(Period,Period)] = wholeNumber ~ ("x"|"X") ~ wholeNumber ^^
+    { case shortLeg ~ (_) ~ longLeg => (Period.ofMonths(shortLeg.toInt),Period.ofMonths(longLeg.toInt))}
+
+  /** delivery months of futures and options */
+  def deliveryMonth : Parser[Month]  = """\w{1}""".r ^^ // """\w{1,3}""".r ^^
+    {
+      case "F" => Month.JANUARY
+      case "G" => Month.FEBRUARY
+      case "H" => Month.MARCH
+      case "J" => Month.APRIL
+      case "K" => Month.MAY
+      case "M" => Month.JUNE
+      case "N" => Month.JULY
+      case "Q" => Month.AUGUST
+      case "U" => Month.SEPTEMBER
+      case "V" => Month.OCTOBER
+      case "X" => Month.NOVEMBER
+      case "Z" => Month.DECEMBER
+    }
+
+  private def thirdWednesday(y:Int,m:Month) =
+    YearMonth.of(y,m).atDay(1)
+      .`with`(TemporalAdjusters.nextOrSame(DayOfWeek.WEDNESDAY))
+      .plus(2, ChronoUnit.WEEKS)
+
+  /** international money market */
+  def imm: Parser[LocalDate => LocalDate] = deliveryMonth ~ wholeNumber ^^
+    {
+      case dm ~ y => {
+        (anchor) =>
+          val yr = (anchor.getYear / 10) * 10 +y.toInt
+          thirdWednesday(yr, dm)
+      }
+    }
 }
 
 object ParseTerm extends TermParser {

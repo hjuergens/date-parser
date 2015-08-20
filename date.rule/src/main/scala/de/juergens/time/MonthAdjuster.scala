@@ -3,8 +3,10 @@ package de.juergens.time
 import java.time.temporal._
 
 import de.juergens.util.{Down, Up, Direction, Ordinal}
+import org.threeten.extra.Quarter
 
-case class MonthAdjuster(ordinal: Ordinal, month: java.time.Month, direction: Direction) extends TemporalAdjuster {
+case class MonthAdjuster(ordinal: Ordinal, month: java.time.Month, direction: Direction)
+  extends LocalDateAdjuster {
 
   private def signum = direction
   private val Ordinal(number) = ordinal
@@ -46,3 +48,14 @@ case class MonthAdjuster(ordinal: Ordinal, month: java.time.Month, direction: Di
   }
 }
 
+case class QuarterAdjuster(steps:Int)
+  extends LocalDateAdjuster {
+  override def adjustInto(temporal: Temporal): Temporal = {
+    require(temporal.isSupported(ChronoField.MONTH_OF_YEAR), s"$temporal has to support month-of-year")
+    temporal.ensuring(_.isSupported(ChronoField.MONTH_OF_YEAR))
+
+    val quarterOfYear = (Quarter.from(temporal).getValue + steps) % 4
+    assert(0<= quarterOfYear && quarterOfYear <=4)
+    temporal.`with`(Quarter.of(quarterOfYear))
+  }
+}

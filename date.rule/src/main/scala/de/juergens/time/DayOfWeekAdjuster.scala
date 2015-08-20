@@ -8,7 +8,9 @@ import scala.language.implicitConversions
 
 
 
-case class DayOfWeekAdjuster(ordinal: Ordinal, dayOfWeek: DayOfWeek, direction: Direction) extends TemporalAdjuster {
+case class DayOfWeekAdjuster(ordinal: Ordinal, dayOfWeek: DayOfWeek, direction: Direction)
+  extends TemporalAdjuster
+with LocalDateAdjuster {
 
   val adjuster: TemporalAdjuster = TemporalAdjusters.next(dayOfWeek)
   private val Ordinal(number) = ordinal
@@ -42,6 +44,6 @@ case class DayOfWeekAdjuster(ordinal: Ordinal, dayOfWeek: DayOfWeek, direction: 
     date
   }
 
-  final def apply(t: Temporal): Temporal = adjustInto(t)
+  //final def apply(t: Temporal): Temporal = adjustInto(t)
 }
 

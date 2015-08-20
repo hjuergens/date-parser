@@ -1,15 +1,11 @@
 package de.juergens.time
 
 import java.time.LocalDate
-import java.time.temporal.{TemporalUnit, ChronoUnit}
+import java.time.temporal._
 import java.time.{Period => JPeriod}
-
-@deprecated("use java.time instead", "0.0.2")
-case class Period(count: Int, unit: TimeUnit)
+import java.util.function.UnaryOperator
 
 object Period {
-  val Infinity: Period = new Period(Int.MaxValue, null)
-
   def of(count: Int, unit: TemporalUnit) = unit match {
     case ChronoUnit.DAYS =>  JPeriod.ofDays(count)
     case ChronoUnit.WEEKS => JPeriod.ofWeeks(count)
@@ -18,14 +14,23 @@ object Period {
   }
 }
 
-@deprecated("use java.time instead", "0.0.2")
 trait Calendar {
-  def advance(date: LocalDate, period: Period): LocalDate
+
+  protected def dateBasedAdjuster(amount: TemporalAmount): UnaryOperator[LocalDate] =
+    new UnaryOperator[LocalDate] {
+      override def apply(t: LocalDate): LocalDate = advance(t, amount)
+    }
+
+  def adjuster(amount:TemporalAmount) : TemporalAdjuster =
+    TemporalAdjusters.ofDateAdjuster(dateBasedAdjuster(amount))
+
+  def advance(temporal: LocalDate, amount: TemporalAmount): LocalDate
 }
 
-@deprecated("use java.time instead", "0.0.2")
 object Calendar {
-  def calendarForward: Calendar = new Calendar {
-    def advance(date: LocalDate, period: Period): LocalDate = ???
+  val nullCalendar: Calendar = new Calendar {
+    def advance(date: LocalDate, period: TemporalAmount): LocalDate = {
+      date.plus(period)
+    }
   }
 }

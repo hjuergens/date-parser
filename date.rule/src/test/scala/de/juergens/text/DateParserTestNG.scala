@@ -1,5 +1,7 @@
 package de.juergens.text
 
+import java.time.LocalDate
+
 import org.testng.annotations.{AfterMethod, BeforeMethod, Test}
 
 /**
@@ -19,12 +21,6 @@ class DateParserTestNG extends DateParser {
   @Test
   @throws(classOf[Exception])
   def testParse {
-    ???
-  }
-
-  @Test
-  @throws(classOf[Exception])
-  def testParseAll {
-    ???
+    parse(date, "23.07.2015") equals LocalDate.of(2015,7,23)
   }
 }

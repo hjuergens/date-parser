@@ -1,6 +1,7 @@
-
+3rd Wednesday of
 2 London business days prior to the 3rd Wednesday of the delivery month.
 
+Two business days prior to
 10:00 - Two business days prior to the third Wednesday of the delivery month
 
 Two exchange days prior to the third Wednesday of respective settlement month.
@@ -17,6 +18,7 @@ two business days prior to the third Wednesday of the expiring month
 
 Two business days prior to the third Wednesday of the contract month
 
+the 2nd TIFFE business day immediately preceding
 the 2nd TIFFE business day immediately preceding the 3rd Wednesday of the contract month
 
 the 2nd London business day immediately preceding the 3rd wedenesday of the contract month

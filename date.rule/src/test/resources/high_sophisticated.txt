@@ -5,22 +5,22 @@ previous quarter
 
 first Wednesday in June
 last Sunday in August
-third wednesday in next quarter
-next third wednesday in quarter
-every third wednesday in every quarter
-
-first or last day of the month
-first day of next month
-first or last day of the year
-first day of next year
-
-three months after second wednesday of third quarter
-
-three days after next sunday
-
-Friday After Next
-
-second weekend after 14. of month
-
-every friday the 13th of month
-every second weekend after 14. of month
+# third wednesday in next quarter
+# next third wednesday in quarter
+# every third wednesday in every quarter
+#
+# first or last day of the month
+# first day of next month
+# first or last day of the year
+# first day of next year
+#
+# three months after second wednesday of third quarter
+#
+# three days after next sunday
+#
+# Friday After Next
+#
+# second weekend after 14. of month
+#
+# every friday the 13th of month
+# every second weekend after 14. of month

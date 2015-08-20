@@ -1,14 +1,45 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 
-<suite name="Suite1" verbose="1"  parallel="false" >
-    <test name="text.files"  verbose="1"  annotations="JDK" >
+<suite name="Custom Suite" verbose="1"  parallel="false" >
+
+    <test name="TestNG.text"  verbose="1"  annotations="JDK" >
         <parameter name="line" value="three day after next sunday" />
         <classes>
+            <class name="de.juergens.text.DateRuleParserTestNG">
+                <methods>
+                    <exclude name="firstDayOfNextMonthTest" />
+                </methods>
+            </class>
+            <class name="de.juergens.text.DateParserTestNG" >
+            </class>
+        </classes>
+    </test>
+
+    <test name="Junit.text" junit="true" time-out="2000" verbose="3">
+        <classes>
+            <class name="de.juergens.text.AdjusterTest" />
             <class name="de.juergens.text.PeriodTest" />
             <class name="de.juergens.text.PrefixesTest" />
-            <class name="de.juergens.text.DateRuleParserTestNG" />
+            <class name="de.juergens.text.FixRuleTester" />
+            <class name="de.juergens.text.HighSophisticatedTest" />
+            <class name="de.juergens.text.LastTradingDayTest" />
+            <class name="de.juergens.text.TermParserTest" />
         </classes>
+    </test>
+
+    <test name="Junit.time" junit="true">
+        <classes>
+            <class name="de.juergens.time.BusinessDayTest" />
+            <class name="de.juergens.time.CalendarTest" />
+            <class name="de.juergens.time.SimpleRuleParserTest" />
+        </classes>
+    </test>
+
+    <test name="Junit.util" junit="true" parallel="true">
+        <packages>
+            <package name="de.juergens.util" />
+        </packages>
     </test>
 
 </suite>

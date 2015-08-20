@@ -7,19 +7,16 @@
 package de.juergens.time
 
 import java.time.LocalDate
-import java.time.temporal.{ChronoField, Temporal}
+import java.time.temporal.{TemporalAccessor, ChronoField, Temporal}
+import java.util.function.Predicate
 
-import de.juergens.rule.Predicate
+import de.juergens.rule.PredicateHelper
 import de.juergens.time.impl.DateShifter
+
+import de.juergens.rule.PredicateHelper._
 
 sealed abstract class DateRule {
   def evaluate(anchor: LocalDate)(t: Temporal): Boolean
-
-  /*
-  protected def makePredicate(anchor:Date) = new Predicate[Date] {
-    override def evaluate(t: Date): Boolean = evaluate(anchor)(t)
-  }
-  */
 
   def test(anchor: LocalDate): Predicate[Temporal] = evaluate(anchor) _
 
@@ -29,21 +26,21 @@ sealed abstract class DateRule {
   }
 }
 
-case class ShiftRule(shifter: Shifter) extends DateRule {
+case class ShiftRule(shifter: LocalDateAdjuster) extends DateRule {
   def evaluate(anchor: LocalDate)(t: Temporal): Boolean = {
-    val date = shifter.shift(anchor)
+    val date = shifter.apply(anchor)
     t == date
   }
 
   override def toString = shifter.toString
 }
 
-case class FixRule(number: Int, component: DateComponent) extends DateRule {
+case class FixRule(number: Int, component: TemporalAccessor) extends DateRule {
   def evaluate(ignored: LocalDate)(t: Temporal): Boolean = {
     val date = LocalDate.from(t)
 
     component match {
-      case de.juergens.time.Apr => date.get(ChronoField.MONTH_OF_YEAR) == number
+      case java.time.Month.APRIL => date.get(ChronoField.MONTH_OF_YEAR) == number
     }
   }
 

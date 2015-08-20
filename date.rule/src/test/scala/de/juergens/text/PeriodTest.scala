@@ -4,15 +4,18 @@ package de.juergens.text
  * Created by juergens on 31.05.15.
  */
 
-import java.time.chrono.ChronoPeriod
 import java.time.temporal.TemporalAmount
+
 import org.junit._
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
+
 import scala.collection.JavaConversions._
 import scala.io.Source
 
+// <test name="Test1" junit="true">
+//@org.testng.annotations.Test   .Test(name="Test1", junit="true")
 @RunWith(value = classOf[Parameterized])
 class PeriodTest(line: String) {
   val parser = new DateRuleParser

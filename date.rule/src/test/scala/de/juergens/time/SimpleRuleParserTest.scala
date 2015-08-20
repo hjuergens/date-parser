@@ -6,55 +6,58 @@
 
 package de.juergens.time
 
-import de.juergens.text.RuleParser
-import org.junit._
-import org.scalatest.Assertions._
-import java.time.{LocalDate => Date}
+import java.time.LocalDate
 
+import de.juergens.text.SimpleRuleParser
+import org.junit._
+import org.junit.runner.RunWith
+import org.junit.runners.JUnit4
+import org.scalatest.Assertions._
 
 import scala.util.parsing.input.CharSequenceReader
 
-@Ignore
 @deprecated("concerning old parser", "0.0.3")
+@RunWith(classOf[JUnit4])
 class SimpleRuleParserTest {
 
+  def Date(year: Int, month: Int, dayOfMonth: Int): LocalDate = LocalDate.of(year, month, dayOfMonth)
+
   @Test
-  @Ignore
   def factor() {
-    val parser = new RuleParser
+    val parser = new SimpleRuleParser
 
     {
       parser.month(new CharSequenceReader("march"))
       val result00 = parser.parse(parser.month, "march").get.toString
-      assert("Mar" == result00, result00)
+      assert("march" == result00.toLowerCase, result00)
 
       val result01 = parser.parse(parser.fixRule, "wednesday 3").get.toString
-      assert("3 wednesday" == result01, result01)
+      assert("3 wednesday" == result01.toLowerCase, result01)
 
       val result02 = parser.parse(parser.factor, "(march 0 > wednesday 3)").get.toString
-      assert("(0 Mar>3 wednesday)" == result02, result02)
+      assert("(0 march>3 wednesday)" == result02.toLowerCase, result02)
     }
 
     {
       val result = parser.parse(parser.factor, "(june > wednesday 3)").get.toString
-      assert("(0 Jun>3 wednesday)" == result, result)
+      assert("(0 june>3 wednesday)" == result.toLowerCase, result)
     }
 
     {
       val result = parser.parse(parser.factor, "(september > wednesday 3)").get.toString
-      assert("(0 Sep>3 wednesday)" == result, result)
+      assert("(0 september>3 wednesday)" == result.toLowerCase, result)
     }
 
     {
       val result = parser.parse(parser.factor, "(december > wednesday 3)").get.toString
-      assert("(0 Dec>3 wednesday)" == result, result)
+      assert("(0 december>3 wednesday)" == result.toLowerCase, result)
     }
   }
 
   @Test
   @Ignore
   def expr() {
-    val parser = new RuleParser
+    val parser = new SimpleRuleParser
 
     {
       // "march > wednesday 3 | june > wednesday 3 | september > wednesday 3 | december > wednesday 3 "
@@ -75,33 +78,33 @@ class SimpleRuleParserTest {
 
   @Test
   def timeUnit() {
-    val parser = new RuleParser
+    val parser = new SimpleRuleParser
 
     {
       val result = parser.parse(parser.timeUnit, "year").get.toString
-      assert("year(s)" == result, result)
+      assert("Years" == result, result)
     }
 
     {
       val result = parser.parse(parser.timeUnit, "day").get.toString
-      assert("day(s)" == result, result)
+      assert("Days" == result, result)
     }
   }
 
   @Test
   def weekDay() {
-    val parser = new RuleParser
+    val parser = new SimpleRuleParser
 
     {
       val result = parser.parse(parser.weekDay, "wednesday").get.toString
-      assert("wednesday" == result, result)
+      assert("wednesday" == result.toLowerCase, result)
     }
   }
 
   @Test
   @Ignore
   def fixRule() {
-    val parser = new RuleParser
+    val parser = new SimpleRuleParser
 
     {
       val result = parser.parseAll(parser.fixRule, "month 3").get.toString
@@ -117,14 +120,14 @@ class SimpleRuleParserTest {
 
   @Test
   def shift() {
-    val parser = new RuleParser
+    val parser = new SimpleRuleParser
     assert("(+,1)" == parser.parse(parser.shift, "+1").get.toString)
   }
 
   @Test
   @Ignore
   def shiftRule() {
-    val parser = new RuleParser
+    val parser = new SimpleRuleParser
 
     {
       val result = parser.parse(parser.shiftRule, "year +1").get.toString
@@ -312,14 +315,12 @@ class SimpleRuleParserTest {
     doTest(Date(2011, 4, 13), "imm -1", Date(2011, 3, 16))
   }
 
-  def doTest(start: Date, ruleStr: String, expectedDate: Date) = {
+  def doTest(start: LocalDate, ruleStr: String, expectedDate: LocalDate) = {
     expect(expectedDate, ruleStr) {
-      val parser = new RuleParser
+      val parser = new SimpleRuleParser
       val rule = parser.parse(parser.expr, ruleStr).get
       println("*=" + rule.evaluate(start)(expectedDate))
-      rule.date(start, Calendar.calendarForward)
+      rule.date(start, Calendar.nullCalendar)
     }
   }
-
-
 }

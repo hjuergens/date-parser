@@ -20,8 +20,10 @@ case object Down extends Direction {
 object Direction {
   def apply(x : Any) : Direction = x match {
     case "Next" | "next" | "After" | "after" => Up
-    case "Previous" | "previous" | "before" => Down
+    case "Previous" | "previous" | "before" | "prior" => Down
     case x : Int  if x>0 => Up
     case x : Int  if x<0 => Down
+    case x : Long  if x>0 => Up
+    case x : Long  if x<0 => Down
   }
 }

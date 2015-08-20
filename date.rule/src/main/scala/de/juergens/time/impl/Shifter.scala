@@ -8,7 +8,7 @@ package de.juergens.time.impl
 
 
 import java.time.Duration
-import java.time.temporal.{TemporalAccessor, TemporalUnit, ChronoUnit, Temporal}
+import java.time.temporal._
 
 import de.juergens.time._
 import de.juergens.util.{Direction, Up}
@@ -18,7 +18,9 @@ import scala.language.implicitConversions
 /**
  * @param predicate The Condition
  */
-case class DateShifter(predicate: (Temporal) => Boolean, direction:Direction = Up) extends Shifter {
+case class DateShifter(predicate: (Temporal) => Boolean, direction:Direction = Up)
+  extends TemporalAdjuster
+with LocalDateAdjuster{
 
   override def adjustInto(temporal: Temporal): Temporal = {
     var l = temporal
@@ -27,98 +29,52 @@ case class DateShifter(predicate: (Temporal) => Boolean, direction:Direction = U
   }
 }
 
-abstract class TimeUnitShifter extends Shifter {
-  val timeUnit : TimeUnit
-  def step : Int
-  override val direction = Direction(step)
+abstract class TimeUnitShifter(step:Long) extends LocalDateAdjuster {
+  override def toString = "%+d".format(step)
 }
 
-case class WeekShifter(step: Int) extends TimeUnitShifter {
-  val timeUnit = WeekUnit
-  
-  override def toString = "%+d".format(step) + " " + WeekUnit.toString
+case class WeekShifter(step: Long) extends TimeUnitShifter(step) {
+  override def toString = super.toString + " " + ChronoUnit.WEEKS.toString
 
   override def adjustInto(temporal: Temporal): Temporal =
     temporal.plus(step, ChronoUnit.WEEKS)
 }
 
-case class DayShifter(step: Int) extends TimeUnitShifter {
-  val timeUnit = DayUnit 
-  
-  override def toString = "%+d".format(step) + " " + DayUnit.toString
+case class DayShifter(step: Long) extends TimeUnitShifter(step) {
+  override def toString = super.toString + " " + ChronoUnit.DAYS.toString
 
   override def adjustInto(temporal: Temporal): Temporal =
     temporal.plus(step, ChronoUnit.DAYS)
 }
 
-case class YearShifter(step: Int) extends TimeUnitShifter {
-  val timeUnit = YearUnit
-  
-  override def toString = "%+d".format(step) + " " + YearUnit.toString
+case class YearShifter(step: Long) extends TimeUnitShifter(step) {
+  override def toString = super.toString + " " + ChronoUnit.YEARS.toString
 
   override def adjustInto(temporal: Temporal): Temporal =
     temporal.plus(step, ChronoUnit.YEARS)
 }
 
-case class MonthShifter(step: Int) extends TimeUnitShifter {
-  val timeUnit = MonthUnit
-
-  override def toString = "%+d".format(step) + " " + MonthUnit.toString
+case class MonthShifter(step: Long) extends TimeUnitShifter(step) {
+  override def toString = super.toString + " " + ChronoUnit.MONTHS.toString
 
   override def adjustInto(temporal: Temporal): Temporal =
     temporal.plus(step, ChronoUnit.MONTHS)
 
 }
 
-object QuarterUnit extends TemporalUnit {
-  override def addTo[R <: Temporal](temporal: R, amount: Long): R = ???
-
-  override def between(temporal1Inclusive: Temporal, temporal2Exclusive: Temporal): Long = ???
-
-  override def isTimeBased: Boolean = ???
-
-  override def getDuration: Duration = ???
-
-  @Override
-  def isDurationEstimated : Boolean = true
-
-  @Override
-  def isDateBased() : Boolean = true
-}
-
-case class QuarterShifter(step: Int) extends TimeUnitShifter {
-  val timeUnit = null
-
-  override def toString = "%+d".format(step) + " " + QuarterUnit.toString
-
-  override def adjustInto(temporal: Temporal): Temporal =
-    temporal.plus(step, QuarterUnit)
-}
-
-
-case class DateComponentShifter(step: Int, dateComponent: DateComponent) extends Shifter {
-
-  override def toString = "%+d".format(step) + " " + dateComponent.toString
-
-  override def direction = Direction(step)
-
-  override def adjustInto(temporal: Temporal): Temporal = ???
-}
-
-
 object TimeUnitShifter {
-  def apply(step: Int, timeUnit: TemporalUnit): TimeUnitShifter = timeUnit match {
-    case ChronoUnit.DAYS                => DayShifter(step)
+  def apply(step: Long, timeUnit: TemporalUnit): TimeUnitShifter = timeUnit match {
+    case   ChronoUnit.DAYS               => DayShifter(step)
     case   ChronoUnit.WEEKS              => WeekShifter(step)
     case   ChronoUnit.MONTHS             => MonthShifter(step)
     case   ChronoUnit.YEARS              => YearShifter(step)
-    //case dc: NamedDateComponent => new DateComponentShifter(step, dc)
   }
-  import PartialFunction.condOpt
-  def unapply(shifter: Shifter): Option[(Int, TimeUnit)] = condOpt(shifter) {
-    case DayShifter(step)  => (step, DayUnit)
-    case WeekShifter(step) => (step, WeekUnit)
-    case YearShifter(step) => (step, YearUnit)
-  }
+
+  //import PartialFunction.condOpt
+  //def unapply(shifter: Shifter): Option[(Long, TemporalUnit)] = condOpt(shifter) {
+  //  case DayShifter(step)  => (step, ChronoUnit.DAYS)
+  //  case WeekShifter(step) => (step, ChronoUnit.WEEKS)
+  //  case YearShifter(step) => (step, ChronoUnit.YEARS)
+  //}
 }
 

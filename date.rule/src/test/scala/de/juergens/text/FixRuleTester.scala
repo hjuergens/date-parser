@@ -19,7 +19,7 @@ import org.junit.runners.JUnit4
 
 
   @Test def testDateShifter {
-    val parser = new RuleParser
+    val parser = new SimpleRuleParser
     for(line <- lines.filterNot(_.startsWith("#")))
       parser.parseAll(parser.fixRule, line).get
   }

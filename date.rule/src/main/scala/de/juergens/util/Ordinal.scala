@@ -51,8 +51,10 @@ object Ordinal {
 }
 
 case class Ordinal(toInt : Int) extends AnyVal {
+  def abs: Ordinal = Ordinal(Math.abs(toInt))
+
   def unary_- : Ordinal = Ordinal(-toInt)
 
-  override def toString: String = toInt.toString + "."
+  override def toString: String = Ordinal.ordinal(toInt)
 }
 

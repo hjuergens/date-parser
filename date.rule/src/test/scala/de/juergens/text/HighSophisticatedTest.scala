@@ -8,6 +8,8 @@ import java.io.{File, FilenameFilter}
 import java.net.URL
 import java.{io => jio, lang => jl, util => ju}
 
+import de.juergens.time.LocalDateAdjuster
+import org.hamcrest.Description
 import org.junit._
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -17,8 +19,7 @@ import org.testng.annotations.{DataProvider => DataProviderNG, Test => TestNG}
 import org.testng.annotations.{DataProvider => DataProviderNG, Test => TestNG, _}
 import scala.collection.JavaConversions._
 import scala.io.Source
-
-@Ignore
+import org.junit.Assert._
 @TestNG
 @RunWith(value = classOf[Parameterized])
 class HighSophisticatedTest(line: String) {
@@ -36,7 +37,7 @@ class HighSophisticatedTest(line: String) {
 
   @Test(timeout = 1000)
   def test() : Unit =  {
-    parser.parseAll(parser.adjuster, line).get
+    test(line)
   }
 
   @DataProviderNG(name = "lines in text file", parallel = true)
@@ -45,8 +46,22 @@ class HighSophisticatedTest(line: String) {
   @ParametersNG( Array("line") )
   @TestNG(dataProvider = "lines in text file", timeOut = 1000)
   def test(_line:String) : Unit =  {
-    parser.parseAll(parser.adjuster, _line).get
+    val parsResult = parser.parseAll(parser.adjuster, _line.toLowerCase)
+    assertTrue(parsResult.toString, parsResult.successful)
+    assertThat(parsResult, matcher)
   }
+
+  object matcher extends org.hamcrest.BaseMatcher[parser.ParseResult[LocalDateAdjuster]] {
+    override def matches(o: scala.Any): Boolean = o match {
+      case result : parser.ParseResult[_] => true
+      case _ => false
+    }
+
+    override def describeMismatch(o: scala.Any, description: Description): Unit = ???
+
+    override def describeTo(description: Description): Unit = ???
+  }
+
 }
 
 // NOTE: Defined AFTER companion class to prevent:
@@ -54,25 +69,20 @@ class HighSophisticatedTest(line: String) {
 // constructor TestCase(String name) or TestCase()
 object HighSophisticatedTest {
 
-  val textFile = {
-    val url = getClass.getResource("/high_sophisticated.txt")
-    new File(url.getFile)
+  val inputStream = {
+    getClass.getResourceAsStream("/high_sophisticated.txt")
   }
 
   @org.junit.BeforeClass
-  def before {
-    println(s"textFile=$textFile")
-  }
+  def before {  }
 
   @org.junit.AfterClass
-  def after {
-    println(s"textFile=$textFile")
-  }
+  def after {  }
 
   // java.util.Iterator
   def _lines : Iterator[Array[Object]] = {
-    val filteredLines = Source.fromURI {
-      textFile.toURI
+    val filteredLines = Source.fromInputStream{
+      inputStream
     }.getLines().map(_.trim)
       .filterNot(_.startsWith("#"))
       .filterNot(_.isEmpty)

@@ -42,11 +42,11 @@ object Cardinal {
   }
 
   //implicit def int2Cardinal(x:Int) : Cardinal = Cardinal(x)
-  implicit def cardinal2Int(x:Cardinal) : Int = x.toInt
+  implicit def cardinal2Long(x:Cardinal) : Long = x.toLong
 }
 
-case class Cardinal(toInt : Int) extends AnyVal {
-  def unary_- : Cardinal = Cardinal(-toInt)
+case class Cardinal(toLong : Long) extends AnyVal {
+  def unary_- : Cardinal = Cardinal(-toLong)
 
-  override def toString: String = toInt.toString + "."
+  override def toString: String = toLong.toString + "."
 }

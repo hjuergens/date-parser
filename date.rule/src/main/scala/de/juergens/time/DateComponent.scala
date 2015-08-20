@@ -17,6 +17,7 @@ abstract class DateComponent
 /*TODO check extends TemporalField*/
 
 
+@deprecated("use java.time.Month", "0.0.3")
 object DateComponent {
 
   /**
@@ -85,8 +86,10 @@ case object Sunday extends WeekDay(SUNDAY) {
 
 /*1*/
 
+@deprecated("use java.time.Month", "0.0.3")
 case class Day(day: Int) extends DateComponent
 
+@deprecated("use java.time.Month", "0.0.3")
 object WeekDay {
 
   def apply(any: Any): WeekDay = any match {
@@ -110,6 +113,7 @@ object WeekDay {
   }
 }
 
+@deprecated("use java.time.Month", "0.0.3")
 abstract class Month extends NamedDateComponent {
   override final def toString: String = this match {
     case Month(name) => name
@@ -140,21 +144,22 @@ case object Nov /*(year:Year)*/ extends Month
 
 case object Dec /*(year:Year)*/ extends Month
 
-@deprecated("use java.time.Month instead", "0.0.2")
+@deprecated("use java.time.Month instead", "0.0.3")
 object Month {
-  def apply(str: String): Month = str match {
-    case "Jan" | "januar" => Jan
-    case "Feb" | "february" => Feb
-    case "Mar" | "march" => Mar
-    case "Apr" | "april" => Apr
-    case "May" | "may" => May
-    case "Jun" | "june" => Jun
-    case "Jul" => Jul
-    case "Aug" => Aug
-    case "Sep" | "september" => Sep
-    case "Oct" => Oct
-    case "Nov" => Nov
-    case "Dec" | "december" => Dec
+  import java.time.Month._
+  def apply(str: String): java.time.Month = str match {
+    case "Jan" | "januar" => JANUARY
+    case "Feb" | "february" => FEBRUARY
+    case "Mar" | "march" => MARCH
+    case "Apr" | "april" => APRIL
+    case "May" | "may" => MAY
+    case "Jun" | "june" => JUNE
+    case "Jul" => JULY
+    case "Aug" => AUGUST
+    case "Sep" | "september" => SEPTEMBER
+    case "Oct" => OCTOBER
+    case "Nov" => NOVEMBER
+    case "Dec" | "december" => DECEMBER
   }
 
   def apply(number: Int): Month = number match {

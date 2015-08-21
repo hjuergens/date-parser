@@ -13,28 +13,37 @@ import scala.util.parsing.combinator._
 
 class TermParser extends JavaTokenParsers {
 
+  type BusinessDayConvention = (LocalDate) => LocalDate
+
   def term: Parser[Any] = period | date
 
-  def standardPeriod: Parser[Period] = wholeNumber ~ timeUnit ^^
-    {
-      case number ~ ChronoUnit.DAYS    => Period.ofDays(number.toInt)
-      case number ~ ChronoUnit.WEEKS   => Period.ofWeeks(number.toInt)
-      case number ~ ChronoUnit.MONTHS  => Period.ofMonths(number.toInt)
-      case number ~ ChronoUnit.YEARS   => Period.ofYears(number.toInt)
-    }
+  def standardPeriod: Parser[Period] = wholeNumber ~ timeUnit ^^ {
+    case number ~ ChronoUnit.DAYS => Period.ofDays(number.toInt)
+    case number ~ ChronoUnit.WEEKS => Period.ofWeeks(number.toInt)
+    case number ~ ChronoUnit.MONTHS => Period.ofMonths(number.toInt)
+    case number ~ ChronoUnit.YEARS => Period.ofYears(number.toInt)
+  }
 
   private def infinityPeriod: Parser[Period] = "Infinity" ^^
     { _ => Period.ofYears(Integer.MAX_VALUE) }
 
-  private def periodSum : Parser[Period] = (standardPeriod*)  ^^
-    { _.foldRight(Period.ZERO)((p,s) => p plus s) }
+  private def lPeriod: Parser[Period] = "L" ^^
+    { _ => Period.ofWeeks(3) }
 
-  private def periodDiff : Parser[Period] = periodSum ~ "-" ~ standardPeriod  ^^
+  private def periodSum: Parser[Period] = (standardPeriod *) ^^
+    { case periods => periods.foldRight(Period.ZERO)((p, s) => p plus s) }
+
+  def period: Parser[Period] = infinityPeriod | lPeriod | periodSum
+
+  def periodAdjuster: Parser[BusinessDayConvention => LocalDate => LocalDate]
+  = ("+" | "-") ~ period ^^
     {
-      case lhs ~ _ ~ rhs => lhs minus rhs
+      case "+" ~ period =>
+        (bdc:BusinessDayConvention) => (date: LocalDate) =>bdc(date.plus(period))
+      case "-" ~ period =>
+        (bdc:BusinessDayConvention) => (date: LocalDate) =>bdc(date.minus(period))
     }
 
-  def period  : Parser[Period] = infinityPeriod | periodSum | periodDiff
 
   def timeUnit: Parser[ChronoUnit] = ("D" | "W" | "M" | "Y") ^^
     {

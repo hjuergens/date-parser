@@ -92,10 +92,10 @@ class DateRuleParser extends JavaTokenParsers with NumberParser with ExtendedReg
   def monthName : Parser[java.time.Month] = month3 | monthLong
 
   /** PnYnMnD */
-  def timeUnitSingular : Parser[TemporalUnit] = ("year" | "month" | "week" | "day") ^^
-    {str =>
-      //ChronoUnit.valueOf(str.charAt(0).toUpper.toString + str.substring(1) +"s")
-      ChronoUnit.valueOf((str+"s").toUpperCase)
+  def timeUnitSingular : Parser[TemporalUnit] = ("year" | "month" | "week" | "day" | "quarter") ^^
+    {
+      case "quarter" => IsoFields.QUARTER_YEARS
+      case str : String => ChronoUnit.valueOf((str+"s").toUpperCase)
     }
 
   def year : Parser[java.time.Year] = "year" ~ """(\d){4}""".r ^^
@@ -219,7 +219,7 @@ class DateRuleParser extends JavaTokenParsers with NumberParser with ExtendedReg
     {
       case "spring" => MonthDay.of(java.time.Month.FEBRUARY,13)
       case "summer" => MonthDay.of(java.time.Month.FEBRUARY,13)
-      case "autum"  => MonthDay.of(java.time.Month.FEBRUARY,13)
+      case "autumn"|"fall"  => MonthDay.of(java.time.Month.FEBRUARY,13)
       case "winter" => MonthDay.of(java.time.Month.FEBRUARY,13)
     }
 

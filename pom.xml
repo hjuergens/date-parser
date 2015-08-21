@@ -7,8 +7,8 @@
     <version>0.0.2-SNAPSHOT</version>
     <modules>
         <module>date-parser-antlr</module>
+        <module>date-rule-combinators</module>
         <module>dp-jflex</module>
-        <module>date.rule</module>
     </modules>
     <name>${project.artifactId}</name>
     <description>Date Parser</description>

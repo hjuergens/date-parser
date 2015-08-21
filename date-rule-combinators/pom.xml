@@ -8,8 +8,8 @@
         <version>0.0.2-SNAPSHOT</version>
     </parent>
 
-    <artifactId>date.rule</artifactId>
-    <version>0.0.2-SNAPSHOT</version>
+    <artifactId>date-rule-combinators</artifactId>
+    <version>0.0.4-SNAPSHOT</version>
     <name>${project.artifactId}</name>
 
     <description>
@@ -159,6 +159,14 @@
                 <version>20141113</version>
                 <scope>test</scope>
             </dependency>
+
+        <!--dependency>
+            <groupId>com.sun.codemodel</groupId>
+            <artifactId>codemodel</artifactId>
+            <version>2.6</version>
+            <scope>test</scope>
+        </dependency-->
+
     </dependencies>
 
     <build>

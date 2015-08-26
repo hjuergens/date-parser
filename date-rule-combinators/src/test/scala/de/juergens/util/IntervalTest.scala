@@ -6,228 +6,377 @@
 
 package de.juergens.util
 
+import org.junit.Assert._
 import org.junit._
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+
 @RunWith(classOf[JUnit4])
 class IntervalTest {
-   @Test
-   def lowerBorder() {
-      val lb = new LowerBorder[Double](7.0) // [7,...)
-      assert(lb.apply(8))
-      assert(lb.apply(7))
-      assert(!lb.apply(5))
-   }
 
-   @Test
-   def upperBorder() {
-      val lb = new UpperBorder[Double](7.0) // (...,7]
-      assert(lb.apply(5))
-      assert(lb.apply(7))
-      assert(!lb.apply(8))
-   }
+  @Test
+  def lowerBorder() {
+    val lb = LowerBorder[Double](7.0) // [7,...)
+    assertTrue(lb.apply(8))
+    assertTrue(lb.apply(7))
+    assertFalse(lb.apply(5))
+  }
 
-   @Test
-   def lower_intersection() {
-      val lb1 = new LowerBorder[Double](7.0) // [7,...)
-      val lb2 = new LowerBorder[Double](13.0) // [13,...)
-      val intersection = lb1 * lb2
-      assert(intersection.apply(15))
-      assert(intersection.apply(13))
-      assert(!intersection.apply(7))
-   }
+  @Test
+  def upperBorder() {
+    val lb = UpperBorder[Double](7.0) // (...,7]
+    assertTrue(lb.apply(5))
+    assertTrue(lb.apply(7))
+    assertFalse(lb.apply(8))
+  }
 
-   @Test
-   def upper_union() {
-      val ub1 = new UpperBorder[Double](7.0) // (...,7]
-      val ub2 = new UpperBorder[Double](13.0) // (...,13]
-      val union = ub1 + ub2
-      assert(union.apply(8))
-      assert(union.apply(13))
-      assert(!union.apply(15))
-   }
+  @Test
+  def lower_intersection() {
+    val lb1 = LowerBorder[Double](7.0) // [7,...)
+    val lb2 = LowerBorder[Double](13.0) // [13,...)
+    val intersection = lb1 * lb2
+    assertTrue(intersection.apply(15))
+    assertTrue(intersection.apply(13))
+    assertFalse(intersection.apply(7))
+  }
 
-   //   @Test
-   //   def intersection() {
-   //      {
-   //         val lb1 = new LowerBorder[Int](4) // [4,...)
-   //         val ub2 = new UpperBorder[Int](22) // (...,22]
-   //         val interval = lb1 * ub2
-   //         assert(!interval.contains(3))
-   //         assert(interval.contains(4))
-   //         assert(interval.contains(10))
-   //         assert(interval.contains(22))
-   //         assert(!interval.contains(300))
-   //      }
-   //   }
+  @Test
+  def upper_union() {
+    val ub1 = UpperBorder[Double](7.0) // (...,7]
+    val ub2 = UpperBorder[Double](13.0) // (...,13]
+    val union = ub1 + ub2
+    assertTrue(union.apply(8))
+    assertTrue(union.apply(13))
+    assertFalse(union.apply(15))
+  }
 
-   @Test
-   def interval_signum() {
-      {
-         val ub1 = new UpperBorder[Double](7.0) // (...,7]
-         val ub2 = new UpperBorder[Double](13.0) // (...,13]
+  @Test
+  def intersection() {
+    {
+      val lb1 = LowerBorder[Int](4) // [4,...)
+    val ub2 = UpperBorder[Int](22) // (...,22]
+    val interval = lb1 * ub2
+      assertFalse(interval.contains(3))
+      assertTrue(interval.contains(4))
+      assertTrue(interval.contains(10))
+      assertTrue(interval.contains(22))
+      assertFalse(interval.contains(300))
+    }
+  }
 
-         {
-            val interval = ub2 - ub1
-            assert(6.0 == interval.signum, "signum=" + interval.signum)
-         }
-         {
-            val interval = Interval(ub1, ub2)
-            assert(6.0 == interval.signum, "signum=" + interval.signum)
-         }
-         {
-            val interval = Interval(ub2, ub1)
-            assert(0.0 == interval.signum, "signum=" + interval.signum)
-         }
-      }
-      {
-         val lb1 = new LowerBorder[Float](152.25456f) // [152.25456, ...)
-         val lb2 = new LowerBorder[Float](6955.2863f) // [6955.2863, ...)
-
-         {
-            val interval = lb1 - lb2
-            assert(6803.0317f == interval.signum, "signum=" + interval.signum)
-         }
-         {
-            val interval = Interval(lb1, lb2)
-            assert(0.0f == interval.signum, interval.signum)
-         }
-         {
-            val interval = Interval(lb2, lb1)
-            assert(6803.0317f == interval.signum, interval.signum)
-         }
-      }
-   }
-
-   @Test
-   def interval_contains() {
-      {
-         val ub1 = new UpperBorder[Double](7.0) // (...,7]
-         val ub2 = new UpperBorder[Double](13.0) // (...,13]
-         val interval = ub2 - ub1 // Interval(ub1, ub2)
-         assert(!interval.contains(300))
-         assert(interval.contains(13))
-         assert(interval.contains(10))
-         assert(!interval.contains(7))
-         assert(!interval.contains(-3))
-      }
-      {
-         val ub1 = new UpperBorder[Double](7.0) // (...,7]
-         val ub2 = new UpperBorder[Double](13.0) // (...,13]
-         val interval = ub1 - ub2 //Interval(ub2, ub1)
-         assert(!interval.contains(300))
-         assert(!interval.contains(13))
-         assert(!interval.contains(10))
-         assert(!interval.contains(7))
-         assert(!interval.contains(-3))
-         //         assert(Interval.empty[Double] == interval)
-      }
-      {
-         val lb1 = new LowerBorder[Int](4) // [4,...)
-         val lb2 = new LowerBorder[Int](22) // [22,...)
-         val interval = lb1 - lb2 //Interval(ub2, ub1)
-         assert(!interval.contains(-3))
-         assert(interval.contains(4))
-         assert(interval.contains(10))
-         assert(!interval.contains(22))
-         assert(!interval.contains(300))
-      }
-      {
-         val lb1 = new LowerBorder[Int](4) // [4,...)
-         val lb2 = new LowerBorder[Int](22) // [22,...)
-         val interval = lb2 - lb1 //Interval(ub1, ub2)
-         assert(!interval.contains(-3))
-         assert(!interval.contains(4))
-         assert(!interval.contains(10))
-         assert(!interval.contains(22))
-         assert(!interval.contains(300))
-      }
-   }
-
-   @Test
-   def interval_toString() {
-      {
-         val ub1 = new UpperBorder[Double](7.0) // (...,7]
-         val ub2 = new UpperBorder[Double](13.0) // (...,13]
-         assert("7.0]" == ub1.toString, ub1.toString())
-         assert("(7.0" == (-ub1).toString, (-ub1).toString())
-         assert("13.0]" == ub2.toString, ub2.toString())
-         assert("(13.0" == (-ub2).toString, (-ub2).toString())
-         val interval = ub2 - ub1
-         assert("(7.0,13.0]" == interval.toString, interval.toString)
-      }
-      {
-         val ub1 = new UpperBorder[Double](7.0) // (...,7]
-         val ub2 = new UpperBorder[Double](13.0) // (...,13]
-         val interval = ub1 - ub2
-         assert("Ø" == interval.toString, interval.toString)
-      }
-      {
-         val lb1 = new LowerBorder[Int](4) // [4,...)
-         val lb2 = new LowerBorder[Int](22) // [22,...)
-         assert("[4" == lb1.toString, lb1.toString())
-         assert("4)" == (-lb1).toString, (-lb1).toString())
-         assert("[22" == lb2.toString, lb2.toString())
-         assert("22)" == (-lb2).toString, (-lb2).toString())
-         val interval = (lb1 - lb2)
-         assert("[4,22)" == interval.toString, interval.toString)
-      }
-      {
-         val lb1 = new LowerBorder[Int](4) // [4,...)
-         val lb2 = new LowerBorder[Int](22) // [22,...)
-         val interval = (lb2 - lb1)
-         assert("Ø" == interval.toString, interval.toString)
-      }
-   }
-
-   @Test
-   def IntervalAsIntersection() {
-      val lb1 = new LowerBorder[Int](4) // [4,...)
-      val lb2 = new LowerBorder[Int](22) // [22,...)
-      val ub1 = new UpperBorder[Int](7) // (...,7]
-      val ub2 = new UpperBorder[Int](13) // (...,13]
+  @Test
+  def interval_signum() {
+    {
+      val ub1 = UpperBorder[Double](7.0) // (...,7]
+    val ub2 = UpperBorder[Double](13.0) // (...,13]
 
       {
-         val interval = new IntervalAsIntersection[Int](lb1, ub1) // [4,7]
-         assert("[4,7]" == interval.toString, interval.toString)
-         assert(!interval.contains(3))
-         assert(interval.contains(4))
-         assert(interval.contains(5))
-         assert(interval.contains(6))
-         assert(interval.contains(7))
-         assert(!interval.contains(8))
-         assert(3 == interval.signum, "signum=" + interval.signum)
+        val interval = ub2 - ub1
+        assertEquals("signum=" + interval.signum, 6.0, interval.signum, 1E-15)
       }
+      {
+        val interval = Interval(ub1, ub2)
+        assertEquals("signum=" + interval.signum, 6.0, interval.signum, 1E-15)
+      }
+      {
+        val interval = Interval(ub2, ub1)
+        assertEquals("signum=" + interval.signum, -6.0, interval.signum, 1E-15)
+      }
+    }
+    {
+      val lb1 = LowerBorder[Float](152.25456f) // [152.25456, ...)
+      val lb2 = LowerBorder[Float](6955.2863f) // [6955.2863, ...)
 
       {
-         val interval = new IntervalAsIntersection[Int](lb1, -lb2) // [4,22)
-         assert("[4,22)" == interval.toString, interval.toString)
-         assert(!interval.contains(3))
-         assert(interval.contains(4))
-         assert(interval.contains(21))
-         assert(!interval.contains(22))
-         assert(18 == interval.signum, "signum=" + interval.signum)
+        val interval = lb1 - lb2
+        assertEquals("signum=" + interval.signum, 6803.0317f, interval.signum, 1E-15)
       }
-
       {
-         val interval = new IntervalAsIntersection[Int](-ub1, -lb2) // (7,22)
-         assert("(7,22)" == interval.toString, interval.toString)
-         assert(!interval.contains(7))
-         assert(interval.contains(8))
-         assert(interval.contains(21))
-         assert(!interval.contains(22))
-         assert(15 == interval.signum, "signum=" + interval.signum)
+        val interval = Interval(lb1, lb2)
+        assertEquals(s"signum=${interval.signum}", 6803.03173828125f , interval.signum, 1E-15)
       }
-
       {
-         val interval = new IntervalAsIntersection[Int](-ub1, ub2) // (7,13]
-         assert("(7,13]" == interval.toString, interval.toString)
-         assert(!interval.contains(7))
-         assert(interval.contains(8))
-         assert(interval.contains(13))
-         assert(!interval.contains(24))
-         assert(6 == interval.signum, "signum=" + interval.signum)
+        val interval = Interval(lb2, lb1)
+        assertEquals(s"signum=${interval.signum}",-6803.0317f, interval.signum, 1E-15)
       }
-   }
+    }
+  }
+
+  @Test
+  def interval_contains() {
+    {
+      val ub1 = UpperBorder[Double](7.0) // (...,7]
+    val ub2 = UpperBorder[Double](13.0) // (...,13]
+    val interval = ub2 - ub1 // Interval(ub1, ub2)
+      assertFalse(interval.contains(300))
+      assertTrue(interval.contains(13))
+      assertTrue(interval.contains(10))
+      assertFalse(interval.contains(7))
+      assertFalse(interval.contains(-3))
+    }
+    {
+      val ub1 = UpperBorder[Double](7.0) // (...,7]
+    val ub2 = UpperBorder[Double](13.0) // (...,13]
+    val interval = ub1 - ub2 //Interval(ub2, ub1)
+      assertFalse(interval.contains(300))
+      assertFalse(interval.contains(13))
+      assertFalse(interval.contains(10))
+      assertFalse(interval.contains(7))
+      assertFalse(interval.contains(-3))
+      //         assertTrue(interval.empty[Double] == interval)
+    }
+    {
+      val lb1 = LowerBorder[Int](4) // [4,...)
+    val lb2 = LowerBorder[Int](22) // [22,...)
+    val interval = lb1 - lb2 //Interval(ub2, ub1)
+      assertFalse(interval.contains(-3))
+      assertTrue(interval.contains(4))
+      assertTrue(interval.contains(10))
+      assertFalse(interval.contains(22))
+      assertFalse(interval.contains(300))
+    }
+    {
+      val lb1 = LowerBorder[Int](4) // [4,...)
+    val lb2 = LowerBorder[Int](22) // [22,...)
+    val interval = lb2 - lb1 //Interval(ub1, ub2)
+      assertFalse(interval.contains(-3))
+      assertFalse(interval.contains(4))
+      assertFalse(interval.contains(10))
+      assertFalse(interval.contains(22))
+      assertFalse(interval.contains(300))
+    }
+  }
+
+  @Test
+  def interval_toString() {
+    {
+      val ub1 = UpperBorder[Double](7.0) // (...,7]
+    val ub2 = UpperBorder[Double](13.0) // (...,13]
+      assertEquals("7.0]" ,ub1.toString)
+      assertEquals("(7.0" , (-ub1).toString)
+      assertEquals("13.0]" , ub2.toString)
+      assertEquals("(13.0" , (-ub2).toString)
+      val interval = ub2 - ub1
+      assertEquals("(7.0,13.0]", interval.toString)
+    }
+    {
+      val ub1 = UpperBorder[Double](7.0) // (...,7]
+    val ub2 = UpperBorder[Double](13.0) // (...,13]
+    val interval = ub1 - ub2
+      assertEquals("Ø", interval.toString, interval.toString)
+    }
+    {
+      val lb1 = LowerBorder[Int](4) // [4,...)
+    val lb2 = LowerBorder[Int](22) // [22,...)
+      assertEquals("[4" , lb1.toString, lb1.toString())
+      assertEquals("4)" , (-lb1).toString, (-lb1).toString())
+      assertEquals("[22" , lb2.toString, lb2.toString())
+      assertEquals("22)" , (-lb2).toString, (-lb2).toString())
+      val interval = (lb1 - lb2)
+      assertEquals("[4,22)" , interval.toString, interval.toString)
+    }
+    {
+      val lb1 = LowerBorder[Int](4) // [4,...)
+    val lb2 = LowerBorder[Int](22) // [22,...)
+    val interval = (lb2 - lb1)
+      assertEquals("Ø" , interval.toString, interval.toString)
+    }
+  }
+
+  @Test
+  def IntervalAsIntersection() {
+    val lb1 = LowerBorder[Int](4) // [4,...)
+    val lb2 = LowerBorder[Int](22) // [22,...)
+    val ub1 = UpperBorder[Int](7) // (...,7]
+    val ub2 = UpperBorder[Int](13) // (...,13]
+
+    {
+      val interval = ub1 * lb1 // [4,7]
+      assertEquals("[4,7]", interval.toString)
+      assertFalse(interval.contains(3))
+      assertTrue(interval.contains(4))
+      assertTrue(interval.contains(7))
+      assertFalse(interval.contains(8))
+      assert(7 - 4 == interval.signum, "signum=" + interval.signum)
+    }
+
+    {
+      val interval = lb1 * ub2 // [4,13]
+      assertEquals("[4,13]", interval.toString)
+      assertFalse(interval.contains(3))
+      assertTrue(interval.contains(4))
+      assertTrue(interval.contains(13))
+      assertFalse(interval.contains(14))
+      assert(13 - 4 == interval.signum, "signum=" + interval.signum)
+    }
+  }
+
+  @Test
+  def IntervalAsDifference() {
+
+    val lb04 = LowerBorder[Int](4) // [4,...)
+    val lb22 = LowerBorder[Int](22) // [22,...)
+    val ub07 = UpperBorder[Int](7) // (...,7]
+    val ub13 = UpperBorder[Int](13) // (...,13]
+
+    {
+      val interval = lb04 - lb22 // [4,22)
+      assertEquals("[4,22)" , interval.toString)
+      assertFalse(interval.contains(3))
+      assertTrue(interval.contains(4))
+      assertTrue(interval.contains(21))
+      assertFalse(interval.contains(22))
+      assertEquals("signum=" + interval.signum, 18, interval.signum)
+    }
+
+    {
+      val interval = -ub07 - lb22  // (7,22)
+      assertEquals(interval.toString, "(7,22)", interval.toString)
+      assertFalse(interval.contains(7))
+      assertTrue(interval.contains(8))
+      assertTrue(interval.contains(21))
+      assertFalse(interval.contains(22))
+      assertEquals("signum=" + interval.signum, 15, interval.signum)
+    }
+
+    {
+      val interval = ub13 - ub07 // (7,13]
+      assertEquals("(7,13]", interval.toString)
+      assertFalse(interval.contains(7))
+      assertTrue(interval.contains(8))
+      assertTrue(interval.contains(13))
+      assertFalse(interval.contains(24))
+      assertEquals("signum=" + interval.signum, 6, interval.signum)
+    }
+
+    {
+      val interval = -ub13 - lb22  // (13,22)
+      assertEquals(interval.toString, "(13,22)", interval.toString)
+      assertFalse(interval.contains(13))
+      assertTrue(interval.contains(14))
+      assertTrue(interval.contains(21))
+      assertFalse(interval.contains(22))
+      assertEquals("signum=" + interval.signum, 9, interval.signum)
+    }
+  }
+
+  @Test
+  def interval_intersection() :Unit = {
+
+    val interval_ag = Interval("a","g")
+    val interval_dj = Interval("d","j")
+
+    assertEquals(Interval("d","g"), interval_ag * interval_dj)
+    assertEquals("[d,g)", (interval_ag * interval_dj).toString)
+    assertEquals(Interval("d","g"), interval_dj * interval_ag)
+    assertEquals("[d,g)", (interval_dj * interval_ag).toString)
+
+    val interval_bf = Interval("b","f")
+    val interval_wy = Interval("w","y")
+
+    try {
+      interval_bf * interval_wy
+      fail(s"The intervals $interval_bf and $interval_wy are disjunct.")
+    } catch {
+      case exp : IllegalArgumentException => assertNotNull(exp)
+    }
+    try {
+      interval_wy * interval_bf
+      fail(s"The intervals $interval_wy and $interval_bf are disjunct.")
+    } catch {
+      case exp : IllegalArgumentException => assertNotNull(exp)
+    }
+
+    {
+      val interval_uv = Interval("u", true, "v", true)
+      val interval_vw = Interval("v", true, "w", true)
+
+      assertTrue((interval_uv * interval_vw).contains("v"))
+      assertEquals(Interval("v", true, "v", true), interval_uv * interval_vw)
+      assertEquals("[v,v]", (interval_uv * interval_vw).toString)
+    }
+  }
+
+  @Test
+  def interval_union() :Unit = {
+
+    val interval_ag = Interval("a", "g")
+    val interval_dj = Interval("d", "j")
+
+    assertEquals(Interval("a", "j"), interval_ag + interval_dj)
+    assertEquals(Interval("a", "j"), interval_dj + interval_ag)
+    assertTrue((interval_ag + interval_dj).contains("a"))
+    assertFalse((interval_ag + interval_dj).contains("j"))
+
+    val interval_bf = Interval("b", "f")
+    val interval_wy = Interval("w", "y")
+
+    try {
+      interval_bf + interval_wy
+      fail(s"The intervals $interval_bf and $interval_wy are disjunct.")
+    } catch {
+      case exp: IllegalArgumentException => assertNotNull(exp)
+    }
+    try {
+      interval_wy + interval_bf
+      fail(s"The intervals $interval_wy and $interval_bf are disjunct.")
+    } catch {
+      case exp: IllegalArgumentException => assertNotNull(exp)
+    }
+
+    {
+      val interval_uv = Interval("u", true, "v", false)
+      val interval_vw = Interval("v", true, "w", false)
+
+      assertTrue((interval_uv + interval_vw).contains("v"))
+      assertEquals(Interval("u", "w"), interval_uv + interval_vw)
+      assertEquals("[u,w)", (interval_uv + interval_vw).toString)
+    }
+
+    {
+      val interval_uv = Interval("u", false, "v", true)
+      val interval_vw = Interval("v", false, "w", true)
+
+      assertTrue((interval_vw + interval_uv).contains("v"))
+      assertEquals(Interval("u",false, "w", true), interval_vw + interval_uv)
+      assertEquals("(u,w]", (interval_vw + interval_uv).toString)
+    }
+
+    {
+      val interval_uv = Interval("u", true, "v", false)
+      val interval_vw = Interval("v", false, "w", true)
+
+      try {
+        interval_vw + interval_uv
+        fail(s"The intervals $interval_uv and $interval_vw are disjunct.")
+      } catch {
+        case exp: IllegalArgumentException => assertNotNull(exp)
+      }
+    }
+
+    {
+      val interval_79 = Interval(7, false, 9, false)
+      val interval_78 = Interval(7, true, 8, true)
+
+      assertEquals(Interval(7,true, 9, false), interval_79 + interval_78)
+      assertEquals(Interval(7,true, 9, false), interval_78 + interval_79)
+    }
+
+    {
+      val interval_79 = Interval(7, false, 9, true)
+      val interval_78 = Interval(7, false, 8, false)
+
+      assertEquals(Interval(7,false, 9, true), interval_79 + interval_78)
+      assertEquals(Interval(7,false, 9, true), interval_78 + interval_79)
+    }
+  }
+
+  @Test
+  def unapply():Unit = {
+    val Interval(a,b) = Interval(1,2)
+
+    assertEquals(LowerBorder(1,include = true), a)
+    assertEquals(UpperBorder(2,include = false), b)
+  }
 }

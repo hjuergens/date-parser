@@ -6,225 +6,226 @@
 
 package de.juergens.util
 
+import scala.math.Ordered._
 import scala.math._
 
+abstract sealed class Border[T] {
+  type S <: Border[T]
+  type O <: Border[T]
+
+  def include : Boolean
+
+  final def apply(lhs : T, rhs:T)
+                 (implicit ord : scala.math.Ordering[T]) : Boolean
+  = if(include) lhs <= rhs else lhs < rhs
+
+  /**intersection */
+  def *(that: S) : S
+
+  /**intersection */
+  def *(that: O) : Interval[T]
+
+  /**union */
+  def +(that: S) :S
+
+  /**complement ; all elements which are members of this but not members of rhs*/
+  def -(that: S) : Interval[T]
+
+  /**absolute complement */
+  def unary_-() : O
+}
+
 /**
+ * lower bound
+ * @param lhs left hand side
+ * @param include closed
+ * @param ord ordering on type T
+ * @tparam T
  */
-object `package` {
-   //   implicit def fromInt(i: Int) = Num(i)
+case class LowerBorder[T](lhs:T, include:Boolean = true)
+                         (implicit ord : scala.math.Ordering[T])
+  extends Border[T] {
+
+  type S = LowerBorder[T]
+  type O = UpperBorder[T]
+
+  def apply(rhs: T): Boolean = apply(lhs, rhs)
+
+  implicit val ordBorders = Ordering.fromLessThan(
+    (a:LowerBorder[T],b: LowerBorder[T]) =>
+      if (a.lhs < b.lhs) false
+      else if (a.lhs > b.lhs) true
+      else {
+        if (a.include && !b.include) false
+        else if (!a.include && b.include) true
+        else false
+      })
+
+  /** intersection */
+  override def *(that: LowerBorder[T]): LowerBorder[T] = {
+    import Ordering.Implicits.infixOrderingOps
+    this min that
+  }
+
+  /** intersection */
+  override def *(that: UpperBorder[T]): Interval[T] =
+    Interval(this, that)
+
+  /** union */
+  override def +(that: LowerBorder[T]): LowerBorder[T] = {
+    import Ordering.Implicits.infixOrderingOps
+    this max that
+  }
+
+  /** complement ; all elements which are members of this but not members of rhs */
+  override def -(that: LowerBorder[T]): Interval[T] =
+    Interval(this, -that)
+
+  /** absolute complement */
+  override def unary_-(): UpperBorder[T] =
+    new UpperBorder[T](lhs, !include)
+
+  override def toString = (if (include) "[" else "(") + lhs.toString
 }
 
-sealed abstract class Comparator[A <% Ordered[A]] extends ((A, A) => Boolean) {
-   def unary_!(): Comparator[A]
+/**
+ * upper bound
+ * @param rhs right hand side
+ * @param include closed
+ * @param ord ordering on type T
+ * @tparam T
+ */
+case class UpperBorder[T](rhs:T, include:Boolean= true)
+                         (implicit ord : scala.math.Ordering[T])
+  extends Border[T] {
 
-   def toBorderString(a: A): String
+  type S = UpperBorder[T]
+  type O = LowerBorder[T]
 
-   def signum(implicit n: Numeric[A]): A
-}
+  def apply(lhs: T): Boolean = apply(lhs, rhs)
 
-object Comparator {
-}
+  implicit val ordBorders = Ordering.fromLessThan(
+    (a:UpperBorder[T],b: UpperBorder[T]) =>
+      if (a.rhs < b.rhs) true
+      else if (a.rhs > b.rhs) false
+      else {
+        if (a.include && !b.include) false
+        else if (!a.include && b.include) true
+        else false
+      })
 
-/**less or equal */
-class Leq[@specialized(Int, Double) A <% Ordered[A]] extends Comparator[A] {
-   def apply(l: A, r: A) = l <= r
-
-   /**greater than */
-   private val GT = new Comparator[A] {
-      def apply(a1: A, a2: A) = a1 > a2
-
-      def unary_!(): Comparator[A] = Leq.this
-
-      def toBorderString(a: A) = a + ")"
-
-      def signum(implicit n: Numeric[A]) = n.negate(Leq.this.signum)
-   }
-
-   def unary_!() : Comparator[A] = GT
-
-   def toBorderString(a: A) = "[" + a
-
-   final def signum(implicit n: Numeric[A]): A = n.negate(n.one)
-}
-
-/**greater or equal */
-class Geq[@specialized(Int, Double) A <% Ordered[A]] extends Comparator[A] {
-   def apply(l: A, r: A) = l >= r
-
-   /**less than */
-   private val LT = new Comparator[A] {
-      def apply(a1: A, a2: A) = a1 < a2
-
-      def unary_!(): Comparator[A] = Geq.this
-
-      def toBorderString(a: A) = "(" + a
-
-      def signum(implicit n: Numeric[A]) = n.negate(Geq.this.signum)
-   }
+  /** intersection */
+  override def *(that: UpperBorder[T]): UpperBorder[T] = {
+    import Ordering.Implicits.infixOrderingOps
+    this min that
+  }
 
 
-   def unary_!() : Comparator[A] = LT
+  /** intersection */
+  override def *(that: LowerBorder[T]): Interval[T] =
+    Interval(that,this)
 
-   def toBorderString(a: A) = a + "]"
+  /** union */
+  override def +(that: UpperBorder[T]): UpperBorder[T] = {
+    import Ordering.Implicits.infixOrderingOps
+    this max that
+  }
 
-   final override def signum(implicit n: Numeric[A]): A = n.one
-}
+  /** complement ; all elements which are members of this but not members of that */
+  override def -(that: UpperBorder[T]) : Interval[T] =
+    Interval(-that, this)
 
-abstract class Border[@specialized(Int, Double) T](comparator: Comparator[T]) /*extends Ordered[Border[T]]*/ {
-   def point: T
+  /** absolute complement */
+  override def unary_-(): LowerBorder[T] =
+    new LowerBorder[T](rhs, !include)
 
-   def apply(t: T) = comparator(point, t)
-
-   final def contains(t: T) = this(t)
-
-   /**absolute complement */
-   def unary_-() = new Border[T](!comparator) {
-      def point: T = Border.this.point
-
-      //def compare(that: Border[T]) = that.compare(this)
-   }
-
-   //   /**intersection */
-   //   def *(rhs: Border[T]): Border[T] = if (this > rhs) this else rhs
-   //
-   //   /**union */
-   //   def +(rhs: Border[T]): Border[T] = if (this < rhs) this else rhs
-
-   override final def toString = comparator.toBorderString(point)
-
-   final def signum(implicit n: Numeric[T]) = n.times(comparator.signum, point)
-}
-
-class LowerBorder[T <% Ordered[T]](val point: T) extends Border[T](new Leq[T]()) with Ordered[LowerBorder[T]] {
-   def compare(that: LowerBorder[T]): Int = this.point compare that.point
-
-   /**intersection */
-   def *(rhs: LowerBorder[T]) = if (point > rhs.point) this else rhs
-
-   //   def *(rhs: UpperBorder[T]) = Interval(this, -rhs.asInstanceOf[LowerBorder[T]])
-
-   /**union */
-   def +(rhs: LowerBorder[T]) = if (point < rhs.point) this else rhs
-
-   /**complement ; all elements which are members of this but not members of rhs*/
-   def -(rhs: LowerBorder[T]) = /*if(this.point >= rhs.point) new EmptyInterval[T] else*/ Interval(rhs, this)
-}
-
-class UpperBorder[T <% Ordered[T]](val point: T) extends Border[T](new Geq[T]()) with Ordered[UpperBorder[T]] {
-   def compare(that: UpperBorder[T]): Int = that.point compare this.point
-
-   /**intersection */
-   def *(rhs: UpperBorder[T]) = if (point < rhs.point) this else rhs
-
-   /**union */
-   def +(rhs: UpperBorder[T]) = if (point > rhs.point) this else rhs
-
-   /**complement ; all elements which are members of this but not members of rhs*/
-   def -(rhs: UpperBorder[T]) = /*if(this.point >= rhs.point) new EmptyInterval[T] else*/ Interval(rhs, this)
-}
-
-//class UnionBorder[@specialized(Int, Double) T <% Ordered[T]](lowerBorders: Traversable[LowerBorder[T]], upperBorders: Traversable[UpperBorder[T]]) {
-//   val lowerBorder = lowerBorders.min
-//   val upperBorder = upperBorders.max
-//}
-//
-//class IntersectBorder[@specialized(Int, Double) T <% Ordered[T]](lowerBorders: Traversable[LowerBorder[T]], upperBorders: Traversable[UpperBorder[T]]) {
-//   val lowerBorder = lowerBorders.max
-//   val upperBorder = upperBorders.min
-//}
-
-abstract class Interval[@specialized(Int, Double) T <% Ordered[T]] {
-   val b1: Border[T]
-   val b2: Border[T]
-
-   //   assert(b2.point < b1.point)
-
-   /*final*/
-   def signum(implicit n: Numeric[T]) = n.minus(b2.point, b1.point) // b2.point - b1.point
-
-   /*final*/
-   def contains(v: T) = b2(v) && !b1(v)
-
-   override def toString =
-      if (b1.point < b2.point)
-         (-b1) + "," + b2
-      else if (b2.point < b1.point)
-         b2 + "," + (-b1)
-      else "Ø"
-}
-
-class IntervalAsIntersection[T <% Ordered[T]](val b: Border[T]*) extends Interval[T] {
-   val b1 = null
-   val b2 = null
-
-   /*final*/
-   override def signum(implicit n: Numeric[T]) = (b).map(_.signum).sum(n) // n.minus(b2.point, b1.point)
-
-   /*final*/
-   override def contains(v: T) = (b).forall(_(v))
-
-   override def toString = (b).toList.sortWith(_.point < _.point).mkString(",")
-}
-
-private final class EmptyInterval[T <% Ordered[T]] extends Interval[T] {
-   val b1 = null
-   val b2 = null
-
-   override def contains(v: T) = false
-
-   override def signum(implicit n: Numeric[T]) = n.fromInt(0)
-
-   override def toString = "Ø"
+  override def toString =
+    rhs.toString + (if (include) "]" else ")")
 }
 
 object Interval {
-   //   class IntervalImpl[@specialized(Int, Double) T <% Ordered[T]](val b1: Border[T], val b2: Border[T]) extends Interval
+  def unapply[T](impl: IntervalImpl[T]): Option[(LowerBorder[T], UpperBorder[T])]
+  = Some((impl.lower, impl.upper))
 
-   def apply[T <% Ordered[T]](a: LowerBorder[T], b: LowerBorder[T]) = {
-      if (b < a) new IntervalAsIntersection[T](b, -a /*-a,b*/) else new EmptyInterval[T]()
-      //      if (b < a) new Interval {
-      //         val b1 = a
-      //         val b2 = b
-      //      } else new EmptyInterval[T]()
-   }
+  def apply[T](lower:LowerBorder[T], upper:UpperBorder[T])(implicit ord : scala.math.Ordering[T])
+  = new IntervalImpl(lower, upper)
+  def apply[T](lower:UpperBorder[T], upper:UpperBorder[T])(implicit ord : scala.math.Ordering[T])
+  = new IntervalImpl(-lower, upper)
+  def apply[T](lower:LowerBorder[T], upper:LowerBorder[T])(implicit ord : scala.math.Ordering[T])
+  = new IntervalImpl(lower, -upper)
 
-   def apply[T <% Ordered[T]](a: UpperBorder[T], b: UpperBorder[T]) = {
-      if (b < a) new IntervalAsIntersection[T](-a, b) else new EmptyInterval[T]()
-      //      if (b < a) new Interval {
-      //         val b1 = a
-      //         val b2 = b
-      //      } else new EmptyInterval[T]()
-   }
+  def apply[T](lower:T, upper:T)
+              (implicit ord : scala.math.Ordering[T]) : IntervalImpl[T]
+  = apply[T](lower,true,upper,false)
 
-   def empty[T <% Ordered[T]]: Interval[T] = new EmptyInterval[T]()
-
-   //   def empty[Double] : Interval[Double] = new EmptyInterval[Double]()
+  def apply[T](lower:T, includeLower: Boolean, upper:T, includeUpper:Boolean)
+              (implicit ord : scala.math.Ordering[T]) : IntervalImpl[T]
+  = new IntervalImpl(LowerBorder[T](lower,includeLower), UpperBorder[T](upper,includeUpper))
 }
 
-abstract class IntervalImp[T <: Ordered[T]](val b1: Border[T], val b2: Border[T]) extends Interval[T] {
-   /**union */
-   def +(rhs: Interval[T])
+trait Interval[T] {
+  type I <: Interval[T]
 
-   /**complement ; all elements which are members of this but not members of rhs*/
-   def -(rhs: Interval[T])
+  /**measure */
+  def signum(implicit num:Numeric[T]) :T
 
-   /**intersection */
-   def *(rhs: Interval[T])
+  def contains(t:T): Boolean
 
-   /**? */
-   def /(rhs: Interval[T])
+  /**union */
+  def +(that: I) : I
 
-   /**symmetric difference */
-   def ^(rhs: Interval[T])
+  /**complement ; all elements which are members of this but not members of rhs*/
+  def -(that: I) : I
 
-   /**absolute complement */
-   def unary_-()
+  /**intersection */
+  def *(that: I) : I
+}
 
-   /**measure */
-   def abs(): Double
+/**
+ * Implementation of Interval
+ * @param lower left border
+ * @param upper right border
+ * @param ord
+ * @tparam T
+ */
+case class IntervalImpl[T](lower: LowerBorder[T], upper: UpperBorder[T])
+                          (implicit ord : scala.math.Ordering[T])
+  extends Interval[T] {
 
-   /**direction */
-   def signum(): Int
+  type I = IntervalImpl[T]
+
+  override def signum(implicit num:Numeric[T]) :T = num.minus(upper.rhs,lower.lhs)
+
+  /**union */
+  def +(that: IntervalImpl[T]) : IntervalImpl[T] = {
+    if(this.upper.rhs > that.lower.lhs && this.lower.lhs < that.upper.rhs)
+      new IntervalImpl[T](this.lower + that.lower, this.upper + that.upper)
+    else if(that.upper.rhs > this.lower.lhs && that.lower.lhs < this.upper.rhs)
+      new IntervalImpl[T](this.lower + that.lower, this.upper + that.upper)
+    else if(this.upper.rhs == that.lower.lhs && (this.upper.include || that.lower.include))
+      new IntervalImpl[T](this.lower + that.lower, this.upper + that.upper)
+    else if(that.upper.rhs == this.lower.lhs && (that.upper.include || this.lower.include))
+      new IntervalImpl[T](this.lower + that.lower, this.upper + that.upper)
+    else
+      throw new IllegalArgumentException(s"The intervals $this and $that don't touch.")
+  }
+
+  /**complement ; all elements which are members of this but not members of rhs*/
+  def -(that: IntervalImpl[T]) =
+    new IntervalImpl[T](this.lower * (-that.upper), this.upper * (-that.lower))
+
+  /**intersection */
+  def *(that: IntervalImpl[T]) =
+    if(this.upper.rhs >= that.lower.lhs && this.lower.lhs <= that.upper.rhs)
+      new IntervalImpl[T](this.lower*that.lower, this.upper*that.upper)
+    else if(that.upper.rhs >= this.lower.lhs && that.lower.lhs <= this.upper.rhs)
+      new IntervalImpl[T](this.lower*that.lower, this.upper*that.upper)
+    else
+      throw new IllegalArgumentException(s"The intervals $this and $that are disjunct.")
+
+  override def contains(t: T): Boolean = lower(t) && upper(t)
+
+  override def toString = lower.toString + "," + upper.toString
 }
 
 

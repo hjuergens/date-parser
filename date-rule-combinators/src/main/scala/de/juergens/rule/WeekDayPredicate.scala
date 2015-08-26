@@ -6,17 +6,11 @@
 
 package de.juergens.rule
 
-import java.time.LocalDate
-import java.util.Calendar
-import java.util.function
-import de.juergens.time.WeekDay
-
-//
-
-
 import java.time.temporal.{ChronoField, Temporal}
+import java.time.{DayOfWeek, LocalDate}
+import java.util.{Calendar, function}
 
-case class WeekDayPredicate(weekDay: WeekDay, calendar: Calendar = Calendar.getInstance())
+case class WeekDayPredicate(weekDay: DayOfWeek, calendar: Calendar = Calendar.getInstance())
   extends function.Predicate[Temporal] {
 
   override def toString: String = "is " + weekDay + "?"
@@ -31,7 +25,7 @@ case class WeekDayPredicate(weekDay: WeekDay, calendar: Calendar = Calendar.getI
     assert(t.isInstanceOf[LocalDate])
     t.asInstanceOf[LocalDate].getDayOfWeek // FIXME remove instanceOf
 
-    t.get(ChronoField.DAY_OF_WEEK) equals weekDay
+    t.get(ChronoField.DAY_OF_WEEK) equals weekDay.getValue
     //    val Date(y,m,d) = t
     //    calendar.set(Calendar.YEAR, y)
     //    calendar.set(Calendar.MONTH, m-1)

@@ -26,10 +26,10 @@ object Ordinal {
   implicit def ordinal2Long(x:Ordinal) : Long = x.toInt
 
   def ordinal(i :Int) : String = {
-    val sufixes = Array[String]( "th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th" )
+    val suffixes = Array[String]( "th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th" )
     (i % 100) match {
       case 11 | 12 | 14 => i + "th"
-      case _ => i + sufixes(i % 10)
+      case _ => i + suffixes(i % 10)
     }
 
   }

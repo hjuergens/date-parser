@@ -28,7 +28,7 @@ object BusinessDay  {
 
     override def isDateBased: Boolean = true
 
-    override def isDurationEstimated: Boolean = ???
+    override def isDurationEstimated: Boolean = true
 
     override def between(temporal1Inclusive: Temporal, temporal2Exclusive: Temporal): Long = {
       var count = 0L
@@ -46,6 +46,6 @@ object BusinessDay  {
 
     override def isTimeBased: Boolean = false
 
-    override def getDuration: Duration = ???
+    override def getDuration: Duration = Duration.ZERO
   }
 }

@@ -24,9 +24,9 @@ class FileTest2  {
   @DataProvider(name = "lines")
   def lines : Array[Array[Object]] = FileTest.lines(file)
 
-  @Test(dataProvider="lines", enabled = true)
+  @Test(dataProvider="lines", enabled = false)
   def test(line:String) : Unit = {
-    println(file)
+    Reporter.log(file.toString)
     assertNotNull(s"line=$line", line)
   }
 }
@@ -55,12 +55,6 @@ class FileTest {
 
 object FileTest {
   val logToStandardOut=true
-
-  /*
-  @Parameters(value=Array("file"))
-  @Factory(dataProvider = "files")
-  def fac(file : File) : Array[Object] = Array( file )
-  */
 
   @DataProvider(name = "files")
   def files : Array[Array[Object]] = {

@@ -10,6 +10,7 @@ import org.junit._
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
+import org.testng.Reporter
 
 import scala.collection.JavaConversions._
 import scala.io.Source
@@ -18,17 +19,17 @@ import scala.io.Source
 //@org.testng.annotations.Test   .Test(name="Test1", junit="true")
 @RunWith(value = classOf[Parameterized])
 class PeriodTest(line: String) {
-  val parser = new DateRuleParser
+  val parser = new DateRuleParsers
   val periodParser : parser.Parser[TemporalAmount] = parser.period
 
   @Before
   def before {
-    println( s"length=${line.length}")
-    println("line: " + line)
+    Reporter.log( s"length=${line.length}")
+    Reporter.log("line: " + line)
   }
 
   @After
-  def after { println("line: " + line) }
+  def after { Reporter.log("line: " + line) }
 
   @Test(timeout = 1000)
   def test() : Unit =  { test(line) }
@@ -44,12 +45,12 @@ object PeriodTest {
 
   @org.junit.BeforeClass
   def before {
-    println(s"textFile=$textFileURI")
+    Reporter.log(s"textFile=$textFileURI")
   }
 
   @org.junit.AfterClass
   def after {
-    println(s"textFile=$textFileURI")
+    Reporter.log(s"textFile=$textFileURI")
   }
 
   private[text] def _lines : Iterator[Array[Object]] = {

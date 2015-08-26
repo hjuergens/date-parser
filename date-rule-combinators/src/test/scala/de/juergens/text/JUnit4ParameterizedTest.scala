@@ -7,6 +7,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
+import org.testng.Reporter
 import org.testng.annotations.{DataProvider => DataProviderNG, Test => TestNG}
 
 import scala.collection.JavaConversions._
@@ -14,8 +15,8 @@ import scala.collection.JavaConversions._
 @RunWith(value = classOf[Parameterized])
 class JUnit4ParameterizedTest(textFile: jio.File) {
   @Test
-  def pushTest = {
-    println("file: " + textFile)
+  def pushTest :Unit = {
+    Reporter.log("file: " + textFile)
     for( lineArray <- lines) {
       test(lineArray(0).toString)
     }
@@ -35,7 +36,7 @@ class JUnit4ParameterizedTest(textFile: jio.File) {
 
   @TestNG(groups = Array { "seek"  }, dataProvider = "lines in text file", timeOut = 1000)
   def test(line: String) {
-    val parser = new DateRuleParser
+    val parser = new DateRuleParsers
     parser.parseAll(parser.rule, line).get
   }
 

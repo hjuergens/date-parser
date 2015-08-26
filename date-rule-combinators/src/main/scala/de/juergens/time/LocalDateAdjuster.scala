@@ -5,7 +5,7 @@ import java.time.temporal.{Temporal, TemporalAdjuster}
 import java.util.function.UnaryOperator
 
 import de.juergens.util
-
+import scala.languageFeature.implicitConversions
 /**
  *
  */

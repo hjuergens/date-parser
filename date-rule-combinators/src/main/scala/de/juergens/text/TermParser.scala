@@ -10,6 +10,7 @@ import de.juergens.time.{Period => _}
 import org.threeten.extra.DayOfMonth
 
 import scala.util.parsing.combinator._
+import scala.languageFeature.postfixOps
 
 class TermParser extends JavaTokenParsers {
 

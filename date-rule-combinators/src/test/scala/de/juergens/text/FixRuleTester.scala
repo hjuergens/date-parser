@@ -1,8 +1,8 @@
 package de.juergens.text
 
-import org.junit.{Ignore, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+import org.junit.{Ignore, Test}
 
 /**
  * Created by juergens on 20.05.15.

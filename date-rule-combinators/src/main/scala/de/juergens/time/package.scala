@@ -1,6 +1,6 @@
 package de.juergens
 
-import java.time.DayOfWeek
+import java.time.{LocalDate, DayOfWeek}
 import java.time.temporal._
 
 import de.juergens.util.{Direction, Down, Ordinal, Up}
@@ -25,7 +25,6 @@ package object time {
       apply(ordinal.abs, ta, direction)
     }
     def apply(ordinal: Ordinal, ta: TemporalUnit, direction: Direction): LocalDateAdjuster =
-    //(temporal: Temporal) => ta.addTo(temporal, direction * ordinal)
       ta match {
         case ChronoUnit.WEEKS => // TODO ISO-8601 standard considers Monday
           direction match {
@@ -84,6 +83,21 @@ package object time {
                   `with`(TemporalAdjusters.lastDayOfMonth())
               }
             } // MonthAdjuster(ordinal, java.time.Month.DECEMBER, direction)
+          }
+        case IsoFields.QUARTER_YEARS =>
+          direction match {
+            case Up => TemporalAdjusters.ofDateAdjuster(
+              (localDate:LocalDate)=> localDate.
+                  plus(ordinal, ChronoUnit.YEARS).
+                  `with`(java.time.Month.JANUARY).
+                  `with`(TemporalAdjusters.firstDayOfMonth())
+              )
+            case Down => TemporalAdjusters.ofDateAdjuster(
+              (localDate:LocalDate)=> localDate.
+                  minus(ordinal, ChronoUnit.YEARS).
+                  `with`(java.time.Month.DECEMBER).
+                  `with`(TemporalAdjusters.lastDayOfMonth())
+            )
           }
       }
   }

@@ -1,14 +1,10 @@
 package de.juergens.time
 
 import java.time.LocalDate
-import java.time.temporal.{ChronoUnit, TemporalAmount, Temporal}
+import java.time.temporal.ChronoUnit
 
-import org.specs2.mutable.Specification
-import org.specs2.specification.{BeforeEach, Before}
-import org.scalatest.Ignore
 import org.junit.runner.RunWith
 import org.specs2.mutable.Specification
-import org.specs2.specification.AllExpectations
 
 @RunWith(classOf[org.specs2.runner.JUnitRunner])
 class CalendarTest extends Specification {

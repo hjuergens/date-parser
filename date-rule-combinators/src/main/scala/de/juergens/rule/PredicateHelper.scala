@@ -2,6 +2,7 @@ package de.juergens.rule
 
 
 import java.util.function.Predicate
+import scala.languageFeature.implicitConversions
 
 case class UnionPredicate[T](predicates: Predicate[T]*) extends Predicate[T] {
   def test(t: T) = predicates.foldLeft(false)((b, r) => b | r.test(t))

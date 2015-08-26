@@ -2,6 +2,8 @@ package de
 
 import java.util.function.UnaryOperator
 
+import scala.languageFeature.implicitConversions
+
 /**
  * Created by juergens on 16.08.15.
  */

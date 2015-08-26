@@ -4,36 +4,34 @@ package de.juergens.text
  * Created by juergens on 31.05.15.
  */
 
-import java.io.{File, FilenameFilter}
-import java.net.URL
 import java.{io => jio, lang => jl, util => ju}
 
 import de.juergens.time.LocalDateAdjuster
 import org.hamcrest.Description
+import org.junit.Assert._
 import org.junit._
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
-import org.testng.annotations.{Parameters => ParametersNG}
-import org.testng.annotations.{DataProvider => DataProviderNG, Test => TestNG}
-import org.testng.annotations.{DataProvider => DataProviderNG, Test => TestNG, _}
+import org.testng.Reporter
+import org.testng.annotations.{DataProvider => DataProviderNG, Parameters => ParametersNG, Test => TestNG}
+
 import scala.collection.JavaConversions._
 import scala.io.Source
-import org.junit.Assert._
 @TestNG
 @RunWith(value = classOf[Parameterized])
 class HighSophisticatedTest(line: String) {
 
-  val parser = new DateRuleParser
+  val parser = new DateRuleParsers
 
   @Before
   def before {
-    println( s"length=${line.length}")
-    println("line: " + line)
+    Reporter.log( s"length=${line.length}")
+    Reporter.log("line: " + line)
   }
 
   @After
-  def after { println("line: " + line) }
+  def after { Reporter.log("line: " + line) }
 
   @Test(timeout = 1000)
   def test() : Unit =  {

@@ -10,6 +10,7 @@ import org.junit.Assert._
 import org.junit._
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+import org.testng.Reporter
 
 @RunWith(classOf[JUnit4])
 class LoopParser_Test {
@@ -23,10 +24,10 @@ class LoopParser_Test {
   }
 
   @Test
-  def statement = {
+  def statement() :Unit = {
     val parser = new LoopParser()
     val result = parser.parseAll(parser.statement, "for i in 0 to 6 {}")
-    println(result)
+    Reporter.log(result.toString)
     assertTrue(true)
   }
 

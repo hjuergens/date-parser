@@ -1,6 +1,7 @@
 package de.juergens
 
 import scala.util.parsing.combinator.RegexParsers
+import scala.languageFeature.postfixOps
 
 object SimpleScala extends RegexParsers {
 

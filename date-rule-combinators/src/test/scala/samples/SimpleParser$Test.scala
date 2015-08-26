@@ -5,8 +5,8 @@ import org.junit.runner.RunWith
 import org.specs2._
 import org.specs2.runner.JUnitRunner
 
+import scala.languageFeature.postfixOps
 import scala.util.parsing.combinator.Parsers
-
 
 /**
  * Created by juergens on 15.05.15.

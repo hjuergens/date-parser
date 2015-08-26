@@ -31,7 +31,7 @@ relative dates
         three weeks ago
 
 date alternatives
-    Natty is able to reconize a list of date alternatives. This is the reason why the ParseResult always contains a List of Date objects.
+    Natty is able to recocnize a list of date alternatives. This is the reason why the ParseResult always contains a List of Date objects.
 
         next wed or thurs
         oct 3rd or 4th

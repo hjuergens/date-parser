@@ -4,21 +4,22 @@ package de.juergens.text
  * Created by juergens on 31.05.15.
  */
 
-import java.io.{File, FilenameFilter}
-import java.lang.reflect.Field
+import java.io.File
 import java.time.temporal.TemporalAdjuster
+
 import org.junit._
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
 import org.testng.Reporter
+
 import scala.collection.JavaConversions._
 import scala.io.Source
 
 @RunWith(value = classOf[Parameterized])
 class AdjusterTest(line: String) {
 
-  val parser = new DateRuleParser
+  val parser = new DateRuleParsers
 
   val parserMethod : parser.Parser[TemporalAdjuster] = {
     val m : AnyRef = parser.getClass.getMethod("adjuster").invoke(parser)

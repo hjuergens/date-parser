@@ -213,11 +213,11 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${surefire.version}</version>
                 <dependencies>
-                    <dependency>
+                    <!--dependency>
                         <groupId>org.apache.maven.surefire</groupId>
                         <artifactId>surefire-junit47</artifactId>
                         <version>${surefire.version}</version>
-                    </dependency>
+                    </dependency-->
                     <dependency>
                         <groupId>org.apache.maven.surefire</groupId>
                         <artifactId>surefire-testng</artifactId>
@@ -226,17 +226,10 @@
                 </dependencies>
                 <configuration>
                     <threadCount>3</threadCount>
+                    <suiteXmlFiles>
+                        <suiteXmlFile>${project.basedir}/src/test/resources/testng.xml</suiteXmlFile>
+                    </suiteXmlFiles>
                 </configuration>
-                <!--<configuration>-->
-                    <!--&lt;!&ndash;<skipTests>true</skipTests>&ndash;&gt;-->
-                    <!--<includes>-->
-                        <!--<include>**/*Suite*.class</include>-->
-                        <!--<include>**/*Test*.class</include>-->
-                        <!--<include>**/*Tests*.class</include>-->
-                        <!--<include>**/*Spec*.class</include>-->
-                        <!--<include>**/*Specs*.class</include>-->
-                    <!--</includes>-->
-                <!--</configuration>-->
             </plugin>
 
             <!-- ScalaTest -->

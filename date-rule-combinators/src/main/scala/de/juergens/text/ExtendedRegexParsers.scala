@@ -10,19 +10,8 @@ trait ExtendedRegexParsers {
   self: RegexParsers =>
 
   /**
-   * Enrich set of delimiters with ?~ for optional keywords
-   * @param p a parser
-   * @tparam T a type
-   */
-  implicit protected class ParserExtension[T](val p: Parser[T]) {
-    def ?~[U](q: => Parser[U]): Parser[Option[T] ~ U] = {
-      ((p ^^ Some.apply) ~ q) | (success(None) ~ q)
-    }
-  }
-
-  /**
    * 
-   * @param r
+   * @param r a regular expression
    * @return
    */
   protected case class RegexParser(r: Regex) extends Parser[Regex.Match] {

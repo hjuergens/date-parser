@@ -7,6 +7,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
 import org.junit.{Rule, Test}
+import org.testng.Reporter
 
 import scala.collection.JavaConversions._
 import scala.io.Source
@@ -40,7 +41,7 @@ class PrefixesTest(textFile:File)  {
 
   @Test(expected=classOf[java.lang.RuntimeException])
   def allLines = {
-      println("file: " + textFile)
+      Reporter.log("file: " + textFile)
       for (lineArray <- lines) {
         adjusterTest(lineArray(0).toString)
       }
@@ -53,7 +54,7 @@ class PrefixesTest(textFile:File)  {
     source.getLines().filterNot(_.trim.startsWith("#")).filterNot(_.isEmpty).map(Array[Object](_))
   }
 
-  val parser = new DateRuleParser
+  val parser = new DateRuleParsers
 
   def adjusterTest(line: String) {
     parser.parseAll(parser.adjuster, line).get

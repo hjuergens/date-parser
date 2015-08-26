@@ -4,9 +4,9 @@ import java.time.{LocalDate, DayOfWeek}
 import java.time.temporal.{TemporalAdjusters, Temporal, TemporalAdjuster}
 
 final class IMM extends TemporalAdjuster with ((Temporal)=>Temporal) {
-  val secondWednesday = TemporalAdjusters.dayOfWeekInMonth(2, DayOfWeek.WEDNESDAY)
+  val thirdWednesday = TemporalAdjusters.dayOfWeekInMonth(3, DayOfWeek.WEDNESDAY)
 
-  override def adjustInto(temporal: Temporal): Temporal = secondWednesday.adjustInto(temporal)
+  override def adjustInto(temporal: Temporal): Temporal = thirdWednesday.adjustInto(temporal)
 
   // TODO next/previous IMM
   override def apply(t: Temporal): Temporal = adjustInto(t)

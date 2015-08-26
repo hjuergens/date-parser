@@ -1,17 +1,13 @@
 package de.juergens.text
 
 import java.io.File
-import java.time.temporal.TemporalAdjuster
-
-import org.junit._
-import org.junit.runners.Parameterized.Parameters
 
 import scala.collection.JavaConversions._
 import scala.io.Source
 
 object FileTesterCompanion {
 
-  def parserMethod[T](parser: scala.util.parsing.combinator.Parsers = new DateRuleParser, methodName : String = "adjuster") : parser.Parser[T] = {
+  def parserMethod[T](parser: scala.util.parsing.combinator.Parsers = new DateRuleParsers, methodName : String = "adjuster") : parser.Parser[T] = {
     val m : AnyRef = parser.getClass.getMethod(methodName).invoke(parser)
     m.asInstanceOf[parser.Parser[T]]
   }

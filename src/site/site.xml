@@ -1,0 +1,81 @@
+<!--
+  ~ Copyright 2015 Hartmut Jürgens
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<project xmlns="http://maven.apache.org/DECORATION/1.6.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/DECORATION/1.6.0 http://maven.apache.org/xsd/decoration-1.6.0.xsd"
+         name="Date Rule Parser">
+
+    <bannerLeft>
+        <name>Project Name</name>
+        <src>http://maven.apache.org/images/apache-maven-project-2.png</src>
+        <href>http://maven.apache.org/</href>
+    </bannerLeft>
+
+    <bannerRight>
+        <src>http://maven.apache.org/images/maven-logo-2.gif</src>
+    </bannerRight>
+
+    <googleAdSenseClient/>
+    <googleAdSenseSlot/>
+    <googleAnalyticsAccountId/>
+
+    <publishDate position="right"/>
+    <version position="right"/>
+
+    <poweredBy>
+        <logo name="Maven" href="http://maven.apache.org/"
+              img="http://maven.apache.org/images/logos/maven-feather.png"/>
+    </poweredBy>
+
+    <skin>
+        <groupId>org.apache.maven.skins</groupId>
+        <artifactId>maven-classic-skin</artifactId>
+        <version>1.0</version>
+    </skin>
+
+
+<body>
+    <head>
+        <script src="http://www.google-analytics.com/urchin.js" type="text/javascript"> </script>
+    </head>
+
+
+<!--links>
+    <item name=.. href=.. img=.. position=.. alt=.. border=.. width=.. height=.. target=.. title=.. />
+</links-->
+
+<breadcrumbs>
+    <item name="Doxia" href="http://maven.apache.org/doxia/index.html"/>
+    <item name="Trunk" href="http://maven.apache.org/doxia/doxia/index.html"/>
+</breadcrumbs>
+
+    <menu name="Overview">
+        <item name="Foo" href="foo.html" />
+        <item name="FAQ" href="faq.html" />
+    </menu>
+    <menu ref="modules" />
+    <menu ref="reports"/>
+
+    <links>
+        <item name="Apache" href="http://www.apache.org"/>
+        <item name="Maven" href="http://maven.apache.org"/>
+    </links>
+
+    <footer>All rights reserved.</footer>
+</body>
+
+<custom/>
+        </project>

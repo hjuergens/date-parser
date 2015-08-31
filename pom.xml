@@ -1,5 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>de.juergens</groupId>
     <artifactId>date-parser</artifactId>
@@ -9,6 +9,9 @@
         <module>date-parser-antlr</module>
         <module>date-rule-combinators</module>
         <module>dp-jflex</module>
+        <module>date-rule-coco</module>
+        <module>date-rule-sablecc</module>
+        <module>date-rule-javacc</module>
     </modules>
     <name>${project.artifactId}</name>
     <description>Date Parser</description>
@@ -28,7 +31,8 @@
     </licenses>
 
     <organization>
-        <name>private</name>
+        <name>Jürgens</name>
+        <url>https://github.com/date-parser</url>
     </organization>
 
     <scm>
@@ -48,12 +52,26 @@
         </repository>
     </repositories>
 
+    <url>http://home.arcor.de/hjuergens/</url>
 
+    <issueManagement>
+        <system>Github</system>
+        <url>https://github.com/date-parser/issues</url>
+    </issueManagement>
 
     <distributionManagement>
-        <site>
+        <repository>
             <id>hjuergens.git.server</id>
             <url>scm:git:git@github.com:hjuergens/date-parser.git</url>
+        </repository>
+        <snapshotRepository>
+            <id>hjuergens.git.server</id>
+            <url>scm:git:git@github.com:hjuergens/date-parser.git</url>
+        </snapshotRepository>
+        <site>
+            <id>home.arcor</id>
+            <name>Arcor Home</name>
+            <url>ftp://home.arcor.de</url>
         </site>
     </distributionManagement>
 
@@ -105,6 +123,13 @@
             <version>3.12-beta1</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <version>6.9.4</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Allows configuration of holiday dates and a simple API to figure out if a date is a holiday. -->
         <!--<dependency>-->
             <!--<groupId>nz.co.senanque</groupId>-->
@@ -147,6 +172,14 @@
         <sourceDirectory>src/main/scala</sourceDirectory>
         <testSourceDirectory>src/test/scala</testSourceDirectory>
 
+        <extensions>
+            <extension>
+                <groupId>org.mod4j.patched</groupId>
+                <artifactId>wagon-ftp</artifactId>
+                <version>1.0-beta-5-PATCHED-v1</version>
+            </extension>
+        </extensions>
+
         <pluginManagement>
             <plugins>
                 <plugin>
@@ -178,11 +211,33 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-pmd-plugin</artifactId>
                     <version>3.4</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>net.sourceforge.pmd</groupId>
+                            <artifactId>pmd-scala</artifactId>
+                            <version>5.3.2</version>
+                        </dependency>
+                    </dependencies>
                 </plugin>
                 <plugin>
                     <groupId>net.sourceforge.pmd</groupId>
                     <artifactId>pmd-scala</artifactId>
                     <version>5.3.2</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-changelog-plugin</artifactId>
+                    <version>2.3</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-checkstyle-plugin</artifactId>
+                    <version>2.16</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>sonar-maven-plugin</artifactId>
+                    <version>2.6</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -233,6 +288,148 @@
 
             </plugin-->
 
+            <!-- checkstyle -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <dependencies>
+                    <dependency>
+                        <groupId>de.juergens</groupId>
+                        <artifactId>date-parser-antlr</artifactId>
+                        <version>0.0.2-SNAPSHOT</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>de.juergens</groupId>
+                        <artifactId>date-rule-combinators</artifactId>
+                        <version>0.0.4-SNAPSHOT</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>de.juergens</groupId>
+                        <artifactId>dp-jflex</artifactId>
+                        <version>0.0.2-SNAPSHOT</version>
+                    </dependency>
+                </dependencies>
+                <executions>
+                    <execution>
+                        <id>validate</id>
+                        <phase>validate</phase>
+                        <configuration>
+                            <!--configLocation>scalastyle_config.xml</configLocation-->
+                            <encoding>UTF-8</encoding>
+                            <consoleOutput>true</consoleOutput>
+                            <failsOnError>true</failsOnError>
+                            <!--linkXRef>true</linkXRef-->
+                        </configuration>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
+
+    <reporting>
+        <plugins>
+            <!-- reports -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-project-info-reports-plugin</artifactId>
+                <version>2.8</version>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>index</report>
+                            <report>dependencies</report>
+                            <report>project-team</report>
+                            <report>mailing-list</report>
+                            <report>cim</report>
+                            <report>issue-tracking</report>
+                            <report>license</report>
+                            <report>scm</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+
+            <!-- javadoc -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.9</version>
+                <reportSets>
+                    <reportSet><!-- by default, id = "default" -->
+                        <reports><!-- select non-aggregate reports -->
+                            <report>javadoc</report>
+                            <report>test-javadoc</report>
+                        </reports>
+                    </reportSet>
+                    <reportSet><!-- aggregate reportSet, to define in poms having modules -->
+                        <id>aggregate</id>
+                        <inherited>false</inherited><!-- don't run aggregate in child modules -->
+                        <reports>
+                            <report>aggregate</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+
+            <!-- JXR -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jxr-plugin</artifactId>
+                <version>2.5</version>
+                <reportSets>
+                    <reportSet>
+                        <id>aggregate</id>
+                        <inherited>false</inherited>
+                        <reports>
+                            <report>aggregate</report>
+                            <report>test-aggregate</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+
+            <!-- PMD -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <version>3.4</version>
+                <reportSets>
+                    <reportSet>
+                        <inherited>false</inherited>
+                        <reports><report>check</report></reports>
+                    </reportSet>
+                </reportSets>
+                <!--configuration>
+                    <rulesets>
+                        <ruleset>/rulesets/braces.xml</ruleset>
+                        <ruleset>/rulesets/naming.xml</ruleset>
+                        <ruleset>d:\rulesets\strings.xml</ruleset>
+                        <ruleset>http://localhost/design.xml</ruleset>
+                    </rulesets>
+                </configuration-->
+            </plugin>
+
+            <!-- checkstyle -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>2.16</version>
+                <configuration>
+                    <headerLocation>LICENSE.txt</headerLocation>
+                </configuration>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>checkstyle-aggregate</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+
+        </plugins>
+    </reporting>
 </project>

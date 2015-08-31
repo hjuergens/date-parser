@@ -7,13 +7,15 @@
 package de.juergens.time
 
 import java.time.LocalDate
-import java.time.temporal.{TemporalAccessor, ChronoField, Temporal}
+import java.time.temporal.{ChronoField, Temporal, TemporalAccessor}
 import java.util.function.Predicate
 
-import de.juergens.rule.PredicateHelper
-import de.juergens.time.impl.DateShifter
+import xuwei_k.Scala2Java8.predicate
 
 import de.juergens.rule.PredicateHelper._
+import de.juergens.time.impl.DateShifter
+
+import scala.language.implicitConversions
 
 sealed abstract class DateRule {
   def evaluate(anchor: LocalDate)(t: Temporal): Boolean

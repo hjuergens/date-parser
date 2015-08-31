@@ -49,9 +49,10 @@ class DateRuleParsersTestNG extends DateRuleParsers {
 
   @Test
   def ordinalTimeUnitTest() : Unit = {
-    val secondDay = parseAll(ordinalUnit, "second day").get
-    assertEquals(secondDay, DayShifter(2) )
-    assertEquals(secondDay(LocalDate.of(2015,8,16)), LocalDate.of(2015,8,18))
+    val secondDay = parseAll(ordinalUnit, "second day")
+    assertTrue(secondDay.successful, secondDay.toString)
+    assertEquals(secondDay.get.toString, "2nd Day")
+    assertEquals(secondDay.get(LocalDate.of(2015,8,16)), LocalDate.of(2015,8,18))
   }
 
   case class IsDayOfWeek(dayOfWeek:DayOfWeek) extends TemporalQuery[Boolean] {
@@ -253,7 +254,8 @@ class DateRuleParsersTestNG extends DateRuleParsers {
   def twoDaysLater() : Unit = {
     import java.time.{LocalDate => Date}
 
-    import de.juergens.unaryOperator
+    import scala.language.implicitConversions
+    import xuwei_k.Scala2Java8.unaryOperator
 
     val twoDaysLater = parseAll(adjuster, "two days later")
 

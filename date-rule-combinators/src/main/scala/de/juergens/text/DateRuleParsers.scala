@@ -26,7 +26,7 @@ import de.juergens.time.impl.{DayShifter, TimeUnitShifter}
 import de.juergens.util._
 import org.threeten.extra.Quarter
 
-import scala.languageFeature.postfixOps
+import scala.language.postfixOps
 import scala.util.parsing.combinator._
 
 

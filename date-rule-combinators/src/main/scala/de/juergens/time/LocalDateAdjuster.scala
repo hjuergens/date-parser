@@ -2,14 +2,12 @@ package de.juergens.time
 
 import java.time.LocalDate
 import java.time.temporal.{Temporal, TemporalAdjuster}
-import java.util.function.UnaryOperator
 
-import de.juergens.util
-import scala.languageFeature.implicitConversions
+import scala.language.implicitConversions
 /**
  *
  */
-trait LocalDateAdjuster extends TemporalAdjuster /*with UnaryOperator[LocalDate]*/ with java.util.function.Function[Temporal, LocalDate] {
+trait LocalDateAdjuster extends TemporalAdjuster with java.util.function.Function[Temporal, LocalDate] {
   def apply(t: Temporal) : LocalDate = LocalDate.from(adjustInto(t))
 }
 
@@ -17,19 +15,21 @@ trait LocalDateAdjuster extends TemporalAdjuster /*with UnaryOperator[LocalDate]
  * TemporalAdjusters.ofDateAdjuster( (ld:LocalDate)=>ld )
  */
 object LocalDateAdjuster {
-  implicit def apply(function: java.util.function.Function[Temporal, LocalDate])  : LocalDateAdjuster =
-    new LocalDateAdjuster {
+  implicit class LocalDateAdjusterOfFunction(function: java.util.function.Function[Temporal, LocalDate])
+                                            (implicit des:String=s"LocalDateAdjusterOfFunction($function)")
+    extends LocalDateAdjuster {
       override def adjustInto(temporal: Temporal): Temporal =
         function(LocalDate.from(temporal))
       override def apply(t: Temporal) = function(t)
-    }
 
-  implicit def apply2(function : Temporal => LocalDate) : LocalDateAdjuster =
-  new LocalDateAdjuster {
-    override def adjustInto(temporal: Temporal): Temporal =
-      function(LocalDate.from(temporal))
-    override def apply(t: Temporal) = function(t)
+    override def toString = des
   }
+
+  import xuwei_k.Scala2Java8.function
+  implicit def apply(func : LocalDate => LocalDate)(implicit des:String="") : LocalDateAdjuster = {
+    function[Temporal,LocalDate](func.compose[Temporal](LocalDate.from(_)))
+  }
+//    new LocalDateAdjusterOfFunction(function.compose[Temporal](LocalDate.from(_)))
 
   implicit class Lifter(ta:TemporalAdjuster)
     extends LocalDateAdjuster {

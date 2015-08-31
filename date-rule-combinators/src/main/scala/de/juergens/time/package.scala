@@ -1,9 +1,12 @@
 package de.juergens
 
-import java.time.{LocalDate, DayOfWeek}
 import java.time.temporal._
+import java.time.{DayOfWeek, LocalDate}
 
 import de.juergens.util.{Direction, Down, Ordinal, Up}
+import xuwei_k.Scala2Java8.unaryOperator
+
+import scala.language.implicitConversions
 
 package object time {
   implicit class TemporalAdjusterWrapper(adjuster: (Temporal) => Temporal) extends TemporalAdjuster {
@@ -26,79 +29,86 @@ package object time {
     }
     def apply(ordinal: Ordinal, ta: TemporalUnit, direction: Direction): LocalDateAdjuster =
       ta match {
-        case ChronoUnit.WEEKS => // TODO ISO-8601 standard considers Monday
+        case ChronoUnit.DAYS =>
+          implicit val description = s"$ordinal Day"
           direction match {
-            case Up => new TemporalAdjuster with LocalDateAdjuster {
-              override def adjustInto(temporal: Temporal): Temporal = {
-                temporal.
-                  plus(ordinal, ChronoUnit.WEEKS).
-                  plus(1, ChronoUnit.DAYS).
-                  `with`(DayOfWeek.MONDAY). // TemporalAdjusters.firstDayOfMonth())
-                  minus(1, ChronoUnit.DAYS)
-              }
-            } // DayOfWeekAdjuster(ordinal, DayOfWeek.SUNDAY, direction)
-            case Down => new TemporalAdjuster with LocalDateAdjuster {
-              override def adjustInto(temporal: Temporal): Temporal = {
-                temporal.
-                  minus(ordinal, ChronoUnit.WEEKS).
-                  plus(1, ChronoUnit.DAYS).
-                  `with`(DayOfWeek.SUNDAY).
-                  minus(1, ChronoUnit.DAYS)// TemporalAdjusters.firstDayOfMonth())
-              }
-            } // DayOfWeekAdjuster(ordinal, DayOfWeek.SATURDAY, direction)
+            case Up => {
+              (date:LocalDate) => date.plus(ordinal, ChronoUnit.DAYS)
+            }
+            case Down => (date:LocalDate)=> date.minus(ordinal, ChronoUnit.DAYS)
+          }
+        case ChronoUnit.WEEKS => // TODO ISO-8601 standard considers Monday
+          implicit val description = s"$ordinal Week"
+          direction match {
+            case Up => (date:LocalDate) => {
+              date.
+                plus(ordinal, ChronoUnit.WEEKS).
+                plus(1, ChronoUnit.DAYS).
+                `with`(DayOfWeek.MONDAY). // TemporalAdjusters.firstDayOfMonth())
+                minus(1, ChronoUnit.DAYS)
+            }
+
+            case Down => (date:LocalDate) => {
+              date.
+                minus(ordinal, ChronoUnit.WEEKS).
+                plus(1, ChronoUnit.DAYS).
+                `with`(DayOfWeek.SUNDAY).
+                minus(1, ChronoUnit.DAYS)// TemporalAdjusters.firstDayOfMonth())
+            }
+
           }
         case ChronoUnit.MONTHS => {
+          implicit val description = s"$ordinal Month"
           direction match {
-            case Up => new TemporalAdjuster with LocalDateAdjuster {
-              override def adjustInto(temporal: Temporal): Temporal = {
-                temporal.
-                  plus(ordinal, ChronoUnit.MONTHS).
-                  `with`(TemporalAdjusters.firstDayOfMonth())
-              }
+            case Up => (date:LocalDate) => {
+              date.
+                plus(ordinal, ChronoUnit.MONTHS).
+                `with`(TemporalAdjusters.firstDayOfMonth())
             }
-            case Down => new TemporalAdjuster with LocalDateAdjuster {
-              override def adjustInto(temporal: Temporal): Temporal = {
-                temporal.
-                  minus(ordinal, ChronoUnit.MONTHS).
-                  `with`(TemporalAdjusters.lastDayOfMonth())
-              }
+
+            case Down => (date:LocalDate) => {
+              date.
+                minus(ordinal, ChronoUnit.MONTHS).
+                `with`(TemporalAdjusters.lastDayOfMonth())
             }
+
           }
         }
         case ChronoUnit.YEARS =>
+          implicit val description = s"$ordinal Year"
           direction match {
-            case Up => new TemporalAdjuster with LocalDateAdjuster {
-              override def adjustInto(temporal: Temporal): Temporal = {
-                temporal.
+            case Up => (date:LocalDate) => {
+              date.
                   plus(ordinal, ChronoUnit.YEARS).
-                  `with`(java.time.Month.JANUARY).
-                  `with`(TemporalAdjusters.firstDayOfMonth())
+                  `with`(TemporalAdjusters.firstDayOfYear())
+
               }
-            } // MonthAdjuster(ordinal, java.time.Month.JANUARY, direction)
-            case Down => new TemporalAdjuster with LocalDateAdjuster {
-              override def adjustInto(temporal: Temporal): Temporal = {
-                temporal.
+
+            case Down => (date:LocalDate) => {
+              date.
                   minus(ordinal, ChronoUnit.YEARS).
-                  `with`(java.time.Month.DECEMBER).
-                  `with`(TemporalAdjusters.lastDayOfMonth())
+                  `with`(TemporalAdjusters.lastDayOfYear())
               }
-            } // MonthAdjuster(ordinal, java.time.Month.DECEMBER, direction)
+
           }
-        case IsoFields.QUARTER_YEARS =>
+        case IsoFields.QUARTER_YEARS => // TODO IsoFields.QUARTER_YEARS
+          implicit val description = s"$ordinal Quarter"
           direction match {
-            case Up => TemporalAdjusters.ofDateAdjuster(
+            case Up =>
               (localDate:LocalDate)=> localDate.
-                  plus(ordinal, ChronoUnit.YEARS).
-                  `with`(java.time.Month.JANUARY).
-                  `with`(TemporalAdjusters.firstDayOfMonth())
-              )
-            case Down => TemporalAdjusters.ofDateAdjuster(
+                plus(ordinal, ChronoUnit.YEARS).
+                `with`(java.time.Month.JANUARY).
+                `with`(TemporalAdjusters.firstDayOfMonth())
+
+            case Down =>
               (localDate:LocalDate)=> localDate.
-                  minus(ordinal, ChronoUnit.YEARS).
-                  `with`(java.time.Month.DECEMBER).
-                  `with`(TemporalAdjusters.lastDayOfMonth())
-            )
+                minus(ordinal, ChronoUnit.YEARS).
+                `with`(java.time.Month.DECEMBER).
+                `with`(TemporalAdjusters.lastDayOfMonth())
+
           }
       }
+
+    override def toString = s"TemporalPeriodSeek()"
   }
 }

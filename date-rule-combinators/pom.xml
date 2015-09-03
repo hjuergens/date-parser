@@ -30,6 +30,8 @@
         <scoverage.scalacPluginVersion>1.0.4</scoverage.scalacPluginVersion>
         <surefire.version>2.18.1</surefire.version>
         <disable.surefire>false</disable.surefire>
+        <maven.pmd.rulesetfiles>${project.basedir}/pmd.xml</maven.pmd.rulesetfiles>
+        <mpir.skip>false</mpir.skip> <!-- project-info-reports -->
     </properties>
 
     <pluginRepositories>
@@ -65,7 +67,7 @@
 
         <dependency>
             <groupId>org.scala-lang.modules</groupId>
-            <artifactId>scala-parser-combinators_2.11</artifactId>
+            <artifactId>scala-parser-combinators_${scala.compat.version}</artifactId>
             <version>1.0.3</version>
             <scope>compile</scope>
         </dependency>
@@ -129,20 +131,20 @@
         <!-- Test -->
         <!--<dependency>-->
         <!--<groupId>org.specs2</groupId>-->
-        <!--<artifactId>specs2_2.11</artifactId>-->
+        <!--<artifactId>specs2_${scala.compat.version}</artifactId>-->
         <!--<version>2.4.4-scalaz-7.0.6</version>-->
         <!--<scope>test</scope>-->
         <!--</dependency>-->
         <dependency>
             <groupId>org.specs2</groupId>
-            <artifactId>specs2_2.11</artifactId>
+            <artifactId>specs2_${scala.compat.version}</artifactId>
             <version>2.4.2</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.scalatest</groupId>
-            <artifactId>scalatest_2.11</artifactId>
+            <artifactId>scalatest_${scala.compat.version}</artifactId>
             <version>2.2.4</version>
             <scope>test</scope>
         </dependency>
@@ -181,6 +183,21 @@
         <sourceDirectory>src/main/scala</sourceDirectory>
         <testSourceDirectory>src/test/scala</testSourceDirectory>
 
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>findbugs-maven-plugin</artifactId>
+                    <version>3.0.1</version>
+                    <configuration>
+                        <onlyAnalyze>de.juergens.*</onlyAnalyze>
+                        <findbugsXmlOutput>true</findbugsXmlOutput>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <!-- scala-maven-plugin -->
         <plugins>
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
@@ -281,8 +298,11 @@
                     <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
                     <testSourceDirectory>${project.build.testSourceDirectory}</testSourceDirectory>
                     <configLocation>${project.parent.basedir}/scalastyle_config.xml</configLocation>
-                    <outputFile>${project.build.directory}/site/scalastyle-output.xml</outputFile>
+                    <outputFile>${project.build.directory}/scalastyle-output.xml</outputFile>
                     <outputEncoding>UTF-8</outputEncoding>
+                    <failOnWarning>false</failOnWarning>
+                    <inputEncoding>${project.build.sourceEncoding}</inputEncoding>
+                    <outputEncoding>${project.reporting.outputEncoding}</outputEncoding>
                 </configuration>
                 <executions>
                     <execution>
@@ -293,6 +313,12 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+
+            <!-- JXR -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jxr-plugin</artifactId>
             </plugin>
 
             <!-- pmd -->
@@ -309,9 +335,9 @@
                 <executions>
                     <execution>
                         <phase>verify</phase>
-                        <goals>
-                            <goal>pmd</goal>
+                        <goals> <!-- Only CPD is supported. There are no PMD rules for Scala. -->
                             <goal>cpd</goal>
+                            <goal>cpd-check</goal>
                         </goals>
                     </execution>
                 </executions>
@@ -319,13 +345,12 @@
                     <sourceEncoding>utf-8</sourceEncoding>
                     <linkXRef>true</linkXRef>
                     <minimumTokens>100</minimumTokens>
-                    <!--targetJdk>${java.version}</targetJdk-->
+                    <targetJdk>${maven.compiler.source}</targetJdk>
                     <skipEmptyReport>false</skipEmptyReport>
-                    <!--rulesets>
-                        <ruleset>${pmd.dogfood.ruleset}</ruleset>
-                    </rulesets-->
-                    <excludeRoots><excludeRoot>target/generated-sources</excludeRoot>
-                </excludeRoots>
+                    <!--<rulesets><ruleset>rulesets/maven.xml</ruleset></rulesets>-->
+                    <excludeRoots>
+                        <excludeRoot>${project.build.directory}/generated-sources</excludeRoot>
+                    </excludeRoots>
                 </configuration>
             </plugin>
 
@@ -398,6 +423,24 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- findbugs -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>findbugs-maven-plugin</artifactId>
+                <!--configuration>
+                    <onlyAnalyze>de.juergens.*</onlyAnalyze>
+                    <findbugsXmlOutput>true</findbugsXmlOutput>
+                    <findbugsXmlWithMessages>true</findbugsXmlWithMessages>
+                </configuration-->
+            </plugin>
+
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+            </plugin>
+
         </plugins>
     </build>
 
@@ -410,17 +453,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-report-plugin</artifactId>
                 <version>${surefire.version}</version>
-            </plugin>
-
-            <!-- scala style -->
-            <!-- default phase of execution is verify -->
-            <plugin>
-                <groupId>org.scalastyle</groupId>
-                <artifactId>scalastyle-maven-plugin</artifactId>
-                <version>0.7.0</version>
-                <configuration>
-                    <outputFile>${project.build.directory}/site/scalastyle-output.xml</outputFile>
-                </configuration>
             </plugin>
 
             <!-- ScalaDoc -->
@@ -438,24 +470,52 @@
                 </configuration>
             </plugin>
 
+            <!-- ScalaTest -->
+            <plugin>
+                <groupId>org.scalatest</groupId>
+                <artifactId>scalatest-maven-plugin</artifactId>
+                <version>1.0</version>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>reporter</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+
             <!-- Coverage -->
-            <!--<plugin>-->
-            <!--<groupId>org.scoverage</groupId>-->
-            <!--<artifactId>scoverage-maven-plugin</artifactId>-->
-            <!--<version>${scoverage.plugin.version}</version>-->
-            <!--</plugin>-->
+            <plugin>
+            <groupId>org.scoverage</groupId>
+            <artifactId>scoverage-maven-plugin</artifactId>
+            <version>${scoverage.plugin.version}</version>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>report</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
 
             <!-- JXR -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jxr-plugin</artifactId>
                 <version>2.5</version>
-            </plugin>
+                <reportSets><reportSet><id>default</id><reports><report>jxr</report><report>test-jxr</report></reports></reportSet></reportSets>            </plugin>
 
             <!-- PMD -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-pmd-plugin</artifactId>
+                <configuration>
+                    <targetJdk>${maven.compiler.source}</targetJdk>
+                    <!--<rulesets><ruleset>rulesets/maven.xml</ruleset></rulesets>-->
+                    <excludeRoots>
+                        <excludeRoot>${project.build.directory}/generated-sources/plugin</excludeRoot>
+                    </excludeRoots>
+                </configuration>
             </plugin>
 
             <!-- taglist -->
@@ -467,22 +527,28 @@
                     <tagListOptions>
                         <tagClasses>
                             <tagClass>
-                                <displayName>Todo Work</displayName>
+                                <displayName>FIXME Work</displayName>
                                 <tags>
-                                    <tag>
-                                        <matchString>todo</matchString>
-                                        <matchType>ignoreCase</matchType>
-                                    </tag>
-                                    <tag>
-                                        <matchString>FIXME</matchString>
-                                        <matchType>exact</matchType>
-                                    </tag>
+                                    <tag><matchString>fixme</matchString><matchType>ignoreCase</matchType></tag>
+                                    <tag><matchString>@fixme</matchString><matchType>ignoreCase</matchType></tag>
+                                </tags>
+                            </tagClass>
+                            <tagClass>
+                            <displayName>Todo Work</displayName>
+                            <tags>
+                                <tag><matchString>todo</matchString><matchType>ignoreCase</matchType></tag>
+                                <tag><matchString>@todo</matchString><matchType>ignoreCase</matchType></tag>
+                            </tags>
+                            </tagClass>
+                            <tagClass><displayName>Deprecated Work</displayName>
+                                <tags>
+                                    <tag><matchString>@deprecated</matchString><matchType>ignoreCase</matchType></tag>
                                 </tags>
                             </tagClass>
                         </tagClasses>
                     </tagListOptions>
                 </configuration>
-            </plugin>
+           </plugin>
 
             <!-- changelog -->
             <plugin>
@@ -517,7 +583,19 @@
                 </reportSets>
             </plugin>
 
-            <!-- reports
+            <!-- findbugs -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>findbugs-maven-plugin</artifactId>
+                <version>3.0.1</version>
+                <!--configuration>
+                    <onlyAnalyze>de.juergens.*</onlyAnalyze>
+                    <findbugsXmlOutput>true</findbugsXmlOutput>
+                    <findbugsXmlWithMessages>true</findbugsXmlWithMessages>
+                </configuration-->
+            </plugin>
+
+            <!-- reports -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-project-info-reports-plugin</artifactId>
@@ -525,27 +603,21 @@
                 <reportSets>
                     <reportSet>
                         <reports>
-                            <report>dependencies</report>
+                            <report>index</report>
                             <report>project-team</report>
-                            <report>cim</report>
                             <report>dependency-convergence</report>
                             <report>dependency-info</report>
                             <report>dependency-management</report>
-                            <report>distribution-management</report>
-                            <report>help</report>
-                            <report>index</report>
+                            <report>mailing-list</report>
+                            <report>cim</report>
                             <report>issue-tracking</report>
                             <report>license</report>
-                            <report>mailing-list</report>
-                            <report>plugin-management</report>
-                            <report>plugins</report>
-                            <report>project-team</report>
                             <report>scm</report>
-                            <report>summary</report>
                         </reports>
                     </reportSet>
                 </reportSets>
-            </plugin -->
+            </plugin>
+
         </plugins>
     </reporting>
 </project>

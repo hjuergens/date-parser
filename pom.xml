@@ -80,6 +80,8 @@
         <maven.compiler.target>1.6</maven.compiler.target>
         <encoding>UTF-8</encoding>
         <scala.version>2.11.1</scala.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
 
     <dependencyManagement>
@@ -203,6 +205,11 @@
                     <version>3.3</version>
                 </plugin>
                 <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jxr-plugin</artifactId>
+                    <version>2.5</version>
+                </plugin>
+                <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>taglist-maven-plugin</artifactId>
                     <version>2.4</version>
@@ -210,7 +217,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-pmd-plugin</artifactId>
-                    <version>3.4</version>
+                    <version>3.5</version>
                     <dependencies>
                         <dependency>
                             <groupId>net.sourceforge.pmd</groupId>
@@ -243,29 +250,6 @@
         </pluginManagement>
 
         <plugins>
-            <!--<plugin>-->
-                <!--<groupId>org.scala-tools</groupId>-->
-                <!--<artifactId>maven-scala-plugin</artifactId>-->
-                <!--<version>2.15.2</version>-->
-                <!--<executions>-->
-                    <!--<execution>-->
-                        <!--<goals>-->
-                            <!--<goal>compile</goal>-->
-                            <!--<goal>testCompile</goal>-->
-                        <!--</goals>-->
-
-                        <!--&lt;!&ndash; configuration>-->
-                          <!--<args>-->
-                              <!--<arg>-feature</arg>-->
-                            <!--<arg>-make:transitive</arg>-->
-                            <!--<arg>-dependencyfile</arg>-->
-                            <!--<arg>${project.build.directory}/.scala_dependencies</arg>-->
-                          <!--</args>-->
-                        <!--</configuration &ndash;&gt;-->
-                    <!--</execution>-->
-                <!--</executions>-->
-            <!--</plugin>-->
-
             <!--plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -292,7 +276,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <dependencies>
+                <!--dependencies> TODO here or in the reporting
                     <dependency>
                         <groupId>de.juergens</groupId>
                         <artifactId>date-parser-antlr</artifactId>
@@ -308,13 +292,30 @@
                         <artifactId>dp-jflex</artifactId>
                         <version>0.0.2-SNAPSHOT</version>
                     </dependency>
-                </dependencies>
+                    <dependency>
+                        <groupId>de.juergens</groupId>
+                        <artifactId>date-rule-javacc</artifactId>
+                        <version>0.0.1-SNAPSHOT</version>
+                        <optional>true</optional>
+                    </dependency>
+                    <dependency>
+                        <groupId>de.juergens</groupId>
+                        <artifactId>date-rule-coco</artifactId>
+                        <version>0.0.1-SNAPSHOT</version>
+                        <optional>true</optional>
+                    </dependency>
+                    <dependency>
+                        <groupId>de.juergens</groupId>
+                        <artifactId>date-rule-sablecc</artifactId>
+                        <version>0.0.1-SNAPSHOT</version>
+                        <optional>true</optional>
+                    </dependency>
+                </dependencies-->
                 <executions>
                     <execution>
                         <id>validate</id>
                         <phase>validate</phase>
                         <configuration>
-                            <!--configLocation>scalastyle_config.xml</configLocation-->
                             <encoding>UTF-8</encoding>
                             <consoleOutput>true</consoleOutput>
                             <failsOnError>true</failsOnError>
@@ -341,7 +342,7 @@
                     <reportSet>
                         <reports>
                             <report>index</report>
-                            <report>dependencies</report>
+                            <!--report>dependencies</report-->
                             <report>project-team</report>
                             <report>mailing-list</report>
                             <report>cim</report>
@@ -359,12 +360,6 @@
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <version>2.9</version>
                 <reportSets>
-                    <reportSet><!-- by default, id = "default" -->
-                        <reports><!-- select non-aggregate reports -->
-                            <report>javadoc</report>
-                            <report>test-javadoc</report>
-                        </reports>
-                    </reportSet>
                     <reportSet><!-- aggregate reportSet, to define in poms having modules -->
                         <id>aggregate</id>
                         <inherited>false</inherited><!-- don't run aggregate in child modules -->
@@ -373,6 +368,13 @@
                         </reports>
                     </reportSet>
                 </reportSets>
+                <configuration>
+                <notimestamp>true</notimestamp>
+                    <quiet>true</quiet>
+                    <links>
+                        <link>http://junit.org/javadoc/latest/index.html</link>
+                    </links>
+                </configuration>
             </plugin>
 
             <!-- JXR -->
@@ -400,7 +402,6 @@
                 <reportSets>
                     <reportSet>
                         <inherited>false</inherited>
-                        <reports><report>check</report></reports>
                     </reportSet>
                 </reportSets>
                 <!--configuration>
@@ -430,6 +431,23 @@
                 </reportSets>
             </plugin>
 
+            <!-- findbugs
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>findbugs-maven-plugin</artifactId>
+                <version>2.5.5</version>
+                <configuration>
+                    <onlyAnalyze>de.juergens.*</onlyAnalyze>
+                </configuration>
+            </plugin>
+             -->
+
+            <!-- sonar-report -->
+            <plugin>
+                <groupId>org.codehaus.sonar-plugins</groupId>
+                <artifactId>maven-report</artifactId>
+                <version>0.1</version>
+            </plugin>
         </plugins>
     </reporting>
 </project>

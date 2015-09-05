@@ -14,7 +14,7 @@ trait ExtendedRegexParsers {
    * @param r a regular expression
    * @return
    */
-  protected case class RegexParser(r: Regex) extends Parser[Regex.Match] {
+  case class RegexParser(r: Regex) extends Parser[Regex.Match] {
     def apply(in: Input) = {
       val source = in.source
       val offset = in.offset

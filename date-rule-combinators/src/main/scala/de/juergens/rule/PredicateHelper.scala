@@ -5,47 +5,11 @@ import java.util.function.Predicate
 
 import scala.language.implicitConversions
 
-/**
- * [[Predicate]]
- * @constructor create a predicates as or composition
- * @param predicates any predicates on type T
- * @tparam T
- */
-case class UnionPredicate[T](predicates: Predicate[T]*) extends Predicate[T] {
 
-  /**
-   * Checks if any of the predicates matches for the specified object.
-   * @param t an object to test
-   * @return or-composition
-   */
-  def test(t: T) = predicates.exists(_.test(t))// predicates.foldLeft(false)((b, r) => b | r.test(t))
 
-  override def toString = predicates.mkString("|")
-}
 
-/**
- * [[Predicate]]
- * @constructor create a predicates as and composition
- * @param predicates tany predicates on type T
- * @tparam T
- */
-case class IntersectionPredicate[T](predicates: Predicate[T]*) extends Predicate[T] {
 
-  /**
-   * Checks if all of the predicates matches for the specified object.
-   * @param t an object to test
-   * @return and-composition
-   */
-  def test(t: T) = predicates.forall(_.test(t)) // predicates.foldRight(true)((r, b) => b & r.test(t))
 
-  override def toString = predicates.mkString("&")
-}
-
-case class NotPredicate[T](predicate: Predicate[T]) extends Predicate[T] {
-  def test(t: T) = predicate.negate().test(t) // !predicate.test(t)
-
-  override def toString = "NOT" + predicate
-}
 
 object PredicateHelper {
   implicit def predicate2Function[T](p:Predicate[T]) : (T)=>Boolean =

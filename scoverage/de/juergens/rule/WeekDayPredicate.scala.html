@@ -1,0 +1,376 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          de/juergens/rule/WeekDayPredicate.scala.html
+        </title>
+        <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css"/>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.18.3/addons/pager/jquery.tablesorter.pager.min.js"></script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier;'>1 <span style=''>/*
+</span>2 <span style=''> * To change this license header, choose License Headers in Project Properties.
+</span>3 <span style=''> * To change this template file, choose Tools | Templates
+</span>4 <span style=''> * and open the template in the editor.
+</span>5 <span style=''> */
+</span>6 <span style=''>
+</span>7 <span style=''>package de.juergens.rule
+</span>8 <span style=''>
+</span>9 <span style=''>import java.time.temporal.{ChronoField, Temporal}
+</span>10 <span style=''>import java.time.{DayOfWeek, LocalDate}
+</span>11 <span style=''>import java.util.{Calendar, function}
+</span>12 <span style=''>
+</span>13 <span style=''>case class WeekDayPredicate(weekDay: DayOfWeek, calendar: Calendar = Calendar.getInstance())
+</span>14 <span style=''>  extends function.Predicate[Temporal] {
+</span>15 <span style=''>
+</span>16 <span style=''>  override def toString: String = "is " </span><span style='background: #F0ADAD'>+ weekDay +</span><span style=''> "?"
+</span>17 <span style=''>
+</span>18 <span style=''>  override def test(t: Temporal): Boolean = evaluate(t)
+</span>19 <span style=''>
+</span>20 <span style=''>  def evaluate(t: Temporal): Boolean = {
+</span>21 <span style=''>    require(t.isSupported(ChronoField.DAY_OF_WEEK), s"$t has to support day-of-week")
+</span>22 <span style=''>    t.ensuring(_.isSupported(ChronoField.DAY_OF_WEEK))
+</span>23 <span style=''>
+</span>24 <span style=''>
+</span>25 <span style=''>    assert(t.isInstanceOf[LocalDate])
+</span>26 <span style=''>    t.asInstanceOf[LocalDate].getDayOfWeek // FIXME remove instanceOf
+</span>27 <span style=''>
+</span>28 <span style=''>    t.get(ChronoField.DAY_OF_WEEK) </span><span style='background: #F0ADAD'>equals</span><span style=''> weekDay.getValue
+</span>29 <span style=''>    //    val Date(y,m,d) = t
+</span>30 <span style=''>    //    calendar.set(Calendar.YEAR, y)
+</span>31 <span style=''>    //    calendar.set(Calendar.MONTH, m-1)
+</span>32 <span style=''>    //    calendar.set(Calendar.DAY_OF_MONTH, d)
+</span>33 <span style=''>    //    //calendar.set(y,m-1,d)
+</span>34 <span style=''>    //    weekDay equals calendar.get(Calendar.DAY_OF_WEEK)
+</span>35 <span style=''>  }
+</span>36 <span style=''>
+</span>37 <span style=''>  /*
+</span>38 <span style=''>  val evaluate : (Date) => Boolean = new ((Date) => Boolean){
+</span>39 <span style=''>        override def toString = ""
+</span>40 <span style=''>    override def apply(t: Date): Boolean = {
+</span>41 <span style=''>      val Date(y,m,d) = t
+</span>42 <span style=''>      calendar.set(Calendar.YEAR, y)
+</span>43 <span style=''>      calendar.set(Calendar.MONTH, m-1)
+</span>44 <span style=''>      calendar.set(Calendar.DAY_OF_MONTH, d)
+</span>45 <span style=''>      //calendar.set(y,m-1,d)
+</span>46 <span style=''>      weekDay equals calendar.get(Calendar.DAY_OF_WEEK)
+</span>47 <span style=''>    }
+</span>48 <span style=''>  }
+</span>49 <span style=''>  */
+</span>50 <span style=''>}
+</span>51 <span style=''>
+</span>52 <span style=''>//object WeekDayPredicate {
+</span>53 <span style=''>//  def weekDay(calendar : Calendar = Calendar.getInstance())(date:Temporal) : WeekDay = {
+</span>54 <span style=''>//    val Date(y,m,d) = date
+</span>55 <span style=''>//    calendar.set(Calendar.YEAR, y)
+</span>56 <span style=''>//    calendar.set(Calendar.MONTH, m-1)
+</span>57 <span style=''>//    calendar.set(Calendar.DAY_OF_MONTH, d)
+</span>58 <span style=''>//    //calendar.set(y,m-1,d)
+</span>59 <span style=''>//    WeekDay( calendar.get(Calendar.DAY_OF_WEEK) )
+</span>60 <span style=''>//  }
+</span>61 <span style=''>//}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          36
+        </td>
+        <td>
+          516
+          -
+          527
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;is &quot;.+(WeekDayPredicate.this.weekDay).+(&quot;?&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          18
+        </td>
+        <td>
+          37
+        </td>
+        <td>
+          585
+          -
+          585
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.rule.WeekDayPredicate.evaluate
+        </td>
+        <td style="background: #F0ADAD">
+          WeekDayPredicate.this.evaluate(t)
+        </td>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          38
+        </td>
+        <td>
+          656
+          -
+          656
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAccessor.isSupported
+        </td>
+        <td style="background: #F0ADAD">
+          t.isSupported(DAY_OF_WEEK)
+        </td>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          40
+        </td>
+        <td>
+          642
+          -
+          642
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.require
+        </td>
+        <td style="background: #F0ADAD">
+          scala.this.Predef.require(t.isSupported(DAY_OF_WEEK), scala.StringContext.apply(&quot;&quot;, &quot; has to support day-of-week&quot;).s(t))
+        </td>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          39
+        </td>
+        <td>
+          683
+          -
+          683
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.s
+        </td>
+        <td style="background: #F0ADAD">
+          scala.StringContext.apply(&quot;&quot;, &quot; has to support day-of-week&quot;).s(t)
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          41
+        </td>
+        <td>
+          745
+          -
+          745
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAccessor.isSupported
+        </td>
+        <td style="background: #F0ADAD">
+          x$1.isSupported(DAY_OF_WEEK)
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          42
+        </td>
+        <td>
+          731
+          -
+          731
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.Ensuring.ensuring
+        </td>
+        <td style="background: #F0ADAD">
+          scala.this.Predef.Ensuring[java.time.temporal.Temporal](t).ensuring(((x$1: java.time.temporal.Temporal) =&gt; x$1.isSupported(DAY_OF_WEEK)))
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          44
+        </td>
+        <td>
+          784
+          -
+          784
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.assert
+        </td>
+        <td style="background: #F0ADAD">
+          scala.this.Predef.assert(t.isInstanceOf[java.time.LocalDate])
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          43
+        </td>
+        <td>
+          799
+          -
+          799
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.isInstanceOf
+        </td>
+        <td style="background: #F0ADAD">
+          t.isInstanceOf[java.time.LocalDate]
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          45
+        </td>
+        <td>
+          842
+          -
+          842
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.LocalDate.getDayOfWeek
+        </td>
+        <td style="background: #F0ADAD">
+          t.asInstanceOf[java.time.LocalDate].getDayOfWeek()
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          47
+        </td>
+        <td>
+          933
+          -
+          933
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.DayOfWeek.getValue
+        </td>
+        <td style="background: #F0ADAD">
+          WeekDayPredicate.this.weekDay.getValue()
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          46
+        </td>
+        <td>
+          905
+          -
+          905
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          DAY_OF_WEEK
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          48
+        </td>
+        <td>
+          918
+          -
+          924
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Any.equals
+        </td>
+        <td style="background: #F0ADAD">
+          t.get(DAY_OF_WEEK).equals(WeekDayPredicate.this.weekDay.getValue())
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

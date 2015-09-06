@@ -1,0 +1,176 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          de/juergens/util/Direction.scala.html
+        </title>
+        <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css"/>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.18.3/addons/pager/jquery.tablesorter.pager.min.js"></script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier;'>1 <span style=''>package de.juergens.util
+</span>2 <span style=''>
+</span>3 <span style=''>
+</span>4 <span style=''>abstract sealed class Direction {
+</span>5 <span style=''>  def *[T](x: T)(implicit numeric : Numeric[T]) : T
+</span>6 <span style=''>}
+</span>7 <span style=''>
+</span>8 <span style=''>case object Up extends Direction {
+</span>9 <span style=''>  def unary_~ : Direction = Down
+</span>10 <span style=''>  def *[T](x: T)(implicit numeric : Numeric[T]) : T = x
+</span>11 <span style=''>}
+</span>12 <span style=''>case object Down extends Direction {
+</span>13 <span style=''>  def unary_~ : Direction = Up
+</span>14 <span style=''>  def *[T](x: T)(implicit numeric : Numeric[T]) : T = numeric.negate(x)
+</span>15 <span style=''>}
+</span>16 <span style=''>
+</span>17 <span style=''>/**
+</span>18 <span style=''> * Created by juergens on 24.05.15.
+</span>19 <span style=''> */
+</span>20 <span style=''>object Direction {
+</span>21 <span style=''>  def apply(x : Any) : Direction = x match {
+</span>22 <span style=''>    case "Next" | "next" | "After" | "after" => Up
+</span>23 <span style=''>    case "Previous" | "previous" | "before" | "prior" => Down
+</span>24 <span style=''>    case x : Int  if x</span><span style='background: #AEF1AE'>></span><span style=''>0 => Up
+</span>25 <span style=''>    case x : Int  if x</span><span style='background: #AEF1AE'><</span><span style=''>0 => Down
+</span>26 <span style=''>    case x : Long  if x</span><span style='background: #F0ADAD'>></span><span style=''>0 => Up
+</span>27 <span style=''>    case x : Long  if x</span><span style='background: #F0ADAD'><</span><span style=''>0 => Down
+</span>28 <span style=''>  }
+</span>29 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          1129
+        </td>
+        <td>
+          378
+          -
+          378
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.math.Numeric.negate
+        </td>
+        <td style="background: #AEF1AE">
+          numeric.negate(x)
+        </td>
+      </tr><tr>
+        <td>
+          24
+        </td>
+        <td>
+          1130
+        </td>
+        <td>
+          628
+          -
+          629
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          x.&gt;(0)
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          1131
+        </td>
+        <td>
+          659
+          -
+          660
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&lt;
+        </td>
+        <td style="background: #AEF1AE">
+          x.&lt;(0)
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          1132
+        </td>
+        <td>
+          693
+          -
+          694
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Long.&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          x.&gt;(0)
+        </td>
+      </tr><tr>
+        <td>
+          27
+        </td>
+        <td>
+          1133
+        </td>
+        <td>
+          725
+          -
+          726
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Long.&lt;
+        </td>
+        <td style="background: #F0ADAD">
+          x.&lt;(0)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

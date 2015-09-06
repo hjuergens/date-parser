@@ -1,0 +1,804 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          de/juergens/time/DayOfWeekAdjuster.scala.html
+        </title>
+        <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css"/>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.18.3/addons/pager/jquery.tablesorter.pager.min.js"></script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier;'>1 <span style=''>package de.juergens.time
+</span>2 <span style=''>
+</span>3 <span style=''>import java.time.temporal._
+</span>4 <span style=''>import java.time.{DayOfWeek, LocalDate}
+</span>5 <span style=''>
+</span>6 <span style=''>import de.juergens.util._
+</span>7 <span style=''>import scala.language.implicitConversions
+</span>8 <span style=''>
+</span>9 <span style=''>
+</span>10 <span style=''>
+</span>11 <span style=''>case class DayOfWeekAdjuster(ordinal: Ordinal, dayOfWeek: DayOfWeek, direction: Direction)
+</span>12 <span style=''>  extends TemporalAdjuster
+</span>13 <span style=''>with LocalDateAdjuster {
+</span>14 <span style=''>
+</span>15 <span style=''>  val adjuster: TemporalAdjuster = TemporalAdjusters.next(dayOfWeek)
+</span>16 <span style=''>  private val Ordinal(number) = ordinal
+</span>17 <span style=''>
+</span>18 <span style=''>  override def adjustInto(temporal: Temporal): Temporal = {
+</span>19 <span style=''>    require(temporal.isSupported(ChronoField.DAY_OF_WEEK), s"$temporal has to support day-of-week")
+</span>20 <span style=''>    temporal.ensuring( _.isSupported(ChronoField.DAY_OF_WEEK))
+</span>21 <span style=''>
+</span>22 <span style=''>    import TemporalAdjusters.{next, previous}
+</span>23 <span style=''>
+</span>24 <span style=''>    val adjuster: TemporalAdjuster = direction match {
+</span>25 <span style=''>      case Up => next(dayOfWeek)
+</span>26 <span style=''>      case Down => previous(dayOfWeek)
+</span>27 <span style=''>    }
+</span>28 <span style=''>
+</span>29 <span style=''>    var date = temporal
+</span>30 <span style=''>
+</span>31 <span style=''>    if (number </span><span style='background: #AEF1AE'>></span><span style=''> 0) {
+</span>32 <span style=''>      date = adjuster.adjustInto(temporal)
+</span>33 <span style=''>    }
+</span>34 <span style=''>    if (date </span><span style='background: #AEF1AE'>== temporal && number </span><span style='background: #F0ADAD'>></span><span style=''> 0) {
+</span>35 <span style=''>      date = adjuster.adjustInto(temporal)
+</span>36 <span style=''>    }
+</span>37 <span style=''>    if (number </span><span style='background: #AEF1AE'>></span><span style=''> 1) {
+</span>38 <span style=''>      date = (1 to (number </span><span style='background: #AEF1AE'>-</span><span style=''> 1)).foldLeft[Temporal](date) { (x: Temporal, _) => adjuster.adjustInto(x) }
+</span>39 <span style=''>    }
+</span>40 <span style=''>
+</span>41 <span style=''>    assert(temporal.isInstanceOf[LocalDate])
+</span>42 <span style=''>//    assert( temporal.get(ChronoField.DAY_OF_WEEK) == dayOfWeek.get(ChronoField.DAY_OF_WEEK) )
+</span>43 <span style=''>
+</span>44 <span style=''>    date
+</span>45 <span style=''>  }
+</span>46 <span style=''>
+</span>47 <span style=''>  //final def apply(t: Temporal): Temporal = adjustInto(t)
+</span>48 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          818
+        </td>
+        <td>
+          367
+          -
+          367
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjusters.next
+        </td>
+        <td style="background: #AEF1AE">
+          java.time.temporal.TemporalAdjusters.next(DayOfWeekAdjuster.this.dayOfWeek)
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          817
+        </td>
+        <td>
+          368
+          -
+          368
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.time.DayOfWeekAdjuster.dayOfWeek
+        </td>
+        <td style="background: #AEF1AE">
+          DayOfWeekAdjuster.this.dayOfWeek
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          819
+        </td>
+        <td>
+          411
+          -
+          411
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.time.DayOfWeekAdjuster.ordinal
+        </td>
+        <td style="background: #AEF1AE">
+          DayOfWeekAdjuster.this.ordinal
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          822
+        </td>
+        <td>
+          491
+          -
+          491
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.require
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.require(temporal.isSupported(DAY_OF_WEEK), scala.StringContext.apply(&quot;&quot;, &quot; has to support day-of-week&quot;).s(temporal))
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          821
+        </td>
+        <td>
+          539
+          -
+          539
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.s
+        </td>
+        <td style="background: #F0ADAD">
+          scala.StringContext.apply(&quot;&quot;, &quot; has to support day-of-week&quot;).s(temporal)
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          820
+        </td>
+        <td>
+          512
+          -
+          512
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAccessor.isSupported
+        </td>
+        <td style="background: #AEF1AE">
+          temporal.isSupported(DAY_OF_WEEK)
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          824
+        </td>
+        <td>
+          601
+          -
+          601
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.Ensuring.ensuring
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.Ensuring[java.time.temporal.Temporal](temporal).ensuring(((x$1: java.time.temporal.Temporal) =&gt; x$1.isSupported(DAY_OF_WEEK)))
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          823
+        </td>
+        <td>
+          616
+          -
+          616
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAccessor.isSupported
+        </td>
+        <td style="background: #AEF1AE">
+          x$1.isSupported(DAY_OF_WEEK)
+        </td>
+      </tr><tr>
+        <td>
+          24
+        </td>
+        <td>
+          825
+        </td>
+        <td>
+          728
+          -
+          728
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.time.DayOfWeekAdjuster.direction
+        </td>
+        <td style="background: #AEF1AE">
+          DayOfWeekAdjuster.this.direction
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          827
+        </td>
+        <td>
+          767
+          -
+          767
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjusters.next
+        </td>
+        <td style="background: #AEF1AE">
+          java.time.temporal.TemporalAdjusters.next(DayOfWeekAdjuster.this.dayOfWeek)
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          826
+        </td>
+        <td>
+          768
+          -
+          768
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.time.DayOfWeekAdjuster.dayOfWeek
+        </td>
+        <td style="background: #AEF1AE">
+          DayOfWeekAdjuster.this.dayOfWeek
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          828
+        </td>
+        <td>
+          807
+          -
+          807
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.time.DayOfWeekAdjuster.dayOfWeek
+        </td>
+        <td style="background: #AEF1AE">
+          DayOfWeekAdjuster.this.dayOfWeek
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          829
+        </td>
+        <td>
+          806
+          -
+          806
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjusters.previous
+        </td>
+        <td style="background: #AEF1AE">
+          java.time.temporal.TemporalAdjusters.previous(DayOfWeekAdjuster.this.dayOfWeek)
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          830
+        </td>
+        <td>
+          865
+          -
+          866
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          DayOfWeekAdjuster.this.number.&gt;(0)
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          833
+        </td>
+        <td>
+          854
+          -
+          854
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          834
+        </td>
+        <td>
+          854
+          -
+          854
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          831
+        </td>
+        <td>
+          904
+          -
+          904
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjuster.adjustInto
+        </td>
+        <td style="background: #AEF1AE">
+          adjuster.adjustInto(temporal)
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          832
+        </td>
+        <td>
+          883
+          -
+          883
+        </td>
+        <td>
+          Assign
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          date = adjuster.adjustInto(temporal)
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          839
+        </td>
+        <td>
+          925
+          -
+          925
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          836
+        </td>
+        <td>
+          934
+          -
+          957
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td style="background: #AEF1AE">
+          date.==(temporal).&amp;&amp;(DayOfWeekAdjuster.this.number.&gt;(0))
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          835
+        </td>
+        <td>
+          956
+          -
+          957
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          DayOfWeekAdjuster.this.number.&gt;(0)
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          840
+        </td>
+        <td>
+          925
+          -
+          925
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          837
+        </td>
+        <td>
+          995
+          -
+          995
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjuster.adjustInto
+        </td>
+        <td style="background: #F0ADAD">
+          adjuster.adjustInto(temporal)
+        </td>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          838
+        </td>
+        <td>
+          974
+          -
+          974
+        </td>
+        <td>
+          Assign
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          date = adjuster.adjustInto(temporal)
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          848
+        </td>
+        <td>
+          1016
+          -
+          1016
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          847
+        </td>
+        <td>
+          1016
+          -
+          1016
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          841
+        </td>
+        <td>
+          1027
+          -
+          1028
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          DayOfWeekAdjuster.this.number.&gt;(1)
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          846
+        </td>
+        <td>
+          1045
+          -
+          1045
+        </td>
+        <td>
+          Assign
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          date = scala.this.Predef.intWrapper(1).to(DayOfWeekAdjuster.this.number.-(1)).foldLeft[java.time.temporal.Temporal](date)(((x: java.time.temporal.Temporal, x$2: Int) =&gt; adjuster.adjustInto(x)))
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          842
+        </td>
+        <td>
+          1048
+          -
+          1048
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          845
+        </td>
+        <td>
+          1092
+          -
+          1092
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.TraversableOnce.foldLeft
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.intWrapper(1).to(DayOfWeekAdjuster.this.number.-(1)).foldLeft[java.time.temporal.Temporal](date)(((x: java.time.temporal.Temporal, x$2: Int) =&gt; adjuster.adjustInto(x)))
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          844
+        </td>
+        <td>
+          1133
+          -
+          1133
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjuster.adjustInto
+        </td>
+        <td style="background: #AEF1AE">
+          adjuster.adjustInto(x)
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          843
+        </td>
+        <td>
+          1061
+          -
+          1062
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td style="background: #AEF1AE">
+          DayOfWeekAdjuster.this.number.-(1)
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          850
+        </td>
+        <td>
+          1156
+          -
+          1156
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.assert
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.assert(temporal.isInstanceOf[java.time.LocalDate])
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          849
+        </td>
+        <td>
+          1178
+          -
+          1178
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.isInstanceOf
+        </td>
+        <td style="background: #AEF1AE">
+          temporal.isInstanceOf[java.time.LocalDate]
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

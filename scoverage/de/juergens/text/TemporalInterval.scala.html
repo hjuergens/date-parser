@@ -1,0 +1,206 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          de/juergens/text/TemporalInterval.scala.html
+        </title>
+        <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css"/>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.18.3/addons/pager/jquery.tablesorter.pager.min.js"></script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier;'>1 <span style=''>package de.juergens.text
+</span>2 <span style=''>
+</span>3 <span style=''>import java.time.{LocalDate, Instant, Month}
+</span>4 <span style=''>import java.time.temporal.TemporalAdjusters
+</span>5 <span style=''>
+</span>6 <span style=''>import org.threeten.extra.Interval
+</span>7 <span style=''>
+</span>8 <span style=''>object TemporalInterval {
+</span>9 <span style=''>  def fromMonth(month: Month) : Interval = {
+</span>10 <span style=''>    val startInclusive = LocalDate.now().`with`(month).`with`(TemporalAdjusters.firstDayOfMonth())
+</span>11 <span style=''>
+</span>12 <span style=''>    val endExclusive = LocalDate.now().`with`(month).`with`(TemporalAdjusters.firstDayOfNextMonth())
+</span>13 <span style=''>    // TODO
+</span>14 <span style=''>    Interval.of(Instant.from(startInclusive), Instant.from(endExclusive))
+</span>15 <span style=''>  }
+</span>16 <span style=''>
+</span>17 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          10
+        </td>
+        <td>
+          600
+        </td>
+        <td>
+          318
+          -
+          318
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjusters.firstDayOfMonth
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.temporal.TemporalAdjusters.firstDayOfMonth()
+        </td>
+      </tr><tr>
+        <td>
+          10
+        </td>
+        <td>
+          601
+        </td>
+        <td>
+          284
+          -
+          284
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.LocalDate.with
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.LocalDate.now().`with`(month).`with`(java.time.temporal.TemporalAdjusters.firstDayOfMonth())
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          603
+        </td>
+        <td>
+          382
+          -
+          382
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.LocalDate.with
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.LocalDate.now().`with`(month).`with`(java.time.temporal.TemporalAdjusters.firstDayOfNextMonth())
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          602
+        </td>
+        <td>
+          420
+          -
+          420
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjusters.firstDayOfNextMonth
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.temporal.TemporalAdjusters.firstDayOfNextMonth()
+        </td>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          606
+        </td>
+        <td>
+          451
+          -
+          451
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.threeten.extra.Interval.of
+        </td>
+        <td style="background: #F0ADAD">
+          org.threeten.extra.Interval.of(java.time.Instant.from(startInclusive), java.time.Instant.from(endExclusive))
+        </td>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          605
+        </td>
+        <td>
+          494
+          -
+          494
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.Instant.from
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.Instant.from(endExclusive)
+        </td>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          604
+        </td>
+        <td>
+          464
+          -
+          464
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.Instant.from
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.Instant.from(startInclusive)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

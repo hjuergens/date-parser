@@ -1,0 +1,149 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          de/juergens/rule/IntersectionPredicate.scala.html
+        </title>
+        <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css"/>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.18.3/addons/pager/jquery.tablesorter.pager.min.js"></script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier;'>1 <span style=''>/*
+</span>2 <span style=''> *
+</span>3 <span style=''> *  Licensed to the Apache Software Foundation (ASF) under one
+</span>4 <span style=''> *  or more contributor license agreements.  See the NOTICE file
+</span>5 <span style=''> *  distributed with this work for additional information
+</span>6 <span style=''> *  regarding copyright ownership.  The ASF licenses this file
+</span>7 <span style=''> *  to you under the Apache License, Version 2.0 (the
+</span>8 <span style=''> *  "License"); you may not use this file except in compliance
+</span>9 <span style=''> *  with the License.  You may obtain a copy of the License at
+</span>10 <span style=''> *
+</span>11 <span style=''> *   http://www.apache.org/licenses/LICENSE-2.0
+</span>12 <span style=''> *
+</span>13 <span style=''> *  Unless required by applicable law or agreed to in writing,
+</span>14 <span style=''> *  software distributed under the License is distributed on an
+</span>15 <span style=''> *  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+</span>16 <span style=''> *  KIND, either express or implied.  See the License for the
+</span>17 <span style=''> *  specific language governing permissions and limitations
+</span>18 <span style=''> *  under the License.
+</span>19 <span style=''> *
+</span>20 <span style=''> *
+</span>21 <span style=''> */
+</span>22 <span style=''>
+</span>23 <span style=''>package de.juergens.rule
+</span>24 <span style=''>
+</span>25 <span style=''>import java.util.function.Predicate
+</span>26 <span style=''>import scala.languageFeature.implicitConversions
+</span>27 <span style=''>
+</span>28 <span style=''>/**
+</span>29 <span style=''> * [[Predicate]]
+</span>30 <span style=''> * @constructor create a predicates as and composition
+</span>31 <span style=''> * @param predicates tany predicates on type T
+</span>32 <span style=''> * @tparam T
+</span>33 <span style=''> */
+</span>34 <span style=''>case class IntersectionPredicate[T](predicates: Predicate[T]*) extends Predicate[T] {
+</span>35 <span style=''>
+</span>36 <span style=''>  /**
+</span>37 <span style=''>   * Checks if all of the predicates matches for the specified object.
+</span>38 <span style=''>   * @param t an object to test
+</span>39 <span style=''>   * @return and-composition
+</span>40 <span style=''>   */
+</span>41 <span style=''>  def test(t: T) = predicates.forall(_.test(t)) // predicates.foldRight(true)((r, b) => b & r.test(t))
+</span>42 <span style=''>
+</span>43 <span style=''>  override def toString = predicates.mkString("&")
+</span>44 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          26
+        </td>
+        <td>
+          1350
+          -
+          1350
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.IterableLike.forall
+        </td>
+        <td style="background: #F0ADAD">
+          IntersectionPredicate.this.predicates.forall(((x$1: java.util.function.Predicate[T]) =&gt; x$1.test(t)))
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          25
+        </td>
+        <td>
+          1357
+          -
+          1357
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.function.Predicate.test
+        </td>
+        <td style="background: #F0ADAD">
+          x$1.test(t)
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          27
+        </td>
+        <td>
+          1463
+          -
+          1463
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.TraversableOnce.mkString
+        </td>
+        <td style="background: #F0ADAD">
+          IntersectionPredicate.this.predicates.mkString(&quot;&amp;&quot;)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

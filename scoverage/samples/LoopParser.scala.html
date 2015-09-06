@@ -1,0 +1,573 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          samples/LoopParser.scala.html
+        </title>
+        <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css"/>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.18.3/addons/pager/jquery.tablesorter.pager.min.js"></script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier;'>1 <span style=''>/*
+</span>2 <span style=''> * To change this license header, choose License Headers in Project Properties.
+</span>3 <span style=''> * To change this template file, choose Tools | Templates
+</span>4 <span style=''> * and open the template in the editor.
+</span>5 <span style=''> */
+</span>6 <span style=''>package samples
+</span>7 <span style=''>
+</span>8 <span style=''>import scala.language.postfixOps
+</span>9 <span style=''>import scala.util.parsing.combinator.RegexParsers
+</span>10 <span style=''>
+</span>11 <span style=''>class LoopParser extends RegexParsers {
+</span>12 <span style=''>  override type Elem = Char  
+</span>13 <span style=''>  def identifier  = """[_\p{L}][_\p{L}\p{Nd}]*""".r  
+</span>14 <span style=''>  def integer     = """(0|[1-9]\d*)""".r </span><span style='background: #F0ADAD'>^^</span><span style=''> { _.toInt }  
+</span>15 <span style=''>  def loop =    "for"</span><span style='background: #F0ADAD'>~identifier~"in"~integer~"to"~integer~statement ^^</span><span style=''>    {
+</span>16 <span style=''>    case f~variable~i~lBound~t~uBound~statement => ForLoop(variable, lBound, uBound,statement)
+</span>17 <span style=''>  }  
+</span>18 <span style=''>  def statements = statement*  
+</span>19 <span style=''>  def block = "{"</span><span style='background: #F0ADAD'>~>statements<~"}"  ^^</span><span style=''> { l => Block(l) }
+</span>20 <span style=''>  def statement : Parser[Statement] = loop </span><span style='background: #F0ADAD'>|</span><span style=''> block
+</span>21 <span style=''>} 
+</span>22 <span style=''>
+</span>23 <span style=''>abstract trait Statement  
+</span>24 <span style=''>case class Block(statements : List[Statement]) extends Statement
+</span>25 <span style=''>case class ForLoop(variable: String, lowerBound:Int, upperBound: Int, statement:Statement) extends Statement
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          13
+        </td>
+        <td>
+          1419
+        </td>
+        <td>
+          406
+          -
+          406
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.immutable.StringLike.r
+        </td>
+        <td style="background: #F0ADAD">
+          scala.this.Predef.augmentString(&quot;[_\\p{L}][_\\p{L}\\p{Nd}]*&quot;).r
+        </td>
+      </tr><tr>
+        <td>
+          13
+        </td>
+        <td>
+          1418
+        </td>
+        <td>
+          376
+          -
+          376
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;[_\\p{L}][_\\p{L}\\p{Nd}]*&quot;
+        </td>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          1420
+        </td>
+        <td>
+          430
+          -
+          430
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;(0|[1-9]\\d*)&quot;
+        </td>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          1423
+        </td>
+        <td>
+          451
+          -
+          453
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Parser.^^
+        </td>
+        <td style="background: #F0ADAD">
+          LoopParser.this.regex(scala.this.Predef.augmentString(&quot;(0|[1-9]\\d*)&quot;).r).^^[Int](((x$1: String) =&gt; scala.this.Predef.augmentString(x$1).toInt))
+        </td>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          1422
+        </td>
+        <td>
+          458
+          -
+          458
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.immutable.StringLike.toInt
+        </td>
+        <td style="background: #F0ADAD">
+          scala.this.Predef.augmentString(x$1).toInt
+        </td>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          1421
+        </td>
+        <td>
+          449
+          -
+          449
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.immutable.StringLike.r
+        </td>
+        <td style="background: #F0ADAD">
+          scala.this.Predef.augmentString(&quot;(0|[1-9]\\d*)&quot;).r
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          1429
+        </td>
+        <td>
+          514
+          -
+          514
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #F0ADAD">
+          LoopParser.this.literal(&quot;to&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          1425
+        </td>
+        <td>
+          490
+          -
+          490
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          samples.LoopParser.identifier
+        </td>
+        <td style="background: #F0ADAD">
+          LoopParser.this.identifier
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          1428
+        </td>
+        <td>
+          506
+          -
+          506
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          samples.LoopParser.integer
+        </td>
+        <td style="background: #F0ADAD">
+          LoopParser.this.integer
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          1431
+        </td>
+        <td>
+          527
+          -
+          527
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          samples.LoopParser.statement
+        </td>
+        <td style="background: #F0ADAD">
+          LoopParser.this.statement
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          1430
+        </td>
+        <td>
+          519
+          -
+          519
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          samples.LoopParser.integer
+        </td>
+        <td style="background: #F0ADAD">
+          LoopParser.this.integer
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          1433
+        </td>
+        <td>
+          489
+          -
+          539
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Parser.^^
+        </td>
+        <td style="background: #F0ADAD">
+          LoopParser.this.literal(&quot;for&quot;).~[String](LoopParser.this.regex(LoopParser.this.identifier)).~[String](LoopParser.this.literal(&quot;in&quot;)).~[Int](LoopParser.this.integer).~[String](LoopParser.this.literal(&quot;to&quot;)).~[Int](LoopParser.this.integer).~[samples.Statement](LoopParser.this.statement).^^[samples.ForLoop](((x0$1: LoopParser.this.~[LoopParser.this.~[LoopParser.this.~[LoopParser.this.~[LoopParser.this.~[LoopParser.this.~[String,String],String],Int],String],Int],samples.Statement]) =&gt; x0$1 match {
+  case (_1: LoopParser.this.~[LoopParser.this.~[LoopParser.this.~[LoopParser.this.~[LoopParser.this.~[String,String],String],Int],String],Int], _2: samples.Statement)LoopParser.this.~[LoopParser.this.~[LoopParser.this.~[LoopParser.this.~[LoopParser.this.~[LoopParser.this.~[String,String],String],Int],String],Int],samples.Statement]((_1: LoopParser.this.~[LoopParser.this.~[LoopParser.this.~[LoopParser.this.~[String,String],String],Int],String], _2: Int)LoopParser.this.~[LoopParser.this.~[LoopParser.this.~[LoopParser.this.~[LoopParser.this.~[String,String],String],Int],String],Int]((_1: LoopParser.this.~[LoopParser.this.~[LoopParser.this.~[String,String],String],Int], _2: String)LoopParser.this.~[LoopParser.this.~[LoopParser.this.~[LoopParser.this.~[String,String],String],Int],String]((_1: LoopParser.this.~[LoopParser.this.~[String,String],String], _2: Int)LoopParser.this.~[LoopParser.this.~[LoopParser.this.~[String,String],String],Int]((_1: LoopParser.this.~[String,String], _2: String)LoopParser.this.~[LoopParser.this.~[String,String],String]((_1: String, _2: String)LoopParser.this.~[String,String]((f @ _), (variable @ _)), (i @ _)), (lBound @ _)), (t @ _)), (uBound @ _)), (statement @ _)) =&gt; ForLoop.apply(variable, lBound, uBound, statement)
+}))
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          1424
+        </td>
+        <td>
+          484
+          -
+          484
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;for&quot;
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          1427
+        </td>
+        <td>
+          501
+          -
+          501
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #F0ADAD">
+          LoopParser.this.literal(&quot;in&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          1426
+        </td>
+        <td>
+          490
+          -
+          490
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.regex
+        </td>
+        <td style="background: #F0ADAD">
+          LoopParser.this.regex(LoopParser.this.identifier)
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          1432
+        </td>
+        <td>
+          603
+          -
+          603
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          samples.ForLoop.apply
+        </td>
+        <td style="background: #F0ADAD">
+          ForLoop.apply(variable, lBound, uBound, statement)
+        </td>
+      </tr><tr>
+        <td>
+          18
+        </td>
+        <td>
+          1434
+        </td>
+        <td>
+          674
+          -
+          674
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Parser.*
+        </td>
+        <td style="background: #F0ADAD">
+          LoopParser.this.statement.*
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          1438
+        </td>
+        <td>
+          729
+          -
+          729
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          samples.Block.apply
+        </td>
+        <td style="background: #F0ADAD">
+          Block.apply(l)
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          1437
+        </td>
+        <td>
+          709
+          -
+          709
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #F0ADAD">
+          LoopParser.this.literal(&quot;}&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          1439
+        </td>
+        <td>
+          695
+          -
+          716
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Parser.^^
+        </td>
+        <td style="background: #F0ADAD">
+          LoopParser.this.literal(&quot;{&quot;).~&gt;[List[samples.Statement]](LoopParser.this.statements).&lt;~[String](LoopParser.this.literal(&quot;}&quot;)).^^[samples.Block](((l: List[samples.Statement]) =&gt; Block.apply(l)))
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          1436
+        </td>
+        <td>
+          697
+          -
+          697
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          samples.LoopParser.statements
+        </td>
+        <td style="background: #F0ADAD">
+          LoopParser.this.statements
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          1435
+        </td>
+        <td>
+          692
+          -
+          692
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;{&quot;
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          1441
+        </td>
+        <td>
+          778
+          -
+          779
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Parser.|
+        </td>
+        <td style="background: #F0ADAD">
+          LoopParser.this.loop.|[Product with Serializable with samples.Statement](LoopParser.this.block)
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          1440
+        </td>
+        <td>
+          780
+          -
+          780
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          samples.LoopParser.block
+        </td>
+        <td style="background: #F0ADAD">
+          LoopParser.this.block
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

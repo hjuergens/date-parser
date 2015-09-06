@@ -1,0 +1,735 @@
+<html>
+      <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+      <title id="title">Scoverage Code Coverage</title>
+      <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css"/>
+      <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+      <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+      <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.18.3/addons/pager/jquery.tablesorter.pager.min.js"></script>
+      <style>
+        .meter {
+        height: 14px;
+        position: relative;
+        background: #BB2020;
+}
+
+.meter span {
+	display: block;
+	height: 100%;
+	background-color: rgb(43,194,83);
+	background-image: -webkit-gradient(
+	  linear,
+	  left bottom,
+	  left top,
+	  color-stop(0, rgb(43,194,83)),
+	  color-stop(1, rgb(84,240,84))
+	 );
+	background-image: -webkit-linear-gradient(
+	  center bottom,
+	  rgb(43,194,83) 37%,
+	  rgb(84,240,84) 69%
+	 );
+	background-image: -moz-linear-gradient(
+	  center bottom,
+	  rgb(43,194,83) 37%,
+	  rgb(84,240,84) 69%
+	 );
+	background-image: -ms-linear-gradient(
+	  center bottom,
+	  rgb(43,194,83) 37%,
+	  rgb(84,240,84) 69%
+	 );
+	background-image: -o-linear-gradient(
+	  center bottom,
+	  rgb(43,194,83) 37%,
+	  rgb(84,240,84) 69%
+	 );
+	-webkit-box-shadow:
+	  inset 0 2px 9px  rgba(255,255,255,0.3),
+	  inset 0 -2px 6px rgba(0,0,0,0.4);
+	-moz-box-shadow:
+	  inset 0 2px 9px  rgba(255,255,255,0.3),
+	  inset 0 -2px 6px rgba(0,0,0,0.4);
+	position: relative;
+	overflow: hidden;
+}
+      </style>
+      <script>
+        $(document).ready(function() {$(&quot;#packages&quot;).tablesorter();});
+      </script>
+    </head><body style="font-family: monospace;">
+      <table class="tablesorter table table-striped" style="font-size:13px">
+      <thead>
+        <tr>
+          <th>
+            Class
+          </th>
+          <th>
+            Source file
+          </th>
+          <th>
+            Lines
+          </th>
+          <th>
+            Methods
+          </th>
+          <th>
+            Statements
+          </th>
+          <th>
+            Invoked
+          </th>
+          <th>
+            Coverage
+          </th>
+          <th>
+          </th>
+          <th>
+            Branches
+          </th>
+          <th>
+            Invoked
+          </th>
+          <th>
+            Coverage
+          </th>
+          <th>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+      <td>
+        <a href="de/juergens/text/NumberParsers.scala.html">
+          CardinalParsers
+        </a>
+      </td>
+      <td>
+        NumberParsers.scala
+      </td>
+      <td>
+        36
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        20
+      </td>
+      <td>
+        20
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="de/juergens/text/DateParser.scala.html">
+          DateParser
+        </a>
+      </td>
+      <td>
+        DateParser.scala
+      </td>
+      <td>
+        19
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        20
+      </td>
+      <td>
+        18
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 90%"></span>
+        </div>
+      </td>
+      <td>
+        90.00
+        %
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 50%"></span>
+        </div>
+      </td>
+      <td>
+        50.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="de/juergens/text/DateRuleParsers.scala.html">
+          DateRuleParsers
+        </a>
+      </td>
+      <td>
+        DateRuleParsers.scala
+      </td>
+      <td>
+        233
+      </td>
+      <td>
+        45
+      </td>
+      <td>
+        271
+      </td>
+      <td>
+        178
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 66%"></span>
+        </div>
+      </td>
+      <td>
+        65.68
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="de/juergens/text/TemporalFormat.scala.html">
+          DayOfWeekFormat
+        </a>
+      </td>
+      <td>
+        TemporalFormat.scala
+      </td>
+      <td>
+        43
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="de/juergens/text/TemporalFormat.scala.html">
+          MonthFormat
+        </a>
+      </td>
+      <td>
+        TemporalFormat.scala
+      </td>
+      <td>
+        33
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="de/juergens/text/NumberParsers.scala.html">
+          OrdinalParser
+        </a>
+      </td>
+      <td>
+        NumberParsers.scala
+      </td>
+      <td>
+        59
+      </td>
+      <td>
+        5
+      </td>
+      <td>
+        45
+      </td>
+      <td>
+        45
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="de/juergens/text/SimpleRuleParser.scala.html">
+          ParseExpr
+        </a>
+      </td>
+      <td>
+        SimpleRuleParser.scala
+      </td>
+      <td>
+        89
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        8
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="de/juergens/text/DateRuleParsers.scala.html">
+          ParseExpr$Date
+        </a>
+      </td>
+      <td>
+        DateRuleParsers.scala
+      </td>
+      <td>
+        268
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        23
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="de/juergens/text/TermParser.scala.html">
+          ParseTerm
+        </a>
+      </td>
+      <td>
+        TermParser.scala
+      </td>
+      <td>
+        122
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        8
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="de/juergens/text/TemporalFormat.scala.html">
+          QuarterOfYearFormat
+        </a>
+      </td>
+      <td>
+        TemporalFormat.scala
+      </td>
+      <td>
+        57
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="de/juergens/text/ExtendedRegexParsers.scala.html">
+          RegexParser
+        </a>
+      </td>
+      <td>
+        ExtendedRegexParsers.scala
+      </td>
+      <td>
+        26
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        13
+      </td>
+      <td>
+        13
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="de/juergens/text/SimpleRuleParser.scala.html">
+          SimpleRuleParser
+        </a>
+      </td>
+      <td>
+        SimpleRuleParser.scala
+      </td>
+      <td>
+        82
+      </td>
+      <td>
+        20
+      </td>
+      <td>
+        139
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="de/juergens/text/TemporalInterval.scala.html">
+          TemporalInterval
+        </a>
+      </td>
+      <td>
+        TemporalInterval.scala
+      </td>
+      <td>
+        14
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="de/juergens/text/TermParser.scala.html">
+          TermParser
+        </a>
+      </td>
+      <td>
+        TermParser.scala
+      </td>
+      <td>
+        114
+      </td>
+      <td>
+        16
+      </td>
+      <td>
+        108
+      </td>
+      <td>
+        78
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 72%"></span>
+        </div>
+      </td>
+      <td>
+        72.22
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr>
+      </tbody>
+    </table>
+    </body>
+    </html>

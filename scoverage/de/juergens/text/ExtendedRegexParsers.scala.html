@@ -1,0 +1,346 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          de/juergens/text/ExtendedRegexParsers.scala.html
+        </title>
+        <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css"/>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.18.3/addons/pager/jquery.tablesorter.pager.min.js"></script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier;'>1 <span style=''>package de.juergens.text
+</span>2 <span style=''>
+</span>3 <span style=''>import scala.util.matching.Regex
+</span>4 <span style=''>import scala.util.parsing.combinator.RegexParsers
+</span>5 <span style=''>
+</span>6 <span style=''>/**
+</span>7 <span style=''> * Helper trait
+</span>8 <span style=''> */
+</span>9 <span style=''>trait ExtendedRegexParsers {
+</span>10 <span style=''>  self: RegexParsers =>
+</span>11 <span style=''>
+</span>12 <span style=''>  /**
+</span>13 <span style=''>   * 
+</span>14 <span style=''>   * @param r a regular expression
+</span>15 <span style=''>   * @return
+</span>16 <span style=''>   */
+</span>17 <span style=''>  case class RegexParser(r: Regex) extends Parser[Regex.Match] {
+</span>18 <span style=''>    def apply(in: Input) = {
+</span>19 <span style=''>      val source = in.source
+</span>20 <span style=''>      val offset = in.offset
+</span>21 <span style=''>      val start = handleWhiteSpace(source, offset)
+</span>22 <span style=''>      r </span><span style='background: #AEF1AE'>findPrefixMatchOf</span><span style=''> (source.subSequence(start, source.length)) match {
+</span>23 <span style=''>        case Some(matched) =>
+</span>24 <span style=''>          Success(matched, in.drop(start </span><span style='background: #AEF1AE'>+ matched.end -</span><span style=''> offset))
+</span>25 <span style=''>        case None =>
+</span>26 <span style=''>          Failure("string matching regex `"</span><span style='background: #AEF1AE'>+r+"' expected but `"+in.first+</span><span style=''>"' found", in.drop(start </span><span style='background: #AEF1AE'>-</span><span style=''> offset))
+</span>27 <span style=''>      }
+</span>28 <span style=''>    }
+</span>29 <span style=''>  }
+</span>30 <span style=''>
+</span>31 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          363
+        </td>
+        <td>
+          370
+          -
+          370
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.util.parsing.input.Reader.source
+        </td>
+        <td style="background: #AEF1AE">
+          in.source
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          364
+        </td>
+        <td>
+          399
+          -
+          399
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.util.parsing.input.Reader.offset
+        </td>
+        <td style="background: #AEF1AE">
+          in.offset
+        </td>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          365
+        </td>
+        <td>
+          440
+          -
+          440
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.handleWhiteSpace
+        </td>
+        <td style="background: #AEF1AE">
+          ExtendedRegexParsers.this.handleWhiteSpace(source, offset)
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          367
+        </td>
+        <td>
+          502
+          -
+          502
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.CharSequence.subSequence
+        </td>
+        <td style="background: #AEF1AE">
+          source.subSequence(start, source.length())
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          366
+        </td>
+        <td>
+          517
+          -
+          517
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.CharSequence.length
+        </td>
+        <td style="background: #AEF1AE">
+          source.length()
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          368
+        </td>
+        <td>
+          465
+          -
+          482
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.matching.Regex.findPrefixMatchOf
+        </td>
+        <td style="background: #AEF1AE">
+          RegexParser.this.r.findPrefixMatchOf(source.subSequence(start, source.length()))
+        </td>
+      </tr><tr>
+        <td>
+          24
+        </td>
+        <td>
+          370
+        </td>
+        <td>
+          598
+          -
+          598
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.input.Reader.drop
+        </td>
+        <td style="background: #AEF1AE">
+          in.drop(start.+(matched.end).-(offset))
+        </td>
+      </tr><tr>
+        <td>
+          24
+        </td>
+        <td>
+          369
+        </td>
+        <td>
+          605
+          -
+          620
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td style="background: #AEF1AE">
+          start.+(matched.end).-(offset)
+        </td>
+      </tr><tr>
+        <td>
+          24
+        </td>
+        <td>
+          371
+        </td>
+        <td>
+          581
+          -
+          581
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Success.apply
+        </td>
+        <td style="background: #AEF1AE">
+          ExtendedRegexParsers.this.Success.apply[scala.util.matching.Regex.Match](matched, in.drop(start.+(matched.end).-(offset)))
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          373
+        </td>
+        <td>
+          750
+          -
+          751
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td style="background: #AEF1AE">
+          start.-(offset)
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          372
+        </td>
+        <td>
+          694
+          -
+          725
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;string matching regex `&quot;.+(RegexParser.this.r).+(&quot;\' expected but `&quot;).+(in.first).+(&quot;\' found&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          375
+        </td>
+        <td>
+          668
+          -
+          668
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Failure.apply
+        </td>
+        <td style="background: #AEF1AE">
+          ExtendedRegexParsers.this.Failure.apply(&quot;string matching regex `&quot;.+(RegexParser.this.r).+(&quot;\' expected but `&quot;).+(in.first).+(&quot;\' found&quot;), in.drop(start.-(offset)))
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          374
+        </td>
+        <td>
+          743
+          -
+          743
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.input.Reader.drop
+        </td>
+        <td style="background: #AEF1AE">
+          in.drop(start.-(offset))
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

@@ -1,0 +1,1529 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          de/juergens/util/Ordinal.scala.html
+        </title>
+        <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css"/>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.18.3/addons/pager/jquery.tablesorter.pager.min.js"></script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier;'>1 <span style=''>package de.juergens.util
+</span>2 <span style=''>
+</span>3 <span style=''>import scala.language.implicitConversions
+</span>4 <span style=''>
+</span>5 <span style=''>/**
+</span>6 <span style=''> * Created by juergens on 25.05.15.
+</span>7 <span style=''> */
+</span>8 <span style=''>object Ordinal {
+</span>9 <span style=''>  def fromString(str: String) : Ordinal = { val OrdinalText(ord) = str; ord}
+</span>10 <span style=''>
+</span>11 <span style=''>  private val k : PartialFunction[Any,String] = { case str : String => str }
+</span>12 <span style=''>  private val h : PartialFunction[String,Int] = {
+</span>13 <span style=''>    case "first" => 1
+</span>14 <span style=''>    case "second" => 2
+</span>15 <span style=''>    case "third" => 3
+</span>16 <span style=''>    case s if s </span><span style='background: #F0ADAD'>endsWith</span><span style=''> "." => Integer.parseInt(s.substring(0, s.length </span><span style='background: #F0ADAD'>-</span><span style=''> 1))
+</span>17 <span style=''>  }
+</span>18 <span style=''>
+</span>19 <span style=''>  /** Extractor object */
+</span>20 <span style=''>  object OrdinalText {
+</span>21 <span style=''>    import scala.PartialFunction.condOpt
+</span>22 <span style=''>    def unapply(x: Any): Option[Ordinal] = condOpt(x){k </span><span style='background: #AEF1AE'>andThen</span><span style=''> h}.map(Ordinal(_))
+</span>23 <span style=''>  }
+</span>24 <span style=''>
+</span>25 <span style=''>  implicit def ordinal2Int(x:Ordinal) : Int = x.toInt
+</span>26 <span style=''>  implicit def ordinal2Long(x:Ordinal) : Long = x.toInt
+</span>27 <span style=''>
+</span>28 <span style=''>  def ordinal(i :Int) : String = {
+</span>29 <span style=''>    val suffixes = Array[String]( "th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th" )
+</span>30 <span style=''>    (i </span><span style='background: #AEF1AE'>%</span><span style=''> 100) match {
+</span>31 <span style=''>      case 11 | 12 | 14 => i </span><span style='background: #F0ADAD'>+</span><span style=''> "th"
+</span>32 <span style=''>      case _ => i </span><span style='background: #AEF1AE'>+</span><span style=''> suffixes(i </span><span style='background: #AEF1AE'>%</span><span style=''> 10)
+</span>33 <span style=''>    }
+</span>34 <span style=''>
+</span>35 <span style=''>  }
+</span>36 <span style=''>
+</span>37 <span style=''>  implicit object OrdinalNumeric extends math.Numeric[Ordinal] {
+</span>38 <span style=''>    val num = math.Numeric.IntIsIntegral
+</span>39 <span style=''>    def plus(x: Ordinal, y: Ordinal) =  Ordinal(num.plus(x,y))
+</span>40 <span style=''>    def minus(x: Ordinal, y: Ordinal) = Ordinal(num.minus(x,y))
+</span>41 <span style=''>    def times(x: Ordinal, y: Ordinal) = Ordinal(num.times(x,y))
+</span>42 <span style=''>    def negate(x: Ordinal): Ordinal =   Ordinal(num.negate(x))
+</span>43 <span style=''>    def fromInt(x: Int) = Ordinal(x)
+</span>44 <span style=''>    def toInt(x: Ordinal) = x
+</span>45 <span style=''>    def toLong(x: Ordinal) = toInt(x)
+</span>46 <span style=''>    def toFloat(x: Ordinal) = toInt(x)
+</span>47 <span style=''>    def toDouble(x: Ordinal) = toInt(x)
+</span>48 <span style=''>    def compare(x:Ordinal,y:Ordinal) = num.compare(x,y)
+</span>49 <span style=''>  }
+</span>50 <span style=''>  assert(Down </span><span style='background: #AEF1AE'>* Ordinal(1) ==</span><span style=''> Ordinal(-1))
+</span>51 <span style=''>}
+</span>52 <span style=''>
+</span>53 <span style=''>case class Ordinal(toInt : Int) extends AnyVal {
+</span>54 <span style=''>  def abs: Ordinal = Ordinal(Math.abs(toInt))
+</span>55 <span style=''>
+</span>56 <span style=''>  def unary_- : Ordinal = Ordinal(-toInt)
+</span>57 <span style=''>
+</span>58 <span style=''>  override def toString: String = Ordinal.ordinal(toInt)
+</span>59 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          11
+        </td>
+        <td>
+          1345
+        </td>
+        <td>
+          256
+          -
+          256
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.util.Ordinal.$anonfun.&lt;init&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          new $anonfun()
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          1354
+        </td>
+        <td>
+          333
+          -
+          333
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.util.Ordinal.$anonfun.&lt;init&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          new $anonfun()
+        </td>
+      </tr><tr>
+        <td>
+          13
+        </td>
+        <td>
+          1346
+        </td>
+        <td>
+          355
+          -
+          355
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          1347
+        </td>
+        <td>
+          378
+          -
+          378
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          2
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          1348
+        </td>
+        <td>
+          400
+          -
+          400
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          3
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          1351
+        </td>
+        <td>
+          475
+          -
+          476
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td style="background: #F0ADAD">
+          s.length().-(1)
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          1350
+        </td>
+        <td>
+          463
+          -
+          463
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          1353
+        </td>
+        <td>
+          450
+          -
+          450
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Integer.parseInt
+        </td>
+        <td style="background: #F0ADAD">
+          java.this.lang.Integer.parseInt(s.substring(0, s.length().-(1)))
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          1352
+        </td>
+        <td>
+          462
+          -
+          462
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.substring
+        </td>
+        <td style="background: #F0ADAD">
+          s.substring(0, s.length().-(1))
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          1349
+        </td>
+        <td>
+          418
+          -
+          426
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.endsWith
+        </td>
+        <td style="background: #F0ADAD">
+          s.endsWith(&quot;.&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          1357
+        </td>
+        <td>
+          654
+          -
+          654
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.util.Ordinal.apply
+        </td>
+        <td style="background: #AEF1AE">
+          Ordinal.apply(x$1)
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          1356
+        </td>
+        <td>
+          632
+          -
+          639
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.PartialFunction.andThen
+        </td>
+        <td style="background: #AEF1AE">
+          Ordinal.this.k.andThen[Int](Ordinal.this.h)
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          1355
+        </td>
+        <td>
+          640
+          -
+          640
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.util.Ordinal.h
+        </td>
+        <td style="background: #AEF1AE">
+          Ordinal.this.h
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          1358
+        </td>
+        <td>
+          646
+          -
+          646
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.map
+        </td>
+        <td style="background: #AEF1AE">
+          scala.PartialFunction.condOpt[Any, Int](x)(Ordinal.this.k.andThen[Int](Ordinal.this.h)).map[de.juergens.util.Ordinal](((x$1: Int) =&gt; Ordinal.apply(x$1)))
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          1359
+        </td>
+        <td>
+          712
+          -
+          712
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.util.Ordinal.toInt
+        </td>
+        <td style="background: #AEF1AE">
+          x.toInt
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          1360
+        </td>
+        <td>
+          768
+          -
+          768
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Int.toLong
+        </td>
+        <td style="background: #AEF1AE">
+          x.toInt.toLong
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          1366
+        </td>
+        <td>
+          874
+          -
+          874
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;th&quot;
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          1369
+        </td>
+        <td>
+          892
+          -
+          892
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;th&quot;
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          1363
+        </td>
+        <td>
+          856
+          -
+          856
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;nd&quot;
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          1365
+        </td>
+        <td>
+          868
+          -
+          868
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;th&quot;
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          1368
+        </td>
+        <td>
+          886
+          -
+          886
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;th&quot;
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          1362
+        </td>
+        <td>
+          850
+          -
+          850
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;st&quot;
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          1371
+        </td>
+        <td>
+          842
+          -
+          842
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.Array.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Array.apply[String](&quot;th&quot;, &quot;st&quot;, &quot;nd&quot;, &quot;rd&quot;, &quot;th&quot;, &quot;th&quot;, &quot;th&quot;, &quot;th&quot;, &quot;th&quot;, &quot;th&quot;)((ClassTag.apply[String](classOf[java.lang.String]): scala.reflect.ClassTag[String]))
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          1361
+        </td>
+        <td>
+          844
+          -
+          844
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;th&quot;
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          1370
+        </td>
+        <td>
+          898
+          -
+          898
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;th&quot;
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          1364
+        </td>
+        <td>
+          862
+          -
+          862
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;rd&quot;
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          1367
+        </td>
+        <td>
+          880
+          -
+          880
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;th&quot;
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          1372
+        </td>
+        <td>
+          912
+          -
+          913
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.%
+        </td>
+        <td style="background: #AEF1AE">
+          i.%(100)
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          1373
+        </td>
+        <td>
+          956
+          -
+          957
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td style="background: #F0ADAD">
+          i.+(&quot;th&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          1375
+        </td>
+        <td>
+          991
+          -
+          991
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Array.apply
+        </td>
+        <td style="background: #AEF1AE">
+          suffixes.apply(i.%(10))
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          1374
+        </td>
+        <td>
+          994
+          -
+          995
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.%
+        </td>
+        <td style="background: #AEF1AE">
+          i.%(10)
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          1376
+        </td>
+        <td>
+          981
+          -
+          982
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td style="background: #AEF1AE">
+          i.+(suffixes.apply(i.%(10)))
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          1377
+        </td>
+        <td>
+          1104
+          -
+          1104
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.math.Numeric.IntIsIntegral
+        </td>
+        <td style="background: #AEF1AE">
+          scala.math.Numeric.IntIsIntegral
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          1378
+        </td>
+        <td>
+          1175
+          -
+          1175
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          de.juergens.util.Ordinal.ordinal2Int
+        </td>
+        <td style="background: #F0ADAD">
+          Ordinal.this.ordinal2Int(x)
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          1381
+        </td>
+        <td>
+          1165
+          -
+          1165
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.util.Ordinal.apply
+        </td>
+        <td style="background: #F0ADAD">
+          Ordinal.apply(OrdinalNumeric.this.num.plus(Ordinal.this.ordinal2Int(x), Ordinal.this.ordinal2Int(y)))
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          1380
+        </td>
+        <td>
+          1174
+          -
+          1174
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.math.Numeric.IntIsIntegral.plus
+        </td>
+        <td style="background: #F0ADAD">
+          OrdinalNumeric.this.num.plus(Ordinal.this.ordinal2Int(x), Ordinal.this.ordinal2Int(y))
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          1379
+        </td>
+        <td>
+          1177
+          -
+          1177
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          de.juergens.util.Ordinal.ordinal2Int
+        </td>
+        <td style="background: #F0ADAD">
+          Ordinal.this.ordinal2Int(y)
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          1384
+        </td>
+        <td>
+          1238
+          -
+          1238
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.math.Numeric.IntIsIntegral.minus
+        </td>
+        <td style="background: #F0ADAD">
+          OrdinalNumeric.this.num.minus(Ordinal.this.ordinal2Int(x), Ordinal.this.ordinal2Int(y))
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          1383
+        </td>
+        <td>
+          1241
+          -
+          1241
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          de.juergens.util.Ordinal.ordinal2Int
+        </td>
+        <td style="background: #F0ADAD">
+          Ordinal.this.ordinal2Int(y)
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          1382
+        </td>
+        <td>
+          1239
+          -
+          1239
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          de.juergens.util.Ordinal.ordinal2Int
+        </td>
+        <td style="background: #F0ADAD">
+          Ordinal.this.ordinal2Int(x)
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          1385
+        </td>
+        <td>
+          1228
+          -
+          1228
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.util.Ordinal.apply
+        </td>
+        <td style="background: #F0ADAD">
+          Ordinal.apply(OrdinalNumeric.this.num.minus(Ordinal.this.ordinal2Int(x), Ordinal.this.ordinal2Int(y)))
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          1387
+        </td>
+        <td>
+          1305
+          -
+          1305
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          de.juergens.util.Ordinal.ordinal2Int
+        </td>
+        <td style="background: #F0ADAD">
+          Ordinal.this.ordinal2Int(y)
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          1389
+        </td>
+        <td>
+          1292
+          -
+          1292
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.util.Ordinal.apply
+        </td>
+        <td style="background: #F0ADAD">
+          Ordinal.apply(OrdinalNumeric.this.num.times(Ordinal.this.ordinal2Int(x), Ordinal.this.ordinal2Int(y)))
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          1386
+        </td>
+        <td>
+          1303
+          -
+          1303
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          de.juergens.util.Ordinal.ordinal2Int
+        </td>
+        <td style="background: #F0ADAD">
+          Ordinal.this.ordinal2Int(x)
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          1388
+        </td>
+        <td>
+          1302
+          -
+          1302
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.math.Numeric.IntIsIntegral.times
+        </td>
+        <td style="background: #F0ADAD">
+          OrdinalNumeric.this.num.times(Ordinal.this.ordinal2Int(x), Ordinal.this.ordinal2Int(y))
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          1390
+        </td>
+        <td>
+          1368
+          -
+          1368
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          de.juergens.util.Ordinal.ordinal2Int
+        </td>
+        <td style="background: #AEF1AE">
+          Ordinal.this.ordinal2Int(x)
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          1392
+        </td>
+        <td>
+          1356
+          -
+          1356
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.util.Ordinal.apply
+        </td>
+        <td style="background: #AEF1AE">
+          Ordinal.apply(OrdinalNumeric.this.num.negate(Ordinal.this.ordinal2Int(x)))
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          1391
+        </td>
+        <td>
+          1367
+          -
+          1367
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.math.Numeric.IntIsIntegral.negate
+        </td>
+        <td style="background: #AEF1AE">
+          OrdinalNumeric.this.num.negate(Ordinal.this.ordinal2Int(x))
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          1393
+        </td>
+        <td>
+          1405
+          -
+          1405
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.util.Ordinal.apply
+        </td>
+        <td style="background: #F0ADAD">
+          Ordinal.apply(x)
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          1394
+        </td>
+        <td>
+          1437
+          -
+          1437
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          de.juergens.util.Ordinal.ordinal2Int
+        </td>
+        <td style="background: #F0ADAD">
+          Ordinal.this.ordinal2Int(x)
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          1395
+        </td>
+        <td>
+          1473
+          -
+          1473
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Int.toLong
+        </td>
+        <td style="background: #F0ADAD">
+          OrdinalNumeric.this.toInt(x).toLong
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          1396
+        </td>
+        <td>
+          1512
+          -
+          1512
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Int.toFloat
+        </td>
+        <td style="background: #F0ADAD">
+          OrdinalNumeric.this.toInt(x).toFloat
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          1397
+        </td>
+        <td>
+          1552
+          -
+          1552
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Int.toDouble
+        </td>
+        <td style="background: #F0ADAD">
+          OrdinalNumeric.this.toInt(x).toDouble
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          1399
+        </td>
+        <td>
+          1609
+          -
+          1609
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          de.juergens.util.Ordinal.ordinal2Int
+        </td>
+        <td style="background: #F0ADAD">
+          Ordinal.this.ordinal2Int(y)
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          1398
+        </td>
+        <td>
+          1607
+          -
+          1607
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          de.juergens.util.Ordinal.ordinal2Int
+        </td>
+        <td style="background: #F0ADAD">
+          Ordinal.this.ordinal2Int(x)
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          1400
+        </td>
+        <td>
+          1606
+          -
+          1606
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.math.Ordering.IntOrdering.compare
+        </td>
+        <td style="background: #F0ADAD">
+          OrdinalNumeric.this.num.compare(Ordinal.this.ordinal2Int(x), Ordinal.this.ordinal2Int(y))
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          1402
+        </td>
+        <td>
+          1630
+          -
+          1630
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.util.Ordinal.OrdinalNumeric
+        </td>
+        <td style="background: #AEF1AE">
+          Ordinal.this.OrdinalNumeric
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          1405
+        </td>
+        <td>
+          1624
+          -
+          1624
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.assert
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.assert(Down.*[de.juergens.util.Ordinal](Ordinal.apply(1))(Ordinal.this.OrdinalNumeric).==(Ordinal.apply(-1)))
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          1401
+        </td>
+        <td>
+          1639
+          -
+          1639
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.util.Ordinal.apply
+        </td>
+        <td style="background: #AEF1AE">
+          Ordinal.apply(1)
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          1404
+        </td>
+        <td>
+          1630
+          -
+          1645
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Any.==
+        </td>
+        <td style="background: #AEF1AE">
+          Down.*[de.juergens.util.Ordinal](Ordinal.apply(1))(Ordinal.this.OrdinalNumeric).==(Ordinal.apply(-1))
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          1403
+        </td>
+        <td>
+          1653
+          -
+          1653
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.util.Ordinal.apply
+        </td>
+        <td style="background: #AEF1AE">
+          Ordinal.apply(-1)
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          1408
+        </td>
+        <td>
+          1739
+          -
+          1739
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.util.Ordinal.apply
+        </td>
+        <td style="background: #AEF1AE">
+          Ordinal.apply(java.this.lang.Math.abs(Ordinal.this.toInt))
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          1407
+        </td>
+        <td>
+          1748
+          -
+          1748
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Math.abs
+        </td>
+        <td style="background: #AEF1AE">
+          java.this.lang.Math.abs(Ordinal.this.toInt)
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          1406
+        </td>
+        <td>
+          1749
+          -
+          1749
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.util.Ordinal.toInt
+        </td>
+        <td style="background: #AEF1AE">
+          Ordinal.this.toInt
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          1410
+        </td>
+        <td>
+          1791
+          -
+          1791
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.util.Ordinal.apply
+        </td>
+        <td style="background: #F0ADAD">
+          Ordinal.apply(Ordinal.this.toInt.unary_-)
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          1409
+        </td>
+        <td>
+          1792
+          -
+          1792
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Int.unary_-
+        </td>
+        <td style="background: #F0ADAD">
+          Ordinal.this.toInt.unary_-
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          1411
+        </td>
+        <td>
+          1851
+          -
+          1851
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.util.Ordinal.toInt
+        </td>
+        <td style="background: #AEF1AE">
+          Ordinal.this.toInt
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          1412
+        </td>
+        <td>
+          1850
+          -
+          1850
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.util.Ordinal.ordinal
+        </td>
+        <td style="background: #AEF1AE">
+          Ordinal.ordinal(Ordinal.this.toInt)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

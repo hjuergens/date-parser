@@ -1,0 +1,639 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          de/juergens/time/package.scala.html
+        </title>
+        <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css"/>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.18.3/addons/pager/jquery.tablesorter.pager.min.js"></script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier;'>1 <span style=''>package de.juergens
+</span>2 <span style=''>
+</span>3 <span style=''>import java.time.temporal._
+</span>4 <span style=''>import java.time.{DayOfWeek, LocalDate}
+</span>5 <span style=''>
+</span>6 <span style=''>import de.juergens.util.{Direction, Down, Ordinal, Up}
+</span>7 <span style=''>import xuwei_k.Scala2Java8.unaryOperator
+</span>8 <span style=''>
+</span>9 <span style=''>import scala.language.implicitConversions
+</span>10 <span style=''>
+</span>11 <span style=''>package object time {
+</span>12 <span style=''>  implicit class TemporalAdjusterWrapper(adjuster: (Temporal) => Temporal) extends TemporalAdjuster {
+</span>13 <span style=''>    override def adjustInto(temporal: Temporal): Temporal = adjuster(temporal)
+</span>14 <span style=''>  }
+</span>15 <span style=''>
+</span>16 <span style=''>  object TemporalSeek {
+</span>17 <span style=''>    import java.time.Month
+</span>18 <span style=''>    def apply(ordinal: Ordinal, ta: TemporalAccessor, direction: Direction) = ta match {
+</span>19 <span style=''>      case dayOfWeek: DayOfWeek => DayOfWeekAdjuster(ordinal, dayOfWeek, direction)
+</span>20 <span style=''>      case month: Month => MonthAdjuster(ordinal, month, direction)
+</span>21 <span style=''>    }
+</span>22 <span style=''>  }
+</span>23 <span style=''>
+</span>24 <span style=''>  object TemporalPeriodSeek {
+</span>25 <span style=''>    import Ordinal._
+</span>26 <span style=''>    def apply(ordinal: Ordinal, ta: TemporalUnit) : LocalDateAdjuster = {
+</span>27 <span style=''>      val direction =  Direction(ordinal.toInt)
+</span>28 <span style=''>      apply(ordinal.abs, ta, direction)
+</span>29 <span style=''>    }
+</span>30 <span style=''>    def apply(ordinal: Ordinal, ta: TemporalUnit, direction: Direction): LocalDateAdjuster =
+</span>31 <span style=''>      ta match {
+</span>32 <span style=''>        case ChronoUnit.DAYS =>
+</span>33 <span style=''>          implicit val description = s"$ordinal Day"
+</span>34 <span style=''>          direction match {
+</span>35 <span style=''>            case Up => {
+</span>36 <span style=''>              (date:LocalDate) => date.plus(ordinal, ChronoUnit.DAYS)
+</span>37 <span style=''>            }
+</span>38 <span style=''>            case Down => (date:LocalDate)=> date.minus(ordinal, ChronoUnit.DAYS)
+</span>39 <span style=''>          }
+</span>40 <span style=''>        case ChronoUnit.WEEKS => // TODO ISO-8601 standard considers Monday
+</span>41 <span style=''>          implicit val description = s"$ordinal Week"
+</span>42 <span style=''>          direction match {
+</span>43 <span style=''>            case Up => (date:LocalDate) => {
+</span>44 <span style=''>              date.
+</span>45 <span style=''>                plus(ordinal, ChronoUnit.WEEKS).
+</span>46 <span style=''>                plus(1, ChronoUnit.DAYS).
+</span>47 <span style=''>                `with`(DayOfWeek.MONDAY). // TemporalAdjusters.firstDayOfMonth())
+</span>48 <span style=''>                minus(1, ChronoUnit.DAYS)
+</span>49 <span style=''>            }
+</span>50 <span style=''>
+</span>51 <span style=''>            case Down => (date:LocalDate) => {
+</span>52 <span style=''>              date.
+</span>53 <span style=''>                minus(ordinal, ChronoUnit.WEEKS).
+</span>54 <span style=''>                plus(1, ChronoUnit.DAYS).
+</span>55 <span style=''>                `with`(DayOfWeek.SUNDAY).
+</span>56 <span style=''>                minus(1, ChronoUnit.DAYS)// TemporalAdjusters.firstDayOfMonth())
+</span>57 <span style=''>            }
+</span>58 <span style=''>
+</span>59 <span style=''>          }
+</span>60 <span style=''>        case ChronoUnit.MONTHS => {
+</span>61 <span style=''>          implicit val description = s"$ordinal Month"
+</span>62 <span style=''>          direction match {
+</span>63 <span style=''>            case Up => (date:LocalDate) => {
+</span>64 <span style=''>              date.
+</span>65 <span style=''>                plus(ordinal, ChronoUnit.MONTHS).
+</span>66 <span style=''>                `with`(TemporalAdjusters.firstDayOfMonth())
+</span>67 <span style=''>            }
+</span>68 <span style=''>
+</span>69 <span style=''>            case Down => (date:LocalDate) => {
+</span>70 <span style=''>              date.
+</span>71 <span style=''>                minus(ordinal, ChronoUnit.MONTHS).
+</span>72 <span style=''>                `with`(TemporalAdjusters.lastDayOfMonth())
+</span>73 <span style=''>            }
+</span>74 <span style=''>
+</span>75 <span style=''>          }
+</span>76 <span style=''>        }
+</span>77 <span style=''>        case ChronoUnit.YEARS =>
+</span>78 <span style=''>          implicit val description = s"$ordinal Year"
+</span>79 <span style=''>          direction match {
+</span>80 <span style=''>            case Up => (date:LocalDate) => {
+</span>81 <span style=''>              date.
+</span>82 <span style=''>                  plus(ordinal, ChronoUnit.YEARS).
+</span>83 <span style=''>                  `with`(TemporalAdjusters.firstDayOfYear())
+</span>84 <span style=''>
+</span>85 <span style=''>              }
+</span>86 <span style=''>
+</span>87 <span style=''>            case Down => (date:LocalDate) => {
+</span>88 <span style=''>              date.
+</span>89 <span style=''>                  minus(ordinal, ChronoUnit.YEARS).
+</span>90 <span style=''>                  `with`(TemporalAdjusters.lastDayOfYear())
+</span>91 <span style=''>              }
+</span>92 <span style=''>
+</span>93 <span style=''>          }
+</span>94 <span style=''>        case IsoFields.QUARTER_YEARS => // TODO IsoFields.QUARTER_YEARS
+</span>95 <span style=''>          implicit val description = s"$ordinal Quarter"
+</span>96 <span style=''>          direction match {
+</span>97 <span style=''>            case Up =>
+</span>98 <span style=''>              (localDate:LocalDate)=> localDate.
+</span>99 <span style=''>                plus(ordinal, ChronoUnit.YEARS).
+</span>100 <span style=''>                `with`(java.time.Month.JANUARY).
+</span>101 <span style=''>                `with`(TemporalAdjusters.firstDayOfMonth())
+</span>102 <span style=''>
+</span>103 <span style=''>            case Down =>
+</span>104 <span style=''>              (localDate:LocalDate)=> localDate.
+</span>105 <span style=''>                minus(ordinal, ChronoUnit.YEARS).
+</span>106 <span style=''>                `with`(java.time.Month.DECEMBER).
+</span>107 <span style=''>                `with`(TemporalAdjusters.lastDayOfMonth())
+</span>108 <span style=''>
+</span>109 <span style=''>          }
+</span>110 <span style=''>      }
+</span>111 <span style=''>
+</span>112 <span style=''>    override def toString = s"TemporalPeriodSeek()"
+</span>113 <span style=''>  }
+</span>114 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          13
+        </td>
+        <td>
+          1062
+        </td>
+        <td>
+          422
+          -
+          422
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td style="background: #F0ADAD">
+          TemporalAdjusterWrapper.this.adjuster.apply(temporal)
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          1063
+        </td>
+        <td>
+          630
+          -
+          630
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.time.DayOfWeekAdjuster.apply
+        </td>
+        <td style="background: #F0ADAD">
+          DayOfWeekAdjuster.apply(ordinal, dayOfWeek, direction)
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          1064
+        </td>
+        <td>
+          702
+          -
+          702
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.time.MonthAdjuster.apply
+        </td>
+        <td style="background: #F0ADAD">
+          MonthAdjuster.apply(ordinal, month, direction)
+        </td>
+      </tr><tr>
+        <td>
+          27
+        </td>
+        <td>
+          1066
+        </td>
+        <td>
+          898
+          -
+          898
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.util.Direction.apply
+        </td>
+        <td style="background: #AEF1AE">
+          de.juergens.util.Direction.apply(ordinal.toInt)
+        </td>
+      </tr><tr>
+        <td>
+          27
+        </td>
+        <td>
+          1065
+        </td>
+        <td>
+          907
+          -
+          907
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.util.Ordinal.toInt
+        </td>
+        <td style="background: #AEF1AE">
+          ordinal.toInt
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          1067
+        </td>
+        <td>
+          934
+          -
+          934
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.util.Ordinal.abs
+        </td>
+        <td style="background: #AEF1AE">
+          ordinal.abs
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          1068
+        </td>
+        <td>
+          925
+          -
+          925
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.time.TemporalPeriodSeek.apply
+        </td>
+        <td style="background: #AEF1AE">
+          TemporalPeriodSeek.this.apply(ordinal.abs, ta, direction)
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          1069
+        </td>
+        <td>
+          1139
+          -
+          1139
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.s
+        </td>
+        <td style="background: #AEF1AE">
+          scala.StringContext.apply(&quot;&quot;, &quot; Day&quot;).s(ordinal)
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          1070
+        </td>
+        <td>
+          1239
+          -
+          1239
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          de.juergens.time.LocalDateAdjuster.apply
+        </td>
+        <td style="background: #AEF1AE">
+          time.this.LocalDateAdjuster.apply(((date: java.time.LocalDate) =&gt; date.plus(de.juergens.util.Ordinal.ordinal2Long(ordinal), DAYS)))(description)
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          1071
+        </td>
+        <td>
+          1333
+          -
+          1333
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          de.juergens.time.LocalDateAdjuster.apply
+        </td>
+        <td style="background: #F0ADAD">
+          time.this.LocalDateAdjuster.apply(((date: java.time.LocalDate) =&gt; date.minus(de.juergens.util.Ordinal.ordinal2Long(ordinal), DAYS)))(description)
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          1072
+        </td>
+        <td>
+          1498
+          -
+          1498
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.s
+        </td>
+        <td style="background: #AEF1AE">
+          scala.StringContext.apply(&quot;&quot;, &quot; Week&quot;).s(ordinal)
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          1073
+        </td>
+        <td>
+          1583
+          -
+          1583
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          de.juergens.time.LocalDateAdjuster.apply
+        </td>
+        <td style="background: #AEF1AE">
+          time.this.LocalDateAdjuster.apply(((date: java.time.LocalDate) =&gt; date.plus(de.juergens.util.Ordinal.ordinal2Long(ordinal), WEEKS).plus(1L, DAYS).`with`(MONDAY).minus(1L, DAYS)))(description)
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          1074
+        </td>
+        <td>
+          1880
+          -
+          1880
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          de.juergens.time.LocalDateAdjuster.apply
+        </td>
+        <td style="background: #AEF1AE">
+          time.this.LocalDateAdjuster.apply(((date: java.time.LocalDate) =&gt; date.minus(de.juergens.util.Ordinal.ordinal2Long(ordinal), WEEKS).plus(1L, DAYS).`with`(SUNDAY).minus(1L, DAYS)))(description)
+        </td>
+      </tr><tr>
+        <td>
+          61
+        </td>
+        <td>
+          1075
+        </td>
+        <td>
+          2220
+          -
+          2220
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.s
+        </td>
+        <td style="background: #AEF1AE">
+          scala.StringContext.apply(&quot;&quot;, &quot; Month&quot;).s(ordinal)
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          1076
+        </td>
+        <td>
+          2306
+          -
+          2306
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          de.juergens.time.LocalDateAdjuster.apply
+        </td>
+        <td style="background: #AEF1AE">
+          time.this.LocalDateAdjuster.apply(((date: java.time.LocalDate) =&gt; date.plus(de.juergens.util.Ordinal.ordinal2Long(ordinal), MONTHS).`with`(java.time.temporal.TemporalAdjusters.firstDayOfMonth())))(description)
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          1077
+        </td>
+        <td>
+          2498
+          -
+          2498
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          de.juergens.time.LocalDateAdjuster.apply
+        </td>
+        <td style="background: #F0ADAD">
+          time.this.LocalDateAdjuster.apply(((date: java.time.LocalDate) =&gt; date.minus(de.juergens.util.Ordinal.ordinal2Long(ordinal), MONTHS).`with`(java.time.temporal.TemporalAdjusters.lastDayOfMonth())))(description)
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          1078
+        </td>
+        <td>
+          2740
+          -
+          2740
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.s
+        </td>
+        <td style="background: #AEF1AE">
+          scala.StringContext.apply(&quot;&quot;, &quot; Year&quot;).s(ordinal)
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          1079
+        </td>
+        <td>
+          2825
+          -
+          2825
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          de.juergens.time.LocalDateAdjuster.apply
+        </td>
+        <td style="background: #AEF1AE">
+          time.this.LocalDateAdjuster.apply(((date: java.time.LocalDate) =&gt; date.plus(de.juergens.util.Ordinal.ordinal2Long(ordinal), YEARS).`with`(java.time.temporal.TemporalAdjusters.firstDayOfYear())))(description)
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          1080
+        </td>
+        <td>
+          3022
+          -
+          3022
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          de.juergens.time.LocalDateAdjuster.apply
+        </td>
+        <td style="background: #F0ADAD">
+          time.this.LocalDateAdjuster.apply(((date: java.time.LocalDate) =&gt; date.minus(de.juergens.util.Ordinal.ordinal2Long(ordinal), YEARS).`with`(java.time.temporal.TemporalAdjusters.lastDayOfYear())))(description)
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          1081
+        </td>
+        <td>
+          3297
+          -
+          3297
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.s
+        </td>
+        <td style="background: #AEF1AE">
+          scala.StringContext.apply(&quot;&quot;, &quot; Quarter&quot;).s(ordinal)
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          1082
+        </td>
+        <td>
+          3403
+          -
+          3403
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          de.juergens.time.LocalDateAdjuster.apply
+        </td>
+        <td style="background: #AEF1AE">
+          time.this.LocalDateAdjuster.apply(((localDate: java.time.LocalDate) =&gt; localDate.plus(de.juergens.util.Ordinal.ordinal2Long(ordinal), YEARS).`with`(JANUARY).`with`(java.time.temporal.TemporalAdjusters.firstDayOfMonth())))(description)
+        </td>
+      </tr><tr>
+        <td>
+          104
+        </td>
+        <td>
+          1083
+        </td>
+        <td>
+          3636
+          -
+          3636
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          de.juergens.time.LocalDateAdjuster.apply
+        </td>
+        <td style="background: #AEF1AE">
+          time.this.LocalDateAdjuster.apply(((localDate: java.time.LocalDate) =&gt; localDate.minus(de.juergens.util.Ordinal.ordinal2Long(ordinal), YEARS).`with`(DECEMBER).`with`(java.time.temporal.TemporalAdjusters.lastDayOfMonth())))(description)
+        </td>
+      </tr><tr>
+        <td>
+          112
+        </td>
+        <td>
+          1084
+        </td>
+        <td>
+          3859
+          -
+          3859
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.s
+        </td>
+        <td style="background: #F0ADAD">
+          scala.StringContext.apply(&quot;TemporalPeriodSeek()&quot;).s()
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

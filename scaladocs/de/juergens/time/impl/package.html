@@ -1,0 +1,224 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>impl - date-rule-combinators 0.0.4-SNAPSHOT API - de.juergens.time.impl</title>
+          <meta name="description" content="impl - date - rule - combinators 0.0.4 - SNAPSHOT API - de.juergens.time.impl" />
+          <meta name="keywords" content="impl date rule combinators 0.0.4 SNAPSHOT API de.juergens.time.impl" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../index.html';
+            var hash = 'de.juergens.time.impl.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img src="../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../package.html" class="extype" name="de">de</a>.<a href="../../package.html" class="extype" name="de.juergens">juergens</a>.<a href="../package.html" class="extype" name="de.juergens.time">time</a></p>
+        <h1>impl</h1> <span class="permalink">
+      <a href="../../../../index.html#de.juergens.time.impl.package" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">impl</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="de.juergens.time.impl.DateShifter" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="DateShifterextendsTemporalAdjusterwithLocalDateAdjusterwithProductwithSerializable"></a>
+      <a id="DateShifter:DateShifter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="DateShifter.html"><span class="name">DateShifter</span></a><span class="params">(<span name="predicate">predicate: (<span class="extype" name="java.time.temporal.Temporal">Temporal</span>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="direction">direction: <a href="../../util/Direction.html" class="extype" name="de.juergens.util.Direction">Direction</a> = <span class="symbol"><span class="name"><a href="../../../package.html">Up</a></span></span></span>)</span><span class="result"> extends <span class="extype" name="java.time.temporal.TemporalAdjuster">TemporalAdjuster</span> with <a href="../LocalDateAdjuster.html" class="extype" name="de.juergens.time.LocalDateAdjuster">LocalDateAdjuster</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#de.juergens.time.impl.package@DateShifterextendsTemporalAdjusterwithLocalDateAdjusterwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">predicate</dt><dd class="cmt"><p>The Condition
+</p></dd></dl></div>
+    </li><li name="de.juergens.time.impl.DayShifter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DayShifterextendsTimeUnitShifterwithProductwithSerializable"></a>
+      <a id="DayShifter:DayShifter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="DayShifter.html"><span class="name">DayShifter</span></a><span class="params">(<span name="step">step: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result"> extends <a href="TimeUnitShifter.html" class="extype" name="de.juergens.time.impl.TimeUnitShifter">TimeUnitShifter</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#de.juergens.time.impl.package@DayShifterextendsTimeUnitShifterwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="de.juergens.time.impl.MonthShifter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MonthShifterextendsTimeUnitShifterwithProductwithSerializable"></a>
+      <a id="MonthShifter:MonthShifter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="MonthShifter.html"><span class="name">MonthShifter</span></a><span class="params">(<span name="step">step: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result"> extends <a href="TimeUnitShifter.html" class="extype" name="de.juergens.time.impl.TimeUnitShifter">TimeUnitShifter</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#de.juergens.time.impl.package@MonthShifterextendsTimeUnitShifterwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="de.juergens.time.impl.TimeUnitShifter" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TimeUnitShifterextendsLocalDateAdjuster"></a>
+      <a id="TimeUnitShifter:TimeUnitShifter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TimeUnitShifter.html"><span class="name">TimeUnitShifter</span></a><span class="result"> extends <a href="../LocalDateAdjuster.html" class="extype" name="de.juergens.time.LocalDateAdjuster">LocalDateAdjuster</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#de.juergens.time.impl.package@TimeUnitShifterextendsLocalDateAdjuster" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="de.juergens.time.impl.WeekShifter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="WeekShifterextendsTimeUnitShifterwithProductwithSerializable"></a>
+      <a id="WeekShifter:WeekShifter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="WeekShifter.html"><span class="name">WeekShifter</span></a><span class="params">(<span name="step">step: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result"> extends <a href="TimeUnitShifter.html" class="extype" name="de.juergens.time.impl.TimeUnitShifter">TimeUnitShifter</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#de.juergens.time.impl.package@WeekShifterextendsTimeUnitShifterwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="de.juergens.time.impl.YearShifter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="YearShifterextendsTimeUnitShifterwithProductwithSerializable"></a>
+      <a id="YearShifter:YearShifter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="YearShifter.html"><span class="name">YearShifter</span></a><span class="params">(<span name="step">step: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result"> extends <a href="TimeUnitShifter.html" class="extype" name="de.juergens.time.impl.TimeUnitShifter">TimeUnitShifter</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#de.juergens.time.impl.package@YearShifterextendsTimeUnitShifterwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="de.juergens.time.impl.TimeUnitShifter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TimeUnitShifter"></a>
+      <a id="TimeUnitShifter:TimeUnitShifter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TimeUnitShifter$.html"><span class="name">TimeUnitShifter</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#de.juergens.time.impl.package@TimeUnitShifter" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

@@ -1,0 +1,205 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          de/juergens/finance/package.scala.html
+        </title>
+        <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css"/>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.18.3/addons/pager/jquery.tablesorter.pager.min.js"></script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier;'>1 <span style=''>package de.juergens
+</span>2 <span style=''>
+</span>3 <span style=''>import java.time.DayOfWeek
+</span>4 <span style=''>import java.time.temporal.{ChronoField, Temporal, TemporalAdjuster, TemporalAdjusters}
+</span>5 <span style=''>
+</span>6 <span style=''>package object finance {
+</span>7 <span style=''>  val IMM :TemporalAdjuster = TemporalAdjusters.dayOfWeekInMonth(3, DayOfWeek.WEDNESDAY)
+</span>8 <span style=''>  def IMM(m:Int) : TemporalAdjuster = new TemporalAdjuster{
+</span>9 <span style=''>    override def adjustInto(temporal: Temporal): Temporal = {
+</span>10 <span style=''>      temporal
+</span>11 <span style=''>        .`with`(ChronoField.MONTH_OF_YEAR, 3</span><span style='background: #F0ADAD'>*</span><span style=''>m)
+</span>12 <span style=''>        .`with`(IMM)
+</span>13 <span style=''>
+</span>14 <span style=''>    }
+</span>15 <span style=''>  }
+</span>16 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          7
+        </td>
+        <td>
+          18
+        </td>
+        <td>
+          225
+          -
+          225
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjusters.dayOfWeekInMonth
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.temporal.TemporalAdjusters.dayOfWeekInMonth(3, WEDNESDAY)
+        </td>
+      </tr><tr>
+        <td>
+          8
+        </td>
+        <td>
+          24
+        </td>
+        <td>
+          288
+          -
+          288
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.finance.package.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          11
+        </td>
+        <td>
+          20
+        </td>
+        <td>
+          430
+          -
+          430
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          3
+        </td>
+      </tr><tr>
+        <td>
+          11
+        </td>
+        <td>
+          19
+        </td>
+        <td>
+          415
+          -
+          415
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          MONTH_OF_YEAR
+        </td>
+      </tr><tr>
+        <td>
+          11
+        </td>
+        <td>
+          21
+        </td>
+        <td>
+          431
+          -
+          432
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Int.toLong
+        </td>
+        <td style="background: #F0ADAD">
+          3.*(m).toLong
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          23
+        </td>
+        <td>
+          450
+          -
+          450
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.Temporal.with
+        </td>
+        <td style="background: #F0ADAD">
+          temporal.`with`(MONTH_OF_YEAR, 3.*(m).toLong).`with`(`package`.this.IMM)
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          22
+        </td>
+        <td>
+          451
+          -
+          451
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.finance.IMM
+        </td>
+        <td style="background: #F0ADAD">
+          `package`.this.IMM
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

@@ -1,0 +1,1018 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          de/juergens/util/Cardinal.scala.html
+        </title>
+        <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css"/>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.18.3/addons/pager/jquery.tablesorter.pager.min.js"></script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier;'>1 <span style=''>package de.juergens.util
+</span>2 <span style=''>
+</span>3 <span style=''>import scala.language.implicitConversions
+</span>4 <span style=''>
+</span>5 <span style=''>/**
+</span>6 <span style=''> * Created by juergens on 25.05.15.
+</span>7 <span style=''> */
+</span>8 <span style=''>object Cardinal {
+</span>9 <span style=''>  def fromString(str: String) : Cardinal = { val CardinalText(ord) = str; ord}
+</span>10 <span style=''>
+</span>11 <span style=''>  private val k : PartialFunction[Any,String] = { case str : String => str }
+</span>12 <span style=''>  private val h : PartialFunction[String,Int] = {
+</span>13 <span style=''>    case "one" => 1
+</span>14 <span style=''>    case "two" => 2
+</span>15 <span style=''>    case "three" => 3
+</span>16 <span style=''>    case "four" => 4
+</span>17 <span style=''>    case "five"=> 5
+</span>18 <span style=''>    case "six"=> 6
+</span>19 <span style=''>    case "seven"=> 7
+</span>20 <span style=''>    case "eight"=> 8
+</span>21 <span style=''>    case "nine"=> 9
+</span>22 <span style=''>    case "ten"=> 10
+</span>23 <span style=''>    case "eleven"=> 11
+</span>24 <span style=''>    case "twelve"=> 12
+</span>25 <span style=''>    case "thirteen"=> 13
+</span>26 <span style=''>    case "fourteen"=> 14
+</span>27 <span style=''>    case "fifteen"=> 15
+</span>28 <span style=''>    case "sixteen"=> 16
+</span>29 <span style=''>    case "seventeen"=> 17
+</span>30 <span style=''>    case "eighteen"=> 18
+</span>31 <span style=''>    case "nineteen"=> 19
+</span>32 <span style=''>    case "twenty" => 20
+</span>33 <span style=''>    case s if s </span><span style='background: #AEF1AE'>endsWith</span><span style=''> "." => Integer.parseInt(s.substring(0, s.length </span><span style='background: #F0ADAD'>-</span><span style=''> 1))
+</span>34 <span style=''>    case s if s </span><span style='background: #AEF1AE'>startsWith</span><span style=''>  "#" => Integer.parseInt(s.substring(1, s.length </span><span style='background: #F0ADAD'>-</span><span style=''> 1))
+</span>35 <span style=''>    case s if s.forall(_.isDigit) => Integer.parseInt(s)
+</span>36 <span style=''>  }
+</span>37 <span style=''>
+</span>38 <span style=''>  /** Extractor object */
+</span>39 <span style=''>  object CardinalText {
+</span>40 <span style=''>    import scala.PartialFunction.condOpt
+</span>41 <span style=''>    def unapply(x: Any): Option[Cardinal] = condOpt(x){k </span><span style='background: #AEF1AE'>andThen</span><span style=''> h}.map(Cardinal(_))
+</span>42 <span style=''>  }
+</span>43 <span style=''>
+</span>44 <span style=''>  //implicit def int2Cardinal(x:Int) : Cardinal = Cardinal(x)
+</span>45 <span style=''>  implicit def cardinal2Long(x:Cardinal) : Long = x.toLong
+</span>46 <span style=''>}
+</span>47 <span style=''>
+</span>48 <span style=''>case class Cardinal(toLong : Long) extends AnyVal {
+</span>49 <span style=''>  def unary_- : Cardinal = Cardinal(-toLong)
+</span>50 <span style=''>
+</span>51 <span style=''>  override def toString: String = toLong.toString </span><span style='background: #F0ADAD'>+</span><span style=''> "."
+</span>52 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          11
+        </td>
+        <td>
+          1085
+        </td>
+        <td>
+          259
+          -
+          259
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.util.Cardinal.$anonfun.&lt;init&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          new $anonfun()
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          1119
+        </td>
+        <td>
+          336
+          -
+          336
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.util.Cardinal.$anonfun.&lt;init&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          new $anonfun()
+        </td>
+      </tr><tr>
+        <td>
+          13
+        </td>
+        <td>
+          1086
+        </td>
+        <td>
+          356
+          -
+          356
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          1087
+        </td>
+        <td>
+          376
+          -
+          376
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          2
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          1088
+        </td>
+        <td>
+          398
+          -
+          398
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          3
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          1089
+        </td>
+        <td>
+          419
+          -
+          419
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          4
+        </td>
+      </tr><tr>
+        <td>
+          17
+        </td>
+        <td>
+          1090
+        </td>
+        <td>
+          439
+          -
+          439
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          5
+        </td>
+      </tr><tr>
+        <td>
+          18
+        </td>
+        <td>
+          1091
+        </td>
+        <td>
+          458
+          -
+          458
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          6
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          1092
+        </td>
+        <td>
+          479
+          -
+          479
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          7
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          1093
+        </td>
+        <td>
+          500
+          -
+          500
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          8
+        </td>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          1094
+        </td>
+        <td>
+          520
+          -
+          520
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          9
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          1095
+        </td>
+        <td>
+          539
+          -
+          539
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          10
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          1096
+        </td>
+        <td>
+          562
+          -
+          562
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          11
+        </td>
+      </tr><tr>
+        <td>
+          24
+        </td>
+        <td>
+          1097
+        </td>
+        <td>
+          585
+          -
+          585
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          12
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          1098
+        </td>
+        <td>
+          610
+          -
+          610
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          13
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          1099
+        </td>
+        <td>
+          635
+          -
+          635
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          14
+        </td>
+      </tr><tr>
+        <td>
+          27
+        </td>
+        <td>
+          1100
+        </td>
+        <td>
+          659
+          -
+          659
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          15
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          1101
+        </td>
+        <td>
+          683
+          -
+          683
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          16
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          1102
+        </td>
+        <td>
+          709
+          -
+          709
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          17
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          1103
+        </td>
+        <td>
+          734
+          -
+          734
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          18
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          1104
+        </td>
+        <td>
+          759
+          -
+          759
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          19
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          1105
+        </td>
+        <td>
+          783
+          -
+          783
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          20
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          1106
+        </td>
+        <td>
+          802
+          -
+          810
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.endsWith
+        </td>
+        <td style="background: #AEF1AE">
+          s.endsWith(&quot;.&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          1109
+        </td>
+        <td>
+          846
+          -
+          846
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.substring
+        </td>
+        <td style="background: #F0ADAD">
+          s.substring(0, s.length().-(1))
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          1108
+        </td>
+        <td>
+          859
+          -
+          860
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td style="background: #F0ADAD">
+          s.length().-(1)
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          1107
+        </td>
+        <td>
+          847
+          -
+          847
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          1110
+        </td>
+        <td>
+          834
+          -
+          834
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Integer.parseInt
+        </td>
+        <td style="background: #F0ADAD">
+          java.this.lang.Integer.parseInt(s.substring(0, s.length().-(1)))
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          1115
+        </td>
+        <td>
+          916
+          -
+          916
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Integer.parseInt
+        </td>
+        <td style="background: #F0ADAD">
+          java.this.lang.Integer.parseInt(s.substring(1, s.length().-(1)))
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          1111
+        </td>
+        <td>
+          881
+          -
+          891
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.startsWith
+        </td>
+        <td style="background: #AEF1AE">
+          s.startsWith(&quot;#&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          1114
+        </td>
+        <td>
+          928
+          -
+          928
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.substring
+        </td>
+        <td style="background: #F0ADAD">
+          s.substring(1, s.length().-(1))
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          1113
+        </td>
+        <td>
+          941
+          -
+          942
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td style="background: #F0ADAD">
+          s.length().-(1)
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          1112
+        </td>
+        <td>
+          929
+          -
+          929
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          1118
+        </td>
+        <td>
+          1000
+          -
+          1000
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Integer.parseInt
+        </td>
+        <td style="background: #AEF1AE">
+          java.this.lang.Integer.parseInt(s)
+        </td>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          1117
+        </td>
+        <td>
+          969
+          -
+          969
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.IndexedSeqOptimized.forall
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.augmentString(s).forall(((x$1: Char) =&gt; scala.this.Predef.charWrapper(x$1).isDigit))
+        </td>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          1116
+        </td>
+        <td>
+          972
+          -
+          972
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.runtime.RichChar.isDigit
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.charWrapper(x$1).isDigit
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          1124
+        </td>
+        <td>
+          1171
+          -
+          1171
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.map
+        </td>
+        <td style="background: #AEF1AE">
+          scala.PartialFunction.condOpt[Any, Int](x)(Cardinal.this.k.andThen[Int](Cardinal.this.h)).map[de.juergens.util.Cardinal](((x$2: Int) =&gt; Cardinal.apply(x$2.toLong)))
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          1120
+        </td>
+        <td>
+          1165
+          -
+          1165
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.util.Cardinal.h
+        </td>
+        <td style="background: #AEF1AE">
+          Cardinal.this.h
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          1123
+        </td>
+        <td>
+          1180
+          -
+          1180
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.util.Cardinal.apply
+        </td>
+        <td style="background: #AEF1AE">
+          Cardinal.apply(x$2.toLong)
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          1122
+        </td>
+        <td>
+          1181
+          -
+          1181
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Int.toLong
+        </td>
+        <td style="background: #AEF1AE">
+          x$2.toLong
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          1121
+        </td>
+        <td>
+          1157
+          -
+          1164
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.PartialFunction.andThen
+        </td>
+        <td style="background: #AEF1AE">
+          Cardinal.this.k.andThen[Int](Cardinal.this.h)
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          1125
+        </td>
+        <td>
+          1304
+          -
+          1304
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.util.Cardinal.toLong
+        </td>
+        <td style="background: #AEF1AE">
+          x.toLong
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          1127
+        </td>
+        <td>
+          1401
+          -
+          1401
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.util.Cardinal.apply
+        </td>
+        <td style="background: #F0ADAD">
+          Cardinal.apply(Cardinal.this.toLong.unary_-)
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          1126
+        </td>
+        <td>
+          1402
+          -
+          1402
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Long.unary_-
+        </td>
+        <td style="background: #F0ADAD">
+          Cardinal.this.toLong.unary_-
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          1128
+        </td>
+        <td>
+          1462
+          -
+          1463
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td style="background: #F0ADAD">
+          Cardinal.this.toLong.toString().+(&quot;.&quot;)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

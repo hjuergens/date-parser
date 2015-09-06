@@ -110,22 +110,17 @@
     </dependencies>
     <build>
         <plugins>
-            <!--plugin>
-                <groupId>edu.tum.cs</groupId>
-                <artifactId>cup-maven-plugin</artifactId>
-                <version>1.0.0</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target> <!-- override parent -->
+                </configuration>
+            </plugin>
 
             <plugin>
                 <groupId>net.sourceforge.czt.dev</groupId>
-                <!--artifactId>cup-maven-plugin</artifactId-->
                 <artifactId>cup-maven-plugin</artifactId>
                 <version>1.6-SNAPSHOT</version>
                 <executions>

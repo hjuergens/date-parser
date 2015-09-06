@@ -31,32 +31,28 @@
     </skin>
 
 
-<body>
-    <head>
-        <script src="http://www.google-analytics.com/urchin.js" type="text/javascript" />
-    </head>
+    <body>
+        <head>
+            <script src="http://www.google-analytics.com/urchin.js" type="text/javascript" />
+        </head>
 
+        <breadcrumbs>
+            <item name="Doxia" href="http://maven.apache.org/doxia/index.html"/>
+            <item name="Trunk" href="http://maven.apache.org/doxia/doxia/index.html"/>
+        </breadcrumbs>
 
-<!--links>
-    <item name=.. href=.. img=.. position=.. alt=.. border=.. width=.. height=.. target=.. title=.. />
-</links-->
+        <menu name="Overview" inherit="top"/>
+        <menu ref="modules" />
+        <menu ref="reports"/>
 
-<breadcrumbs>
-    <item name="Doxia" href="http://maven.apache.org/doxia/index.html"/>
-    <item name="Trunk" href="http://maven.apache.org/doxia/doxia/index.html"/>
-</breadcrumbs>
+        <links>
+            <item name="Scala Combinators" href="http://www.scala-lang.org/api/2.10.2/index.html#scala.util.parsing.combinator.Parsers"></item>
+            <item name="Apache" href="http://www.apache.org"/>
+            <item name="Maven" href="http://maven.apache.org"/>
+        </links>
 
-    <menu name="Overview" inherit="top"/>
-    <menu ref="modules" />
-    <menu ref="reports"/>
+        <footer>All rights reserved.</footer>
+    </body>
 
-    <links>
-        <item name="Apache" href="http://www.apache.org"/>
-        <item name="Maven" href="http://maven.apache.org"/>
-    </links>
-
-    <footer>All rights reserved.</footer>
-</body>
-
-<custom/>
-        </project>
+    <custom/>
+</project>

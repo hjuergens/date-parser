@@ -1,13 +1,18 @@
 package de.juergens;
 
 /**
- * Hello world!
  *
  */
-public class App 
-{
-    public static void main( String[] args )
-    {
-        System.out.println( "Hello World!" );
+public final class App {
+    /**
+     * just to hide ctor.
+     */
+    private App() { }
+    /**
+     * entry point.
+     * @param args command line parameters
+     */
+    public static void main(final String[] args) {
+        System.out.println("Hello World!");
     }
 }

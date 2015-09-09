@@ -8,7 +8,7 @@
     </parent>
 
     <artifactId>date-parser-antlr</artifactId>
-    <version>0.0.2-SNAPSHOT</version>
+    <version>0.0.3-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>${project.artifactId}</name>
@@ -28,7 +28,18 @@
         <dependency>
             <groupId>org.antlr</groupId>
             <artifactId>antlr4-runtime</artifactId>
-            <version>4.3</version>
+            <version>4.5.1-1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.antlr</groupId>
+            <artifactId>stringtemplate</artifactId>
+            <version>4.0.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.antlr</groupId>
+            <artifactId>antlr4</artifactId>
+            <version>4.5.1-1</version>
         </dependency>
 
         <!-- @deprecated -->
@@ -48,23 +59,9 @@
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
-            <version>6.8.8</version>
+            <version>6.9.4</version>
             <scope>test</scope>
         </dependency>
-
-        <!--
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-            <version>${scala.version}</version>
-        </dependency>
--->
-        <!--<dependency>-->
-            <!--<groupId>org.specs2</groupId>-->
-            <!--<artifactId>specs2_2.11</artifactId>-->
-            <!--<version>2.4.4-scalaz-7.0.6</version>-->
-            <!--<scope>test</scope>-->
-        <!--</dependency>-->
 
         <dependency>
             <groupId>org.specs2</groupId>
@@ -87,15 +84,21 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.1</version>
                 <configuration>
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.target}</target>
+                    <compilerArgs>
+                        <compilerArg>
+                            -Xlint:unchecked
+                        </compilerArg>
+                        <compilerArg>
+                            -Xlint:deprecation
+                        </compilerArg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-site-plugin</artifactId>
-                <version>3.4</version>
                 <configuration>
                     <locales>en,fr</locales>
                 </configuration>
@@ -103,7 +106,7 @@
             <plugin>
                 <groupId>org.antlr</groupId>
                 <artifactId>antlr4-maven-plugin</artifactId>
-                <version>4.3</version>
+                <version>4.5</version>
                 <executions>
                     <execution>
                         <id>antlr</id>
@@ -122,22 +125,128 @@
                 <configuration>
                     <parallel>methods</parallel>
                     <threadCount>10</threadCount>
-                    <!--
-                    <useFile>false</useFile>
-                    <disableXmlReport>true</disableXmlReport>
-                    <argLine>-DfailIfNoTests=false</argLine>
-                    <argLine>-Xmx512m</argLine>
-
-                    <includes>
-                        <include>**/*Unit.java</include>
-                        <include>**/*Spec.java</include>
-                        <include>**/*Test.*</include>
-                        <include>**/*Suite.*</include>
-                    </includes>
-                    -->
                 </configuration>
 
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-resources</id>
+                        <phase>validate</phase>
+                        <goals><goal>copy-resources</goal></goals>
+                        <configuration>
+                            <outputDirectory>${project.basedir}/target/site/doxygen</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>src/site/doxygen</directory>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!--plugin>
+                <groupId>com.soebes.maven.plugins.dmg</groupId>
+                <artifactId>doxygen-maven-plugin</artifactId>
+                <version>1.0.1</version>
+                configuration>
+                    <configurationFile>${project.basedir}/src/site/doxygen.config</configurationFile>
+                </configuration
+            </plugin-->
+            <plugin>
+                <groupId>de.oscillation.maven</groupId>
+                <artifactId>doxygen-maven-plugin</artifactId>
+                <version>0.1.0</version>
+                <configuration>
+                    <workingDirectory>${project.build.directory}/site/doxygen</workingDirectory>
+                    <!--doxyfilePath>/site/doxygen.config</doxyfilePath-->
+                    <autogen>false</autogen>
+                    <executablePath>/usr/bin/doxygen</executablePath>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>clean</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>generate</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!--plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.2.1</version>
+                <executions>
+                    <execution>
+                        <id>make-latex</id>
+                        <phase>none</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>/usr/bin/make</executable>
+                            <workingDirectory>${project.build.directory}/site/doxygen/latex/</workingDirectory>
+                            <arguments>
+                                <argument>_-file=Makefile</argument>
+                                <argument>clean</argument>
+                                <argument>all</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>de.akquinet.jbosscc.latex</groupId>
+                <artifactId>maven-latex-plugin</artifactId>
+                <version>1.2</version>
+                <executions>
+                <execution>
+                    <phase>site</phase>
+                    <goals>
+                        <goal>latex</goal>
+                    </goals>
+                    <configuration>
+                        <settings>
+                            <texDirectory>${project.build.directory}/site/doxygen/latex</texDirectory>
+                            <cleanUp>true</cleanUp>
+                        </settings>
+                    </configuration>
+                </execution>
+                </executions>
+            </plugin-->
         </plugins>
     </build>
+
+    <reporting>
+        <plugins>
+            <!--plugin>
+                <groupId>de.oscillation.maven</groupId>
+                <artifactId>doxygen-maven-plugin</artifactId>
+                <version>0.1.0</version>
+                <configuration>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>com.soebes.maven.plugins.dmg</groupId>
+                <artifactId>doxygen-maven-plugin</artifactId>
+                <version>1.0.1</version>
+                <configuration>
+                    <configurationFile>${project.basedir}/src/site/doxygen.config</configurationFile>
+                </configuration>
+            </plugin-->
+        </plugins>
+    </reporting>
 </project>

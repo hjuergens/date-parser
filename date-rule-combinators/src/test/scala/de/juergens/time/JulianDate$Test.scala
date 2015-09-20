@@ -17,14 +17,9 @@
 package de.juergens.time
 
 import java.text.SimpleDateFormat
-import org.scalatest.Assertions._
-import org.scalatest.testng.{TestNGSuiteLike, TestNGSuite}
-import org.scalatest.{GivenWhenThen, FunSuite}
-import org.scalatest.Assertions
-import scala.collection.mutable.ListBuffer
-import org.testng.Assert._
-import org.testng.annotations.Test
-import org.testng.annotations.Configuration
+
+import org.junit.Test
+import org.scalatest.FunSuite
 
 /**
  * @author juergens
@@ -48,7 +43,7 @@ class JulianDate$Test extends FunSuite {
   test("An empty Set should have size 0") (pending)
 
   @Test def verifyEasy() { // Uses ScalaTest assertions
-    intercept[StringIndexOutOfBoundsException] {
+    intercept[java.text.ParseException] {
       JulianDateUtils.getDateFromJulian7("hümmelpfütz")
     }
   }

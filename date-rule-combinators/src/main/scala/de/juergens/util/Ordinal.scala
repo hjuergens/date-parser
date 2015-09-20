@@ -6,20 +6,37 @@ import scala.language.implicitConversions
  * Created by juergens on 25.05.15.
  */
 object Ordinal {
-  def fromString(str: String) : Ordinal = { val OrdinalText(ord) = str; ord}
-
-  private val k : PartialFunction[Any,String] = { case str : String => str }
-  private val h : PartialFunction[String,Int] = {
+  val string2Int = PartialFunction[String,Int] {
     case "first" => 1
     case "second" => 2
     case "third" => 3
-    case s if s endsWith "." => Integer.parseInt(s.substring(0, s.length - 1))
+    case "eleventh" => 11
+    case "twelfth" => 12
+    case "thirteenth" => 13
+    case "fourth" => 4
+    case "fourteenth" => 14
+    case "fifth" => 5
+    case "fifteenth" => 15
+    case "sixth" => 6
+    case "sixteenth" => 16
+    case "seventh " => 7
+    case "seventeenth" => 17
+    case "eighth" => 8
+    case "eighteenth" => 18
+    case "ninth" => 9
+    case "nineteenth" => 19
+    case "tenth" => 10
+    case "twentieth" => 20
   }
+
+  def fromString(str: String) : Ordinal = { val OrdinalText(ord) = str; ord}
+
+  private val k : PartialFunction[Any,String] = { case str : String => str }
 
   /** Extractor object */
   object OrdinalText {
     import scala.PartialFunction.condOpt
-    def unapply(x: Any): Option[Ordinal] = condOpt(x){k andThen h}.map(Ordinal(_))
+    def unapply(x: Any): Option[Ordinal] = condOpt(x){k andThen string2Int}.map(Ordinal(_))
   }
 
   implicit def ordinal2Int(x:Ordinal) : Int = x.toInt

@@ -84,10 +84,18 @@
             <version>0.9</version>
         </dependency>
 
+        <!-- for parsing purpose -->
         <dependency>
-            <groupId>com.ibm.icu</groupId>
-            <artifactId>icu4j</artifactId>
-            <version>55.1</version>
+            <groupId>org.pojava</groupId>
+            <artifactId>org.pojava.datetime</artifactId>
+            <version>3.0.0</version>
+        </dependency>
+
+        <!-- julian date -->
+        <dependency>
+            <groupId>org.jodd</groupId>
+            <artifactId>jodd-core</artifactId>
+            <version>3.6.6</version>
         </dependency>
 
         <dependency>
@@ -170,12 +178,12 @@
                 <scope>test</scope>
             </dependency>
 
-        <!--dependency>
-            <groupId>com.sun.codemodel</groupId>
-            <artifactId>codemodel</artifactId>
-            <version>2.6</version>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>2.0.2-beta</version>
             <scope>test</scope>
-        </dependency-->
+        </dependency>
 
     </dependencies>
 
@@ -228,18 +236,18 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
+            <!--<plugin>-->
+                <!--<groupId>org.apache.maven.plugins</groupId>-->
+                <!--<artifactId>maven-compiler-plugin</artifactId>-->
+                <!--<executions>-->
+                    <!--<execution>-->
+                        <!--<phase>compile</phase>-->
+                        <!--<goals>-->
+                            <!--<goal>compile</goal>-->
+                        <!--</goals>-->
+                    <!--</execution>-->
+                <!--</executions>-->
+            <!--</plugin>-->
 
             <!-- surefire -->
             <plugin>
@@ -420,11 +428,16 @@
                         <id>validate</id>
                         <phase>validate</phase>
                         <configuration>
-                            <encoding>UTF-8</encoding>
-                            <consoleOutput>true</consoleOutput>
-                            <failsOnError>true</failsOnError>
-                            <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                            <skip>true</skip>
+                            <failOnViolation>false</failOnViolation>
+                            <logViolationsToConsole>true</logViolationsToConsole>
                         </configuration>
+                        <!--<configuration>-->
+                            <!--<encoding>UTF-8</encoding>-->
+                            <!--<consoleOutput>true</consoleOutput>-->
+                            <!--<failsOnError>true</failsOnError>-->
+                            <!--<includeTestSourceDirectory>true</includeTestSourceDirectory>-->
+                        <!--</configuration>-->
                         <goals>
                             <goal>check</goal>
                         </goals>
@@ -621,6 +634,24 @@
                             <report>issue-tracking</report>
                             <report>license</report>
                             <report>scm</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+            <!--  report to show dependecies in DSM view -->
+            <plugin>
+                <groupId>com.github.sevntu-checkstyle</groupId>
+                <artifactId>dsm-maven-plugin</artifactId>
+                <version>2.1.3</version>
+            </plugin>
+            <!-- dependency analyze-report -->
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>2.10</version>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>analyze-report</report>
                         </reports>
                     </reportSet>
                 </reportSets>

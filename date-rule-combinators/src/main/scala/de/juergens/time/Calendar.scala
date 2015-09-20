@@ -1,16 +1,18 @@
 package de.juergens.time
 
-import java.time.LocalDate
 import java.time.temporal._
-import java.time.{Period => JPeriod}
+import java.time.{Duration, LocalDate, Period}
 import java.util.function.UnaryOperator
 
-object Period {
-  def of(count: Int, unit: TemporalUnit) = unit match {
-    case ChronoUnit.DAYS =>  JPeriod.ofDays(count)
-    case ChronoUnit.WEEKS => JPeriod.ofWeeks(count)
-    case ChronoUnit.MONTHS =>JPeriod.ofMonths(count)
-    case ChronoUnit.YEARS => JPeriod.ofYears(count)
+object PeriodDuration {
+  @deprecated("use java.time direct instead", "0.0.4")
+  def of(count: Int, unit: TemporalUnit) : TemporalAmount = unit match {
+    case ChronoUnit.DAYS =>  Period.ofDays(count)
+    case ChronoUnit.WEEKS => Period.ofWeeks(count)
+    case ChronoUnit.MONTHS =>Period.ofMonths(count)
+    case ChronoUnit.YEARS => Period.ofYears(count)
+    case ChronoUnit.HOURS=> Duration.ofHours(count)
+    case ChronoUnit.MINUTES=> Duration.ofMinutes(count)
   }
 }
 

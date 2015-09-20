@@ -21,42 +21,6 @@ case class WeekDayPredicate(weekDay: DayOfWeek, calendar: Calendar = Calendar.ge
     require(t.isSupported(ChronoField.DAY_OF_WEEK), s"$t has to support day-of-week")
     t.ensuring(_.isSupported(ChronoField.DAY_OF_WEEK))
 
-
-    assert(t.isInstanceOf[LocalDate])
-    t.asInstanceOf[LocalDate].getDayOfWeek // FIXME remove instanceOf
-
     t.get(ChronoField.DAY_OF_WEEK) equals weekDay.getValue
-    //    val Date(y,m,d) = t
-    //    calendar.set(Calendar.YEAR, y)
-    //    calendar.set(Calendar.MONTH, m-1)
-    //    calendar.set(Calendar.DAY_OF_MONTH, d)
-    //    //calendar.set(y,m-1,d)
-    //    weekDay equals calendar.get(Calendar.DAY_OF_WEEK)
   }
-
-  /*
-  val evaluate : (Date) => Boolean = new ((Date) => Boolean){
-        override def toString = ""
-    override def apply(t: Date): Boolean = {
-      val Date(y,m,d) = t
-      calendar.set(Calendar.YEAR, y)
-      calendar.set(Calendar.MONTH, m-1)
-      calendar.set(Calendar.DAY_OF_MONTH, d)
-      //calendar.set(y,m-1,d)
-      weekDay equals calendar.get(Calendar.DAY_OF_WEEK)
-    }
-  }
-  */
 }
-
-//object WeekDayPredicate {
-//  def weekDay(calendar : Calendar = Calendar.getInstance())(date:Temporal) : WeekDay = {
-//    val Date(y,m,d) = date
-//    calendar.set(Calendar.YEAR, y)
-//    calendar.set(Calendar.MONTH, m-1)
-//    calendar.set(Calendar.DAY_OF_MONTH, d)
-//    //calendar.set(y,m-1,d)
-//    WeekDay( calendar.get(Calendar.DAY_OF_WEEK) )
-//  }
-//}
-

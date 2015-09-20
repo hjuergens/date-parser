@@ -1,6 +1,8 @@
-package de.juergens.text
+package de.juergens
 
 import java.io.File
+
+import de.juergens.text.DateRuleParsers
 
 import scala.collection.JavaConversions._
 import scala.io.Source
@@ -13,14 +15,14 @@ object FileTesterCompanion {
   }
 
   // NOTE: Must return collection of Array[AnyRef] (NOT Array[Any]).
-  def linesOfFile(path:String="/relative_dates.txt"): java.lang.Iterable[Array[Object]] ={
+  def linesOfFile(path:String= "/adjuster.txt"): java.lang.Iterable[Array[Object]] ={
     val textFile = {
       val url = getClass.getResource(path)
       new File(url.getFile)
     }
     val filteredLines = Source.fromURI {
       textFile.toURI
-    }.getLines().map(_.trim).toSeq
+    }.getLines().map(_.trim).toSeq.takeWhile(!_.equals("!END"))
       .filterNot(_.startsWith("#"))
       .filterNot(_.isEmpty)
       .filterNot(_.forall(_.isWhitespace))

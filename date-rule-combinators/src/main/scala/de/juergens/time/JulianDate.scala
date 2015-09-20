@@ -17,7 +17,7 @@
 package de.juergens.time
 
 import java.time.{ZoneId, ZonedDateTime, LocalDate}
-import java.util.{Calendar=>JCalendar}
+import java.util.{Calendar => JCalendar, GregorianCalendar}
 
 /**
  * @author juergens
@@ -88,6 +88,38 @@ object JulianDate {
 
     LocalDate.of(year, month, day)
   }
+
+    def dateToJulian(date : java.util.Calendar) : Double ={
+        val year = date.get(java.util.Calendar.YEAR)
+        val month = date.get(java.util.Calendar.MONTH) + 1
+        val day = date.get(java.util.Calendar.DAY_OF_MONTH)
+        val hour = date.get(java.util.Calendar.HOUR_OF_DAY)
+        val minute = date.get(java.util.Calendar.MINUTE)
+        val second = date.get(java.util.Calendar.SECOND)
+
+        val extra = (100.0 * year) + month - 190002.5
+        (367.0 * year) -
+                (Math.floor(7.0 * (year + Math.floor((month + 9.0) / 12.0)) / 4.0)) +
+                Math.floor((275.0 * month) / 9.0) +
+                day + ((hour + ((minute + (second / 60.0)) / 60.0)) / 24.0) +
+                1721013.5 - ((0.5 * extra) / Math.abs(extra)) + 0.5
+    }
+
+      def currentDateToJulianDate(cal:GregorianCalendar): Double = {
+          var jd = 0.0
+              val hour24 = cal.get(java.util.Calendar.HOUR_OF_DAY)   // 0..23
+              val min = cal.get(java.util.Calendar.MINUTE)  //0..59
+              val sec = cal.get(java.util.Calendar.SECOND)
+              val day = cal.get(java.util.Calendar.DAY_OF_MONTH)
+              val month = cal.get(java.util.Calendar.MONTH) + 1
+              val year = cal.get(java.util.Calendar.YEAR)
+
+              jd = (367 * year) - (7 * (year + ((month + 9) / 12).toInt) / 4).toInt -
+                ((3 * ((year + (month - 9) / 7) / 100).toInt + 1) / 4).toInt
+                      + ((275 * month) / 9).toInt + day + 1721028.5
+                      + (hour24 + (min / 60) + (sec / 3600)) / 24
+          jd
+      }
 
   /*
   public static void main(String args[]) {

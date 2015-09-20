@@ -6,6 +6,9 @@
 
 package de.juergens.util
 
+
+import java.time.temporal.ChronoUnit
+
 import org.junit.Assert._
 import org.junit._
 import org.junit.runner.RunWith
@@ -356,19 +359,19 @@ class IntervalTest {
     }
 
     {
-      val interval_79 = Interval(7, false, 9, false)
-      val interval_78 = Interval(7, true, 8, true)
+      val interval_79 = Interval(7, includeLower = false, 9, includeUpper = false)
+      val interval_78 = Interval(7, includeLower = true, 8, includeUpper = true)
 
-      assertEquals(Interval(7,true, 9, false), interval_79 + interval_78)
-      assertEquals(Interval(7,true, 9, false), interval_78 + interval_79)
+      assertEquals(Interval(7,includeLower = true, 9, includeUpper = false), interval_79 + interval_78)
+      assertEquals(Interval(7,true, 9, includeUpper = false), interval_78 + interval_79)
     }
 
     {
-      val interval_79 = Interval(7, false, 9, true)
-      val interval_78 = Interval(7, false, 8, false)
+      val interval_79 = Interval(7, includeLower = false, 9, includeUpper = true)
+      val interval_78 = Interval(7, false, 8, includeUpper = false)
 
-      assertEquals(Interval(7,false, 9, true), interval_79 + interval_78)
-      assertEquals(Interval(7,false, 9, true), interval_78 + interval_79)
+      assertEquals(Interval(7,includeLower = false, 9, includeUpper = true), interval_79 + interval_78)
+      assertEquals(Interval(7,includeLower = false, 9, includeUpper = true), interval_78 + interval_79)
     }
   }
 
@@ -378,5 +381,22 @@ class IntervalTest {
 
     assertEquals(LowerBorder(1,include = true), a)
     assertEquals(UpperBorder(2,include = false), b)
+  }
+
+  @Test
+  def localDate():Unit = {
+    import java.time.LocalDate
+    val start = LocalDate.of(2015,9,19)
+    val end = start.plus(3, ChronoUnit.MONTHS)
+
+    implicit val ord = new scala.math.Ordering[LocalDate] {
+      override def compare(x: LocalDate, y: LocalDate): Int = x.compareTo(y)
+    }
+    val interval = Interval(start,end)
+
+    assertTrue(interval.contains(start))
+    assertTrue(interval.contains(start.plusDays(1)))
+    assertTrue(interval.contains(end.minusDays(1)))
+    assertFalse(interval.contains(end))
   }
 }

@@ -8,7 +8,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 @RunWith(value = classOf[JUnit4])
-class TermParserTest extends TermParser {
+class TermParsersTest extends TermParsers {
 
   @Test
   def testDate() :Unit ={

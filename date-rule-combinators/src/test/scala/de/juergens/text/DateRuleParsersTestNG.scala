@@ -17,14 +17,13 @@
 package de.juergens.text
 
 import java.time.temporal._
-import java.time.{DayOfWeek, LocalDate}
+import java.time.{YearMonth, DayOfWeek, LocalDate}
 
-import de.juergens.time.impl.DayShifter
 import de.juergens.util.Ordinal
+import org.scalatest.Assertions._
 import org.testng.Assert._
 import org.testng.Reporter
 import org.testng.annotations._
-import org.scalatest.Assertions._
 
 @Test(timeOut=1000)
 class DateRuleParsersTestNG extends DateRuleParsers {
@@ -34,16 +33,17 @@ class DateRuleParsersTestNG extends DateRuleParsers {
   @Test
   def weekDayTest() : Unit = {
     val isMonday  = parseAll(attribute, "monday").get
-    //    assertEquals(isMonday.toString(), "is monday?")
+    assertEquals(isMonday.toString(), "Predicate(temporalAccessor=MONDAY)")
     assertTrue( isMonday.test(Date(2015,5,18)) )
 
     val isFriday  = parseAll(attribute, "friday").get
-    //    assertEquals(isFriday.toString(), "is friday?")
+    assertEquals(isFriday.toString(), "Predicate(temporalAccessor=FRIDAY)")
     assertTrue( isFriday.test(Date(2015,5,22)) )
   }
 
   @Test
   def ordinalTest() : Unit = {
+    assertEquals( parseAll(ordinal, "first").get, Ordinal(1) )
     assertEquals( parseAll(ordinal, "second").get, Ordinal(2) )
   }
 
@@ -188,7 +188,6 @@ class DateRuleParsersTestNG extends DateRuleParsers {
     parseAll(ordinalUnit, "second day")
 
     val anchor = Date(2015, 5, 23) // saturday
-    // TODO     assert(Saturday === WeekDayPredicate.weekDay()(anchor))
 
     val secondMondayAfter = parseAll(adjuster, "second monday after").get
     assert(Date(2015, 6, 1) === secondMondayAfter(Date(2015, 5, 23)))
@@ -202,6 +201,10 @@ class DateRuleParsersTestNG extends DateRuleParsers {
     assert(Date(2015, 5, 15) === fridayBefore(Date(2015, 5, 22)), fridayBefore(Date(2015, 5, 22)))
     assert(Date(2015, 5, 22) === fridayBefore(Date(2015, 5, 23)))
     Reporter.log(s"friday before $anchor is ${fridayBefore(anchor)}")
+
+    val third = parseAll(ordinal, "3rd")
+    val thirdWednesdayOf = parseAll(adjuster, "3rd Wednesday".toLowerCase).get
+    assert(Date(2015, 9, 16) === thirdWednesdayOf(YearMonth.of(2015, 9)))
   }
 
   @Test
@@ -254,8 +257,9 @@ class DateRuleParsersTestNG extends DateRuleParsers {
   def twoDaysLater() : Unit = {
     import java.time.{LocalDate => Date}
 
-    import scala.language.implicitConversions
     import xuwei_k.Scala2Java8.unaryOperator
+
+    import scala.language.implicitConversions
 
     val twoDaysLater = parseAll(adjuster, "two days later")
 

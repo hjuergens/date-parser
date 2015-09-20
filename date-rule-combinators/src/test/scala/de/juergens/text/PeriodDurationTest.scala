@@ -11,6 +11,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
 import org.testng.Reporter
+import org.testng.Assert._
 
 import scala.collection.JavaConversions._
 import scala.io.Source
@@ -18,9 +19,10 @@ import scala.io.Source
 // <test name="Test1" junit="true">
 //@org.testng.annotations.Test   .Test(name="Test1", junit="true")
 @RunWith(value = classOf[Parameterized])
-class PeriodTest(line: String) {
+class PeriodDurationTest(line: String) {
   val parser = new DateRuleParsers
   val periodParser : parser.Parser[TemporalAmount] = parser.period
+  val durationParser : parser.Parser[TemporalAmount] = parser.duration
 
   @Before
   def before {
@@ -35,11 +37,14 @@ class PeriodTest(line: String) {
   def test() : Unit =  { test(line) }
 
   private[text] def test(_line:String) : Unit =  {
-    parser.parseAll(periodParser, _line.toLowerCase).get
+    val parseResult = parser.parseAll(periodParser | durationParser, _line.toLowerCase)
+    assertTrue(parseResult != null, s"Result is NULL! Input line is '${_line.toLowerCase}'.")
+    assertTrue(parseResult.successful, s"No success! Input line is '${_line.toLowerCase}'.")
+    Reporter.log(parseResult.toString, true)
   }
 }
 
-object PeriodTest {
+object PeriodDurationTest {
 
   val textFileURI = getClass.getResource("/period.txt").toURI
 

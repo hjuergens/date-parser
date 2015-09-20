@@ -27,13 +27,13 @@ class AdjusterTest(line: String) {
   }
 
   @Before
-  def before {
+  def before() {
     Reporter.log( s"length=${line.length}")
     Reporter.log("line: " + line)
   }
 
   @After
-  def after { Reporter.log("line: " + line) }
+  def after() { Reporter.log("line: " + line) }
 
   @Test(timeout = 1500)
   def test() : Unit =  { test(line) }
@@ -42,7 +42,7 @@ class AdjusterTest(line: String) {
     if(_line.contains("from")) return
     if(_line.contains("ago")) return
     if(_line.contains("last")) return
-    if(_line.contains("first")) return
+//    if(_line.contains("first")) return
     parser.parseAll(parserMethod, _line.toLowerCase).get
   }
 }
@@ -50,17 +50,17 @@ class AdjusterTest(line: String) {
 object AdjusterTest {
 
   val textFile = {
-    val url = getClass.getResource("/relative_dates.txt")
+    val url = getClass.getResource("/adjuster.txt")
     new File(url.getFile)
   }
 
   @org.junit.BeforeClass
-  def before {
+  def before() {
     Reporter.log(s"textFile=$textFile")
   }
 
   @org.junit.AfterClass
-  def after {
+  def after() {
     Reporter.log(s"textFile=$textFile")
   }
 

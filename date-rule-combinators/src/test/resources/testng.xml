@@ -18,14 +18,12 @@
     <test name="Junit.text" junit="true" time-out="2000" verbose="3">
         <classes>
             <class name="de.juergens.text.AdjusterTest" />
-            <class name="de.juergens.text.PeriodTest" />
+            <class name="de.juergens.text.PeriodDurationTest" />
             <class name="de.juergens.text.PrefixesTest" />
-            <class name="de.juergens.text.FixRuleTester" />
             <class name="de.juergens.text.HighSophisticatedTest" />
-            <class name="de.juergens.text.LastTradingDayTest" />
-            <class name="de.juergens.text.TermParserTest" />
-            <class name="de.juergens.text.FileTest" />
-            <class name="de.juergens.text.SimpleRuleParserTest" />
+            <class name="de.juergens.text.LastTradingDayTestNG" />
+            <class name="de.juergens.text.TermParsersTest" />
+            <class name="de.juergens.text.OrdinalParsersTest" />
         </classes>
     </test>
 

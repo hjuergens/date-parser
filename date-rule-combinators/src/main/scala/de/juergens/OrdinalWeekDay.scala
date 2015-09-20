@@ -28,10 +28,7 @@ import de.juergens.rule.WeekDayPredicate
 import de.juergens.time.LocalDateAdjuster
 import de.juergens.util.Ordinal
 
-/**
- * Created by juergens on 05.09.15.
- */
-case class OrdinalWeekDay(ordinal:Ordinal, weekDayPredicate: WeekDayPredicate)
+case class Ordinal_WeekDay(ordinal:Ordinal, weekDayPredicate: WeekDayPredicate)
   extends OrdinalAttribute(ordinal, weekDayPredicate.evaluate)
   with LocalDateAdjuster
 {
@@ -58,8 +55,8 @@ case class OrdinalWeekDay(ordinal:Ordinal, weekDayPredicate: WeekDayPredicate)
   }
   override def adjustInto(anchor: Temporal): Temporal = {
     (number match {
-      case i if(i > 0) => forward(i)
-      case i if(i < 0) => backward(-i)
+      case i if i > 0 => forward(i)
+      case i if i < 0 => backward(-i)
       case _ => TemporalQueries.localDate()
     }).queryFrom(anchor)
 

@@ -6,13 +6,13 @@ package de.juergens.text
 import java.time._
 import java.time.temporal._
 
-import de.juergens.time.{Period => _}
+import de.juergens.time.{PeriodDuration => _}
 import org.threeten.extra.DayOfMonth
 
 import scala.util.parsing.combinator._
 import scala.language.postfixOps
 
-class TermParser extends JavaTokenParsers {
+class TermParsers extends JavaTokenParsers {
 
   type BusinessDayConvention = (LocalDate) => LocalDate
 
@@ -116,7 +116,7 @@ class TermParser extends JavaTokenParsers {
     }
 }
 
-object ParseTerm extends TermParser {
+object ParseTerm extends TermParsers {
   def main(args: Array[String]) {
     println("input : " + args(0))
     println(parseAll(term, args(0)))

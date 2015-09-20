@@ -24,7 +24,7 @@ class CalendarTest extends Specification {
   }
 
   def advance = {
-    val d = cal.advance(LocalDate.of(2015,8,18), Period.of(3, ChronoUnit.DAYS))
+    val d = cal.advance(LocalDate.of(2015,8,18), PeriodDuration.of(3, ChronoUnit.DAYS))
     d should_==(LocalDate.of(2015,8,21))
   }
 

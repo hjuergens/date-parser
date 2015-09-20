@@ -26,7 +26,7 @@ import java.util.function.Predicate
 import scala.languageFeature.implicitConversions
 
 /**
- * [[Predicate]]
+ * [[java.util.function.Predicate]]
  * @constructor create a predicates as and composition
  * @param predicates tany predicates on type T
  * @tparam T

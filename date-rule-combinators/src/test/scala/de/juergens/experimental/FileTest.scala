@@ -1,9 +1,9 @@
-package de.juergens.text
+package de.juergens.experimental
 
 import java.io.{File, InputStream}
 import java.nio.file.{DirectoryStream, Files, Path, Paths}
 
-import de.juergens.text.FileTest._
+import de.juergens.experimental.FileTest._
 import org.testng.AssertJUnit._
 import org.testng.Reporter
 import org.testng.annotations._
@@ -35,7 +35,7 @@ object FileTest2 {
   @DataProvider(name="files")
   def dp : Array[Array[Object]] = {
     for {
-      i <- Array("/prefixes.txt", "/relative_dates.txt")
+      i <- Array("/_prefixes.txt", "/adjuster.txt")
     } yield Array[Object](i.asInstanceOf[Object])
     FileTest.files
   }

@@ -18,6 +18,7 @@ import org.testng.annotations.{DataProvider => DataProviderNG, Parameters => Par
 
 import scala.collection.JavaConversions._
 import scala.io.Source
+
 @TestNG
 @RunWith(value = classOf[Parameterized])
 class HighSophisticatedTest(line: String) {
@@ -25,13 +26,13 @@ class HighSophisticatedTest(line: String) {
   val parser = new DateRuleParsers
 
   @Before
-  def before {
+  def before() {
     Reporter.log( s"length=${line.length}")
     Reporter.log("line: " + line)
   }
 
   @After
-  def after { Reporter.log("line: " + line) }
+  def after() { Reporter.log("line: " + line) }
 
   @Test(timeout = 1000)
   def test() : Unit =  {
@@ -72,10 +73,10 @@ object HighSophisticatedTest {
   }
 
   @org.junit.BeforeClass
-  def before {  }
+  def before() {  }
 
   @org.junit.AfterClass
-  def after {  }
+  def after() {  }
 
   // java.util.Iterator
   def _lines : Iterator[Array[Object]] = {

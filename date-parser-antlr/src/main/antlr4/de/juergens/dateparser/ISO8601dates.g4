@@ -4,8 +4,11 @@ options {
     language = Java;
 }
 
-@header { }
-
+/*
+@header {
+    package de.juergens.dateparser;
+}
+*/
 input           : date+ EOF;
 
 date    : FOUR_DIGIT ('-')? TWO_DIGIT ('-')? TWO_DIGIT ;

@@ -4,6 +4,12 @@ options {
     language = Java;
 }
 
+/*
+@header {
+    package de.juergens.dateparser;
+}
+*/
+
 input           : date+ EOF;
 
 date            : date_complete

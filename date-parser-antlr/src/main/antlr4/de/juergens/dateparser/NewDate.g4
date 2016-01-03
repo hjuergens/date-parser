@@ -1,10 +1,12 @@
-grammar NewDate;
+lexer grammar NewDate;
 
+/*
 @parser::header {
-    package com.example;
+    package de.juergens.dateparser;
 }
+*/
 
-DATE	:	INT '/' INT '/' INT 
+DATE	:	INT '/' INT '/' INT
     ;
     
 DIGIT   : '0'..'9' 
@@ -14,15 +16,18 @@ INT :	'0'..'9'+
     ;
 
 COMMENT
-    :   '//' ~('\n'|'\r')* '\r'? '\n' {$channel=HIDDEN;}
-    |   '/*' ( options {greedy=false;} : . )* '*/' {$channel=HIDDEN;}
+    :   ('//' ~('\n'|'\r')* '\r'? '\n'
+    |   '/*' .*? '*/') -> skip
+    ;
+BlockComment
+    : '/*' .*? '*/' -> skip
     ;
 
 WS  :   ( ' '
         | '\t'
         | '\r'
         | '\n'
-        ) {$channel=HIDDEN;}
+        ) -> skip
     ;
 
 STRING

@@ -3,8 +3,11 @@ grammar Dates;
 options {
     language = Java;
 }
-
-@header { }
+/*
+@header {
+    package de.juergens.dateparser;
+}
+*/
 
 //dates  : date+ EOF ;
 input           : date+ EOF;

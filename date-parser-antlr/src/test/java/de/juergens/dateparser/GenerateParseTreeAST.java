@@ -22,10 +22,10 @@
 
 package de.juergens.dateparser;
 
-import org.antlr.v4.runtime.atn.ATNState;
-import org.antlr.v4.tool.DOTGenerator;
 import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.atn.ATNState;
 import org.antlr.v4.runtime.tree.*;
+import org.antlr.v4.tool.DOTGenerator;
 import org.antlr.v4.tool.Grammar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +34,9 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 
-import static org.junit.Assert.assertNotNull;
+import static org.testng.AssertJUnit.assertNotNull;
+
+//import static org.junit.Assert.assertNotNull;
 
 /**
  * @author Saroja Parameswaran

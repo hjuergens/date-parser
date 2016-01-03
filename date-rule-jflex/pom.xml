@@ -9,7 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>dp-jflex</artifactId>
+    <artifactId>date-rule-jflex</artifactId>
     <version>0.0.2-SNAPSHOT</version>
     <name>${project.artifactId}</name>
 

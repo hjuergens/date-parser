@@ -21,7 +21,7 @@
  <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/time/Shifter.scala">
   <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
  </file>
- <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/time/DateRule.scala">
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/time/de.juergens.dateparser.DateRule.scala">
   <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
  </file>
  <file name="/home/juergens/workspace/date-parser/date.rule/src/test/scala/samples/junit.scala">
@@ -45,7 +45,7 @@
  <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/rule/Predicate.scala">
   <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
  </file>
- <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/App.scala">
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/de.juergens.dateparser.App.scala">
   <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
  </file>
  <file name="/home/juergens/workspace/date-parser/date.rule/src/test/scala/samples/LoopParser_Test.scala">

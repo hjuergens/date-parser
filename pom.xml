@@ -6,7 +6,7 @@
     <packaging>pom</packaging>
     <version>0.0.2-SNAPSHOT</version>
     <modules>
-        <module>date-parser-antlr</module>
+        <module>date-rule-antlr</module>
         <module>date-rule-combinators</module>
         <module>date-rule-jflex</module>
         <module>date-rule-coco</module>
@@ -15,7 +15,8 @@
     	<!-- http://www2.cs.tum.edu/projects/cup/ -->
         <module>date-rule-cup</module>
 	    <!-- https://www.gnu.org/software/bison -->
-	    <module>date-rule-bison</module>
+        <module>date-rule-bison</module>
+        <module>date-rule-instaparse</module>
     </modules>
     <name>${project.artifactId}</name>
     <description>Date Parser</description>

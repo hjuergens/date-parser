@@ -61,7 +61,12 @@
     <dependency>
       <groupId>instaparse</groupId>
       <artifactId>instaparse</artifactId>
-      <version>1.4.1</version>
+      <version>1.4.2</version>
+    </dependency>
+    <dependency>
+      <groupId>rhizome</groupId>
+      <artifactId>rhizome</artifactId>
+      <version>0.2.5</version>
     </dependency>
   </dependencies>
 </project>

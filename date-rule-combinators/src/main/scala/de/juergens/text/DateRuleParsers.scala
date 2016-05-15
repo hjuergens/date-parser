@@ -38,10 +38,15 @@ import scala.util.parsing.combinator._
  */
 class DateRuleParsers extends JavaTokenParsers with NumberParsers with ExtendedRegexParsers {
 
-  def dayOfWeek : Parser[DayOfWeek] = ("monday" | "tuesday" |"wednesday"|"thursday"|"friday"|"saturday" |"sunday") ^^ { DayOfWeekFormat("EEEE") }
+  def dayOfWeek : Parser[DayOfWeek] = ("monday" | "tuesday" |"wednesday"|"thursday"|"friday"|"saturday" |"sunday") ^^
+    { DayOfWeekFormat("EEEE") }
 
-  private def month3 : Parser[java.time.Month] = ("Jan" | "Feb" | "Mar" | "Apr" |"May" | "Jun" | "Jul" | "Aug" | "Sep" | "Oct" | "Nov" | "Dec" ) ^^ { MonthFormat("MMM")(_) }
-  private def monthLong : Parser[java.time.Month] = ("march"| "april" | "may" | "june" | "august" | "september" | "december") ^^ { MonthFormat("MMMM")(_)}
+  private def month3 : Parser[java.time.Month] =
+    ("Jan"|"Feb"|"Mar"|"Apr"|"May"|"Jun"|"Jul"|"Aug"|"Sep"|"Oct" |"Nov"|"Dec") ^^
+    { MonthFormat("MMM")(_) }
+  private def monthLong : Parser[java.time.Month] =
+    ("march"| "april" | "may" | "june" | "august" | "september" | "december") ^^
+    { MonthFormat("MMMM")(_)}
   def monthName : Parser[java.time.Month] = month3 | monthLong
 
   /** PnYnMnD */
@@ -147,7 +152,6 @@ class DateRuleParsers extends JavaTokenParsers with NumberParsers with ExtendedR
   def stream : Parser[LocalDate => Stream[LocalDate]] = "every" ~ ordinalUnit ^^
     { x=> (date:LocalDate) => Stream.iterate(date)(x._2.apply) }
 
-  // next week, next month, next friday, next april, next spring    ordinal: Ordinal, dayOfWeek: DayOfWeek, direction: Direction
   def ordinalUnit : Parser[LocalDateAdjuster] = ordinal ~ timeUnitSingular ^^
     { x=> TemporalPeriodSeek(x._1, x._2) }
 
@@ -196,7 +200,9 @@ class DateRuleParsers extends JavaTokenParsers with NumberParsers with ExtendedR
 
   def selector : Parser[LocalDateAdjuster=>LocalDateAdjuster] = ("in"|"of") ~ (seekMonth | "quarter" | season) ^^
     {
-      case ~(_, m:java.time.Month) => (adjuster: LocalDateAdjuster) => MonthAdjuster(Ordinal(1),m,Up).andThen[LocalDate](adjuster)
+      case ~(_, m:java.time.Month) =>
+        (adjuster: LocalDateAdjuster) =>
+          MonthAdjuster(Ordinal(1),m,Up).andThen[LocalDate](adjuster)
     }
 
   def dayOfWeekInMonth : Parser[LocalDateAdjuster] = ordinal ~ dayOfWeek ~ "in" ~ monthName ^^

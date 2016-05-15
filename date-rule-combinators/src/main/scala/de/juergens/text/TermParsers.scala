@@ -3,6 +3,7 @@
 
 package de.juergens.text
 
+import java.time
 import java.time._
 import java.time.temporal._
 
@@ -12,13 +13,13 @@ import org.threeten.extra.DayOfMonth
 import scala.util.parsing.combinator._
 import scala.language.postfixOps
 
-class TermParsers extends JavaTokenParsers {
+trait TermParsers extends JavaTokenParsers {
 
   type BusinessDayConvention = (LocalDate) => LocalDate
 
-  def term: Parser[Any] = period | date
+  def term: Parser[Any] = periodTerm | date
 
-  def standardPeriod: Parser[Period] = wholeNumber ~ timeUnit ^^ {
+  def standardPeriod: Parser[Period] = wholeNumber ~ timeUnitTerm ^^ {
     case number ~ ChronoUnit.DAYS => Period.ofDays(number.toInt)
     case number ~ ChronoUnit.WEEKS => Period.ofWeeks(number.toInt)
     case number ~ ChronoUnit.MONTHS => Period.ofMonths(number.toInt)
@@ -34,10 +35,10 @@ class TermParsers extends JavaTokenParsers {
   private def periodSum: Parser[Period] = (standardPeriod *) ^^
     { case periods => periods.foldRight(Period.ZERO)((p, s) => p plus s) }
 
-  def period: Parser[Period] = infinityPeriod | lPeriod | periodSum
+  def periodTerm: Parser[Period] = infinityPeriod | lPeriod | periodSum
 
   def periodAdjuster: Parser[BusinessDayConvention => LocalDate => LocalDate]
-  = ("+" | "-") ~ period ^^
+  = ("+" | "-") ~ periodTerm ^^
     {
       case "+" ~ period =>
         (bdc:BusinessDayConvention) => (date: LocalDate) =>bdc(date.plus(period))
@@ -46,7 +47,7 @@ class TermParsers extends JavaTokenParsers {
     }
 
 
-  def timeUnit: Parser[ChronoUnit] = ("D" | "W" | "M" | "Y") ^^
+  def timeUnitTerm: Parser[ChronoUnit] = ("D" | "W" | "M" | "Y") ^^
     {
       case "D" => ChronoUnit.DAYS
       case "W" => ChronoUnit.WEEKS
@@ -54,10 +55,10 @@ class TermParsers extends JavaTokenParsers {
       case "Y" => ChronoUnit.YEARS
     }
 
-  def date: Parser[LocalDate] = year~"-"~month~"-"~dayOfMonth ^^
+  def date: Parser[LocalDate] = year4~"-"~month~"-"~dayOfMonth ^^
     { case year~"-"~month~"-"~dayOfMonth => LocalDate.of(year.getValue,month,dayOfMonth.getValue) }
 
-  def year: Parser[Year] = """\d\d\d\d""".r ^^
+  def year4: Parser[Year] = """\d\d\d\d""".r ^^
     { str => Year.of(str.toInt) }
 
   def month: Parser[Month] = """\w{1,3}""".r ^^
@@ -100,20 +101,70 @@ class TermParsers extends JavaTokenParsers {
       case "Z" => Month.DECEMBER
     }
 
-  private def thirdWednesday(y:Int,m:Month) =
-    YearMonth.of(y,m).atDay(1)
+  /*
+  private def thirdWednesday(yearMonth: YearMonth) =
+    yearMonth.atDay(1)
       .`with`(TemporalAdjusters.nextOrSame(DayOfWeek.WEDNESDAY))
       .plus(2, ChronoUnit.WEEKS)
+  */
+
+  val quaterlies = Seq( Month.MARCH, Month.JUNE, Month.SEPTEMBER, Month.DECEMBER )
+
+  object thirdWednesday extends TemporalAdjuster {
+    override def adjustInto(temporal: Temporal): Temporal = {
+      val yearMonth = YearMonth.from(temporal)
+      yearMonth.atDay(1)
+        .`with`(TemporalAdjusters.nextOrSame(DayOfWeek.WEDNESDAY))
+        .plus(2, ChronoUnit.WEEKS)
+    }
+  }
+
+  object nextQuarterMonth extends TemporalAdjuster {
+    override def adjustInto(temporal: Temporal): Temporal = {
+      val currentMonthValue = Month.from(temporal).getValue
+      val nm = quaterlies.find(currentMonthValue < _.getValue)
+      if(nm.isDefined) {
+        temporal.`with`(nm.get)
+      } else {
+        assert(Month.from(temporal) == Month.DECEMBER)
+        temporal.plus(1, ChronoUnit.YEARS)
+        temporal.`with`(quaterlies.head)
+      }
+    }
+  }
+
+  object nextQuarterImm extends TemporalAdjuster {
+    override def adjustInto(temporal: Temporal): Temporal = {
+      val currentDayOfMonth = DayOfMonth.from(temporal)
+
+      val thirdWednesdayInCurrentMonth = temporal.`with`(thirdWednesday)
+
+      if(quaterlies.contains( Month.from(temporal) )) {
+        if (currentDayOfMonth.getValue < DayOfMonth.from(thirdWednesdayInCurrentMonth).getValue) {
+          temporal.`with`(thirdWednesday)
+        } else {
+          temporal.`with`(nextQuarterMonth).`with`(thirdWednesday)
+        }
+      } else {
+        temporal.`with`(nextQuarterMonth).`with`(thirdWednesday)
+      }
+    }
+  }
+
+  def imm: Parser[TemporalAdjuster] = """(next )?imm""".r ^^
+    { str => nextQuarterImm }
 
   /** international money market */
-  def imm: Parser[LocalDate => LocalDate] = deliveryMonth ~ wholeNumber ^^
+  def immTerm: Parser[Year => LocalDate] = deliveryMonth ~ wholeNumber ^^
     {
       case dm ~ y => {
         (anchor) =>
-          val yr = (anchor.getYear / 10) * 10 +y.toInt
-          thirdWednesday(yr, dm)
+          val yr = (anchor.getValue / 10) * 10 +y.toInt
+          LocalDate.from( thirdWednesday.adjustInto(LocalDate.of(yr, dm, 1)) )
       }
     }
+
+
 }
 
 object ParseTerm extends TermParsers {

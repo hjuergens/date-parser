@@ -15,16 +15,12 @@ import org.testng.Reporter
 
 import scala.collection.JavaConversions._
 import scala.io.Source
+import scala.util.parsing.combinator.JavaTokenParsers
+
+
 
 @RunWith(value = classOf[Parameterized])
-class AdjusterTest(line: String) {
-
-  val parser = new DateRuleParsers
-
-  val parserMethod : parser.Parser[TemporalAdjuster] = {
-    val m : AnyRef = parser.getClass.getMethod("adjuster").invoke(parser)
-    m.asInstanceOf[parser.Parser[TemporalAdjuster]]
-  }
+class AdjusterTest(line: String) extends ParserTest(new DateRuleParsers, "adjuster") {
 
   @Before
   def before() {
@@ -43,7 +39,7 @@ class AdjusterTest(line: String) {
     if(_line.contains("ago")) return
     if(_line.contains("last")) return
 //    if(_line.contains("first")) return
-    parser.parseAll(parserMethod, _line.toLowerCase).get
+    parser.parseAll(parserMethodInstance, _line.toLowerCase).get
   }
 }
 

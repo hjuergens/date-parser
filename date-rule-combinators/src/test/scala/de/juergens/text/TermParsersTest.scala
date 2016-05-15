@@ -1,6 +1,6 @@
 package de.juergens.text;
 
-import java.time.{LocalDate, Period}
+import java.time.{LocalDate, Period, Year}
 
 import org.junit.Assert._
 import org.junit.Test
@@ -18,7 +18,7 @@ class TermParsersTest extends TermParsers {
 
   @Test
   def testInfinityPeriod() :Unit = {
-    val result = parseAll(period, "Infinity")
+    val result = parseAll(periodTerm, "Infinity")
     assertTrue(result.toString, result.successful)
   }
 
@@ -37,25 +37,25 @@ class TermParsersTest extends TermParsers {
   @Test
   def testPeriod() :Unit ={
     {
-      val result = parseAll(period, "3M")
+      val result = parseAll(periodTerm, "3M")
       assertTrue(result.toString, result.successful)
       val expectedPeriod = Period.ofMonths(3)
       assertEquals(expectedPeriod, result.get)
     }
     {
-      val result = parseAll(period, "7Y")
+      val result = parseAll(periodTerm, "7Y")
       assertTrue(result.toString, result.successful)
       val expectedPeriod = Period.ofYears(7)
       assertEquals(expectedPeriod, result.get)
     }
     {
-      val result = parseAll(period, "1Y3M")
+      val result = parseAll(periodTerm, "1Y3M")
       assertTrue(result.toString, result.successful)
       val expectedPeriod = Period.ofYears(1).plusMonths(3)
       assertEquals(expectedPeriod, result.get)
     }
     {
-      val result = parseAll(period, "9M2W-1D")
+      val result = parseAll(periodTerm, "9M2W-1D")
       assertTrue(result.toString, result.successful)
       val expectedPeriod = Period.ofMonths(9).plusDays(2*7).minusDays(1)
       assertEquals(expectedPeriod, result.get)
@@ -83,7 +83,7 @@ class TermParsersTest extends TermParsers {
 
   @Test
   def testTimeUnit() :Unit ={
-    val result = parseAll(timeUnit, "D")
+    val result = parseAll(timeUnitTerm, "D")
     assertTrue(result.toString, result.successful)
   }
 
@@ -115,7 +115,7 @@ class TermParsersTest extends TermParsers {
   @Test
   def testYear() : Unit = {
     {
-      val result = parseAll(year, "2015")
+      val result = parseAll(year4, "2015")
       assertTrue(result.toString, result.successful)
       val year2015 = result.get
       assertEquals(2015, year2015.getValue)
@@ -129,12 +129,12 @@ class TermParsersTest extends TermParsers {
   }
 
   @Test
-  def testImm() :Unit = {
+  def testImmTerm() :Unit = {
     {
-      val result = parseAll(imm, "U6")
+      val result = parseAll(immTerm, "U6")
       assertTrue(result.toString, result.successful)
       val immDate = LocalDate.of(2016,9,21)
-      assertEquals(immDate, result.get(LocalDate.of(2015,8,20)))
+      assertEquals(immDate, result.get(Year.of(2015))) //LocalDate.of(2015,8,20)))
     }
   }
 }

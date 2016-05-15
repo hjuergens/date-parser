@@ -15,8 +15,7 @@
     	<!-- http://www2.cs.tum.edu/projects/cup/ -->
         <module>date-rule-cup</module>
 	    <!-- https://www.gnu.org/software/bison -->
-        <module>date-rule-bison</module>
-        <module>date-rule-instaparse</module>
+	    <module>date-rule-bison</module>
     </modules>
     <name>${project.artifactId}</name>
     <description>Date Parser</description>
@@ -54,6 +53,10 @@
             <releases>
                 <enabled>true</enabled>
             </releases>
+        </repository>
+        <repository>
+            <id>repo</id>
+            <url>file://${project.basedir}/repo</url>
         </repository>
     </repositories>
 

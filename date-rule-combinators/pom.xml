@@ -34,6 +34,13 @@
         <mpir.skip>false</mpir.skip> <!-- project-info-reports -->
     </properties>
 
+    <repositories>
+        <repository>
+            <id>repo</id>
+            <url>file://${project.parent.basedir}/repo</url>
+        </repository>
+    </repositories>
+
     <pluginRepositories>
         <pluginRepository>
             <id>scala-tools.org</id>
@@ -182,6 +189,13 @@
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <version>2.0.2-beta</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jquantlib</groupId>
+            <artifactId>jquantlib</artifactId>
+            <version>0.2.4</version>
             <scope>test</scope>
         </dependency>
 

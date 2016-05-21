@@ -5,7 +5,6 @@ package de.juergens.text
  */
 
 import java.io.File
-import java.time.temporal.TemporalAdjuster
 
 import org.junit._
 import org.junit.runner.RunWith
@@ -15,7 +14,6 @@ import org.testng.Reporter
 
 import scala.collection.JavaConversions._
 import scala.io.Source
-import scala.util.parsing.combinator.JavaTokenParsers
 
 
 
@@ -35,15 +33,11 @@ class AdjusterTest(line: String) extends ParserTest(new DateRuleParsers, "adjust
   def test() : Unit =  { test(line) }
 
   private[text] def test(_line:String) : Unit =  {
-    if(_line.contains("from")) return
-    if(_line.contains("ago")) return
-    if(_line.contains("last")) return
-//    if(_line.contains("first")) return
     parser.parseAll(parserMethodInstance, _line.toLowerCase).get
   }
 }
 
-object AdjusterTest {
+object AdjusterTest extends ParserTestCompanion {
 
   val textFile = {
     val url = getClass.getResource("/adjuster.txt")

@@ -59,4 +59,5 @@ class ThreeMonthsAfterNextImmTest extends ParserTest(new DateRuleParsers, "adjus
     assertEquals(LocalDate.parse("2016-12-21"), parseResult.get.adjustInto(LocalDate.parse("2016-06-16")))
   }
 
+  // weekend after next
 }

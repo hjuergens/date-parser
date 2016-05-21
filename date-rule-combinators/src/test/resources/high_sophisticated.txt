@@ -5,6 +5,8 @@ previous quarter
 
 first Wednesday in June
 last Sunday in August
+
+
 # third wednesday in next quarter
 # next third wednesday in quarter
 # every third wednesday in every quarter
@@ -24,3 +26,5 @@ last Sunday in August
 #
 # every friday the 13th of month
 # every second weekend after 14. of month
+
+# full moon next after the vernal equinox

@@ -11,6 +11,7 @@ import java.time.Duration
 import java.time.temporal._
 
 import de.juergens.time._
+import de.juergens.time.temporal.LocalDateAdjuster
 import de.juergens.util.{Direction, Up}
 
 import scala.language.implicitConversions

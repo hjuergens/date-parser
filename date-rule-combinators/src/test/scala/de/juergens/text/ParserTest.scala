@@ -1,5 +1,6 @@
 package de.juergens.text
 
+import java.io.File
 import java.time.temporal.TemporalAdjuster
 
 import scala.util.parsing.combinator.JavaTokenParsers
@@ -14,4 +15,8 @@ class ParserTest(val parser:JavaTokenParsers, private val methodName: String) {
     m.asInstanceOf[P]
   }
   val parserMethodInstance : parser.Parser[TemporalAdjuster] = parserMethod(methodName)
+}
+
+trait ParserTestCompanion {
+  val textFile : File
 }

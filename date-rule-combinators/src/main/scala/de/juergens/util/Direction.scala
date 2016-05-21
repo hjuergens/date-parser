@@ -18,12 +18,20 @@ case object Down extends Direction {
  * Created by juergens on 24.05.15.
  */
 object Direction {
-  def apply(x : Any) : Direction = x match {
-    case "Next" | "next" | "After" | "after" => Up
-    case "Previous" | "previous" | "before" | "prior" => Down
+  def fromStr(x : String) : Direction = x.toLowerCase match {
+    case "next" | "after"  => Up
+    case "previous" | "before" | "prior" => Down
+  }
+
+  def fromNumber(x : Any) : Direction = x match {
     case x : Int  if x>0 => Up
     case x : Int  if x<0 => Down
     case x : Long  if x>0 => Up
     case x : Long  if x<0 => Down
+  }
+
+  def apply(x : Any) : Direction = x match {
+    case str : String => fromStr(str)
+    case x => fromNumber(x)
   }
 }

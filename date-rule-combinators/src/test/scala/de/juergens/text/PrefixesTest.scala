@@ -6,17 +6,16 @@ import org.junit.rules.{ExpectedException, ExternalResource}
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
-import org.junit.{Rule, Test}
+import org.junit.{Ignore, Rule, Test}
 import org.testng.Reporter
 
 import scala.collection.JavaConversions._
 import scala.io.Source
 
-// TODO extends JUnit4TestClass
 
 //@TestNG(dataProvider = "text files", timeOut = 1000)
 @RunWith(value = classOf[Parameterized])
-class PrefixesTest(textFile:File)  {
+class PrefixesTest(textFile:File) extends ParserTest(new DateRuleParsers, "adjuster") {
 
   private var source : Source = _
 
@@ -54,10 +53,8 @@ class PrefixesTest(textFile:File)  {
     source.getLines().filterNot(_.trim.startsWith("#")).filterNot(_.isEmpty).map(Array[Object](_))
   }
 
-  val parser = new DateRuleParsers
-
   def adjusterTest(line: String) {
-    parser.parseAll(parser.adjuster, line).get
+    parser.parseAll(parserMethodInstance, line).get
   }
 
 }

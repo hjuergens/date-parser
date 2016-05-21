@@ -23,6 +23,7 @@ import java.util.function.{Predicate => JPredicate}
 
 import de.juergens.time._
 import de.juergens.time.impl.{DayShifter, TimeUnitShifter}
+import de.juergens.time.temporal._
 import de.juergens.util._
 import org.threeten.extra.Quarter
 
@@ -105,7 +106,7 @@ class DateRuleParsers extends JavaTokenParsers with NumberParsers with ExtendedR
 
   def previous : Parser[Direction] = ("next" | "previous" ) ^^
     { Direction(_) }
-  def afterOrBefore : Parser[Direction] = ( "after" | "before" | "later" | "prior") ^^
+  def afterOrBefore : Parser[Direction] = ( "after" | "before" | "later" | "prior" ) ^^
     { Direction(_) }
   def direction : Parser[Direction] = afterOrBefore
 
@@ -113,8 +114,7 @@ class DateRuleParsers extends JavaTokenParsers with NumberParsers with ExtendedR
   /** e.g. second friday after */
   def seekDayOfWeek : Parser[LocalDateAdjuster] =  (ordinal?) ~ ( dayOfWeek ~ (direction?) ) ^^
     {
-      case optionalOrdinal~ (dayOfWeek ~ optionalDirection) =>
-      {
+      case optionalOrdinal~ (dayOfWeek ~ optionalDirection) => {
         val ord = optionalOrdinal.getOrElse(Ordinal(1))
         val dir = optionalDirection.getOrElse(Up)
         DayOfWeekAdjuster(ord, dayOfWeek, dir)
@@ -122,13 +122,13 @@ class DateRuleParsers extends JavaTokenParsers with NumberParsers with ExtendedR
     }
 
   def seekMonth :   Parser[LocalDateAdjuster] = (ordinal?) ~ (monthName ~ (direction?)) ^^
-  {
-    case optionalOrdinal~ (month ~ optionalDirection) => {
-      val ord = optionalOrdinal.getOrElse(Ordinal(1))
-      val dir = optionalDirection.getOrElse(Up)
-      MonthAdjuster(ord, month, dir)
+    {
+      case optionalOrdinal~ (month ~ optionalDirection) => {
+        val ord = optionalOrdinal.getOrElse(Ordinal(1))
+        val dir = optionalDirection.getOrElse(Up)
+        MonthAdjuster(ord, month, dir)
+      }
     }
-  }
 
   /** e.g. three months */
   def periodUnit : Parser[TemporalAmount] = cardinal~dateUnit ^^
@@ -146,8 +146,19 @@ class DateRuleParsers extends JavaTokenParsers with NumberParsers with ExtendedR
     { _.foldRight(Duration.ZERO)( (amount:Duration,duration:Duration) => duration.plus(amount))}
 
   /** e.g. three months before */
+  @deprecated("use addSubtract instead", "0.0.4")
   def seek2 : Parser[TimeUnitShifter] = cardinal~dateUnit~direction ^^
     { triple => TimeUnitShifter(triple._2 * triple._1._1.toLong, triple._1._2) }
+
+  def addSubtract : Parser[LocalDateAdjuster] = (period | duration) ~ ("from" | direction) ^^
+  {
+    case ~(alt, dir) => new LocalDateAdjuster() {
+      override def adjustInto(temporal: Temporal): Temporal = dir match {
+        case Up | "from"  => alt.addTo(temporal)
+        case Down => alt.subtractFrom(temporal)
+      }
+    }
+  }
 
   def stream : Parser[LocalDate => Stream[LocalDate]] = "every" ~ ordinalUnit ^^
     { x=> (date:LocalDate) => Stream.iterate(date)(x._2.apply) }
@@ -221,13 +232,26 @@ class DateRuleParsers extends JavaTokenParsers with NumberParsers with ExtendedR
       }
     }
 
-  def today : Parser[LocalDateAdjuster] =  "today" ^^ { _ => {
-    LocalDateAdjuster((t:Temporal) => LocalDate.from(t))
+  /*
+  def today : Parser[Clock => LocalDate] =  "today" ^^ { _ => {
+    (clock:Clock) => LocalDate.now(clock)
   } }
-  def yesterday :Parser[LocalDateAdjuster] = ("yesterday" | "day before").+  ^^ { x => DayShifter(-x.length) }
-  def tomorrow  : Parser[LocalDateAdjuster] = ("tomorrow" | "day after").+   ^^ { x => DayShifter(x.length) }
+  def now : Parser[Clock => LocalDateTime] =  "now" ^^ { _ => {
+    (clock:Clock) => LocalDateTime.now(clock))
+  } }
+  */
+  def today : Parser[LocalDateAdjuster] =  ("from"?) ~ "today" ^^ { _ => {
+    LocalDateAdjuster((t:Temporal) => LocalDate.now(/*clock*/))
+  } }
+  def now : Parser[LocalDateAdjuster] =  ("from"?) ~ "now" ^^ { _ => {
+    LocalDateAdjuster((_:Temporal) => LocalDateTime.now(/*clock*/).toLocalDate) // TODO LocalDateTime
+  } }
+  def yesterday :Parser[LocalDateAdjuster] = ("yesterday" | ("the"?) ~ "day before").+  ^^
+    { x => DayShifter(-x.length) }
+  def tomorrow  : Parser[LocalDateAdjuster] = ("tomorrow" | ("the"?) ~ "day after").+   ^^
+    { x => DayShifter(x.length) }
 
-  def tomorrowYesterdayToday : Parser[LocalDateAdjuster] = tomorrow | yesterday | today
+  def tomorrowYesterdayToday : Parser[LocalDateAdjuster] = tomorrow | yesterday | today | now
 
   def rule : Parser[Temporal => Stream[Temporal]] = """.*""".r ^^
     { _ => (t:Temporal) => Stream.empty[Temporal]}

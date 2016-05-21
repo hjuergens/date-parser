@@ -15,7 +15,7 @@ import scala.io.Source
 
 //@TestNG(dataProvider = "text files", timeOut = 1000)
 @RunWith(value = classOf[Parameterized])
-class PrefixesTest(textFile:File) extends ParserTest(new DateRuleParsers, "adjuster") {
+class PrefixesTest(textFile:File)  {
 
   private var source : Source = _
 
@@ -53,8 +53,10 @@ class PrefixesTest(textFile:File) extends ParserTest(new DateRuleParsers, "adjus
     source.getLines().filterNot(_.trim.startsWith("#")).filterNot(_.isEmpty).map(Array[Object](_))
   }
 
+  val parser = new DateRuleParsers
+
   def adjusterTest(line: String) {
-    parser.parseAll(parserMethodInstance, line).get
+    parser.parseAll(parser.adjuster, line).get
   }
 
 }

@@ -135,7 +135,7 @@ class DateRuleParsersTestNG extends DateRuleParsers {
 
   @Test
   def seek2Test():Unit = {
-    val threeMonthsAfter = parseAll(seek2, "three months after").get.apply _
+    val threeMonthsAfter = parseAll(shifter, "three months after").get.apply _
     assert( Date(2015,8,22) === threeMonthsAfter(Date(2015,5,22)), threeMonthsAfter(Date(2015,5,22)) )
     assert( Date(2015,8,30) === threeMonthsAfter(Date(2015,5,30)) )
     assert( Date(2015,2,28) === threeMonthsAfter(Date(2014,11,30)) )
@@ -209,7 +209,7 @@ class DateRuleParsersTestNG extends DateRuleParsers {
 
   @Test
   def monthTest() : Unit = {
-    val threeMonthsAfter = parseAll(seek2, "three months after").get.apply _
+    val threeMonthsAfter = parseAll(shifter, "three months after").get.apply _
     assert(Date(2015, 8, 22) isEqual threeMonthsAfter(Date(2015, 5, 22)), threeMonthsAfter(Date(2015, 5, 22)))
     assert(Date(2015, 8, 30) isEqual threeMonthsAfter(Date(2015, 5, 30)))
     assert(Date(2015, 2, 28) isEqual threeMonthsAfter(Date(2014, 11, 30)))

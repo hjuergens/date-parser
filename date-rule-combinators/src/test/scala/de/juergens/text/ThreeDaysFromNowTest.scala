@@ -9,7 +9,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 @RunWith(value = classOf[JUnit4])
-class ThreeDaysFromNowTest extends ParserTest(new DateRuleParsers, "adjuster") {
+class ThreeDaysFromNowTest extends ParserTest(new DateRuleParsers) {
   private val clock : Clock = Clock.system(ZoneId.systemDefault())  // dependency inject
 
   @Test(timeout = 1500)
@@ -24,7 +24,7 @@ class ThreeDaysFromNowTest extends ParserTest(new DateRuleParsers, "adjuster") {
   }
   @Test(timeout = 1500)
   def testThreeDays2() : Unit =  {
-    val parseResult = parser.parseAll(parserMethod("addSubtract"), "three days after".toLowerCase)
+    val parseResult = parser.parseAll(parserMethod("shifter"), "three days after".toLowerCase)
     assertTrue("", parseResult.successful)
   }
   @Test(timeout = 1500)
@@ -41,14 +41,14 @@ class ThreeDaysFromNowTest extends ParserTest(new DateRuleParsers, "adjuster") {
   }
   @Test(timeout = 1500)
   def testThreeDaysFrom() : Unit =  {
-    val parseResult = parser.parseAll(parserMethod("addSubtract"), "three days from".toLowerCase)
+    val parseResult = parser.parseAll(parserMethod("shifter"), "three days from".toLowerCase)
     assertTrue("", parseResult.successful)
   }
   @Test(timeout = 1500)
   def testThreeDaysFromNow() : Unit =  {
     object CunjunctionParsers extends DateRuleParsers {
 
-      def enTotal : Parser[TemporalAdjuster] = addSubtract ~ now ^^
+      def enTotal : Parser[TemporalAdjuster] = shifter ~ now ^^
         { case ~(rhs,lhs) => new TemporalAdjuster{
           override def adjustInto(tp: Temporal): Temporal = rhs.adjustInto(lhs.adjustInto(tp))
         } }

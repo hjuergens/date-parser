@@ -18,7 +18,7 @@ import scala.io.Source
 
 
 @RunWith(value = classOf[Parameterized])
-class AdjusterTest(line: String) extends ParserTest(new DateRuleParsers, "adjuster") {
+class AdjusterTest(line: String) extends ParserTest(new DateRuleParsers) {
 
   @Before
   def before() {
@@ -33,7 +33,7 @@ class AdjusterTest(line: String) extends ParserTest(new DateRuleParsers, "adjust
   def test() : Unit =  { test(line) }
 
   private[text] def test(_line:String) : Unit =  {
-    parser.parseAll(parserMethodInstance, _line.toLowerCase).get
+    parse("adjuster", _line.toLowerCase).get
   }
 }
 

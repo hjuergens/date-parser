@@ -40,12 +40,12 @@ object ParseExpr$Date extends DateRuleParsers {
     * way to achieve this:
     */
   private val clock : Clock = Clock.system(ZoneId.systemDefault())  // dependency inject
-  import java.time.temporal.TemporalAdjusters._
+  import java.time.temporal.TemporalAdjusters
 
   val timePoint : LocalDateTime = LocalDateTime.now(clock)
   Objects.requireNonNull(timePoint, "timePoint")
-  val foo = timePoint.`with`(lastDayOfMonth())
-  val bar = timePoint.`with`(previousOrSame(DayOfWeek.WEDNESDAY))
+  val foo = timePoint.`with`(TemporalAdjusters.lastDayOfMonth())
+  val bar = timePoint.`with`(TemporalAdjusters.previousOrSame(DayOfWeek.WEDNESDAY))
 
   // Using value classes as adjusters
   timePoint.`with`(LocalTime.now())

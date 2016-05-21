@@ -39,16 +39,17 @@ import scala.util.parsing.combinator._
  */
 class DateRuleParsers extends JavaTokenParsers with NumberParsers with ExtendedRegexParsers {
 
-  def dayOfWeek : Parser[DayOfWeek] = ("monday" | "tuesday" |"wednesday"|"thursday"|"friday"|"saturday" |"sunday") ^^
+  def dayOfWeek : Parser[DayOfWeek] =
+    ("monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday") ^^
     { DayOfWeekFormat("EEEE") }
 
-  private def month3 : Parser[java.time.Month] =
+  private def month3 : Parser[Month] =
     ("Jan"|"Feb"|"Mar"|"Apr"|"May"|"Jun"|"Jul"|"Aug"|"Sep"|"Oct" |"Nov"|"Dec") ^^
     { MonthFormat("MMM")(_) }
-  private def monthLong : Parser[java.time.Month] =
+  private def monthLong : Parser[Month] =
     ("march"| "april" | "may" | "june" | "august" | "september" | "december") ^^
     { MonthFormat("MMMM")(_)}
-  def monthName : Parser[java.time.Month] = month3 | monthLong
+  def monthName : Parser[Month] = month3 | monthLong
 
   /** PnYnMnD */
   def timeUnitSingular : Parser[TemporalUnit] = ("year" | "month" | "week" | "day" | "quarter") ^^
@@ -92,9 +93,12 @@ class DateRuleParsers extends JavaTokenParsers with NumberParsers with ExtendedR
   def dateUnit : Parser[ChronoUnit] = dayUnit | weekUnit | monthUnit | yearUnit
   def timeUnit : Parser[ChronoUnit] = hourUnit | minuteUnit
 
+  def londonBusinessDayUnit : Parser[Set[Temporal] => TemporalUnit] = ("london business" ~ dayUnit) ^^
+    { case _ => (holidays : Set[Temporal]) => BusinessDay.unit(holidays) }
+
   // next to last  (als) vorletzter
   // next previous last first
-  def lastprevious : Parser[Ordinal] = ("last" | "previous") ^^
+  def lastprevious : Parser[Ordinal] = ("last" ~ ("of"?) | "previous" ~ ("to"?)) ^^
     {_=> Ordinal(-1) }
   def nextToLast : Parser[Ordinal] = "next to last" ^^
     { _=>Ordinal(-2) }
@@ -110,7 +114,7 @@ class DateRuleParsers extends JavaTokenParsers with NumberParsers with ExtendedR
     { Direction(_) }
   def direction : Parser[Direction] = afterOrBefore
 
-  
+
   /** e.g. second friday after */
   def seekDayOfWeek : Parser[LocalDateAdjuster] =  (ordinal?) ~ ( dayOfWeek ~ (direction?) ) ^^
     {
@@ -145,12 +149,7 @@ class DateRuleParsers extends JavaTokenParsers with NumberParsers with ExtendedR
   def duration : Parser[Duration] = repsep(durationUnit, "and" | ",") ^^
     { _.foldRight(Duration.ZERO)( (amount:Duration,duration:Duration) => duration.plus(amount))}
 
-  /** e.g. three months before */
-  @deprecated("use addSubtract instead", "0.0.4")
-  def seek2 : Parser[TimeUnitShifter] = cardinal~dateUnit~direction ^^
-    { triple => TimeUnitShifter(triple._2 * triple._1._1.toLong, triple._1._2) }
-
-  def addSubtract : Parser[LocalDateAdjuster] = (period | duration) ~ ("from" | direction) ^^
+  def shifter : Parser[LocalDateAdjuster] = (period | duration) ~ ("from" | direction) ^^
   {
     case ~(alt, dir) => new LocalDateAdjuster() {
       override def adjustInto(temporal: Temporal): Temporal = dir match {
@@ -209,12 +208,72 @@ class DateRuleParsers extends JavaTokenParsers with NumberParsers with ExtendedR
 
   import LocalDateAdjuster._
 
-  def selector : Parser[LocalDateAdjuster=>LocalDateAdjuster] = ("in"|"of") ~ (seekMonth | "quarter" | season) ^^
+
+  def selector : Parser[LocalDateAdjuster=>LocalDateAdjuster] =
+    ("in" | "of") ~ ("the"?) ~ ("delivery month" | seekMonth | "quarter" | season) ^^
     {
       case ~(_, m:java.time.Month) =>
         (adjuster: LocalDateAdjuster) =>
           MonthAdjuster(Ordinal(1),m,Up).andThen[LocalDate](adjuster)
     }
+
+/*
+  def firstDayOfMonth : Parser[LocalDateAdjuster] = "first day of month" ^^
+    {
+      case _ => TemporalAdjusters.firstDayOfMonth()
+    }
+  def lastDayOfMonth : Parser[LocalDateAdjuster] = "last day of month" ^^
+    {
+      case _ => TemporalAdjusters.lastDayOfMonth()
+    }
+  def firstDayOfNextMonth : Parser[LocalDateAdjuster]= "first day of next month" ^^
+    {
+      case _ => TemporalAdjusters.firstDayOfNextMonth()
+    }
+  def firstDayOfYear : Parser[LocalDateAdjuster] = "first day of year" ^^
+    {
+      case _ => TemporalAdjusters.firstDayOfYear()
+    }
+  def lastDayOfYear : Parser[LocalDateAdjuster] = "last day of year" ^^
+    {
+      case _ => TemporalAdjusters.lastDayOfYear()
+    }
+  def firstDayOfNextYear : Parser[LocalDateAdjuster] = "first day of next year" ^^
+    {
+      case _ => TemporalAdjusters.firstDayOfNextYear()
+    }
+  def firstInMonth : Parser[LocalDateAdjuster] = "first"~ dayOfWeek ~"in month" ^^
+    {
+      case ~(~(_,dayOfWeek),_) => TemporalAdjusters.firstInMonth(dayOfWeek)
+    }
+  def lastInMonth : Parser[LocalDateAdjuster] = "last"~ dayOfWeek ~"in month" ^^
+    {
+      case ~(~(_,dayOfWeek),_) => TemporalAdjusters.firstInMonth(dayOfWeek)
+    }
+  // 'second Tuesday in March'
+  def _dayOfWeekInMonth : Parser[LocalDateAdjuster] = ordinal ~ dayOfWeek ~ "in month" ^^
+    {
+      case ~(~(ord,dayOfWeek),_) => TemporalAdjusters.dayOfWeekInMonth(ord, dayOfWeek)
+    }
+
+  def nextDayOfWeek : Parser[LocalDateAdjuster] = "next" ~ dayOfWeek ^^
+    {
+      case ~(_,dayOfWeek) => TemporalAdjusters.next(dayOfWeek)
+    }
+  def nextOrSameDayOfWeek : Parser[LocalDateAdjuster] = "next or same" ~ dayOfWeek ^^
+    {
+      case ~(_,dayOfWeek) => TemporalAdjusters.nextOrSame(dayOfWeek)
+    }
+
+  def previousDayOfWeek : Parser[LocalDateAdjuster] = "previous" ~ dayOfWeek ^^
+    {
+      case ~(_,dayOfWeek) => TemporalAdjusters.previous(dayOfWeek)
+    }
+  def previousOrSameDayOfWeek : Parser[LocalDateAdjuster] = "previous or same" ~ dayOfWeek ^^
+    {
+      case ~(_,dayOfWeek) => TemporalAdjusters.previousOrSame(dayOfWeek)
+    }
+*/
 
   def dayOfWeekInMonth : Parser[LocalDateAdjuster] = ordinal ~ dayOfWeek ~ "in" ~ monthName ^^
     {
@@ -232,14 +291,7 @@ class DateRuleParsers extends JavaTokenParsers with NumberParsers with ExtendedR
       }
     }
 
-  /*
-  def today : Parser[Clock => LocalDate] =  "today" ^^ { _ => {
-    (clock:Clock) => LocalDate.now(clock)
-  } }
-  def now : Parser[Clock => LocalDateTime] =  "now" ^^ { _ => {
-    (clock:Clock) => LocalDateTime.now(clock))
-  } }
-  */
+
   def today : Parser[LocalDateAdjuster] =  ("from"?) ~ "today" ^^ { _ => {
     LocalDateAdjuster((t:Temporal) => LocalDate.now(/*clock*/))
   } }

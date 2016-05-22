@@ -4,13 +4,13 @@ package de.juergens.text
 import java.time.LocalDate
 import java.time.temporal.Temporal
 
-import org.jquantlib.time.{Date => QLDate}
+import org.jquantlib.time.{Date => QL_Date}
 
 import scala.language.implicitConversions
 
 
 trait DecorateAsJavaTime8 {
-  implicit def fromQLdate(date:QLDate) : Temporal = {
+  implicit def fromQLdate(date:QL_Date) : Temporal = {
     LocalDate.of(date.year(),date.month().value(),date.dayOfMonth())
   }
 

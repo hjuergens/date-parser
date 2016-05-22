@@ -1,6 +1,7 @@
 package de.juergens.experimental
 
 import java.io.{File, FilenameFilter}
+import java.time.temporal.Temporal
 import java.{io => jio, lang => jl, util => ju}
 
 import de.juergens.text.DateRuleParsers
@@ -37,7 +38,10 @@ class JUnit4ParameterizedTest(textFile: jio.File) {
 
   @TestNG(groups = Array { "seek"  }, dataProvider = "lines in text file", timeOut = 1000)
   def test(line: String) {
-    val parser = new DateRuleParsers
+    val parser = new DateRuleParsers {
+      def rule : Parser[Temporal => Stream[Temporal]] = """.*""".r ^^
+        { _ => (t:Temporal) => Stream.empty[Temporal]}
+    }
     parser.parseAll(parser.rule, line).get
   }
 

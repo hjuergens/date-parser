@@ -18,26 +18,41 @@ package de.juergens.text
 
 import java.time.{LocalDate, _}
 import java.time.temporal._
-import java.util.Objects
+
 import java.util.function.{Predicate => JPredicate}
 
 import de.juergens.time._
 import de.juergens.time.impl.{DayShifter, TimeUnitShifter}
 import de.juergens.time.temporal._
 import de.juergens.util._
-import org.threeten.extra.Quarter
+
 
 import scala.language.postfixOps
 import scala.util.parsing.combinator._
 
 
+/**
+  * Every
+  */
+trait EveryParsers  extends JavaTokenParsers with ExtendedRegexParsers {
+  self : DateRuleParsers =>
+
+  import java.time.LocalDate
+
+  def stream : Parser[LocalDate => Stream[LocalDate]] = "every" ~ ordinalUnit ^^
+    { x=> (date:LocalDate) => Stream.iterate(date)(x._2.apply) }
+}
 
 /**
  * date: on 27.05.15
  * @author juergens
  *
  */
-class DateRuleParsers extends JavaTokenParsers with NumberParsers with ExtendedRegexParsers {
+class DateRuleParsers
+  extends JavaTokenParsers
+    with NumberParsers
+    with ExtendedRegexParsers
+    with EveryParsers {
 
   def dayOfWeek : Parser[DayOfWeek] =
     ("monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday") ^^
@@ -60,6 +75,8 @@ class DateRuleParsers extends JavaTokenParsers with NumberParsers with ExtendedR
 
   def year : Parser[java.time.Year] = "year" ~ """(\d){4}""".r ^^
     { case ~(_, text) => Year.parse(text) }
+
+  import org.threeten.extra.Quarter
 
   // IsoFields.QUARTER_OF_YEAR
   def ordinalQuarter : Parser[Quarter] = ("first"|"second"|"third"|"fourth") ~ "quarter" ^^
@@ -92,9 +109,6 @@ class DateRuleParsers extends JavaTokenParsers with NumberParsers with ExtendedR
     { _=> ChronoUnit.MINUTES }
   def dateUnit : Parser[ChronoUnit] = dayUnit | weekUnit | monthUnit | yearUnit
   def timeUnit : Parser[ChronoUnit] = hourUnit | minuteUnit
-
-  def londonBusinessDayUnit : Parser[Set[Temporal] => TemporalUnit] = ("london business" ~ dayUnit) ^^
-    { case _ => (holidays : Set[Temporal]) => BusinessDay.unit(holidays) }
 
   // next to last  (als) vorletzter
   // next previous last first
@@ -159,9 +173,6 @@ class DateRuleParsers extends JavaTokenParsers with NumberParsers with ExtendedR
     }
   }
 
-  def stream : Parser[LocalDate => Stream[LocalDate]] = "every" ~ ordinalUnit ^^
-    { x=> (date:LocalDate) => Stream.iterate(date)(x._2.apply) }
-
   def ordinalUnit : Parser[LocalDateAdjuster] = ordinal ~ timeUnitSingular ^^
     { x=> TemporalPeriodSeek(x._1, x._2) }
 
@@ -176,41 +187,11 @@ class DateRuleParsers extends JavaTokenParsers with NumberParsers with ExtendedR
   def ordinalTimeUnit : Parser[TimeUnitShifter] = ordinal~timeUnitSingular ^^
     { x=> TimeUnitShifter(x._1.toInt, x._2) }
 
-  //  day after : timeUnitSingular~direction => seek
-  //  the day before  : "the" ~ timeUnitSingular~direction => seek
-  //  the monday after  : "the" ~ weekDay~direction => seek
-  //  the monday before  : "the" ~ month~direction => seek
-  //  2 fridays before  : cardinal~weekDay~direction => seek
-  //  4 tuesdays after  : cardinal~weekDay~direction => seek
-
-  //  finding the first or last day of the month
-  //  finding the first day of next month
-  //  finding the first or last day of the year
-  //  finding the first day of next year
-  //  finding the first or last day-of-week within a month, such as "first Wednesday in June"
-  //  finding the next or previous day-of-week, such as "next Thursday"
-
-  def adjuster : Parser[LocalDateAdjuster] =
-    dayOfWeekInMonth | tomorrowYesterdayToday | seekDayOfWeek | seekMonth | ordinalUnit | ordinalName
-
-  // TODO season
-  def season : Parser[LocalDateAdjuster] = ("spring" | "summer" | "autum" | "winter") ^^
-    {
-      case "spring" => MonthDay.of(java.time.Month.FEBRUARY,13)
-      case "summer" => MonthDay.of(java.time.Month.FEBRUARY,13)
-      case "autumn"|"fall"  => MonthDay.of(java.time.Month.FEBRUARY,13)
-      case "winter" => MonthDay.of(java.time.Month.FEBRUARY,13)
-    }
-
-  val seasonQuery = new TemporalQuery[(LocalDate,LocalDate)] {
-    override def queryFrom(temporal: TemporalAccessor): (LocalDate, LocalDate) = ???
-  }
-
   import LocalDateAdjuster._
 
 
   def selector : Parser[LocalDateAdjuster=>LocalDateAdjuster] =
-    ("in" | "of") ~ ("the"?) ~ ("delivery month" | seekMonth | "quarter" | season) ^^
+    ("in" | "of") ~ ("the"?) ~ ("delivery month" | seekMonth | "quarter") ^^
     {
       case ~(_, m:java.time.Month) =>
         (adjuster: LocalDateAdjuster) =>
@@ -218,61 +199,6 @@ class DateRuleParsers extends JavaTokenParsers with NumberParsers with ExtendedR
     }
 
 /*
-  def firstDayOfMonth : Parser[LocalDateAdjuster] = "first day of month" ^^
-    {
-      case _ => TemporalAdjusters.firstDayOfMonth()
-    }
-  def lastDayOfMonth : Parser[LocalDateAdjuster] = "last day of month" ^^
-    {
-      case _ => TemporalAdjusters.lastDayOfMonth()
-    }
-  def firstDayOfNextMonth : Parser[LocalDateAdjuster]= "first day of next month" ^^
-    {
-      case _ => TemporalAdjusters.firstDayOfNextMonth()
-    }
-  def firstDayOfYear : Parser[LocalDateAdjuster] = "first day of year" ^^
-    {
-      case _ => TemporalAdjusters.firstDayOfYear()
-    }
-  def lastDayOfYear : Parser[LocalDateAdjuster] = "last day of year" ^^
-    {
-      case _ => TemporalAdjusters.lastDayOfYear()
-    }
-  def firstDayOfNextYear : Parser[LocalDateAdjuster] = "first day of next year" ^^
-    {
-      case _ => TemporalAdjusters.firstDayOfNextYear()
-    }
-  def firstInMonth : Parser[LocalDateAdjuster] = "first"~ dayOfWeek ~"in month" ^^
-    {
-      case ~(~(_,dayOfWeek),_) => TemporalAdjusters.firstInMonth(dayOfWeek)
-    }
-  def lastInMonth : Parser[LocalDateAdjuster] = "last"~ dayOfWeek ~"in month" ^^
-    {
-      case ~(~(_,dayOfWeek),_) => TemporalAdjusters.firstInMonth(dayOfWeek)
-    }
-  // 'second Tuesday in March'
-  def _dayOfWeekInMonth : Parser[LocalDateAdjuster] = ordinal ~ dayOfWeek ~ "in month" ^^
-    {
-      case ~(~(ord,dayOfWeek),_) => TemporalAdjusters.dayOfWeekInMonth(ord, dayOfWeek)
-    }
-
-  def nextDayOfWeek : Parser[LocalDateAdjuster] = "next" ~ dayOfWeek ^^
-    {
-      case ~(_,dayOfWeek) => TemporalAdjusters.next(dayOfWeek)
-    }
-  def nextOrSameDayOfWeek : Parser[LocalDateAdjuster] = "next or same" ~ dayOfWeek ^^
-    {
-      case ~(_,dayOfWeek) => TemporalAdjusters.nextOrSame(dayOfWeek)
-    }
-
-  def previousDayOfWeek : Parser[LocalDateAdjuster] = "previous" ~ dayOfWeek ^^
-    {
-      case ~(_,dayOfWeek) => TemporalAdjusters.previous(dayOfWeek)
-    }
-  def previousOrSameDayOfWeek : Parser[LocalDateAdjuster] = "previous or same" ~ dayOfWeek ^^
-    {
-      case ~(_,dayOfWeek) => TemporalAdjusters.previousOrSame(dayOfWeek)
-    }
 */
 
   def dayOfWeekInMonth : Parser[LocalDateAdjuster] = ordinal ~ dayOfWeek ~ "in" ~ monthName ^^
@@ -305,28 +231,22 @@ class DateRuleParsers extends JavaTokenParsers with NumberParsers with ExtendedR
 
   def tomorrowYesterdayToday : Parser[LocalDateAdjuster] = tomorrow | yesterday | today | now
 
-  def rule : Parser[Temporal => Stream[Temporal]] = """.*""".r ^^
-    { _ => (t:Temporal) => Stream.empty[Temporal]}
+  //  day after : timeUnitSingular~direction => seek
+  //  the day before  : "the" ~ timeUnitSingular~direction => seek
+  //  the monday after  : "the" ~ weekDay~direction => seek
+  //  the monday before  : "the" ~ month~direction => seek
+  //  2 fridays before  : cardinal~weekDay~direction => seek
+  //  4 tuesdays after  : cardinal~weekDay~direction => seek
 
-  //def inMonthName : Parser[Attribute] = "in" ~ monthName ^^
-  //  { (x) => TemporalInterval.fromMonth(x._2) }
+  //  finding the first or last day of the month
+  //  finding the first day of next month
+  //  finding the first or last day of the year
+  //  finding the first day of next year
+  //  finding the first or last day-of-week within a month, such as "first Wednesday in June"
+  //  finding the next or previous day-of-week, such as "next Thursday"
 
-  def businessDays : Parser[(Set[Temporal]) => TemporalUnit] = ("""business days?""".r) ^^
-    { _=>(holidays: Set[Temporal]) => BusinessDay.unit(holidays) }
-
-  /** e.g. two business days prior */
-  def seek3 : Parser[(Set[Temporal]) => TemporalAdjuster] = cardinal ~ businessDays ~ direction ^^
-    {
-      (x) => (holidays: Set[Temporal]) => new TemporalAdjuster {
-        val ~(~(cardinal,businessDays),direction) = x
-
-        override def adjustInto(temporal: Temporal): Temporal = {
-          val unit = businessDays(holidays)
-          unit.addTo(temporal, direction * cardinal)
-        }
-      }
-    }
-
+  def adjuster : Parser[LocalDateAdjuster] =
+    dayOfWeekInMonth | tomorrowYesterdayToday | seekDayOfWeek | seekMonth | ordinalUnit | ordinalName
 }
 
 

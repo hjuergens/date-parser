@@ -1,0 +1,586 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          de/juergens/experimental/ParseExpr$Date.scala.html
+        </title>
+        <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css"/>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.18.3/addons/pager/jquery.tablesorter.pager.min.js"></script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier;'>1 <span style=''>/*
+</span>2 <span style=''> *
+</span>3 <span style=''> *  Licensed to the Apache Software Foundation (ASF) under one
+</span>4 <span style=''> *  or more contributor license agreements.  See the NOTICE file
+</span>5 <span style=''> *  distributed with this work for additional information
+</span>6 <span style=''> *  regarding copyright ownership.  The ASF licenses this file
+</span>7 <span style=''> *  to you under the Apache License, Version 2.0 (the
+</span>8 <span style=''> *  "License"); you may not use this file except in compliance
+</span>9 <span style=''> *  with the License.  You may obtain a copy of the License at
+</span>10 <span style=''> *
+</span>11 <span style=''> *   http://www.apache.org/licenses/LICENSE-2.0
+</span>12 <span style=''> *
+</span>13 <span style=''> *  Unless required by applicable law or agreed to in writing,
+</span>14 <span style=''> *  software distributed under the License is distributed on an
+</span>15 <span style=''> *  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+</span>16 <span style=''> *  KIND, either express or implied.  See the License for the
+</span>17 <span style=''> *  specific language governing permissions and limitations
+</span>18 <span style=''> *  under the License.
+</span>19 <span style=''> *
+</span>20 <span style=''> *
+</span>21 <span style=''> */
+</span>22 <span style=''>
+</span>23 <span style=''>package de.juergens.experimental
+</span>24 <span style=''>
+</span>25 <span style=''>import java.time._
+</span>26 <span style=''>import java.util.Objects
+</span>27 <span style=''>
+</span>28 <span style=''>import de.juergens.text.DateRuleParsers
+</span>29 <span style=''>
+</span>30 <span style=''>object ParseExpr$Date extends DateRuleParsers {
+</span>31 <span style=''>  def main(args: Array[String]) {
+</span>32 <span style=''>    test()
+</span>33 <span style=''>    //       println("input : " + args(0))
+</span>34 <span style=''>    //       println(parseAll(expr, args(0)))
+</span>35 <span style=''>  }
+</span>36 <span style=''>
+</span>37 <span style=''>  /*
+</span>38 <span style=''>    * Best practice for applications is to pass a {@code Clock} into any method
+</span>39 <span style=''>    * that requires the current instant. A dependency injection framework is one
+</span>40 <span style=''>    * way to achieve this:
+</span>41 <span style=''>    */
+</span>42 <span style=''>  private val clock : Clock = Clock.system(ZoneId.systemDefault())  // dependency inject
+</span>43 <span style=''>  import java.time.temporal.TemporalAdjusters
+</span>44 <span style=''>
+</span>45 <span style=''>  val timePoint : LocalDateTime = LocalDateTime.now(clock)
+</span>46 <span style=''>  Objects.requireNonNull(timePoint, "timePoint")
+</span>47 <span style=''>  val foo = timePoint.`with`(TemporalAdjusters.lastDayOfMonth())
+</span>48 <span style=''>  val bar = timePoint.`with`(TemporalAdjusters.previousOrSame(DayOfWeek.WEDNESDAY))
+</span>49 <span style=''>
+</span>50 <span style=''>  // Using value classes as adjusters
+</span>51 <span style=''>  timePoint.`with`(LocalTime.now())
+</span>52 <span style=''>
+</span>53 <span style=''>  def test(): Unit = {
+</span>54 <span style=''>    val today = LocalDateTime.now(clock)
+</span>55 <span style=''>    val theDayBefore = parseAll(adjuster, "the day before").get.adjustInto _
+</span>56 <span style=''>
+</span>57 <span style=''>    assert( theDayBefore(today) </span><span style='background: #F0ADAD'>==</span><span style=''> today.minusDays(1))
+</span>58 <span style=''>    assert( theDayBefore(today) </span><span style='background: #F0ADAD'>==</span><span style=''>  Duration.ofDays(1).subtractFrom(today))
+</span>59 <span style=''>  }
+</span>60 <span style=''>
+</span>61 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          18
+        </td>
+        <td>
+          1041
+          -
+          1041
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.experimental.ParseExpr$Date.test
+        </td>
+        <td style="background: #F0ADAD">
+          ParseExpr$Date.this.test()
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          20
+        </td>
+        <td>
+          1380
+          -
+          1380
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.Clock.system
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.Clock.system(java.time.ZoneId.systemDefault())
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          19
+        </td>
+        <td>
+          1401
+          -
+          1401
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.ZoneId.systemDefault
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.ZoneId.systemDefault()
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          22
+        </td>
+        <td>
+          1525
+          -
+          1525
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.LocalDateTime.now
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.LocalDateTime.now(ParseExpr$Date.this.clock)
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          21
+        </td>
+        <td>
+          1526
+          -
+          1526
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.experimental.ParseExpr$Date.clock
+        </td>
+        <td style="background: #F0ADAD">
+          ParseExpr$Date.this.clock
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          23
+        </td>
+        <td>
+          1558
+          -
+          1558
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.experimental.ParseExpr$Date.timePoint
+        </td>
+        <td style="background: #F0ADAD">
+          ParseExpr$Date.this.timePoint
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          25
+        </td>
+        <td>
+          1557
+          -
+          1557
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.Objects.requireNonNull
+        </td>
+        <td style="background: #F0ADAD">
+          java.util.Objects.requireNonNull[java.time.LocalDateTime](ParseExpr$Date.this.timePoint, &quot;timePoint&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          24
+        </td>
+        <td>
+          1569
+          -
+          1569
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;timePoint&quot;
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          26
+        </td>
+        <td>
+          1643
+          -
+          1643
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjusters.lastDayOfMonth
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.temporal.TemporalAdjusters.lastDayOfMonth()
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          27
+        </td>
+        <td>
+          1610
+          -
+          1610
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.LocalDateTime.with
+        </td>
+        <td style="background: #F0ADAD">
+          ParseExpr$Date.this.timePoint.`with`(java.time.temporal.TemporalAdjusters.lastDayOfMonth())
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          29
+        </td>
+        <td>
+          1675
+          -
+          1675
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.LocalDateTime.with
+        </td>
+        <td style="background: #F0ADAD">
+          ParseExpr$Date.this.timePoint.`with`(java.time.temporal.TemporalAdjusters.previousOrSame(WEDNESDAY))
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          28
+        </td>
+        <td>
+          1708
+          -
+          1708
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjusters.previousOrSame
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.temporal.TemporalAdjusters.previousOrSame(WEDNESDAY)
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          31
+        </td>
+        <td>
+          1788
+          -
+          1788
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.LocalDateTime.with
+        </td>
+        <td style="background: #F0ADAD">
+          ParseExpr$Date.this.timePoint.`with`(java.time.LocalTime.now())
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          30
+        </td>
+        <td>
+          1802
+          -
+          1802
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.LocalTime.now
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.LocalTime.now()
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          32
+        </td>
+        <td>
+          1864
+          -
+          1864
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.experimental.ParseExpr$Date.clock
+        </td>
+        <td style="background: #F0ADAD">
+          ParseExpr$Date.this.clock
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          33
+        </td>
+        <td>
+          1863
+          -
+          1863
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.LocalDateTime.now
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.LocalDateTime.now(ParseExpr$Date.this.clock)
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          34
+        </td>
+        <td>
+          1935
+          -
+          1935
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjuster.adjustInto
+        </td>
+        <td style="background: #F0ADAD">
+          eta$0$1.adjustInto(x$1)
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          35
+        </td>
+        <td>
+          1999
+          -
+          1999
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.LocalDateTime.minusDays
+        </td>
+        <td style="background: #F0ADAD">
+          today.minusDays(1L)
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          37
+        </td>
+        <td>
+          1959
+          -
+          1959
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.assert
+        </td>
+        <td style="background: #F0ADAD">
+          scala.this.Predef.assert(theDayBefore.apply(today).==(today.minusDays(1L)))
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          36
+        </td>
+        <td>
+          1981
+          -
+          1983
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td style="background: #F0ADAD">
+          theDayBefore.apply(today).==(today.minusDays(1L))
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          38
+        </td>
+        <td>
+          2071
+          -
+          2071
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.Duration.subtractFrom
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.Duration.ofDays(1L).subtractFrom(today)
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          40
+        </td>
+        <td>
+          2014
+          -
+          2014
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.assert
+        </td>
+        <td style="background: #F0ADAD">
+          scala.this.Predef.assert(theDayBefore.apply(today).==(java.time.Duration.ofDays(1L).subtractFrom(today)))
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          39
+        </td>
+        <td>
+          2036
+          -
+          2038
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td style="background: #F0ADAD">
+          theDayBefore.apply(today).==(java.time.Duration.ofDays(1L).subtractFrom(today))
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

@@ -1,0 +1,191 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>rule - date-rule-combinators 0.0.4-SNAPSHOT API - de.juergens.rule</title>
+          <meta name="description" content="rule - date - rule - combinators 0.0.4 - SNAPSHOT API - de.juergens.rule" />
+          <meta name="keywords" content="rule date rule combinators 0.0.4 SNAPSHOT API de.juergens.rule" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../index.html';
+            var hash = 'de.juergens.rule.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img src="../../../lib/package_big.png" />
+        <p id="owner"><a href="../../package.html" class="extype" name="de">de</a>.<a href="../package.html" class="extype" name="de.juergens">juergens</a></p>
+        <h1>rule</h1> <span class="permalink">
+      <a href="../../../index.html#de.juergens.rule.package" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">rule</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="de.juergens.rule.IntersectionPredicate" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="IntersectionPredicate[T]extendsPredicate[T]withProductwithSerializable"></a>
+      <a id="IntersectionPredicate[T]:IntersectionPredicate[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="IntersectionPredicate.html"><span class="name">IntersectionPredicate</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="predicates">predicates: <span class="extype" name="java.util.function.Predicate">Predicate</span>[<span class="extype" name="de.juergens.rule.IntersectionPredicate.T">T</span>]*</span>)</span><span class="result"> extends <span class="extype" name="java.util.function.Predicate">Predicate</span>[<span class="extype" name="de.juergens.rule.IntersectionPredicate.T">T</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#de.juergens.rule.package@IntersectionPredicate[T]extendsPredicate[T]withProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt"><span class="extype" name="java.util.function.Predicate">java.util.function.Predicate</span></p><div class="fullcomment"><div class="comment cmt"><p><span class="extype" name="java.util.function.Predicate">java.util.function.Predicate</span></p></div><dl class="paramcmts block"><dt class="tparam">T</dt><dd class="cmt"><p>
+</p></dd><dt class="param">predicates</dt><dd class="cmt"><p>tany predicates on type T</p></dd></dl></div>
+    </li><li name="de.juergens.rule.NotPredicate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="NotPredicate[T]extendsPredicate[T]withProductwithSerializable"></a>
+      <a id="NotPredicate[T]:NotPredicate[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="NotPredicate.html"><span class="name">NotPredicate</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="predicate">predicate: <span class="extype" name="java.util.function.Predicate">Predicate</span>[<span class="extype" name="de.juergens.rule.NotPredicate.T">T</span>]</span>)</span><span class="result"> extends <span class="extype" name="java.util.function.Predicate">Predicate</span>[<span class="extype" name="de.juergens.rule.NotPredicate.T">T</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#de.juergens.rule.package@NotPredicate[T]extendsPredicate[T]withProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Created by juergens on 05.09.15.</p>
+    </li><li name="de.juergens.rule.UnionPredicate" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="UnionPredicate[T]extendsPredicate[T]withProductwithSerializable"></a>
+      <a id="UnionPredicate[T]:UnionPredicate[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="UnionPredicate.html"><span class="name">UnionPredicate</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="predicates">predicates: <span class="extype" name="java.util.function.Predicate">Predicate</span>[<span class="extype" name="de.juergens.rule.UnionPredicate.T">T</span>]*</span>)</span><span class="result"> extends <span class="extype" name="java.util.function.Predicate">Predicate</span>[<span class="extype" name="de.juergens.rule.UnionPredicate.T">T</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#de.juergens.rule.package@UnionPredicate[T]extendsPredicate[T]withProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt"><span class="extype" name="java.util.function.Predicate">java.util.function.Predicate</span></p><div class="fullcomment"><div class="comment cmt"><p><span class="extype" name="java.util.function.Predicate">java.util.function.Predicate</span></p></div><dl class="paramcmts block"><dt class="tparam">T</dt><dd class="cmt"><p>
+</p></dd><dt class="param">predicates</dt><dd class="cmt"><p>any predicates on type T</p></dd></dl></div>
+    </li><li name="de.juergens.rule.WeekDayPredicate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="WeekDayPredicateextendsPredicate[java.time.temporal.Temporal]withProductwithSerializable"></a>
+      <a id="WeekDayPredicate:WeekDayPredicate"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="WeekDayPredicate.html"><span class="name">WeekDayPredicate</span></a><span class="params">(<span name="weekDay">weekDay: <span class="extype" name="java.time.DayOfWeek">DayOfWeek</span></span>, <span name="calendar">calendar: <span class="extype" name="java.util.Calendar">Calendar</span> = <span class="symbol">Calendar.getInstance()</span></span>)</span><span class="result"> extends <span class="extype" name="java.util.function.Predicate">Predicate</span>[<span class="extype" name="java.time.temporal.Temporal">Temporal</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#de.juergens.rule.package@WeekDayPredicateextendsPredicate[java.time.temporal.Temporal]withProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="de.juergens.rule.PredicateHelper" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PredicateHelper"></a>
+      <a id="PredicateHelper:PredicateHelper"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="PredicateHelper$.html"><span class="name">PredicateHelper</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#de.juergens.rule.package@PredicateHelper" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

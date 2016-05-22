@@ -1,0 +1,1574 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          de/juergens/text/NumberParsers.scala.html
+        </title>
+        <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css"/>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.18.3/addons/pager/jquery.tablesorter.pager.min.js"></script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier;'>1 <span style=''>/*
+</span>2 <span style=''> * Copyright 2015 Hartmut Jürgens
+</span>3 <span style=''> *
+</span>4 <span style=''> * Licensed under the Apache License, Version 2.0 (the "License");
+</span>5 <span style=''> * you may not use this file except in compliance with the License.
+</span>6 <span style=''> * You may obtain a copy of the License at
+</span>7 <span style=''> *
+</span>8 <span style=''> *     http://www.apache.org/licenses/LICENSE-2.0
+</span>9 <span style=''> *
+</span>10 <span style=''> * Unless required by applicable law or agreed to in writing, software
+</span>11 <span style=''> * distributed under the License is distributed on an "AS IS" BASIS,
+</span>12 <span style=''> * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+</span>13 <span style=''> * See the License for the specific language governing permissions and
+</span>14 <span style=''> * limitations under the License.
+</span>15 <span style=''> */
+</span>16 <span style=''>
+</span>17 <span style=''>package de.juergens.text
+</span>18 <span style=''>
+</span>19 <span style=''>import de.juergens.util.{Cardinal, Ordinal}
+</span>20 <span style=''>
+</span>21 <span style=''>import scala.util.parsing.combinator.RegexParsers
+</span>22 <span style=''>
+</span>23 <span style=''>trait CardinalParsers extends RegexParsers {
+</span>24 <span style=''>  private def numerical : Parser[Cardinal] =
+</span>25 <span style=''>    """(\d+)""".r </span><span style='background: #AEF1AE'>^^</span><span style=''>
+</span>26 <span style=''>      { Cardinal.fromString }
+</span>27 <span style=''>
+</span>28 <span style=''>  private def textual : Parser[Cardinal] =
+</span>29 <span style=''>    ( "one" | "two" | "three" | "four" | "five" | "six" | "seven" | "eight" | "nine" | "ten" | "eleven" | "twelve") </span><span style='background: #AEF1AE'>^^</span><span style=''>
+</span>30 <span style=''>      { Cardinal.string2Long.andThen(Cardinal.apply) }
+</span>31 <span style=''>
+</span>32 <span style=''>  def cardinal : Parser[Cardinal] = textual </span><span style='background: #AEF1AE'>|</span><span style=''> numerical
+</span>33 <span style=''>}
+</span>34 <span style=''>
+</span>35 <span style=''>trait OrdinalParsers  extends RegexParsers with ExtendedRegexParsers {
+</span>36 <span style=''>  val regExp = """(\d*1)st|(\d*2)nd|(\d*3)rd|(\d*[4,5,6,7,8,9,0])th|(1[1,2,3])th""".r
+</span>37 <span style=''>
+</span>38 <span style=''>  private def textual = ("first" | "eleventh" | "second" | "twelfth" | "third" | "thirteenth"| "fourth" |
+</span>39 <span style=''>    "fourteenth" | "fifth" | "fifteenth" | "sixth" | "sixteenth" | "seventh " | "seventeenth" |
+</span>40 <span style=''>    "eighth" | "eighteenth" | "ninth" | "nineteenth" | "tenth" | "twentieth") </span><span style='background: #AEF1AE'>^^</span><span style=''>
+</span>41 <span style=''>    {
+</span>42 <span style=''>      Ordinal.string2Int.andThen(Ordinal.apply)
+</span>43 <span style=''>    }
+</span>44 <span style=''>
+</span>45 <span style=''>  private def ordinalNumbers : Parser[Ordinal] = RegexParser(regExp) </span><span style='background: #AEF1AE'>^^</span><span style=''>
+</span>46 <span style=''>    { case m =>
+</span>47 <span style=''>      val matchingStr = (1 to m.groupCount).map(m.group).filterNot(_ </span><span style='background: #AEF1AE'>==</span><span style=''> null).head
+</span>48 <span style=''>      Ordinal(Integer.parseInt(matchingStr))
+</span>49 <span style=''>    }
+</span>50 <span style=''>
+</span>51 <span style=''>  private def numerical :  Parser[Ordinal] = RegexParser("""(\d+)\.""".r) </span><span style='background: #AEF1AE'>^^</span><span style=''>
+</span>52 <span style=''>    { case m => Ordinal(Integer.parseInt(m.group(1))) }
+</span>53 <span style=''>
+</span>54 <span style=''>
+</span>55 <span style=''>  assert( parseAll(ordinalNumbers,
+</span>56 <span style=''>    "1st 2nd 3rd 4th 5th 6th 7th 8th 9th 10th 11th 12th 13th 14th 15th 16th 17th 18th 19th 20th 21st 22nd 23rd 24th 25th 26th 27th 28th 29th 30th 101st 102nd 103rd 104th 105th 106th 107th 108th 109th 110th").isEmpty
+</span>57 <span style=''>  )
+</span>58 <span style=''>
+</span>59 <span style=''>  def ordinal : Parser[Ordinal] = textual </span><span style='background: #AEF1AE'>| numerical |</span><span style=''> ordinalNumbers
+</span>60 <span style=''>}
+</span>61 <span style=''>
+</span>62 <span style=''>trait NumberParsers extends RegexParsers with CardinalParsers with OrdinalParsers
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          382
+        </td>
+        <td>
+          828
+          -
+          828
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.immutable.StringLike.r
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.augmentString(&quot;(\\d+)&quot;).r
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          381
+        </td>
+        <td>
+          816
+          -
+          816
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;(\\d+)&quot;
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          384
+        </td>
+        <td>
+          830
+          -
+          832
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Parser.^^
+        </td>
+        <td style="background: #AEF1AE">
+          CardinalParsers.this.regex(scala.this.Predef.augmentString(&quot;(\\d+)&quot;).r).^^[de.juergens.util.Cardinal]({
+  ((str: String) =&gt; de.juergens.util.Cardinal.fromString(str))
+})
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          383
+        </td>
+        <td>
+          850
+          -
+          850
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.util.Cardinal.fromString
+        </td>
+        <td style="background: #AEF1AE">
+          de.juergens.util.Cardinal.fromString(str)
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          391
+        </td>
+        <td>
+          965
+          -
+          965
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #AEF1AE">
+          CardinalParsers.this.literal(&quot;seven&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          394
+        </td>
+        <td>
+          994
+          -
+          994
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #AEF1AE">
+          CardinalParsers.this.literal(&quot;ten&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          385
+        </td>
+        <td>
+          913
+          -
+          913
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;one&quot;
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          388
+        </td>
+        <td>
+          939
+          -
+          939
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #AEF1AE">
+          CardinalParsers.this.literal(&quot;four&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          387
+        </td>
+        <td>
+          929
+          -
+          929
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #AEF1AE">
+          CardinalParsers.this.literal(&quot;three&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          396
+        </td>
+        <td>
+          1013
+          -
+          1013
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #AEF1AE">
+          CardinalParsers.this.literal(&quot;twelve&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          399
+        </td>
+        <td>
+          1023
+          -
+          1025
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Parser.^^
+        </td>
+        <td style="background: #AEF1AE">
+          CardinalParsers.this.literal(&quot;one&quot;).|[String](CardinalParsers.this.literal(&quot;two&quot;)).|[String](CardinalParsers.this.literal(&quot;three&quot;)).|[String](CardinalParsers.this.literal(&quot;four&quot;)).|[String](CardinalParsers.this.literal(&quot;five&quot;)).|[String](CardinalParsers.this.literal(&quot;six&quot;)).|[String](CardinalParsers.this.literal(&quot;seven&quot;)).|[String](CardinalParsers.this.literal(&quot;eight&quot;)).|[String](CardinalParsers.this.literal(&quot;nine&quot;)).|[String](CardinalParsers.this.literal(&quot;ten&quot;)).|[String](CardinalParsers.this.literal(&quot;eleven&quot;)).|[String](CardinalParsers.this.literal(&quot;twelve&quot;)).^^[de.juergens.util.Cardinal](de.juergens.util.Cardinal.string2Long.andThen[de.juergens.util.Cardinal]({
+  ((toLong: Long) =&gt; de.juergens.util.Cardinal.apply(toLong))
+}))
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          390
+        </td>
+        <td>
+          957
+          -
+          957
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #AEF1AE">
+          CardinalParsers.this.literal(&quot;six&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          393
+        </td>
+        <td>
+          985
+          -
+          985
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #AEF1AE">
+          CardinalParsers.this.literal(&quot;nine&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          392
+        </td>
+        <td>
+          975
+          -
+          975
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #AEF1AE">
+          CardinalParsers.this.literal(&quot;eight&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          386
+        </td>
+        <td>
+          921
+          -
+          921
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #AEF1AE">
+          CardinalParsers.this.literal(&quot;two&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          395
+        </td>
+        <td>
+          1002
+          -
+          1002
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #AEF1AE">
+          CardinalParsers.this.literal(&quot;eleven&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          389
+        </td>
+        <td>
+          948
+          -
+          948
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #AEF1AE">
+          CardinalParsers.this.literal(&quot;five&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          397
+        </td>
+        <td>
+          1072
+          -
+          1072
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.util.Cardinal.apply
+        </td>
+        <td style="background: #AEF1AE">
+          de.juergens.util.Cardinal.apply(toLong)
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          398
+        </td>
+        <td>
+          1062
+          -
+          1062
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.PartialFunction.andThen
+        </td>
+        <td style="background: #AEF1AE">
+          de.juergens.util.Cardinal.string2Long.andThen[de.juergens.util.Cardinal]({
+  ((toLong: Long) =&gt; de.juergens.util.Cardinal.apply(toLong))
+})
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          400
+        </td>
+        <td>
+          1128
+          -
+          1128
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.text.CardinalParsers.numerical
+        </td>
+        <td style="background: #AEF1AE">
+          CardinalParsers.this.numerical
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          401
+        </td>
+        <td>
+          1126
+          -
+          1127
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Parser.|
+        </td>
+        <td style="background: #AEF1AE">
+          CardinalParsers.this.textual.|[de.juergens.util.Cardinal](CardinalParsers.this.numerical)
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          403
+        </td>
+        <td>
+          1296
+          -
+          1296
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.immutable.StringLike.r
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.augmentString(&quot;(\\d*1)st|(\\d*2)nd|(\\d*3)rd|(\\d*[4,5,6,7,8,9,0])th|(1[1,2,3])th&quot;).r
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          402
+        </td>
+        <td>
+          1227
+          -
+          1227
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;(\\d*1)st|(\\d*2)nd|(\\d*3)rd|(\\d*[4,5,6,7,8,9,0])th|(1[1,2,3])th&quot;
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          406
+        </td>
+        <td>
+          1347
+          -
+          1347
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #AEF1AE">
+          OrdinalParsers.this.literal(&quot;second&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          409
+        </td>
+        <td>
+          1380
+          -
+          1380
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #AEF1AE">
+          OrdinalParsers.this.literal(&quot;thirteenth&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          405
+        </td>
+        <td>
+          1334
+          -
+          1334
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #AEF1AE">
+          OrdinalParsers.this.literal(&quot;eleventh&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          408
+        </td>
+        <td>
+          1370
+          -
+          1370
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #AEF1AE">
+          OrdinalParsers.this.literal(&quot;third&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          410
+        </td>
+        <td>
+          1394
+          -
+          1394
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #AEF1AE">
+          OrdinalParsers.this.literal(&quot;fourth&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          404
+        </td>
+        <td>
+          1324
+          -
+          1324
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;first&quot;
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          407
+        </td>
+        <td>
+          1358
+          -
+          1358
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #AEF1AE">
+          OrdinalParsers.this.literal(&quot;twelfth&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          415
+        </td>
+        <td>
+          1458
+          -
+          1458
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #AEF1AE">
+          OrdinalParsers.this.literal(&quot;sixteenth&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          412
+        </td>
+        <td>
+          1424
+          -
+          1424
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #AEF1AE">
+          OrdinalParsers.this.literal(&quot;fifth&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          414
+        </td>
+        <td>
+          1448
+          -
+          1448
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #AEF1AE">
+          OrdinalParsers.this.literal(&quot;sixth&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          417
+        </td>
+        <td>
+          1485
+          -
+          1485
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #AEF1AE">
+          OrdinalParsers.this.literal(&quot;seventeenth&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          411
+        </td>
+        <td>
+          1409
+          -
+          1409
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #AEF1AE">
+          OrdinalParsers.this.literal(&quot;fourteenth&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          413
+        </td>
+        <td>
+          1434
+          -
+          1434
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #AEF1AE">
+          OrdinalParsers.this.literal(&quot;fifteenth&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          416
+        </td>
+        <td>
+          1472
+          -
+          1472
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #AEF1AE">
+          OrdinalParsers.this.literal(&quot;seventh &quot;)
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          418
+        </td>
+        <td>
+          1505
+          -
+          1505
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #AEF1AE">
+          OrdinalParsers.this.literal(&quot;eighth&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          421
+        </td>
+        <td>
+          1541
+          -
+          1541
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #AEF1AE">
+          OrdinalParsers.this.literal(&quot;nineteenth&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          420
+        </td>
+        <td>
+          1531
+          -
+          1531
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #AEF1AE">
+          OrdinalParsers.this.literal(&quot;ninth&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          423
+        </td>
+        <td>
+          1566
+          -
+          1566
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #AEF1AE">
+          OrdinalParsers.this.literal(&quot;twentieth&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          426
+        </td>
+        <td>
+          1579
+          -
+          1581
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Parser.^^
+        </td>
+        <td style="background: #AEF1AE">
+          OrdinalParsers.this.literal(&quot;first&quot;).|[String](OrdinalParsers.this.literal(&quot;eleventh&quot;)).|[String](OrdinalParsers.this.literal(&quot;second&quot;)).|[String](OrdinalParsers.this.literal(&quot;twelfth&quot;)).|[String](OrdinalParsers.this.literal(&quot;third&quot;)).|[String](OrdinalParsers.this.literal(&quot;thirteenth&quot;)).|[String](OrdinalParsers.this.literal(&quot;fourth&quot;)).|[String](OrdinalParsers.this.literal(&quot;fourteenth&quot;)).|[String](OrdinalParsers.this.literal(&quot;fifth&quot;)).|[String](OrdinalParsers.this.literal(&quot;fifteenth&quot;)).|[String](OrdinalParsers.this.literal(&quot;sixth&quot;)).|[String](OrdinalParsers.this.literal(&quot;sixteenth&quot;)).|[String](OrdinalParsers.this.literal(&quot;seventh &quot;)).|[String](OrdinalParsers.this.literal(&quot;seventeenth&quot;)).|[String](OrdinalParsers.this.literal(&quot;eighth&quot;)).|[String](OrdinalParsers.this.literal(&quot;eighteenth&quot;)).|[String](OrdinalParsers.this.literal(&quot;ninth&quot;)).|[String](OrdinalParsers.this.literal(&quot;nineteenth&quot;)).|[String](OrdinalParsers.this.literal(&quot;tenth&quot;)).|[String](OrdinalParsers.this.literal(&quot;twentieth&quot;)).^^[de.juergens.util.Ordinal](de.juergens.util.Ordinal.string2Int.andThen[de.juergens.util.Ordinal]({
+  ((toInt: Int) =&gt; de.juergens.util.Ordinal.apply(toInt))
+}))
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          419
+        </td>
+        <td>
+          1516
+          -
+          1516
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #AEF1AE">
+          OrdinalParsers.this.literal(&quot;eighteenth&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          422
+        </td>
+        <td>
+          1556
+          -
+          1556
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #AEF1AE">
+          OrdinalParsers.this.literal(&quot;tenth&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          424
+        </td>
+        <td>
+          1629
+          -
+          1629
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.util.Ordinal.apply
+        </td>
+        <td style="background: #AEF1AE">
+          de.juergens.util.Ordinal.apply(toInt)
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          425
+        </td>
+        <td>
+          1620
+          -
+          1620
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.PartialFunction.andThen
+        </td>
+        <td style="background: #AEF1AE">
+          de.juergens.util.Ordinal.string2Int.andThen[de.juergens.util.Ordinal]({
+  ((toInt: Int) =&gt; de.juergens.util.Ordinal.apply(toInt))
+})
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          436
+        </td>
+        <td>
+          1712
+          -
+          1714
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Parser.^^
+        </td>
+        <td style="background: #AEF1AE">
+          OrdinalParsers.this.RegexParser.apply(OrdinalParsers.this.regExp).^^[de.juergens.util.Ordinal](((x0$1: scala.util.matching.Regex.Match) =&gt; x0$1 match {
+  case (m @ _) =&gt; {
+    val matchingStr: String = scala.this.Predef.intWrapper(1).to(m.groupCount).map[String, scala.collection.immutable.IndexedSeq[String]]({
+  ((i: Int) =&gt; m.group(i))
+})(immutable.this.IndexedSeq.canBuildFrom[String]).filterNot(((x$1: String) =&gt; x$1.==(null))).head;
+    de.juergens.util.Ordinal.apply(java.this.lang.Integer.parseInt(matchingStr))
+  }
+}))
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          427
+        </td>
+        <td>
+          1704
+          -
+          1704
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.text.OrdinalParsers.regExp
+        </td>
+        <td style="background: #AEF1AE">
+          OrdinalParsers.this.regExp
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          433
+        </td>
+        <td>
+          1809
+          -
+          1809
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IterableLike.head
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.intWrapper(1).to(m.groupCount).map[String, scala.collection.immutable.IndexedSeq[String]]({
+  ((i: Int) =&gt; m.group(i))
+})(immutable.this.IndexedSeq.canBuildFrom[String]).filterNot(((x$1: String) =&gt; x$1.==(null))).head
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          430
+        </td>
+        <td>
+          1781
+          -
+          1781
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.matching.Regex.MatchData.group
+        </td>
+        <td style="background: #AEF1AE">
+          m.group(i)
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          429
+        </td>
+        <td>
+          1763
+          -
+          1763
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.util.matching.Regex.Match.groupCount
+        </td>
+        <td style="background: #AEF1AE">
+          m.groupCount
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          432
+        </td>
+        <td>
+          1800
+          -
+          1802
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td style="background: #AEF1AE">
+          x$1.==(null)
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          428
+        </td>
+        <td>
+          1756
+          -
+          1756
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          431
+        </td>
+        <td>
+          1778
+          -
+          1778
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.immutable.IndexedSeq.canBuildFrom
+        </td>
+        <td style="background: #AEF1AE">
+          immutable.this.IndexedSeq.canBuildFrom[String]
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          435
+        </td>
+        <td>
+          1827
+          -
+          1827
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.util.Ordinal.apply
+        </td>
+        <td style="background: #AEF1AE">
+          de.juergens.util.Ordinal.apply(java.this.lang.Integer.parseInt(matchingStr))
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          434
+        </td>
+        <td>
+          1844
+          -
+          1844
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Integer.parseInt
+        </td>
+        <td style="background: #AEF1AE">
+          java.this.lang.Integer.parseInt(matchingStr)
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          442
+        </td>
+        <td>
+          1940
+          -
+          1942
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Parser.^^
+        </td>
+        <td style="background: #AEF1AE">
+          OrdinalParsers.this.RegexParser.apply(scala.this.Predef.augmentString(&quot;(\\d+)\\.&quot;).r).^^[de.juergens.util.Ordinal](((x0$2: scala.util.matching.Regex.Match) =&gt; x0$2 match {
+  case (m @ _) =&gt; de.juergens.util.Ordinal.apply(java.this.lang.Integer.parseInt(m.group(1)))
+}))
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          438
+        </td>
+        <td>
+          1937
+          -
+          1937
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.immutable.StringLike.r
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.augmentString(&quot;(\\d+)\\.&quot;).r
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          437
+        </td>
+        <td>
+          1923
+          -
+          1923
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;(\\d+)\\.&quot;
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          439
+        </td>
+        <td>
+          1991
+          -
+          1991
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.matching.Regex.MatchData.group
+        </td>
+        <td style="background: #AEF1AE">
+          m.group(1)
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          441
+        </td>
+        <td>
+          1966
+          -
+          1966
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.util.Ordinal.apply
+        </td>
+        <td style="background: #AEF1AE">
+          de.juergens.util.Ordinal.apply(java.this.lang.Integer.parseInt(m.group(1)))
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          440
+        </td>
+        <td>
+          1983
+          -
+          1983
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Integer.parseInt
+        </td>
+        <td style="background: #AEF1AE">
+          java.this.lang.Integer.parseInt(m.group(1))
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          443
+        </td>
+        <td>
+          2020
+          -
+          2020
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.text.OrdinalParsers.ordinalNumbers
+        </td>
+        <td style="background: #AEF1AE">
+          OrdinalParsers.this.ordinalNumbers
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          446
+        </td>
+        <td>
+          2009
+          -
+          2009
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.assert
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.assert(OrdinalParsers.this.parseAll[de.juergens.util.Ordinal](OrdinalParsers.this.ordinalNumbers, &quot;1st 2nd 3rd 4th 5th 6th 7th 8th 9th 10th 11th 12th 13th 14th 15th 16th 17th 18th 19th 20th 21st 22nd 23rd 24th 25th 26th 27th 28th 29th 30th 101st 102nd 103rd 104th 105th 106th 107th 108th 109th 110th&quot;).isEmpty)
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          445
+        </td>
+        <td>
+          2244
+          -
+          2244
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.ParseResult.isEmpty
+        </td>
+        <td style="background: #AEF1AE">
+          OrdinalParsers.this.parseAll[de.juergens.util.Ordinal](OrdinalParsers.this.ordinalNumbers, &quot;1st 2nd 3rd 4th 5th 6th 7th 8th 9th 10th 11th 12th 13th 14th 15th 16th 17th 18th 19th 20th 21st 22nd 23rd 24th 25th 26th 27th 28th 29th 30th 101st 102nd 103rd 104th 105th 106th 107th 108th 109th 110th&quot;).isEmpty
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          444
+        </td>
+        <td>
+          2040
+          -
+          2040
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;1st 2nd 3rd 4th 5th 6th 7th 8th 9th 10th 11th 12th 13th 14th 15th 16th 17th 18th 19th 20th 21st 22nd 23rd 24th 25th 26th 27th 28th 29th 30th 101st 102nd 103rd 104th 105th 106th 107th 108th 109th 110th&quot;
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          448
+        </td>
+        <td>
+          2313
+          -
+          2313
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.text.OrdinalParsers.ordinalNumbers
+        </td>
+        <td style="background: #AEF1AE">
+          OrdinalParsers.this.ordinalNumbers
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          447
+        </td>
+        <td>
+          2301
+          -
+          2301
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.text.OrdinalParsers.numerical
+        </td>
+        <td style="background: #AEF1AE">
+          OrdinalParsers.this.numerical
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          449
+        </td>
+        <td>
+          2299
+          -
+          2312
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Parser.|
+        </td>
+        <td style="background: #AEF1AE">
+          OrdinalParsers.this.textual.|[de.juergens.util.Ordinal](OrdinalParsers.this.numerical).|[de.juergens.util.Ordinal](OrdinalParsers.this.ordinalNumbers)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

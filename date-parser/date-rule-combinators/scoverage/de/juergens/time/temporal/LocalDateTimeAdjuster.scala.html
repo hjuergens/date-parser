@@ -1,0 +1,291 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          de/juergens/time/temporal/LocalDateTimeAdjuster.scala.html
+        </title>
+        <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css"/>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.18.3/addons/pager/jquery.tablesorter.pager.min.js"></script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier;'>1 <span style=''>package de.juergens.time.temporal
+</span>2 <span style=''>
+</span>3 <span style=''>import java.time.LocalDateTime
+</span>4 <span style=''>import java.time.temporal.{Temporal, TemporalAdjuster}
+</span>5 <span style=''>
+</span>6 <span style=''>import scala.language.implicitConversions
+</span>7 <span style=''>/**
+</span>8 <span style=''> *
+</span>9 <span style=''> */
+</span>10 <span style=''>trait LocalDateTimeAdjuster extends TemporalAdjuster with java.util.function.Function[Temporal, LocalDateTime] {
+</span>11 <span style=''>  def apply(t: Temporal) : LocalDateTime = LocalDateTime.from(adjustInto(t))
+</span>12 <span style=''>}
+</span>13 <span style=''>
+</span>14 <span style=''>/**
+</span>15 <span style=''> * TemporalAdjusters.ofDateAdjuster( (ld:LocalDateTime)=>ld )
+</span>16 <span style=''> */
+</span>17 <span style=''>object LocalDateTimeAdjuster {
+</span>18 <span style=''>  implicit class LocalDateTimeAdjusterOfFunction(function: java.util.function.Function[Temporal, LocalDateTime])
+</span>19 <span style=''>                                            (implicit des:String=s"LocalDateTimeAdjusterOfFunction($function)")
+</span>20 <span style=''>    extends LocalDateTimeAdjuster {
+</span>21 <span style=''>      override def adjustInto(temporal: Temporal): Temporal =
+</span>22 <span style=''>        function(LocalDateTime.from(temporal))
+</span>23 <span style=''>      override def apply(t: Temporal) = function(t)
+</span>24 <span style=''>
+</span>25 <span style=''>    override def toString = des
+</span>26 <span style=''>  }
+</span>27 <span style=''>
+</span>28 <span style=''>  import xuwei_k.Scala2Java8.function
+</span>29 <span style=''>  implicit def apply(func : LocalDateTime => LocalDateTime)(implicit des:String="") : LocalDateTimeAdjuster = {
+</span>30 <span style=''>    function[Temporal,LocalDateTime](func.compose[Temporal](LocalDateTime.from(_)))
+</span>31 <span style=''>  }
+</span>32 <span style=''>
+</span>33 <span style=''>  implicit class Lifter(ta:TemporalAdjuster)
+</span>34 <span style=''>    extends LocalDateTimeAdjuster {
+</span>35 <span style=''>    override def adjustInto(temporal: Temporal): Temporal = ta.adjustInto(temporal)
+</span>36 <span style=''>
+</span>37 <span style=''>    override def apply(t: Temporal) = LocalDateTime.from(adjustInto(t))
+</span>38 <span style=''>  }
+</span>39 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          11
+        </td>
+        <td>
+          1099
+        </td>
+        <td>
+          349
+          -
+          349
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.LocalDateTime.from
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.LocalDateTime.from(LocalDateTimeAdjuster.this.adjustInto(t))
+        </td>
+      </tr><tr>
+        <td>
+          11
+        </td>
+        <td>
+          1098
+        </td>
+        <td>
+          360
+          -
+          360
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjuster.adjustInto
+        </td>
+        <td style="background: #F0ADAD">
+          LocalDateTimeAdjuster.this.adjustInto(t)
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          1100
+        </td>
+        <td>
+          827
+          -
+          827
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.LocalDateTime.from
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.LocalDateTime.from(temporal)
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          1101
+        </td>
+        <td>
+          808
+          -
+          808
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.function.Function.apply
+        </td>
+        <td style="background: #F0ADAD">
+          LocalDateTimeAdjusterOfFunction.this.function.apply(java.time.LocalDateTime.from(temporal))
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          1102
+        </td>
+        <td>
+          887
+          -
+          887
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.function.Function.apply
+        </td>
+        <td style="background: #F0ADAD">
+          LocalDateTimeAdjusterOfFunction.this.function.apply(t)
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          1103
+        </td>
+        <td>
+          920
+          -
+          920
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.time.temporal.LocalDateTimeAdjuster.LocalDateTimeAdjusterOfFunction.des
+        </td>
+        <td style="background: #F0ADAD">
+          LocalDateTimeAdjusterOfFunction.this.des
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          1104
+        </td>
+        <td>
+          1115
+          -
+          1115
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          de.juergens.time.temporal.LocalDateTimeAdjuster.LocalDateTimeAdjusterOfFunction
+        </td>
+        <td style="background: #F0ADAD">
+          LocalDateTimeAdjuster.this.LocalDateTimeAdjusterOfFunction(xuwei_k.Scala2Java8.function[java.time.temporal.Temporal, java.time.LocalDateTime](func.compose[java.time.temporal.Temporal](((x$1: java.time.temporal.Temporal) =&gt; java.time.LocalDateTime.from(x$1)))))(des)
+        </td>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          1105
+        </td>
+        <td>
+          1322
+          -
+          1322
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjuster.adjustInto
+        </td>
+        <td style="background: #F0ADAD">
+          Lifter.this.ta.adjustInto(temporal)
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          1106
+        </td>
+        <td>
+          1401
+          -
+          1401
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.time.temporal.LocalDateTimeAdjuster.Lifter.adjustInto
+        </td>
+        <td style="background: #F0ADAD">
+          Lifter.this.adjustInto(t)
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          1107
+        </td>
+        <td>
+          1390
+          -
+          1390
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.LocalDateTime.from
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.LocalDateTime.from(Lifter.this.adjustInto(t))
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

@@ -1,0 +1,1901 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          xuwei_k/Scala2Java8.scala.html
+        </title>
+        <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css"/>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.18.3/addons/pager/jquery.tablesorter.pager.min.js"></script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier;'>1 <span style=''>package xuwei_k
+</span>2 <span style=''>
+</span>3 <span style=''>import java.util.function._
+</span>4 <span style=''>import scala.language.implicitConversions
+</span>5 <span style=''>// scalastyle:off
+</span>6 <span style=''>trait Scala2Java8{
+</span>7 <span style=''>  implicit def biConsumer[A, B](f: (A, B) => Unit): BiConsumer[A, B] = new BiConsumer[A, B]{ override def accept(a: A, b: B) = f(a, b) }
+</span>8 <span style=''>  implicit def biFunction[A, B, C](f: (A, B) => C): BiFunction[A, B, C] = new BiFunction[A, B, C]{ override def apply(a: A, b: B) = f(a, b) }
+</span>9 <span style=''>  implicit def binaryOperator [A](f: (A, A) => A): BinaryOperator[A] = new BinaryOperator[A]{ override def apply(a: A, b: A) = f(a, b) }
+</span>10 <span style=''>  implicit def biPredicate[A, B](f: (A, B) => Boolean): BiPredicate[A, B] = new BiPredicate[A, B]{ override def test(a: A, b: B) = f(a, b) }
+</span>11 <span style=''>  implicit def booleanSupplier(f: () => Boolean): BooleanSupplier = new BooleanSupplier{ override def getAsBoolean() = f() }
+</span>12 <span style=''>  implicit def consumer[A](f: A => Unit): Consumer[A] = new Consumer[A]{ override def accept(a: A) = f(a) }
+</span>13 <span style=''>  implicit def doubleBinaryOperator(f: (Double, Double) => Double): DoubleBinaryOperator = new DoubleBinaryOperator{ override def applyAsDouble(a: Double, b: Double) = f(a, b) }
+</span>14 <span style=''>  implicit def doubleConsumer(f: Double => Unit): DoubleConsumer = new DoubleConsumer{ override def accept(a: Double) = f(a) }
+</span>15 <span style=''>  implicit def doubleFunction[A](f: Double => A): DoubleFunction[A] = new DoubleFunction[A]{ override def apply(a: Double) = f(a) }
+</span>16 <span style=''>  implicit def doublePredicate(f: Double => Boolean): DoublePredicate = new DoublePredicate{ override def test(a: Double) = f(a) }
+</span>17 <span style=''>  implicit def doubleSupplier(f: () => Double): DoubleSupplier = new DoubleSupplier{ override def getAsDouble() = f() }
+</span>18 <span style=''>  implicit def doubleToIntFunction(f: Double => Int): DoubleToIntFunction = new DoubleToIntFunction{ override def applyAsInt(a: Double) = f(a) }
+</span>19 <span style=''>  implicit def doubleToLongFunction(f: Double => Long): DoubleToLongFunction = new DoubleToLongFunction{ override def applyAsLong(a: Double) = f(a) }
+</span>20 <span style=''>  implicit def doubleUnaryOperator(f: Double => Double): DoubleUnaryOperator = new DoubleUnaryOperator{ override def applyAsDouble(a: Double) = f(a) }
+</span>21 <span style=''>  implicit def function[A, B](f: A => B): Function[A, B] = new Function[A, B]{ override def apply(a: A) = f(a) }
+</span>22 <span style=''>  implicit def intBinaryOperator(f: (Int, Int) => Int): IntBinaryOperator = new IntBinaryOperator{ override def applyAsInt(a: Int, b: Int) = f(a, b) }
+</span>23 <span style=''>  implicit def intConsumer(f: Int => Unit): IntConsumer = new IntConsumer{ override def accept(a: Int) = f(a) }
+</span>24 <span style=''>  implicit def intFunction[A](f: Int => A): IntFunction[A] = new IntFunction[A]{ override def apply(a: Int) = f(a) }
+</span>25 <span style=''>  implicit def intPredicate(f: Int => Boolean): IntPredicate = new IntPredicate{ override def test(a: Int) = f(a) }
+</span>26 <span style=''>  implicit def intSupplier(f: () => Int): IntSupplier = new IntSupplier{ override def getAsInt() = f() }
+</span>27 <span style=''>  implicit def intToDoubleFunction(f: Int => Double): IntToDoubleFunction = new IntToDoubleFunction{ override def applyAsDouble(a: Int) = f(a) }
+</span>28 <span style=''>  implicit def intToLongFunction(f: Int => Long): IntToLongFunction = new IntToLongFunction{ override def applyAsLong(a: Int) = f(a) }
+</span>29 <span style=''>  implicit def intUnaryOperator(f: Int => Int): IntUnaryOperator = new IntUnaryOperator{ override def applyAsInt(a: Int) = f(a) }
+</span>30 <span style=''>  implicit def longBinaryOperator(f: (Long, Long) => Long): LongBinaryOperator = new LongBinaryOperator{ override def applyAsLong(a: Long, b: Long) = f(a, b) }
+</span>31 <span style=''>  implicit def longConsumer(f: Long => Unit): LongConsumer = new LongConsumer{ override def accept(a: Long) = f(a) }
+</span>32 <span style=''>  implicit def longFunction[A](f: Long => A): LongFunction[A] = new LongFunction[A]{ override def apply(a: Long) = f(a) }
+</span>33 <span style=''>  implicit def longPredicate(f: Long => Boolean): LongPredicate = new LongPredicate{ override def test(a: Long) = f(a) }
+</span>34 <span style=''>  implicit def longSupplier(f: () => Long): LongSupplier = new LongSupplier{ override def getAsLong() = f() }
+</span>35 <span style=''>  implicit def longToDoubleFunction(f: Long => Double): LongToDoubleFunction = new LongToDoubleFunction{ override def applyAsDouble(a: Long) = f(a) }
+</span>36 <span style=''>  implicit def longToIntFunction(f: Long => Int): LongToIntFunction = new LongToIntFunction{ override def applyAsInt(a: Long) = f(a) }
+</span>37 <span style=''>  implicit def longUnaryOperator(f: Long => Long): LongUnaryOperator = new LongUnaryOperator{ override def applyAsLong(a: Long) = f(a) }
+</span>38 <span style=''>  implicit def objDoubleConsumer[A](f: (A, Double) => Unit): ObjDoubleConsumer[A] = new ObjDoubleConsumer[A]{ override def accept(a: A, b: Double) = f(a, b) }
+</span>39 <span style=''>  implicit def objIntConsumer[A](f: (A, Int) => Unit): ObjIntConsumer[A] = new ObjIntConsumer[A]{ override def accept(a: A, b: Int) = f(a, b) }
+</span>40 <span style=''>  implicit def objLongConsumer[A](f: (A, Long) => Unit): ObjLongConsumer[A] = new ObjLongConsumer[A]{ override def accept(a: A, b: Long) = f(a, b) }
+</span>41 <span style=''>  implicit def predicate[A](f: A => Boolean): Predicate[A] = new Predicate[A]{ override def test(a: A) = f(a) }
+</span>42 <span style=''>  implicit def supplier[A](f: () => A): Supplier[A] = new Supplier[A]{ override def get() = f() }
+</span>43 <span style=''>  implicit def toDoubleBiFunction[A, B](f: (A, B) => Double): ToDoubleBiFunction[A, B] = new ToDoubleBiFunction[A, B]{ override def applyAsDouble(a: A, b: B) = f(a, b) }
+</span>44 <span style=''>  implicit def toDoubleFunction[A](f: A => Double): ToDoubleFunction[A] = new ToDoubleFunction[A]{ override def applyAsDouble(a: A) = f(a) }
+</span>45 <span style=''>  implicit def toIntBiFunction[A, B](f: (A, B) => Int): ToIntBiFunction[A, B] = new ToIntBiFunction[A, B]{ override def applyAsInt(a: A, b: B) = f(a, b) }
+</span>46 <span style=''>  implicit def toIntFunction[A](f: A => Int): ToIntFunction[A] = new ToIntFunction[A]{ override def applyAsInt(a: A) = f(a) }
+</span>47 <span style=''>  implicit def toLongBiFunction[A, B](f: (A, B) => Long): ToLongBiFunction[A, B] = new ToLongBiFunction[A, B]{ override def applyAsLong(a: A, b: B) = f(a, b) }
+</span>48 <span style=''>  implicit def toLongFunction[A](f: A => Long): ToLongFunction[A] = new ToLongFunction[A]{ override def applyAsLong(a: A) = f(a) }
+</span>49 <span style=''>  implicit def unaryOperator[A](f: A => A): UnaryOperator[A] = new UnaryOperator[A]{ override def apply(a: A) = f(a) }
+</span>50 <span style=''>}
+</span>51 <span style=''>
+</span>52 <span style=''>object Scala2Java8 extends Scala2Java8
+</span>53 <span style=''>// scalastyle:on
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          7
+        </td>
+        <td>
+          1653
+        </td>
+        <td>
+          195
+          -
+          195
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          7
+        </td>
+        <td>
+          1652
+        </td>
+        <td>
+          252
+          -
+          252
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function2.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a, b)
+        </td>
+      </tr><tr>
+        <td>
+          8
+        </td>
+        <td>
+          1655
+        </td>
+        <td>
+          335
+          -
+          335
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          8
+        </td>
+        <td>
+          1654
+        </td>
+        <td>
+          394
+          -
+          394
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function2.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a, b)
+        </td>
+      </tr><tr>
+        <td>
+          9
+        </td>
+        <td>
+          1656
+        </td>
+        <td>
+          531
+          -
+          531
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function2.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a, b)
+        </td>
+      </tr><tr>
+        <td>
+          9
+        </td>
+        <td>
+          1657
+        </td>
+        <td>
+          474
+          -
+          474
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          10
+        </td>
+        <td>
+          1659
+        </td>
+        <td>
+          616
+          -
+          616
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          10
+        </td>
+        <td>
+          1658
+        </td>
+        <td>
+          672
+          -
+          672
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function2.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a, b)
+        </td>
+      </tr><tr>
+        <td>
+          11
+        </td>
+        <td>
+          1661
+        </td>
+        <td>
+          749
+          -
+          749
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          11
+        </td>
+        <td>
+          1660
+        </td>
+        <td>
+          801
+          -
+          801
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function0.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply()
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          1662
+        </td>
+        <td>
+          908
+          -
+          908
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a)
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          1663
+        </td>
+        <td>
+          862
+          -
+          862
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          13
+        </td>
+        <td>
+          1665
+        </td>
+        <td>
+          1005
+          -
+          1005
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          13
+        </td>
+        <td>
+          1664
+        </td>
+        <td>
+          1083
+          -
+          1083
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function2.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a, b)
+        </td>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          1667
+        </td>
+        <td>
+          1159
+          -
+          1159
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          1666
+        </td>
+        <td>
+          1213
+          -
+          1213
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a)
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          1668
+        </td>
+        <td>
+          1345
+          -
+          1345
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a)
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          1669
+        </td>
+        <td>
+          1289
+          -
+          1289
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          1671
+        </td>
+        <td>
+          1423
+          -
+          1423
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          1670
+        </td>
+        <td>
+          1476
+          -
+          1476
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a)
+        </td>
+      </tr><tr>
+        <td>
+          17
+        </td>
+        <td>
+          1673
+        </td>
+        <td>
+          1547
+          -
+          1547
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          17
+        </td>
+        <td>
+          1672
+        </td>
+        <td>
+          1597
+          -
+          1597
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function0.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply()
+        </td>
+      </tr><tr>
+        <td>
+          18
+        </td>
+        <td>
+          1674
+        </td>
+        <td>
+          1741
+          -
+          1741
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a)
+        </td>
+      </tr><tr>
+        <td>
+          18
+        </td>
+        <td>
+          1675
+        </td>
+        <td>
+          1678
+          -
+          1678
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          1677
+        </td>
+        <td>
+          1826
+          -
+          1826
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          1676
+        </td>
+        <td>
+          1891
+          -
+          1891
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a)
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          1679
+        </td>
+        <td>
+          1976
+          -
+          1976
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          1678
+        </td>
+        <td>
+          2042
+          -
+          2042
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a)
+        </td>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          1680
+        </td>
+        <td>
+          2155
+          -
+          2155
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td style="background: #AEF1AE">
+          f.apply(a)
+        </td>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          1681
+        </td>
+        <td>
+          2107
+          -
+          2107
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          1683
+        </td>
+        <td>
+          2237
+          -
+          2237
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          1682
+        </td>
+        <td>
+          2303
+          -
+          2303
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function2.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a, b)
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          1685
+        </td>
+        <td>
+          2370
+          -
+          2370
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          1684
+        </td>
+        <td>
+          2418
+          -
+          2418
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a)
+        </td>
+      </tr><tr>
+        <td>
+          24
+        </td>
+        <td>
+          1686
+        </td>
+        <td>
+          2535
+          -
+          2535
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a)
+        </td>
+      </tr><tr>
+        <td>
+          24
+        </td>
+        <td>
+          1687
+        </td>
+        <td>
+          2485
+          -
+          2485
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          1689
+        </td>
+        <td>
+          2604
+          -
+          2604
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          1688
+        </td>
+        <td>
+          2651
+          -
+          2651
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a)
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          1691
+        </td>
+        <td>
+          2713
+          -
+          2713
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          1690
+        </td>
+        <td>
+          2757
+          -
+          2757
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function0.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply()
+        </td>
+      </tr><tr>
+        <td>
+          27
+        </td>
+        <td>
+          1692
+        </td>
+        <td>
+          2901
+          -
+          2901
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a)
+        </td>
+      </tr><tr>
+        <td>
+          27
+        </td>
+        <td>
+          1693
+        </td>
+        <td>
+          2838
+          -
+          2838
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          1695
+        </td>
+        <td>
+          2977
+          -
+          2977
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          1694
+        </td>
+        <td>
+          3036
+          -
+          3036
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a)
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          1697
+        </td>
+        <td>
+          3109
+          -
+          3109
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          1696
+        </td>
+        <td>
+          3166
+          -
+          3166
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a)
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          1698
+        </td>
+        <td>
+          3323
+          -
+          3323
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function2.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a, b)
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          1699
+        </td>
+        <td>
+          3253
+          -
+          3253
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          1701
+        </td>
+        <td>
+          3393
+          -
+          3393
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          1700
+        </td>
+        <td>
+          3443
+          -
+          3443
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a)
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          1703
+        </td>
+        <td>
+          3513
+          -
+          3513
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          1702
+        </td>
+        <td>
+          3565
+          -
+          3565
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a)
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          1704
+        </td>
+        <td>
+          3686
+          -
+          3686
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a)
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          1705
+        </td>
+        <td>
+          3637
+          -
+          3637
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          1707
+        </td>
+        <td>
+          3751
+          -
+          3751
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          1706
+        </td>
+        <td>
+          3797
+          -
+          3797
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function0.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply()
+        </td>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          1709
+        </td>
+        <td>
+          3881
+          -
+          3881
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          1708
+        </td>
+        <td>
+          3946
+          -
+          3946
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a)
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          1710
+        </td>
+        <td>
+          4081
+          -
+          4081
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a)
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          1711
+        </td>
+        <td>
+          4022
+          -
+          4022
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          1713
+        </td>
+        <td>
+          4158
+          -
+          4158
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          1712
+        </td>
+        <td>
+          4218
+          -
+          4218
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a)
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          1715
+        </td>
+        <td>
+          4308
+          -
+          4308
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          1714
+        </td>
+        <td>
+          4374
+          -
+          4374
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function2.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a, b)
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          1716
+        </td>
+        <td>
+          4518
+          -
+          4518
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function2.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a, b)
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          1717
+        </td>
+        <td>
+          4458
+          -
+          4458
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          1719
+        </td>
+        <td>
+          4605
+          -
+          4605
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          1718
+        </td>
+        <td>
+          4667
+          -
+          4667
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function2.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a, b)
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          1721
+        </td>
+        <td>
+          4737
+          -
+          4737
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          1720
+        </td>
+        <td>
+          4782
+          -
+          4782
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a)
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          1722
+        </td>
+        <td>
+          4881
+          -
+          4881
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function0.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply()
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          1723
+        </td>
+        <td>
+          4842
+          -
+          4842
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          1725
+        </td>
+        <td>
+          4975
+          -
+          4975
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          1724
+        </td>
+        <td>
+          5047
+          -
+          5047
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function2.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a, b)
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          1727
+        </td>
+        <td>
+          5130
+          -
+          5130
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          1726
+        </td>
+        <td>
+          5191
+          -
+          5191
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a)
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          1728
+        </td>
+        <td>
+          5343
+          -
+          5343
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function2.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a, b)
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          1729
+        </td>
+        <td>
+          5277
+          -
+          5277
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          1731
+        </td>
+        <td>
+          5417
+          -
+          5417
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          1730
+        </td>
+        <td>
+          5472
+          -
+          5472
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a)
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          1733
+        </td>
+        <td>
+          5561
+          -
+          5561
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          1732
+        </td>
+        <td>
+          5629
+          -
+          5629
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function2.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a, b)
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          1734
+        </td>
+        <td>
+          5763
+          -
+          5763
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a)
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          1735
+        </td>
+        <td>
+          5706
+          -
+          5706
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          1737
+        </td>
+        <td>
+          5832
+          -
+          5832
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          xuwei_k.Scala2Java8.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          1736
+        </td>
+        <td>
+          5882
+          -
+          5882
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td style="background: #F0ADAD">
+          f.apply(a)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

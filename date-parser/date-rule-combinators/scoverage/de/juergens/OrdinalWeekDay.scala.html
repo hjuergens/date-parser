@@ -1,0 +1,484 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          de/juergens/OrdinalWeekDay.scala.html
+        </title>
+        <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css"/>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.18.3/addons/pager/jquery.tablesorter.pager.min.js"></script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier;'>1 <span style=''>/*
+</span>2 <span style=''> *
+</span>3 <span style=''> *  Licensed to the Apache Software Foundation (ASF) under one
+</span>4 <span style=''> *  or more contributor license agreements.  See the NOTICE file
+</span>5 <span style=''> *  distributed with this work for additional information
+</span>6 <span style=''> *  regarding copyright ownership.  The ASF licenses this file
+</span>7 <span style=''> *  to you under the Apache License, Version 2.0 (the
+</span>8 <span style=''> *  "License"); you may not use this file except in compliance
+</span>9 <span style=''> *  with the License.  You may obtain a copy of the License at
+</span>10 <span style=''> *
+</span>11 <span style=''> *   http://www.apache.org/licenses/LICENSE-2.0
+</span>12 <span style=''> *
+</span>13 <span style=''> *  Unless required by applicable law or agreed to in writing,
+</span>14 <span style=''> *  software distributed under the License is distributed on an
+</span>15 <span style=''> *  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+</span>16 <span style=''> *  KIND, either express or implied.  See the License for the
+</span>17 <span style=''> *  specific language governing permissions and limitations
+</span>18 <span style=''> *  under the License.
+</span>19 <span style=''> *
+</span>20 <span style=''> *
+</span>21 <span style=''> */
+</span>22 <span style=''>
+</span>23 <span style=''>package de.juergens
+</span>24 <span style=''>
+</span>25 <span style=''>import java.time.temporal._
+</span>26 <span style=''>
+</span>27 <span style=''>import de.juergens.rule.WeekDayPredicate
+</span>28 <span style=''>import de.juergens.time.temporal.LocalDateAdjuster
+</span>29 <span style=''>import de.juergens.util.Ordinal
+</span>30 <span style=''>
+</span>31 <span style=''>case class Ordinal_WeekDay(ordinal:Ordinal, weekDayPredicate: WeekDayPredicate)
+</span>32 <span style=''>  extends OrdinalAttribute(ordinal, weekDayPredicate.evaluate)
+</span>33 <span style=''>  with LocalDateAdjuster
+</span>34 <span style=''>{
+</span>35 <span style=''>
+</span>36 <span style=''>  val Ordinal(number) = ordinal
+</span>37 <span style=''>
+</span>38 <span style=''>  val shifter = time.impl.DateShifter(weekDayPredicate.test)
+</span>39 <span style=''>
+</span>40 <span style=''>  def forward(count:Int) = new TemporalQuery[Temporal] {
+</span>41 <span style=''>    override def queryFrom(temporal: TemporalAccessor): Temporal =
+</span>42 <span style=''>    {
+</span>43 <span style=''>      TemporalQueries.localDate().queryFrom(temporal)
+</span>44 <span style=''>        .`with`(TemporalAdjusters.nextOrSame(weekDayPredicate.weekDay))
+</span>45 <span style=''>        .plusWeeks(count</span><span style='background: #F0ADAD'>-</span><span style=''>1)
+</span>46 <span style=''>    }
+</span>47 <span style=''>  }
+</span>48 <span style=''>  def backward(count:Int) = new TemporalQuery[Temporal] {
+</span>49 <span style=''>    override def queryFrom(temporal: TemporalAccessor): Temporal =
+</span>50 <span style=''>    {
+</span>51 <span style=''>      TemporalQueries.localDate().queryFrom(temporal)
+</span>52 <span style=''>        .`with`(TemporalAdjusters.previousOrSame(weekDayPredicate.weekDay))
+</span>53 <span style=''>        .minusWeeks(count</span><span style='background: #F0ADAD'>-</span><span style=''>1)
+</span>54 <span style=''>    }
+</span>55 <span style=''>  }
+</span>56 <span style=''>  override def adjustInto(anchor: Temporal): Temporal = {
+</span>57 <span style=''>    (number match {
+</span>58 <span style=''>      case i if i > 0 => forward(i)
+</span>59 <span style=''>      case i if i < 0 => backward(-i)
+</span>60 <span style=''>      case _ => TemporalQueries.localDate()
+</span>61 <span style=''>    }).queryFrom(anchor)
+</span>62 <span style=''>
+</span>63 <span style=''>    /*
+</span>64 <span style=''>    var date = anchor
+</span>65 <span style=''>    val currentWeekday : DayOfWeek = DayOfWeek(anchor.get(ChronoField.DAY_OF_WEEK))
+</span>66 <span style=''>    val destinationWeekday : DayOfWeek  = weekDayPredicate.weekDay
+</span>67 <span style=''>    val dayShifter = DayShifter(destinationWeekday distance currentWeekday match {
+</span>68 <span style=''>      case days if days < 0 => days + 7
+</span>69 <span style=''>      case days if days > 0 => days
+</span>70 <span style=''>    })
+</span>71 <span style=''>
+</span>72 <span style=''>    if(number > 0) date = dayShifter.adjustInto(date)
+</span>73 <span style=''>    if(number > 1)
+</span>74 <span style=''>      date = WeekShifter(number-1).adjustInto(date)
+</span>75 <span style=''>
+</span>76 <span style=''>    date
+</span>77 <span style=''>    */
+</span>78 <span style=''>  }
+</span>79 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          1
+        </td>
+        <td>
+          1201
+          -
+          1201
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.Ordinal_WeekDay.ordinal
+        </td>
+        <td style="background: #F0ADAD">
+          Ordinal_WeekDay.this.ordinal
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          2
+        </td>
+        <td>
+          1265
+          -
+          1265
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.rule.WeekDayPredicate.test
+        </td>
+        <td style="background: #F0ADAD">
+          Ordinal_WeekDay.this.weekDayPredicate.test(t)
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          4
+        </td>
+        <td>
+          1247
+          -
+          1247
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.time.impl.DateShifter.apply
+        </td>
+        <td style="background: #F0ADAD">
+          time.impl.DateShifter.apply({
+  ((t: java.time.temporal.Temporal) =&gt; Ordinal_WeekDay.this.weekDayPredicate.test(t))
+}, time.impl.DateShifter.apply$default$2)
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          3
+        </td>
+        <td>
+          1236
+          -
+          1236
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.time.impl.DateShifter.apply$default$2
+        </td>
+        <td style="background: #F0ADAD">
+          time.impl.DateShifter.apply$default$2
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          10
+        </td>
+        <td>
+          1299
+          -
+          1299
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.Ordinal_WeekDay.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          5
+        </td>
+        <td>
+          1518
+          -
+          1518
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.rule.WeekDayPredicate.weekDay
+        </td>
+        <td style="background: #F0ADAD">
+          Ordinal_WeekDay.this.weekDayPredicate.weekDay
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          6
+        </td>
+        <td>
+          1500
+          -
+          1500
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjusters.nextOrSame
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.temporal.TemporalAdjusters.nextOrSame(Ordinal_WeekDay.this.weekDayPredicate.weekDay)
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          8
+        </td>
+        <td>
+          1552
+          -
+          1553
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Int.toLong
+        </td>
+        <td style="background: #F0ADAD">
+          count.-(1).toLong
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          7
+        </td>
+        <td>
+          1553
+          -
+          1553
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          9
+        </td>
+        <td>
+          1546
+          -
+          1546
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.LocalDate.plusWeeks
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.temporal.TemporalQueries.localDate().queryFrom(temporal).`with`(java.time.temporal.TemporalAdjusters.nextOrSame(Ordinal_WeekDay.this.weekDayPredicate.weekDay)).plusWeeks(count.-(1).toLong)
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          16
+        </td>
+        <td>
+          1594
+          -
+          1594
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.Ordinal_WeekDay.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          11
+        </td>
+        <td>
+          1817
+          -
+          1817
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.rule.WeekDayPredicate.weekDay
+        </td>
+        <td style="background: #F0ADAD">
+          Ordinal_WeekDay.this.weekDayPredicate.weekDay
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          12
+        </td>
+        <td>
+          1799
+          -
+          1799
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjusters.previousOrSame
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.temporal.TemporalAdjusters.previousOrSame(Ordinal_WeekDay.this.weekDayPredicate.weekDay)
+        </td>
+      </tr><tr>
+        <td>
+          53
+        </td>
+        <td>
+          14
+        </td>
+        <td>
+          1852
+          -
+          1853
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Int.toLong
+        </td>
+        <td style="background: #F0ADAD">
+          count.-(1).toLong
+        </td>
+      </tr><tr>
+        <td>
+          53
+        </td>
+        <td>
+          13
+        </td>
+        <td>
+          1853
+          -
+          1853
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          53
+        </td>
+        <td>
+          15
+        </td>
+        <td>
+          1846
+          -
+          1846
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.LocalDate.minusWeeks
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.temporal.TemporalQueries.localDate().queryFrom(temporal).`with`(java.time.temporal.TemporalAdjusters.previousOrSame(Ordinal_WeekDay.this.weekDayPredicate.weekDay)).minusWeeks(count.-(1).toLong)
+        </td>
+      </tr><tr>
+        <td>
+          61
+        </td>
+        <td>
+          17
+        </td>
+        <td>
+          2078
+          -
+          2078
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalQuery.queryFrom
+        </td>
+        <td style="background: #F0ADAD">
+          Ordinal_WeekDay.this.number match {
+  case (i @ _) if i.&gt;(0) =&gt; Ordinal_WeekDay.this.forward(i)
+  case (i @ _) if i.&lt;(0) =&gt; Ordinal_WeekDay.this.backward(i.unary_-)
+  case _ =&gt; java.time.temporal.TemporalQueries.localDate()
+}.queryFrom(anchor)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

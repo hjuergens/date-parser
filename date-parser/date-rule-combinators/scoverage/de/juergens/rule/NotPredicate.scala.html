@@ -1,0 +1,160 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          de/juergens/rule/NotPredicate.scala.html
+        </title>
+        <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css"/>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.18.3/addons/pager/jquery.tablesorter.pager.min.js"></script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier;'>1 <span style=''>/*
+</span>2 <span style=''> *
+</span>3 <span style=''> *  Licensed to the Apache Software Foundation (ASF) under one
+</span>4 <span style=''> *  or more contributor license agreements.  See the NOTICE file
+</span>5 <span style=''> *  distributed with this work for additional information
+</span>6 <span style=''> *  regarding copyright ownership.  The ASF licenses this file
+</span>7 <span style=''> *  to you under the Apache License, Version 2.0 (the
+</span>8 <span style=''> *  "License"); you may not use this file except in compliance
+</span>9 <span style=''> *  with the License.  You may obtain a copy of the License at
+</span>10 <span style=''> *
+</span>11 <span style=''> *   http://www.apache.org/licenses/LICENSE-2.0
+</span>12 <span style=''> *
+</span>13 <span style=''> *  Unless required by applicable law or agreed to in writing,
+</span>14 <span style=''> *  software distributed under the License is distributed on an
+</span>15 <span style=''> *  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+</span>16 <span style=''> *  KIND, either express or implied.  See the License for the
+</span>17 <span style=''> *  specific language governing permissions and limitations
+</span>18 <span style=''> *  under the License.
+</span>19 <span style=''> *
+</span>20 <span style=''> *
+</span>21 <span style=''> */
+</span>22 <span style=''>
+</span>23 <span style=''>package de.juergens.rule
+</span>24 <span style=''>
+</span>25 <span style=''>import java.util.function.Predicate
+</span>26 <span style=''>import scala.languageFeature.implicitConversions
+</span>27 <span style=''>/**
+</span>28 <span style=''> * Created by juergens on 05.09.15.
+</span>29 <span style=''> */
+</span>30 <span style=''>case class NotPredicate[T](predicate: Predicate[T]) extends Predicate[T] {
+</span>31 <span style=''>  def test(t: T) = predicate.negate().test(t) // !predicate.test(t)
+</span>32 <span style=''>
+</span>33 <span style=''>  override def toString = "NOT" </span><span style='background: #F0ADAD'>+</span><span style=''> predicate
+</span>34 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          51
+        </td>
+        <td>
+          1103
+          -
+          1103
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.function.Predicate.test
+        </td>
+        <td style="background: #F0ADAD">
+          NotPredicate.this.predicate.negate().test(t)
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          53
+        </td>
+        <td>
+          1164
+          -
+          1164
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.rule.NotPredicate.predicate
+        </td>
+        <td style="background: #F0ADAD">
+          NotPredicate.this.predicate
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          52
+        </td>
+        <td>
+          1156
+          -
+          1156
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;NOT&quot;
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          54
+        </td>
+        <td>
+          1162
+          -
+          1163
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;NOT&quot;.+(NotPredicate.this.predicate)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

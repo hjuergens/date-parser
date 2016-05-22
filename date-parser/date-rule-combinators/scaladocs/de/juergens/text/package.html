@@ -1,0 +1,381 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>text - date-rule-combinators 0.0.4-SNAPSHOT API - de.juergens.text</title>
+          <meta name="description" content="text - date - rule - combinators 0.0.4 - SNAPSHOT API - de.juergens.text" />
+          <meta name="keywords" content="text date rule combinators 0.0.4 SNAPSHOT API de.juergens.text" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../index.html';
+            var hash = 'de.juergens.text.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img src="../../../lib/package_big.png" />
+        <p id="owner"><a href="../../package.html" class="extype" name="de">de</a>.<a href="../package.html" class="extype" name="de.juergens">juergens</a></p>
+        <h1>text</h1> <span class="permalink">
+      <a href="../../../index.html#de.juergens.text.package" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">text</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="de.juergens.text.CardinalParsers" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="CardinalParsersextendsRegexParsers"></a>
+      <a id="CardinalParsers:CardinalParsers"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="CardinalParsers.html"><span class="name">CardinalParsers</span></a><span class="result"> extends <span class="extype" name="scala.util.parsing.combinator.RegexParsers">RegexParsers</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#de.juergens.text.package@CardinalParsersextendsRegexParsers" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="de.juergens.text.DateParser" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DateParserextendsJavaTokenParserswithExtendedRegexParsers"></a>
+      <a id="DateParser:DateParser"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DateParser.html"><span class="name">DateParser</span></a><span class="result"> extends <span class="extype" name="scala.util.parsing.combinator.JavaTokenParsers">JavaTokenParsers</span> with <a href="ExtendedRegexParsers.html" class="extype" name="de.juergens.text.ExtendedRegexParsers">ExtendedRegexParsers</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#de.juergens.text.package@DateParserextendsJavaTokenParserswithExtendedRegexParsers" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="de.juergens.text.DateRuleParsers" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DateRuleParsersextendsJavaTokenParserswithNumberParserswithExtendedRegexParserswithEveryParsers"></a>
+      <a id="DateRuleParsers:DateRuleParsers"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DateRuleParsers.html"><span class="name">DateRuleParsers</span></a><span class="result"> extends <span class="extype" name="scala.util.parsing.combinator.JavaTokenParsers">JavaTokenParsers</span> with <a href="NumberParsers.html" class="extype" name="de.juergens.text.NumberParsers">NumberParsers</a> with <a href="ExtendedRegexParsers.html" class="extype" name="de.juergens.text.ExtendedRegexParsers">ExtendedRegexParsers</a> with <a href="EveryParsers.html" class="extype" name="de.juergens.text.EveryParsers">EveryParsers</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#de.juergens.text.package@DateRuleParsersextendsJavaTokenParserswithNumberParserswithExtendedRegexParserswithEveryParsers" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">date: on 27.05.15</p>
+    </li><li name="de.juergens.text.EveryParsers" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="EveryParsersextendsJavaTokenParserswithExtendedRegexParsers"></a>
+      <a id="EveryParsers:EveryParsers"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="EveryParsers.html"><span class="name">EveryParsers</span></a><span class="result"> extends <span class="extype" name="scala.util.parsing.combinator.JavaTokenParsers">JavaTokenParsers</span> with <a href="ExtendedRegexParsers.html" class="extype" name="de.juergens.text.ExtendedRegexParsers">ExtendedRegexParsers</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#de.juergens.text.package@EveryParsersextendsJavaTokenParserswithExtendedRegexParsers" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Every
+</p>
+    </li><li name="de.juergens.text.ExtendedRegexParsers" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="ExtendedRegexParsersextendsAnyRef"></a>
+      <a id="ExtendedRegexParsers:ExtendedRegexParsers"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="ExtendedRegexParsers.html"><span class="name">ExtendedRegexParsers</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#de.juergens.text.package@ExtendedRegexParsersextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Helper trait
+</p>
+    </li><li name="de.juergens.text.FinancialParsers" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="FinancialParsersextendsJavaTokenParsers"></a>
+      <a id="FinancialParsers:FinancialParsers"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="FinancialParsers.html"><span class="name">FinancialParsers</span></a><span class="result"> extends <span class="extype" name="scala.util.parsing.combinator.JavaTokenParsers">JavaTokenParsers</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#de.juergens.text.package@FinancialParsersextendsJavaTokenParsers" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="de.juergens.text.NumberParsers" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="NumberParsersextendsRegexParserswithCardinalParserswithOrdinalParsers"></a>
+      <a id="NumberParsers:NumberParsers"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="NumberParsers.html"><span class="name">NumberParsers</span></a><span class="result"> extends <span class="extype" name="scala.util.parsing.combinator.RegexParsers">RegexParsers</span> with <a href="CardinalParsers.html" class="extype" name="de.juergens.text.CardinalParsers">CardinalParsers</a> with <a href="OrdinalParsers.html" class="extype" name="de.juergens.text.OrdinalParsers">OrdinalParsers</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#de.juergens.text.package@NumberParsersextendsRegexParserswithCardinalParserswithOrdinalParsers" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="de.juergens.text.OrdinalParsers" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="OrdinalParsersextendsRegexParserswithExtendedRegexParsers"></a>
+      <a id="OrdinalParsers:OrdinalParsers"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="OrdinalParsers.html"><span class="name">OrdinalParsers</span></a><span class="result"> extends <span class="extype" name="scala.util.parsing.combinator.RegexParsers">RegexParsers</span> with <a href="ExtendedRegexParsers.html" class="extype" name="de.juergens.text.ExtendedRegexParsers">ExtendedRegexParsers</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#de.juergens.text.package@OrdinalParsersextendsRegexParserswithExtendedRegexParsers" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="de.juergens.text.SeasonParsers" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="SeasonParsersextendsJavaTokenParserswithExtendedRegexParsers"></a>
+      <a id="SeasonParsers:SeasonParsers"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="SeasonParsers.html"><span class="name">SeasonParsers</span></a><span class="result"> extends <span class="extype" name="scala.util.parsing.combinator.JavaTokenParsers">JavaTokenParsers</span> with <a href="ExtendedRegexParsers.html" class="extype" name="de.juergens.text.ExtendedRegexParsers">ExtendedRegexParsers</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#de.juergens.text.package@SeasonParsersextendsJavaTokenParserswithExtendedRegexParsers" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Season
+</p>
+    </li><li name="de.juergens.text.TemporalAdjustersParsers" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TemporalAdjustersParsersextendsJavaTokenParserswithExtendedRegexParsers"></a>
+      <a id="TemporalAdjustersParsers:TemporalAdjustersParsers"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TemporalAdjustersParsers.html"><span class="name">TemporalAdjustersParsers</span></a><span class="result"> extends <span class="extype" name="scala.util.parsing.combinator.JavaTokenParsers">JavaTokenParsers</span> with <a href="ExtendedRegexParsers.html" class="extype" name="de.juergens.text.ExtendedRegexParsers">ExtendedRegexParsers</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#de.juergens.text.package@TemporalAdjustersParsersextendsJavaTokenParserswithExtendedRegexParsers" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">This parers make direct use of the functions in <span class="extype" name="java.time.temporal.TemporalAdjusters">java.time.temporal.TemporalAdjusters</span>.</p>
+    </li><li name="de.juergens.text.TermParsers" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TermParsersextendsJavaTokenParsers"></a>
+      <a id="TermParsers:TermParsers"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TermParsers.html"><span class="name">TermParsers</span></a><span class="result"> extends <span class="extype" name="scala.util.parsing.combinator.JavaTokenParsers">JavaTokenParsers</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#de.juergens.text.package@TermParsersextendsJavaTokenParsers" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="de.juergens.text.DayOfWeekFormat" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DayOfWeekFormat"></a>
+      <a id="DayOfWeekFormat:DayOfWeekFormat"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="DayOfWeekFormat$.html"><span class="name">DayOfWeekFormat</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#de.juergens.text.package@DayOfWeekFormat" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="de.juergens.text.MonthFormat" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MonthFormat"></a>
+      <a id="MonthFormat:MonthFormat"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="MonthFormat$.html"><span class="name">MonthFormat</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#de.juergens.text.package@MonthFormat" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt"> M/L     month-of-year               number/text       7; 07; Jul; July; J
+</p>
+    </li><li name="de.juergens.text.ParseTerm" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ParseTerm"></a>
+      <a id="ParseTerm:ParseTerm"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ParseTerm$.html"><span class="name">ParseTerm</span></a><span class="result"> extends <a href="TermParsers.html" class="extype" name="de.juergens.text.TermParsers">TermParsers</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#de.juergens.text.package@ParseTerm" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="de.juergens.text.QuarterOfYearFormat" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="QuarterOfYearFormat"></a>
+      <a id="QuarterOfYearFormat:QuarterOfYearFormat"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="QuarterOfYearFormat$.html"><span class="name">QuarterOfYearFormat</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#de.juergens.text.package@QuarterOfYearFormat" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Q/q     quarter-of-year             number/text       3; 03; Q3; 3rd quarter
+</p>
+    </li><li name="de.juergens.text.TemporalInterval" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TemporalInterval"></a>
+      <a id="TemporalInterval:TemporalInterval"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TemporalInterval$.html"><span class="name">TemporalInterval</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#de.juergens.text.package@TemporalInterval" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

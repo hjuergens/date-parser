@@ -1,0 +1,322 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          de/juergens/time/TimeUnit.scala.html
+        </title>
+        <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css"/>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.18.3/addons/pager/jquery.tablesorter.pager.min.js"></script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier;'>1 <span style=''>/*
+</span>2 <span style=''> * Copyright 2015 Hartmut Jürgens
+</span>3 <span style=''> *
+</span>4 <span style=''> * Licensed under the Apache License, Version 2.0 (the "License");
+</span>5 <span style=''> * you may not use this file except in compliance with the License.
+</span>6 <span style=''> * You may obtain a copy of the License at
+</span>7 <span style=''> *
+</span>8 <span style=''> *     http://www.apache.org/licenses/LICENSE-2.0
+</span>9 <span style=''> *
+</span>10 <span style=''> * Unless required by applicable law or agreed to in writing, software
+</span>11 <span style=''> * distributed under the License is distributed on an "AS IS" BASIS,
+</span>12 <span style=''> * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+</span>13 <span style=''> * See the License for the specific language governing permissions and
+</span>14 <span style=''> * limitations under the License.
+</span>15 <span style=''> */
+</span>16 <span style=''>
+</span>17 <span style=''>/*
+</span>18 <span style=''> * To change this license header, choose License Headers in Project Properties.
+</span>19 <span style=''> * To change this template file, choose Tools | Templates
+</span>20 <span style=''> * and open the template in the editor.
+</span>21 <span style=''> */
+</span>22 <span style=''>package de.juergens.time
+</span>23 <span style=''>
+</span>24 <span style=''>import java.time.temporal._
+</span>25 <span style=''>import de.juergens.time.{DateHelper => _ }
+</span>26 <span style=''>import java.time.Duration
+</span>27 <span style=''>
+</span>28 <span style=''>import de.juergens.time.{DateHelper => _}
+</span>29 <span style=''>
+</span>30 <span style=''>/**
+</span>31 <span style=''> *
+</span>32 <span style=''> * @author juergens
+</span>33 <span style=''> */
+</span>34 <span style=''>object TimeUnit {
+</span>35 <span style=''>  def apply(str: String): TemporalUnit = str match {
+</span>36 <span style=''>    case "day" | "days" | "day(s)" => ChronoUnit.DAYS
+</span>37 <span style=''>    case "week" | "weeks" | "week(s)" => ChronoUnit.WEEKS
+</span>38 <span style=''>    case "month" | "months" | "month(s)" => ChronoUnit.MONTHS
+</span>39 <span style=''>    case "year" | "years" | "year(s)" => ChronoUnit.YEARS
+</span>40 <span style=''>  }
+</span>41 <span style=''>
+</span>42 <span style=''>  def unapply(unit: TemporalUnit): Option[String] = PartialFunction.condOpt(unit) {
+</span>43 <span style=''>    case ChronoUnit.DAYS => "day(s)"
+</span>44 <span style=''>    case ChronoUnit.WEEKS => "week(s)"
+</span>45 <span style=''>    case ChronoUnit.MONTHS => "month(s)"
+</span>46 <span style=''>    case ChronoUnit.YEARS => "year(s)"
+</span>47 <span style=''>  }
+</span>48 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          980
+        </td>
+        <td>
+          1103
+          -
+          1103
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          DAYS
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          981
+        </td>
+        <td>
+          1160
+          -
+          1160
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          WEEKS
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          982
+        </td>
+        <td>
+          1221
+          -
+          1221
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          MONTHS
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          983
+        </td>
+        <td>
+          1280
+          -
+          1280
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          YEARS
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          989
+        </td>
+        <td>
+          1373
+          -
+          1373
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.PartialFunction.condOpt
+        </td>
+        <td style="background: #F0ADAD">
+          scala.PartialFunction.condOpt[java.time.temporal.TemporalUnit, String](unit)(({
+  @SerialVersionUID(0) final &lt;synthetic&gt; class $anonfun extends scala.runtime.AbstractPartialFunction[java.time.temporal.TemporalUnit,String] with Serializable {
+    def &lt;init&gt;(): &lt;$anon: java.time.temporal.TemporalUnit =&gt; String&gt; = {
+      $anonfun.super.&lt;init&gt;();
+      ()
+    };
+    final override def applyOrElse[A1 &lt;: java.time.temporal.TemporalUnit, B1 &gt;: String](x1: A1, default: A1 =&gt; B1): B1 = ((x1.asInstanceOf[java.time.temporal.TemporalUnit]: java.time.temporal.TemporalUnit): java.time.temporal.TemporalUnit @unchecked) match {
+      case DAYS =&gt; &quot;day(s)&quot;
+      case WEEKS =&gt; &quot;week(s)&quot;
+      case MONTHS =&gt; &quot;month(s)&quot;
+      case YEARS =&gt; &quot;year(s)&quot;
+      case (defaultCase$ @ _) =&gt; default.apply(x1)
+    };
+    final def isDefinedAt(x1: java.time.temporal.TemporalUnit): Boolean = ((x1.asInstanceOf[java.time.temporal.TemporalUnit]: java.time.temporal.TemporalUnit): java.time.temporal.TemporalUnit @unchecked) match {
+      case DAYS =&gt; true
+      case WEEKS =&gt; true
+      case MONTHS =&gt; true
+      case YEARS =&gt; true
+      case (defaultCase$ @ _) =&gt; false
+    }
+  };
+  new $anonfun()
+}: PartialFunction[java.time.temporal.TemporalUnit,String]))
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          988
+        </td>
+        <td>
+          1373
+          -
+          1373
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.time.TimeUnit.$anonfun.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anonfun()
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          984
+        </td>
+        <td>
+          1403
+          -
+          1403
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;day(s)&quot;
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          985
+        </td>
+        <td>
+          1441
+          -
+          1441
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;week(s)&quot;
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          986
+        </td>
+        <td>
+          1481
+          -
+          1481
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;month(s)&quot;
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          987
+        </td>
+        <td>
+          1521
+          -
+          1521
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;year(s)&quot;
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

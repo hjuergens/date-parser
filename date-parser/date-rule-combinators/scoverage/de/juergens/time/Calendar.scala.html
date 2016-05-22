@@ -1,0 +1,374 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          de/juergens/time/Calendar.scala.html
+        </title>
+        <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css"/>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.18.3/addons/pager/jquery.tablesorter.pager.min.js"></script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier;'>1 <span style=''>package de.juergens.time
+</span>2 <span style=''>
+</span>3 <span style=''>import java.time.temporal._
+</span>4 <span style=''>import java.time.{Duration, LocalDate, Period}
+</span>5 <span style=''>import java.util.function.UnaryOperator
+</span>6 <span style=''>
+</span>7 <span style=''>object PeriodDuration {
+</span>8 <span style=''>  @deprecated("use java.time direct instead", "0.0.4")
+</span>9 <span style=''>  def of(count: Int, unit: TemporalUnit) : TemporalAmount = unit match {
+</span>10 <span style=''>    case ChronoUnit.DAYS =>  Period.ofDays(count)
+</span>11 <span style=''>    case ChronoUnit.WEEKS => Period.ofWeeks(count)
+</span>12 <span style=''>    case ChronoUnit.MONTHS =>Period.ofMonths(count)
+</span>13 <span style=''>    case ChronoUnit.YEARS => Period.ofYears(count)
+</span>14 <span style=''>    case ChronoUnit.HOURS=> Duration.ofHours(count)
+</span>15 <span style=''>    case ChronoUnit.MINUTES=> Duration.ofMinutes(count)
+</span>16 <span style=''>  }
+</span>17 <span style=''>}
+</span>18 <span style=''>
+</span>19 <span style=''>trait Calendar {
+</span>20 <span style=''>
+</span>21 <span style=''>  protected def dateBasedAdjuster(amount: TemporalAmount): UnaryOperator[LocalDate] =
+</span>22 <span style=''>    new UnaryOperator[LocalDate] {
+</span>23 <span style=''>      override def apply(t: LocalDate): LocalDate = advance(t, amount)
+</span>24 <span style=''>    }
+</span>25 <span style=''>
+</span>26 <span style=''>  def adjuster(amount:TemporalAmount) : TemporalAdjuster =
+</span>27 <span style=''>    TemporalAdjusters.ofDateAdjuster(dateBasedAdjuster(amount))
+</span>28 <span style=''>
+</span>29 <span style=''>  def advance(temporal: LocalDate, amount: TemporalAmount): LocalDate
+</span>30 <span style=''>}
+</span>31 <span style=''>
+</span>32 <span style=''>object Calendar {
+</span>33 <span style=''>  val nullCalendar: Calendar = new Calendar {
+</span>34 <span style=''>    def advance(date: LocalDate, period: TemporalAmount): LocalDate = {
+</span>35 <span style=''>      date.plus(period)
+</span>36 <span style=''>    }
+</span>37 <span style=''>  }
+</span>38 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          10
+        </td>
+        <td>
+          812
+        </td>
+        <td>
+          336
+          -
+          336
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.Period.ofDays
+        </td>
+        <td style="background: #AEF1AE">
+          java.time.Period.ofDays(count)
+        </td>
+      </tr><tr>
+        <td>
+          11
+        </td>
+        <td>
+          813
+        </td>
+        <td>
+          387
+          -
+          387
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.Period.ofWeeks
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.Period.ofWeeks(count)
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          814
+        </td>
+        <td>
+          439
+          -
+          439
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.Period.ofMonths
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.Period.ofMonths(count)
+        </td>
+      </tr><tr>
+        <td>
+          13
+        </td>
+        <td>
+          815
+        </td>
+        <td>
+          490
+          -
+          490
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.Period.ofYears
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.Period.ofYears(count)
+        </td>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          817
+        </td>
+        <td>
+          542
+          -
+          542
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.Duration.ofHours
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.Duration.ofHours(count.toLong)
+        </td>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          816
+        </td>
+        <td>
+          543
+          -
+          543
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Int.toLong
+        </td>
+        <td style="background: #F0ADAD">
+          count.toLong
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          819
+        </td>
+        <td>
+          598
+          -
+          598
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.Duration.ofMinutes
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.Duration.ofMinutes(count.toLong)
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          818
+        </td>
+        <td>
+          599
+          -
+          599
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Int.toLong
+        </td>
+        <td style="background: #F0ADAD">
+          count.toLong
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          821
+        </td>
+        <td>
+          721
+          -
+          721
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.time.Calendar.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          820
+        </td>
+        <td>
+          811
+          -
+          811
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.time.Calendar.advance
+        </td>
+        <td style="background: #F0ADAD">
+          Calendar.this.advance(t, amount)
+        </td>
+      </tr><tr>
+        <td>
+          27
+        </td>
+        <td>
+          822
+        </td>
+        <td>
+          943
+          -
+          943
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.time.Calendar.dateBasedAdjuster
+        </td>
+        <td style="background: #F0ADAD">
+          Calendar.this.dateBasedAdjuster(amount)
+        </td>
+      </tr><tr>
+        <td>
+          27
+        </td>
+        <td>
+          823
+        </td>
+        <td>
+          925
+          -
+          925
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjusters.ofDateAdjuster
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.temporal.TemporalAdjusters.ofDateAdjuster(Calendar.this.dateBasedAdjuster(amount))
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          825
+        </td>
+        <td>
+          1076
+          -
+          1076
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.time.Calendar.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          824
+        </td>
+        <td>
+          1178
+          -
+          1178
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.LocalDate.plus
+        </td>
+        <td style="background: #AEF1AE">
+          date.plus(period)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

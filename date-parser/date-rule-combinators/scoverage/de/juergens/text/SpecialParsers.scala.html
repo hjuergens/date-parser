@@ -1,0 +1,3164 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          de/juergens/text/SpecialParsers.scala.html
+        </title>
+        <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css"/>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.18.3/addons/pager/jquery.tablesorter.pager.min.js"></script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier;'>1 <span style=''>/*
+</span>2 <span style=''> * Copyright 2015 Hartmut Jürgens
+</span>3 <span style=''> *
+</span>4 <span style=''> * Licensed under the Apache License, Version 2.0 (the "License");
+</span>5 <span style=''> * you may not use this file except in compliance with the License.
+</span>6 <span style=''> * You may obtain a copy of the License at
+</span>7 <span style=''> *
+</span>8 <span style=''> *     http://www.apache.org/licenses/LICENSE-2.0
+</span>9 <span style=''> *
+</span>10 <span style=''> * Unless required by applicable law or agreed to in writing, software
+</span>11 <span style=''> * distributed under the License is distributed on an "AS IS" BASIS,
+</span>12 <span style=''> * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+</span>13 <span style=''> * See the License for the specific language governing permissions and
+</span>14 <span style=''> * limitations under the License.
+</span>15 <span style=''> */
+</span>16 <span style=''>
+</span>17 <span style=''>package de.juergens.text
+</span>18 <span style=''>
+</span>19 <span style=''>
+</span>20 <span style=''>
+</span>21 <span style=''>
+</span>22 <span style=''>
+</span>23 <span style=''>import scala.util.parsing.combinator.JavaTokenParsers
+</span>24 <span style=''>
+</span>25 <span style=''>trait FinancialParsers extends JavaTokenParsers {
+</span>26 <span style=''>  self : DateRuleParsers =>
+</span>27 <span style=''>
+</span>28 <span style=''>  import java.time.temporal.{Temporal, TemporalUnit, TemporalAdjuster}
+</span>29 <span style=''>  import de.juergens.time.BusinessDay
+</span>30 <span style=''>
+</span>31 <span style=''>  def londonBusinessDayUnit : Parser[Set[Temporal] => TemporalUnit] = ("london business" ~ dayUnit) </span><span style='background: #F0ADAD'>^^</span><span style=''>
+</span>32 <span style=''>    { case _ => (holidays : Set[Temporal]) => BusinessDay.unit(holidays) }
+</span>33 <span style=''>
+</span>34 <span style=''>  def businessDays : Parser[(Set[Temporal]) => TemporalUnit] = ("""business days?""".r) </span><span style='background: #F0ADAD'>^^</span><span style=''>
+</span>35 <span style=''>    { _=>(holidays: Set[Temporal]) => BusinessDay.unit(holidays) }
+</span>36 <span style=''>
+</span>37 <span style=''>  /** e.g. two business days prior */
+</span>38 <span style=''>  def seek3 : Parser[(Set[Temporal]) => TemporalAdjuster] = cardinal </span><span style='background: #F0ADAD'>~ businessDays ~ direction ^^</span><span style=''>
+</span>39 <span style=''>    {
+</span>40 <span style=''>      (x) => (holidays: Set[Temporal]) => new TemporalAdjuster {
+</span>41 <span style=''>        val ~(~(cardinal,businessDays),direction) = x
+</span>42 <span style=''>
+</span>43 <span style=''>        override def adjustInto(temporal: Temporal): Temporal = {
+</span>44 <span style=''>          val unit = businessDays(holidays)
+</span>45 <span style=''>          unit.addTo(temporal, direction </span><span style='background: #F0ADAD'>*</span><span style=''> cardinal)
+</span>46 <span style=''>        }
+</span>47 <span style=''>      }
+</span>48 <span style=''>    }
+</span>49 <span style=''>
+</span>50 <span style=''>
+</span>51 <span style=''>}
+</span>52 <span style=''>
+</span>53 <span style=''>/**
+</span>54 <span style=''>  * Season
+</span>55 <span style=''>  */
+</span>56 <span style=''>trait SeasonParsers  extends JavaTokenParsers with ExtendedRegexParsers {
+</span>57 <span style=''>  self : DateRuleParsers =>
+</span>58 <span style=''>
+</span>59 <span style=''>  import java.time.{LocalDate, MonthDay}
+</span>60 <span style=''>  import java.time.temporal.{TemporalAccessor, TemporalQuery}
+</span>61 <span style=''>  import de.juergens.time.temporal.LocalDateAdjuster
+</span>62 <span style=''>
+</span>63 <span style=''>  def season : Parser[LocalDateAdjuster] = ("spring" | "summer" | "autumn" | "fall" | "winter") </span><span style='background: #F0ADAD'>^^</span><span style=''>
+</span>64 <span style=''>    {
+</span>65 <span style=''>      case "spring" => MonthDay.of(java.time.Month.FEBRUARY,13)
+</span>66 <span style=''>      case "summer" => MonthDay.of(java.time.Month.FEBRUARY,13)
+</span>67 <span style=''>      case "autumn" | "fall"  => MonthDay.of(java.time.Month.FEBRUARY,13)
+</span>68 <span style=''>      case "winter" => MonthDay.of(java.time.Month.FEBRUARY,13)
+</span>69 <span style=''>    }
+</span>70 <span style=''>
+</span>71 <span style=''>  val seasonQuery = new TemporalQuery[(LocalDate,LocalDate)] {
+</span>72 <span style=''>    override def queryFrom(temporal: TemporalAccessor): (LocalDate, LocalDate) = ???
+</span>73 <span style=''>  }
+</span>74 <span style=''>
+</span>75 <span style=''>  def season(dayInMonth:Int, month:Int) : String =
+</span>76 <span style=''>  {
+</span>77 <span style=''>    //The condition when the season start
+</span>78 <span style=''>    if (((month == 12)&&(dayInMonth</span><span style='background: #F0ADAD'>>=</span><span style=''>16))</span><span style='background: #F0ADAD'>||</span><span style=''>((month<=3)</span><span style='background: #F0ADAD'>&&</span><span style=''>(dayInMonth</span><span style='background: #F0ADAD'><=</span><span style=''>15))){
+</span>79 <span style=''>      "Winter"
+</span>80 <span style=''>    }
+</span>81 <span style=''>    else if (((month >= 3)&&(dayInMonth</span><span style='background: #F0ADAD'>>=</span><span style=''>16))</span><span style='background: #F0ADAD'>||</span><span style=''>((month<=6)</span><span style='background: #F0ADAD'>&&</span><span style=''>(dayInMonth</span><span style='background: #F0ADAD'><=</span><span style=''>15))){
+</span>82 <span style=''>      "Spring"
+</span>83 <span style=''>    }
+</span>84 <span style=''>    else if (((month >= 6)&&(dayInMonth</span><span style='background: #F0ADAD'>>=</span><span style=''>16))</span><span style='background: #F0ADAD'>||</span><span style=''>((month<=9)</span><span style='background: #F0ADAD'>&&</span><span style=''>(dayInMonth</span><span style='background: #F0ADAD'><=</span><span style=''>15))){
+</span>85 <span style=''>      "Summer"
+</span>86 <span style=''>    }
+</span>87 <span style=''>    else if (((month >= 9)&&(dayInMonth</span><span style='background: #F0ADAD'>>=</span><span style=''>16))</span><span style='background: #F0ADAD'>||</span><span style=''>((month<=12)</span><span style='background: #F0ADAD'>&&</span><span style=''>(dayInMonth</span><span style='background: #F0ADAD'><=</span><span style=''>15))){
+</span>88 <span style=''>      "Fall"
+</span>89 <span style=''>    }
+</span>90 <span style=''>    else "fail"
+</span>91 <span style=''>  }
+</span>92 <span style=''>
+</span>93 <span style=''>  /*
+</span>94 <span style=''>  private def getNorthernHemisphereSeasonName(date: java.util.Date) : String = {
+</span>95 <span style=''>    val c: java.util.Calendar = java.util.Calendar.getInstance()
+</span>96 <span style=''>    c.setTime(date)
+</span>97 <span style=''>    c.get(java.util.Calendar.MONTH) match {
+</span>98 <span style=''>      case java.util.Calendar.MARCH=>
+</span>99 <span style=''>      if (c.get(java.util.Calendar.DAY_OF_MONTH) > 20) {
+</span>100 <span style=''>         "Spring"
+</span>101 <span style=''>      } else
+</span>102 <span style=''>       "Winter"
+</span>103 <span style=''>      case java.util.Calendar.APRIL=>
+</span>104 <span style=''>      case java.util.Calendar.MAY=>
+</span>105 <span style=''>       "Spring"
+</span>106 <span style=''>      case java.util.Calendar.JUNE=>
+</span>107 <span style=''>      if (c.get(java.util.Calendar.DAY_OF_MONTH) > 20) {
+</span>108 <span style=''>         "Summer"
+</span>109 <span style=''>      }else
+</span>110 <span style=''>       "Spring"
+</span>111 <span style=''>      case java.util.Calendar.JULY=>
+</span>112 <span style=''>      case java.util.Calendar.AUGUST=>
+</span>113 <span style=''>       "Summer"
+</span>114 <span style=''>      case java.util.Calendar.SEPTEMBER=>
+</span>115 <span style=''>      if (c.get(java.util.Calendar.DAY_OF_MONTH) > 20) {
+</span>116 <span style=''>         "Autumn"
+</span>117 <span style=''>      }else
+</span>118 <span style=''>       "Summer"
+</span>119 <span style=''>      case java.util.Calendar.OCTOBER=>
+</span>120 <span style=''>      case java.util.Calendar.NOVEMBER=>
+</span>121 <span style=''>       "Autumn"
+</span>122 <span style=''>      case java.util.Calendar.DECEMBER=>
+</span>123 <span style=''>      if (c.get(java.util.Calendar.DAY_OF_MONTH) < 21) {
+</span>124 <span style=''>         "Autumn"
+</span>125 <span style=''>      }else "Winter"
+</span>126 <span style=''>      case _ => "Winter"
+</span>127 <span style=''>    }
+</span>128 <span style=''>  }
+</span>129 <span style=''>*/
+</span>130 <span style=''>}
+</span>131 <span style=''>
+</span>132 <span style=''>/**
+</span>133 <span style=''>  * This parers make direct use of the functions in [[java.time.temporal.TemporalAdjusters]].
+</span>134 <span style=''>  */
+</span>135 <span style=''>trait TemporalAdjustersParsers  extends JavaTokenParsers with ExtendedRegexParsers {
+</span>136 <span style=''>  self : DateRuleParsers =>
+</span>137 <span style=''>
+</span>138 <span style=''>  import java.time.temporal.TemporalAdjusters
+</span>139 <span style=''>  import de.juergens.time.temporal.LocalDateAdjuster
+</span>140 <span style=''>
+</span>141 <span style=''>  def firstDayOfMonth : Parser[LocalDateAdjuster] = "first day of month" </span><span style='background: #F0ADAD'>^^</span><span style=''>
+</span>142 <span style=''>    {
+</span>143 <span style=''>      case _ => TemporalAdjusters.firstDayOfMonth()
+</span>144 <span style=''>    }
+</span>145 <span style=''>  def lastDayOfMonth : Parser[LocalDateAdjuster] = "last day of month" </span><span style='background: #F0ADAD'>^^</span><span style=''>
+</span>146 <span style=''>    {
+</span>147 <span style=''>      case _ => TemporalAdjusters.lastDayOfMonth()
+</span>148 <span style=''>    }
+</span>149 <span style=''>  def firstDayOfNextMonth : Parser[LocalDateAdjuster]= "first day of next month" </span><span style='background: #F0ADAD'>^^</span><span style=''>
+</span>150 <span style=''>    {
+</span>151 <span style=''>      case _ => TemporalAdjusters.firstDayOfNextMonth()
+</span>152 <span style=''>    }
+</span>153 <span style=''>  def firstDayOfYear : Parser[LocalDateAdjuster] = "first day of year" </span><span style='background: #F0ADAD'>^^</span><span style=''>
+</span>154 <span style=''>    {
+</span>155 <span style=''>      case _ => TemporalAdjusters.firstDayOfYear()
+</span>156 <span style=''>    }
+</span>157 <span style=''>  def lastDayOfYear : Parser[LocalDateAdjuster] = "last day of year" </span><span style='background: #F0ADAD'>^^</span><span style=''>
+</span>158 <span style=''>    {
+</span>159 <span style=''>      case _ => TemporalAdjusters.lastDayOfYear()
+</span>160 <span style=''>    }
+</span>161 <span style=''>  def firstDayOfNextYear : Parser[LocalDateAdjuster] = "first day of next year" </span><span style='background: #F0ADAD'>^^</span><span style=''>
+</span>162 <span style=''>    {
+</span>163 <span style=''>      case _ => TemporalAdjusters.firstDayOfNextYear()
+</span>164 <span style=''>    }
+</span>165 <span style=''>  def firstInMonth : Parser[LocalDateAdjuster] = "first"</span><span style='background: #F0ADAD'>~ dayOfWeek ~"in month" ^^</span><span style=''>
+</span>166 <span style=''>    {
+</span>167 <span style=''>      case ~(~(_,dayOfWeek),_) => TemporalAdjusters.firstInMonth(dayOfWeek)
+</span>168 <span style=''>    }
+</span>169 <span style=''>  def lastInMonth : Parser[LocalDateAdjuster] = "last"</span><span style='background: #F0ADAD'>~ dayOfWeek ~"in month" ^^</span><span style=''>
+</span>170 <span style=''>    {
+</span>171 <span style=''>      case ~(~(_,dayOfWeek),_) => TemporalAdjusters.firstInMonth(dayOfWeek)
+</span>172 <span style=''>    }
+</span>173 <span style=''>  def _dayOfWeekInMonth : Parser[LocalDateAdjuster] = ordinal </span><span style='background: #F0ADAD'>~ dayOfWeek ~ "in month" ^^</span><span style=''>
+</span>174 <span style=''>    {
+</span>175 <span style=''>      case ~(~(ord,dayOfWeek),_) => TemporalAdjusters.dayOfWeekInMonth(ord, dayOfWeek)
+</span>176 <span style=''>    }
+</span>177 <span style=''>  def nextDayOfWeek : Parser[LocalDateAdjuster] = "next" </span><span style='background: #F0ADAD'>~ dayOfWeek ^^</span><span style=''>
+</span>178 <span style=''>    {
+</span>179 <span style=''>      case ~(_,dayOfWeek) => TemporalAdjusters.next(dayOfWeek)
+</span>180 <span style=''>    }
+</span>181 <span style=''>  def nextOrSameDayOfWeek : Parser[LocalDateAdjuster] = "next or same" </span><span style='background: #F0ADAD'>~ dayOfWeek ^^</span><span style=''>
+</span>182 <span style=''>    {
+</span>183 <span style=''>      case ~(_,dayOfWeek) => TemporalAdjusters.nextOrSame(dayOfWeek)
+</span>184 <span style=''>    }
+</span>185 <span style=''>  def previousDayOfWeek : Parser[LocalDateAdjuster] = "previous" </span><span style='background: #F0ADAD'>~ dayOfWeek ^^</span><span style=''>
+</span>186 <span style=''>    {
+</span>187 <span style=''>      case ~(_,dayOfWeek) => TemporalAdjusters.previous(dayOfWeek)
+</span>188 <span style=''>    }
+</span>189 <span style=''>  def previousOrSameDayOfWeek : Parser[LocalDateAdjuster] = "previous or same" </span><span style='background: #F0ADAD'>~ dayOfWeek ^^</span><span style=''>
+</span>190 <span style=''>    {
+</span>191 <span style=''>      case ~(_,dayOfWeek) => TemporalAdjusters.previousOrSame(dayOfWeek)
+</span>192 <span style=''>    }
+</span>193 <span style=''>
+</span>194 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          451
+        </td>
+        <td>
+          965
+          -
+          965
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.text.DateRuleParsers.dayUnit
+        </td>
+        <td style="background: #F0ADAD">
+          FinancialParsers.this.dayUnit
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          450
+        </td>
+        <td>
+          945
+          -
+          945
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;london business&quot;
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          453
+        </td>
+        <td>
+          974
+          -
+          976
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Parser.^^
+        </td>
+        <td style="background: #F0ADAD">
+          FinancialParsers.this.literal(&quot;london business&quot;).~[java.time.temporal.ChronoUnit](FinancialParsers.this.dayUnit).^^[Set[java.time.temporal.Temporal] =&gt; java.time.temporal.TemporalUnit](((x0$1: FinancialParsers.this.~[String,java.time.temporal.ChronoUnit]) =&gt; x0$1 match {
+  case _ =&gt; ((holidays: Set[java.time.temporal.Temporal]) =&gt; de.juergens.time.BusinessDay.unit(holidays))
+}))
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          452
+        </td>
+        <td>
+          1039
+          -
+          1039
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.time.BusinessDay.unit
+        </td>
+        <td style="background: #F0ADAD">
+          de.juergens.time.BusinessDay.unit(holidays)
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          454
+        </td>
+        <td>
+          1117
+          -
+          1117
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;business days?&quot;
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          457
+        </td>
+        <td>
+          1141
+          -
+          1143
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Parser.^^
+        </td>
+        <td style="background: #F0ADAD">
+          FinancialParsers.this.regex(scala.this.Predef.augmentString(&quot;business days?&quot;).r).^^[Set[java.time.temporal.Temporal] =&gt; java.time.temporal.TemporalUnit](((x$1: String) =&gt; ((holidays: Set[java.time.temporal.Temporal]) =&gt; de.juergens.time.BusinessDay.unit(holidays))))
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          455
+        </td>
+        <td>
+          1138
+          -
+          1138
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.immutable.StringLike.r
+        </td>
+        <td style="background: #F0ADAD">
+          scala.this.Predef.augmentString(&quot;business days?&quot;).r
+        </td>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          456
+        </td>
+        <td>
+          1198
+          -
+          1198
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.time.BusinessDay.unit
+        </td>
+        <td style="background: #F0ADAD">
+          de.juergens.time.BusinessDay.unit(holidays)
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          459
+        </td>
+        <td>
+          1336
+          -
+          1336
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.text.DateRuleParsers.direction
+        </td>
+        <td style="background: #F0ADAD">
+          FinancialParsers.this.direction
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          470
+        </td>
+        <td>
+          1319
+          -
+          1348
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Parser.^^
+        </td>
+        <td style="background: #F0ADAD">
+          FinancialParsers.this.cardinal.~[Set[java.time.temporal.Temporal] =&gt; java.time.temporal.TemporalUnit](FinancialParsers.this.businessDays).~[de.juergens.util.Direction](FinancialParsers.this.direction).^^[Set[java.time.temporal.Temporal] =&gt; java.time.temporal.TemporalAdjuster](((x: FinancialParsers.this.~[FinancialParsers.this.~[de.juergens.util.Cardinal,Set[java.time.temporal.Temporal] =&gt; java.time.temporal.TemporalUnit],de.juergens.util.Direction]) =&gt; ((holidays: Set[java.time.temporal.Temporal]) =&gt; {
+  final class $anon extends Object with java.time.temporal.TemporalAdjuster {
+    def &lt;init&gt;(): &lt;$anon: java.time.temporal.TemporalAdjuster&gt; = {
+      $anon.super.&lt;init&gt;();
+      ()
+    };
+    &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$2: (de.juergens.util.Cardinal, Set[java.time.temporal.Temporal] =&gt; java.time.temporal.TemporalUnit, de.juergens.util.Direction) = (x: FinancialParsers.this.~[FinancialParsers.this.~[de.juergens.util.Cardinal,Set[java.time.temporal.Temporal] =&gt; java.time.temporal.TemporalUnit],de.juergens.util.Direction] @unchecked) match {
+      case (_1: FinancialParsers.this.~[de.juergens.util.Cardinal,Set[java.time.temporal.Temporal] =&gt; java.time.temporal.TemporalUnit], _2: de.juergens.util.Direction)FinancialParsers.this.~[FinancialParsers.this.~[de.juergens.util.Cardinal,Set[java.time.temporal.Temporal] =&gt; java.time.temporal.TemporalUnit],de.juergens.util.Direction]((_1: de.juergens.util.Cardinal, _2: Set[java.time.temporal.Temporal] =&gt; java.time.temporal.TemporalUnit)FinancialParsers.this.~[de.juergens.util.Cardinal,Set[java.time.temporal.Temporal] =&gt; java.time.temporal.TemporalUnit]((cardinal @ _), (businessDays @ _)), (direction @ _)) =&gt; scala.Tuple3.apply[de.juergens.util.Cardinal, Set[java.time.temporal.Temporal] =&gt; java.time.temporal.TemporalUnit, de.juergens.util.Direction](cardinal, businessDays, direction)
+    };
+    private[this] val cardinal: de.juergens.util.Cardinal = $anon.this.x$2._1;
+    &lt;stable&gt; &lt;accessor&gt; private def cardinal: de.juergens.util.Cardinal = $anon.this.cardinal;
+    private[this] val businessDays: Set[java.time.temporal.Temporal] =&gt; java.time.temporal.TemporalUnit = $anon.this.x$2._2;
+    &lt;stable&gt; &lt;accessor&gt; private def businessDays: Set[java.time.temporal.Temporal] =&gt; java.time.temporal.TemporalUnit = $anon.this.businessDays;
+    private[this] val direction: de.juergens.util.Direction = $anon.this.x$2._3;
+    &lt;stable&gt; &lt;accessor&gt; private def direction: de.juergens.util.Direction = $anon.this.direction;
+    override def adjustInto(temporal: java.time.temporal.Temporal): java.time.temporal.Temporal = {
+      val unit: java.time.temporal.TemporalUnit = $anon.this.businessDays.apply(holidays);
+      unit.addTo[java.time.temporal.Temporal](temporal, $anon.this.direction.*[Long](util.this.Cardinal.cardinal2Long($anon.this.cardinal))(math.this.Numeric.LongIsIntegral))
+    }
+  };
+  new $anon()
+})))
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          458
+        </td>
+        <td>
+          1321
+          -
+          1321
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.text.FinancialParsers.businessDays
+        </td>
+        <td style="background: #F0ADAD">
+          FinancialParsers.this.businessDays
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          469
+        </td>
+        <td>
+          1397
+          -
+          1397
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.text.FinancialParsers.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          460
+        </td>
+        <td>
+          1436
+          -
+          1436
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple3._1
+        </td>
+        <td style="background: #F0ADAD">
+          $anon.this.x$2._1
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          462
+        </td>
+        <td>
+          1459
+          -
+          1459
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple3._3
+        </td>
+        <td style="background: #F0ADAD">
+          $anon.this.x$2._3
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          461
+        </td>
+        <td>
+          1445
+          -
+          1445
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple3._2
+        </td>
+        <td style="background: #F0ADAD">
+          $anon.this.x$2._2
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          463
+        </td>
+        <td>
+          1574
+          -
+          1574
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td style="background: #F0ADAD">
+          $anon.this.businessDays.apply(holidays)
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          465
+        </td>
+        <td>
+          1628
+          -
+          1628
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          de.juergens.util.Cardinal.cardinal2Long
+        </td>
+        <td style="background: #F0ADAD">
+          util.this.Cardinal.cardinal2Long($anon.this.cardinal)
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          468
+        </td>
+        <td>
+          1605
+          -
+          1605
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalUnit.addTo
+        </td>
+        <td style="background: #F0ADAD">
+          unit.addTo[java.time.temporal.Temporal](temporal, $anon.this.direction.*[Long](util.this.Cardinal.cardinal2Long($anon.this.cardinal))(math.this.Numeric.LongIsIntegral))
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          464
+        </td>
+        <td>
+          1628
+          -
+          1628
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.text.FinancialParsers.$anon.cardinal
+        </td>
+        <td style="background: #F0ADAD">
+          $anon.this.cardinal
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          467
+        </td>
+        <td>
+          1626
+          -
+          1627
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          de.juergens.util.Direction.*
+        </td>
+        <td style="background: #F0ADAD">
+          $anon.this.direction.*[Long](util.this.Cardinal.cardinal2Long($anon.this.cardinal))(math.this.Numeric.LongIsIntegral)
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          466
+        </td>
+        <td>
+          1626
+          -
+          1626
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.math.Numeric.LongIsIntegral
+        </td>
+        <td style="background: #F0ADAD">
+          math.this.Numeric.LongIsIntegral
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          472
+        </td>
+        <td>
+          2002
+          -
+          2002
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #F0ADAD">
+          SeasonParsers.this.literal(&quot;summer&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          474
+        </td>
+        <td>
+          2024
+          -
+          2024
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #F0ADAD">
+          SeasonParsers.this.literal(&quot;fall&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          471
+        </td>
+        <td>
+          1991
+          -
+          1991
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;spring&quot;
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          473
+        </td>
+        <td>
+          2013
+          -
+          2013
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #F0ADAD">
+          SeasonParsers.this.literal(&quot;autumn&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          475
+        </td>
+        <td>
+          2033
+          -
+          2033
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #F0ADAD">
+          SeasonParsers.this.literal(&quot;winter&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          484
+        </td>
+        <td>
+          2043
+          -
+          2045
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Parser.^^
+        </td>
+        <td style="background: #F0ADAD">
+          SeasonParsers.this.literal(&quot;spring&quot;).|[String](SeasonParsers.this.literal(&quot;summer&quot;)).|[String](SeasonParsers.this.literal(&quot;autumn&quot;)).|[String](SeasonParsers.this.literal(&quot;fall&quot;)).|[String](SeasonParsers.this.literal(&quot;winter&quot;)).^^[de.juergens.time.temporal.LocalDateAdjuster](((x0$2: String) =&gt; x0$2 match {
+  case &quot;spring&quot; =&gt; temporal.this.LocalDateAdjuster.Lifter(java.time.MonthDay.of(FEBRUARY, 13))
+  case &quot;summer&quot; =&gt; temporal.this.LocalDateAdjuster.Lifter(java.time.MonthDay.of(FEBRUARY, 13))
+  case (&quot;autumn&quot;| &quot;fall&quot;) =&gt; temporal.this.LocalDateAdjuster.Lifter(java.time.MonthDay.of(FEBRUARY, 13))
+  case &quot;winter&quot; =&gt; temporal.this.LocalDateAdjuster.Lifter(java.time.MonthDay.of(FEBRUARY, 13))
+}))
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          477
+        </td>
+        <td>
+          2086
+          -
+          2086
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          de.juergens.time.temporal.LocalDateAdjuster.Lifter
+        </td>
+        <td style="background: #F0ADAD">
+          temporal.this.LocalDateAdjuster.Lifter(java.time.MonthDay.of(FEBRUARY, 13))
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          476
+        </td>
+        <td>
+          2086
+          -
+          2086
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.MonthDay.of
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.MonthDay.of(FEBRUARY, 13)
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          478
+        </td>
+        <td>
+          2150
+          -
+          2150
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.MonthDay.of
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.MonthDay.of(FEBRUARY, 13)
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          479
+        </td>
+        <td>
+          2150
+          -
+          2150
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          de.juergens.time.temporal.LocalDateAdjuster.Lifter
+        </td>
+        <td style="background: #F0ADAD">
+          temporal.this.LocalDateAdjuster.Lifter(java.time.MonthDay.of(FEBRUARY, 13))
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          481
+        </td>
+        <td>
+          2224
+          -
+          2224
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          de.juergens.time.temporal.LocalDateAdjuster.Lifter
+        </td>
+        <td style="background: #F0ADAD">
+          temporal.this.LocalDateAdjuster.Lifter(java.time.MonthDay.of(FEBRUARY, 13))
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          480
+        </td>
+        <td>
+          2224
+          -
+          2224
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.MonthDay.of
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.MonthDay.of(FEBRUARY, 13)
+        </td>
+      </tr><tr>
+        <td>
+          68
+        </td>
+        <td>
+          483
+        </td>
+        <td>
+          2288
+          -
+          2288
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          de.juergens.time.temporal.LocalDateAdjuster.Lifter
+        </td>
+        <td style="background: #F0ADAD">
+          temporal.this.LocalDateAdjuster.Lifter(java.time.MonthDay.of(FEBRUARY, 13))
+        </td>
+      </tr><tr>
+        <td>
+          68
+        </td>
+        <td>
+          482
+        </td>
+        <td>
+          2288
+          -
+          2288
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.MonthDay.of
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.MonthDay.of(FEBRUARY, 13)
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          486
+        </td>
+        <td>
+          2345
+          -
+          2345
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          de.juergens.text.SeasonParsers.$anon.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          485
+        </td>
+        <td>
+          2469
+          -
+          2469
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Predef.???
+        </td>
+        <td style="background: #F0ADAD">
+          scala.this.Predef.???
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          487
+        </td>
+        <td>
+          2594
+          -
+          2594
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          12
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          490
+        </td>
+        <td>
+          2642
+          -
+          2644
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&lt;=
+        </td>
+        <td style="background: #F0ADAD">
+          dayInMonth.&lt;=(15)
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          489
+        </td>
+        <td>
+          2627
+          -
+          2627
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          3
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          492
+        </td>
+        <td>
+          2616
+          -
+          2618
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td style="background: #F0ADAD">
+          month.==(12).&amp;&amp;(dayInMonth.&gt;=(16)).||(month.&lt;=(3).&amp;&amp;(dayInMonth.&lt;=(15)))
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          488
+        </td>
+        <td>
+          2610
+          -
+          2612
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;=
+        </td>
+        <td style="background: #F0ADAD">
+          dayInMonth.&gt;=(16)
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          491
+        </td>
+        <td>
+          2629
+          -
+          2631
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td style="background: #F0ADAD">
+          month.&lt;=(3).&amp;&amp;(dayInMonth.&lt;=(15))
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          494
+        </td>
+        <td>
+          2657
+          -
+          2657
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;Winter&quot;
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          493
+        </td>
+        <td>
+          2657
+          -
+          2657
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;Winter&quot;
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          523
+        </td>
+        <td>
+          2681
+          -
+          2681
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          if (month.&gt;=(3).&amp;&amp;(dayInMonth.&gt;=(16)).||(month.&lt;=(6).&amp;&amp;(dayInMonth.&lt;=(15))))
+  &quot;Spring&quot;
+else
+  if (month.&gt;=(6).&amp;&amp;(dayInMonth.&gt;=(16)).||(month.&lt;=(9).&amp;&amp;(dayInMonth.&lt;=(15))))
+    &quot;Summer&quot;
+  else
+    if (month.&gt;=(9).&amp;&amp;(dayInMonth.&gt;=(16)).||(month.&lt;=(12).&amp;&amp;(dayInMonth.&lt;=(15))))
+      &quot;Fall&quot;
+    else
+      &quot;fail&quot;
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          496
+        </td>
+        <td>
+          2711
+          -
+          2713
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;=
+        </td>
+        <td style="background: #F0ADAD">
+          dayInMonth.&gt;=(16)
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          499
+        </td>
+        <td>
+          2730
+          -
+          2732
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td style="background: #F0ADAD">
+          month.&lt;=(6).&amp;&amp;(dayInMonth.&lt;=(15))
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          498
+        </td>
+        <td>
+          2743
+          -
+          2745
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&lt;=
+        </td>
+        <td style="background: #F0ADAD">
+          dayInMonth.&lt;=(15)
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          495
+        </td>
+        <td>
+          2696
+          -
+          2696
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          3
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          497
+        </td>
+        <td>
+          2728
+          -
+          2728
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          6
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          500
+        </td>
+        <td>
+          2717
+          -
+          2719
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td style="background: #F0ADAD">
+          month.&gt;=(3).&amp;&amp;(dayInMonth.&gt;=(16)).||(month.&lt;=(6).&amp;&amp;(dayInMonth.&lt;=(15)))
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          501
+        </td>
+        <td>
+          2758
+          -
+          2758
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;Spring&quot;
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          502
+        </td>
+        <td>
+          2758
+          -
+          2758
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;Spring&quot;
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          505
+        </td>
+        <td>
+          2829
+          -
+          2829
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          9
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          508
+        </td>
+        <td>
+          2818
+          -
+          2820
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td style="background: #F0ADAD">
+          month.&gt;=(6).&amp;&amp;(dayInMonth.&gt;=(16)).||(month.&lt;=(9).&amp;&amp;(dayInMonth.&lt;=(15)))
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          507
+        </td>
+        <td>
+          2831
+          -
+          2833
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td style="background: #F0ADAD">
+          month.&lt;=(9).&amp;&amp;(dayInMonth.&lt;=(15))
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          522
+        </td>
+        <td>
+          2782
+          -
+          2782
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          if (month.&gt;=(6).&amp;&amp;(dayInMonth.&gt;=(16)).||(month.&lt;=(9).&amp;&amp;(dayInMonth.&lt;=(15))))
+  &quot;Summer&quot;
+else
+  if (month.&gt;=(9).&amp;&amp;(dayInMonth.&gt;=(16)).||(month.&lt;=(12).&amp;&amp;(dayInMonth.&lt;=(15))))
+    &quot;Fall&quot;
+  else
+    &quot;fail&quot;
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          504
+        </td>
+        <td>
+          2812
+          -
+          2814
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;=
+        </td>
+        <td style="background: #F0ADAD">
+          dayInMonth.&gt;=(16)
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          503
+        </td>
+        <td>
+          2797
+          -
+          2797
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          6
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          506
+        </td>
+        <td>
+          2844
+          -
+          2846
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&lt;=
+        </td>
+        <td style="background: #F0ADAD">
+          dayInMonth.&lt;=(15)
+        </td>
+      </tr><tr>
+        <td>
+          85
+        </td>
+        <td>
+          510
+        </td>
+        <td>
+          2859
+          -
+          2859
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;Summer&quot;
+        </td>
+      </tr><tr>
+        <td>
+          85
+        </td>
+        <td>
+          509
+        </td>
+        <td>
+          2859
+          -
+          2859
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;Summer&quot;
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          514
+        </td>
+        <td>
+          2946
+          -
+          2948
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&lt;=
+        </td>
+        <td style="background: #F0ADAD">
+          dayInMonth.&lt;=(15)
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          516
+        </td>
+        <td>
+          2919
+          -
+          2921
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td style="background: #F0ADAD">
+          month.&gt;=(9).&amp;&amp;(dayInMonth.&gt;=(16)).||(month.&lt;=(12).&amp;&amp;(dayInMonth.&lt;=(15)))
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          513
+        </td>
+        <td>
+          2930
+          -
+          2930
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          12
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          521
+        </td>
+        <td>
+          2883
+          -
+          2883
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          if (month.&gt;=(9).&amp;&amp;(dayInMonth.&gt;=(16)).||(month.&lt;=(12).&amp;&amp;(dayInMonth.&lt;=(15))))
+  &quot;Fall&quot;
+else
+  &quot;fail&quot;
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          512
+        </td>
+        <td>
+          2913
+          -
+          2915
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;=
+        </td>
+        <td style="background: #F0ADAD">
+          dayInMonth.&gt;=(16)
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          515
+        </td>
+        <td>
+          2933
+          -
+          2935
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td style="background: #F0ADAD">
+          month.&lt;=(12).&amp;&amp;(dayInMonth.&lt;=(15))
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          511
+        </td>
+        <td>
+          2898
+          -
+          2898
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          9
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          517
+        </td>
+        <td>
+          2961
+          -
+          2961
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;Fall&quot;
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          518
+        </td>
+        <td>
+          2961
+          -
+          2961
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;Fall&quot;
+        </td>
+      </tr><tr>
+        <td>
+          90
+        </td>
+        <td>
+          519
+        </td>
+        <td>
+          2983
+          -
+          2983
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;fail&quot;
+        </td>
+      </tr><tr>
+        <td>
+          90
+        </td>
+        <td>
+          520
+        </td>
+        <td>
+          2983
+          -
+          2983
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;fail&quot;
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          524
+        </td>
+        <td>
+          4463
+          -
+          4463
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;first day of month&quot;
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          527
+        </td>
+        <td>
+          4484
+          -
+          4486
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Parser.^^
+        </td>
+        <td style="background: #F0ADAD">
+          TemporalAdjustersParsers.this.literal(&quot;first day of month&quot;).^^[de.juergens.time.temporal.LocalDateAdjuster](((x0$3: String) =&gt; x0$3 match {
+  case _ =&gt; temporal.this.LocalDateAdjuster.Lifter(java.time.temporal.TemporalAdjusters.firstDayOfMonth())
+}))
+        </td>
+      </tr><tr>
+        <td>
+          143
+        </td>
+        <td>
+          525
+        </td>
+        <td>
+          4542
+          -
+          4542
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjusters.firstDayOfMonth
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.temporal.TemporalAdjusters.firstDayOfMonth()
+        </td>
+      </tr><tr>
+        <td>
+          143
+        </td>
+        <td>
+          526
+        </td>
+        <td>
+          4542
+          -
+          4542
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          de.juergens.time.temporal.LocalDateAdjuster.Lifter
+        </td>
+        <td style="background: #F0ADAD">
+          temporal.this.LocalDateAdjuster.Lifter(java.time.temporal.TemporalAdjusters.firstDayOfMonth())
+        </td>
+      </tr><tr>
+        <td>
+          145
+        </td>
+        <td>
+          528
+        </td>
+        <td>
+          4602
+          -
+          4602
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;last day of month&quot;
+        </td>
+      </tr><tr>
+        <td>
+          145
+        </td>
+        <td>
+          531
+        </td>
+        <td>
+          4622
+          -
+          4624
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Parser.^^
+        </td>
+        <td style="background: #F0ADAD">
+          TemporalAdjustersParsers.this.literal(&quot;last day of month&quot;).^^[de.juergens.time.temporal.LocalDateAdjuster](((x0$4: String) =&gt; x0$4 match {
+  case _ =&gt; temporal.this.LocalDateAdjuster.Lifter(java.time.temporal.TemporalAdjusters.lastDayOfMonth())
+}))
+        </td>
+      </tr><tr>
+        <td>
+          147
+        </td>
+        <td>
+          530
+        </td>
+        <td>
+          4679
+          -
+          4679
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          de.juergens.time.temporal.LocalDateAdjuster.Lifter
+        </td>
+        <td style="background: #F0ADAD">
+          temporal.this.LocalDateAdjuster.Lifter(java.time.temporal.TemporalAdjusters.lastDayOfMonth())
+        </td>
+      </tr><tr>
+        <td>
+          147
+        </td>
+        <td>
+          529
+        </td>
+        <td>
+          4679
+          -
+          4679
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjusters.lastDayOfMonth
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.temporal.TemporalAdjusters.lastDayOfMonth()
+        </td>
+      </tr><tr>
+        <td>
+          149
+        </td>
+        <td>
+          532
+        </td>
+        <td>
+          4743
+          -
+          4743
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;first day of next month&quot;
+        </td>
+      </tr><tr>
+        <td>
+          149
+        </td>
+        <td>
+          535
+        </td>
+        <td>
+          4769
+          -
+          4771
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Parser.^^
+        </td>
+        <td style="background: #F0ADAD">
+          TemporalAdjustersParsers.this.literal(&quot;first day of next month&quot;).^^[de.juergens.time.temporal.LocalDateAdjuster](((x0$5: String) =&gt; x0$5 match {
+  case _ =&gt; temporal.this.LocalDateAdjuster.Lifter(java.time.temporal.TemporalAdjusters.firstDayOfNextMonth())
+}))
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          534
+        </td>
+        <td>
+          4831
+          -
+          4831
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          de.juergens.time.temporal.LocalDateAdjuster.Lifter
+        </td>
+        <td style="background: #F0ADAD">
+          temporal.this.LocalDateAdjuster.Lifter(java.time.temporal.TemporalAdjusters.firstDayOfNextMonth())
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          533
+        </td>
+        <td>
+          4831
+          -
+          4831
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjusters.firstDayOfNextMonth
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.temporal.TemporalAdjusters.firstDayOfNextMonth()
+        </td>
+      </tr><tr>
+        <td>
+          153
+        </td>
+        <td>
+          539
+        </td>
+        <td>
+          4911
+          -
+          4913
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Parser.^^
+        </td>
+        <td style="background: #F0ADAD">
+          TemporalAdjustersParsers.this.literal(&quot;first day of year&quot;).^^[de.juergens.time.temporal.LocalDateAdjuster](((x0$6: String) =&gt; x0$6 match {
+  case _ =&gt; temporal.this.LocalDateAdjuster.Lifter(java.time.temporal.TemporalAdjusters.firstDayOfYear())
+}))
+        </td>
+      </tr><tr>
+        <td>
+          153
+        </td>
+        <td>
+          536
+        </td>
+        <td>
+          4891
+          -
+          4891
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;first day of year&quot;
+        </td>
+      </tr><tr>
+        <td>
+          155
+        </td>
+        <td>
+          537
+        </td>
+        <td>
+          4968
+          -
+          4968
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjusters.firstDayOfYear
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.temporal.TemporalAdjusters.firstDayOfYear()
+        </td>
+      </tr><tr>
+        <td>
+          155
+        </td>
+        <td>
+          538
+        </td>
+        <td>
+          4968
+          -
+          4968
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          de.juergens.time.temporal.LocalDateAdjuster.Lifter
+        </td>
+        <td style="background: #F0ADAD">
+          temporal.this.LocalDateAdjuster.Lifter(java.time.temporal.TemporalAdjusters.firstDayOfYear())
+        </td>
+      </tr><tr>
+        <td>
+          157
+        </td>
+        <td>
+          540
+        </td>
+        <td>
+          5027
+          -
+          5027
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;last day of year&quot;
+        </td>
+      </tr><tr>
+        <td>
+          157
+        </td>
+        <td>
+          543
+        </td>
+        <td>
+          5046
+          -
+          5048
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Parser.^^
+        </td>
+        <td style="background: #F0ADAD">
+          TemporalAdjustersParsers.this.literal(&quot;last day of year&quot;).^^[de.juergens.time.temporal.LocalDateAdjuster](((x0$7: String) =&gt; x0$7 match {
+  case _ =&gt; temporal.this.LocalDateAdjuster.Lifter(java.time.temporal.TemporalAdjusters.lastDayOfYear())
+}))
+        </td>
+      </tr><tr>
+        <td>
+          159
+        </td>
+        <td>
+          541
+        </td>
+        <td>
+          5102
+          -
+          5102
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjusters.lastDayOfYear
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.temporal.TemporalAdjusters.lastDayOfYear()
+        </td>
+      </tr><tr>
+        <td>
+          159
+        </td>
+        <td>
+          542
+        </td>
+        <td>
+          5102
+          -
+          5102
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          de.juergens.time.temporal.LocalDateAdjuster.Lifter
+        </td>
+        <td style="background: #F0ADAD">
+          temporal.this.LocalDateAdjuster.Lifter(java.time.temporal.TemporalAdjusters.lastDayOfYear())
+        </td>
+      </tr><tr>
+        <td>
+          161
+        </td>
+        <td>
+          544
+        </td>
+        <td>
+          5166
+          -
+          5166
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;first day of next year&quot;
+        </td>
+      </tr><tr>
+        <td>
+          161
+        </td>
+        <td>
+          547
+        </td>
+        <td>
+          5191
+          -
+          5193
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Parser.^^
+        </td>
+        <td style="background: #F0ADAD">
+          TemporalAdjustersParsers.this.literal(&quot;first day of next year&quot;).^^[de.juergens.time.temporal.LocalDateAdjuster](((x0$8: String) =&gt; x0$8 match {
+  case _ =&gt; temporal.this.LocalDateAdjuster.Lifter(java.time.temporal.TemporalAdjusters.firstDayOfNextYear())
+}))
+        </td>
+      </tr><tr>
+        <td>
+          163
+        </td>
+        <td>
+          546
+        </td>
+        <td>
+          5252
+          -
+          5252
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          de.juergens.time.temporal.LocalDateAdjuster.Lifter
+        </td>
+        <td style="background: #F0ADAD">
+          temporal.this.LocalDateAdjuster.Lifter(java.time.temporal.TemporalAdjusters.firstDayOfNextYear())
+        </td>
+      </tr><tr>
+        <td>
+          163
+        </td>
+        <td>
+          545
+        </td>
+        <td>
+          5252
+          -
+          5252
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjusters.firstDayOfNextYear
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.temporal.TemporalAdjusters.firstDayOfNextYear()
+        </td>
+      </tr><tr>
+        <td>
+          165
+        </td>
+        <td>
+          550
+        </td>
+        <td>
+          5330
+          -
+          5330
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #F0ADAD">
+          TemporalAdjustersParsers.this.literal(&quot;in month&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          165
+        </td>
+        <td>
+          549
+        </td>
+        <td>
+          5319
+          -
+          5319
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.text.DateRuleParsers.dayOfWeek
+        </td>
+        <td style="background: #F0ADAD">
+          TemporalAdjustersParsers.this.dayOfWeek
+        </td>
+      </tr><tr>
+        <td>
+          165
+        </td>
+        <td>
+          548
+        </td>
+        <td>
+          5310
+          -
+          5310
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;first&quot;
+        </td>
+      </tr><tr>
+        <td>
+          165
+        </td>
+        <td>
+          553
+        </td>
+        <td>
+          5317
+          -
+          5343
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Parser.^^
+        </td>
+        <td style="background: #F0ADAD">
+          TemporalAdjustersParsers.this.literal(&quot;first&quot;).~[java.time.DayOfWeek](TemporalAdjustersParsers.this.dayOfWeek).~[String](TemporalAdjustersParsers.this.literal(&quot;in month&quot;)).^^[de.juergens.time.temporal.LocalDateAdjuster](((x0$9: TemporalAdjustersParsers.this.~[TemporalAdjustersParsers.this.~[String,java.time.DayOfWeek],String]) =&gt; x0$9 match {
+  case (_1: TemporalAdjustersParsers.this.~[String,java.time.DayOfWeek], _2: String)TemporalAdjustersParsers.this.~[TemporalAdjustersParsers.this.~[String,java.time.DayOfWeek],String]((_1: String, _2: java.time.DayOfWeek)TemporalAdjustersParsers.this.~[String,java.time.DayOfWeek](_, (dayOfWeek @ _)), _) =&gt; temporal.this.LocalDateAdjuster.Lifter(java.time.temporal.TemporalAdjusters.firstInMonth(dayOfWeek))
+}))
+        </td>
+      </tr><tr>
+        <td>
+          167
+        </td>
+        <td>
+          552
+        </td>
+        <td>
+          5414
+          -
+          5414
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          de.juergens.time.temporal.LocalDateAdjuster.Lifter
+        </td>
+        <td style="background: #F0ADAD">
+          temporal.this.LocalDateAdjuster.Lifter(java.time.temporal.TemporalAdjusters.firstInMonth(dayOfWeek))
+        </td>
+      </tr><tr>
+        <td>
+          167
+        </td>
+        <td>
+          551
+        </td>
+        <td>
+          5414
+          -
+          5414
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjusters.firstInMonth
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.temporal.TemporalAdjusters.firstInMonth(dayOfWeek)
+        </td>
+      </tr><tr>
+        <td>
+          169
+        </td>
+        <td>
+          559
+        </td>
+        <td>
+          5486
+          -
+          5512
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Parser.^^
+        </td>
+        <td style="background: #F0ADAD">
+          TemporalAdjustersParsers.this.literal(&quot;last&quot;).~[java.time.DayOfWeek](TemporalAdjustersParsers.this.dayOfWeek).~[String](TemporalAdjustersParsers.this.literal(&quot;in month&quot;)).^^[de.juergens.time.temporal.LocalDateAdjuster](((x0$10: TemporalAdjustersParsers.this.~[TemporalAdjustersParsers.this.~[String,java.time.DayOfWeek],String]) =&gt; x0$10 match {
+  case (_1: TemporalAdjustersParsers.this.~[String,java.time.DayOfWeek], _2: String)TemporalAdjustersParsers.this.~[TemporalAdjustersParsers.this.~[String,java.time.DayOfWeek],String]((_1: String, _2: java.time.DayOfWeek)TemporalAdjustersParsers.this.~[String,java.time.DayOfWeek](_, (dayOfWeek @ _)), _) =&gt; temporal.this.LocalDateAdjuster.Lifter(java.time.temporal.TemporalAdjusters.firstInMonth(dayOfWeek))
+}))
+        </td>
+      </tr><tr>
+        <td>
+          169
+        </td>
+        <td>
+          555
+        </td>
+        <td>
+          5488
+          -
+          5488
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.text.DateRuleParsers.dayOfWeek
+        </td>
+        <td style="background: #F0ADAD">
+          TemporalAdjustersParsers.this.dayOfWeek
+        </td>
+      </tr><tr>
+        <td>
+          169
+        </td>
+        <td>
+          554
+        </td>
+        <td>
+          5480
+          -
+          5480
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;last&quot;
+        </td>
+      </tr><tr>
+        <td>
+          169
+        </td>
+        <td>
+          556
+        </td>
+        <td>
+          5499
+          -
+          5499
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #F0ADAD">
+          TemporalAdjustersParsers.this.literal(&quot;in month&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          171
+        </td>
+        <td>
+          558
+        </td>
+        <td>
+          5583
+          -
+          5583
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          de.juergens.time.temporal.LocalDateAdjuster.Lifter
+        </td>
+        <td style="background: #F0ADAD">
+          temporal.this.LocalDateAdjuster.Lifter(java.time.temporal.TemporalAdjusters.firstInMonth(dayOfWeek))
+        </td>
+      </tr><tr>
+        <td>
+          171
+        </td>
+        <td>
+          557
+        </td>
+        <td>
+          5583
+          -
+          5583
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjusters.firstInMonth
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.temporal.TemporalAdjusters.firstInMonth(dayOfWeek)
+        </td>
+      </tr><tr>
+        <td>
+          173
+        </td>
+        <td>
+          561
+        </td>
+        <td>
+          5677
+          -
+          5677
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.util.parsing.combinator.RegexParsers.literal
+        </td>
+        <td style="background: #F0ADAD">
+          TemporalAdjustersParsers.this.literal(&quot;in month&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          173
+        </td>
+        <td>
+          560
+        </td>
+        <td>
+          5665
+          -
+          5665
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.text.DateRuleParsers.dayOfWeek
+        </td>
+        <td style="background: #F0ADAD">
+          TemporalAdjustersParsers.this.dayOfWeek
+        </td>
+      </tr><tr>
+        <td>
+          173
+        </td>
+        <td>
+          565
+        </td>
+        <td>
+          5663
+          -
+          5690
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Parser.^^
+        </td>
+        <td style="background: #F0ADAD">
+          TemporalAdjustersParsers.this.ordinal.~[java.time.DayOfWeek](TemporalAdjustersParsers.this.dayOfWeek).~[String](TemporalAdjustersParsers.this.literal(&quot;in month&quot;)).^^[de.juergens.time.temporal.LocalDateAdjuster](((x0$11: TemporalAdjustersParsers.this.~[TemporalAdjustersParsers.this.~[de.juergens.util.Ordinal,java.time.DayOfWeek],String]) =&gt; x0$11 match {
+  case (_1: TemporalAdjustersParsers.this.~[de.juergens.util.Ordinal,java.time.DayOfWeek], _2: String)TemporalAdjustersParsers.this.~[TemporalAdjustersParsers.this.~[de.juergens.util.Ordinal,java.time.DayOfWeek],String]((_1: de.juergens.util.Ordinal, _2: java.time.DayOfWeek)TemporalAdjustersParsers.this.~[de.juergens.util.Ordinal,java.time.DayOfWeek]((ord @ _), (dayOfWeek @ _)), _) =&gt; temporal.this.LocalDateAdjuster.Lifter(java.time.temporal.TemporalAdjusters.dayOfWeekInMonth(util.this.Ordinal.ordinal2Int(ord), dayOfWeek))
+}))
+        </td>
+      </tr><tr>
+        <td>
+          175
+        </td>
+        <td>
+          564
+        </td>
+        <td>
+          5767
+          -
+          5767
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          de.juergens.time.temporal.LocalDateAdjuster.Lifter
+        </td>
+        <td style="background: #F0ADAD">
+          temporal.this.LocalDateAdjuster.Lifter(java.time.temporal.TemporalAdjusters.dayOfWeekInMonth(util.this.Ordinal.ordinal2Int(ord), dayOfWeek))
+        </td>
+      </tr><tr>
+        <td>
+          175
+        </td>
+        <td>
+          563
+        </td>
+        <td>
+          5767
+          -
+          5767
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjusters.dayOfWeekInMonth
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.temporal.TemporalAdjusters.dayOfWeekInMonth(util.this.Ordinal.ordinal2Int(ord), dayOfWeek)
+        </td>
+      </tr><tr>
+        <td>
+          175
+        </td>
+        <td>
+          562
+        </td>
+        <td>
+          5768
+          -
+          5768
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          de.juergens.util.Ordinal.ordinal2Int
+        </td>
+        <td style="background: #F0ADAD">
+          util.this.Ordinal.ordinal2Int(ord)
+        </td>
+      </tr><tr>
+        <td>
+          177
+        </td>
+        <td>
+          567
+        </td>
+        <td>
+          5849
+          -
+          5849
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.text.DateRuleParsers.dayOfWeek
+        </td>
+        <td style="background: #F0ADAD">
+          TemporalAdjustersParsers.this.dayOfWeek
+        </td>
+      </tr><tr>
+        <td>
+          177
+        </td>
+        <td>
+          570
+        </td>
+        <td>
+          5847
+          -
+          5861
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Parser.^^
+        </td>
+        <td style="background: #F0ADAD">
+          TemporalAdjustersParsers.this.literal(&quot;next&quot;).~[java.time.DayOfWeek](TemporalAdjustersParsers.this.dayOfWeek).^^[de.juergens.time.temporal.LocalDateAdjuster](((x0$12: TemporalAdjustersParsers.this.~[String,java.time.DayOfWeek]) =&gt; x0$12 match {
+  case (_1: String, _2: java.time.DayOfWeek)TemporalAdjustersParsers.this.~[String,java.time.DayOfWeek](_, (dayOfWeek @ _)) =&gt; temporal.this.LocalDateAdjuster.Lifter(java.time.temporal.TemporalAdjusters.next(dayOfWeek))
+}))
+        </td>
+      </tr><tr>
+        <td>
+          177
+        </td>
+        <td>
+          566
+        </td>
+        <td>
+          5840
+          -
+          5840
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;next&quot;
+        </td>
+      </tr><tr>
+        <td>
+          179
+        </td>
+        <td>
+          568
+        </td>
+        <td>
+          5919
+          -
+          5919
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjusters.next
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.temporal.TemporalAdjusters.next(dayOfWeek)
+        </td>
+      </tr><tr>
+        <td>
+          179
+        </td>
+        <td>
+          569
+        </td>
+        <td>
+          5919
+          -
+          5919
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          de.juergens.time.temporal.LocalDateAdjuster.Lifter
+        </td>
+        <td style="background: #F0ADAD">
+          temporal.this.LocalDateAdjuster.Lifter(java.time.temporal.TemporalAdjusters.next(dayOfWeek))
+        </td>
+      </tr><tr>
+        <td>
+          181
+        </td>
+        <td>
+          572
+        </td>
+        <td>
+          6010
+          -
+          6010
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.text.DateRuleParsers.dayOfWeek
+        </td>
+        <td style="background: #F0ADAD">
+          TemporalAdjustersParsers.this.dayOfWeek
+        </td>
+      </tr><tr>
+        <td>
+          181
+        </td>
+        <td>
+          575
+        </td>
+        <td>
+          6008
+          -
+          6022
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Parser.^^
+        </td>
+        <td style="background: #F0ADAD">
+          TemporalAdjustersParsers.this.literal(&quot;next or same&quot;).~[java.time.DayOfWeek](TemporalAdjustersParsers.this.dayOfWeek).^^[de.juergens.time.temporal.LocalDateAdjuster](((x0$13: TemporalAdjustersParsers.this.~[String,java.time.DayOfWeek]) =&gt; x0$13 match {
+  case (_1: String, _2: java.time.DayOfWeek)TemporalAdjustersParsers.this.~[String,java.time.DayOfWeek](_, (dayOfWeek @ _)) =&gt; temporal.this.LocalDateAdjuster.Lifter(java.time.temporal.TemporalAdjusters.nextOrSame(dayOfWeek))
+}))
+        </td>
+      </tr><tr>
+        <td>
+          181
+        </td>
+        <td>
+          571
+        </td>
+        <td>
+          5993
+          -
+          5993
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;next or same&quot;
+        </td>
+      </tr><tr>
+        <td>
+          183
+        </td>
+        <td>
+          573
+        </td>
+        <td>
+          6086
+          -
+          6086
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjusters.nextOrSame
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.temporal.TemporalAdjusters.nextOrSame(dayOfWeek)
+        </td>
+      </tr><tr>
+        <td>
+          183
+        </td>
+        <td>
+          574
+        </td>
+        <td>
+          6086
+          -
+          6086
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          de.juergens.time.temporal.LocalDateAdjuster.Lifter
+        </td>
+        <td style="background: #F0ADAD">
+          temporal.this.LocalDateAdjuster.Lifter(java.time.temporal.TemporalAdjusters.nextOrSame(dayOfWeek))
+        </td>
+      </tr><tr>
+        <td>
+          185
+        </td>
+        <td>
+          577
+        </td>
+        <td>
+          6171
+          -
+          6171
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.text.DateRuleParsers.dayOfWeek
+        </td>
+        <td style="background: #F0ADAD">
+          TemporalAdjustersParsers.this.dayOfWeek
+        </td>
+      </tr><tr>
+        <td>
+          185
+        </td>
+        <td>
+          576
+        </td>
+        <td>
+          6158
+          -
+          6158
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;previous&quot;
+        </td>
+      </tr><tr>
+        <td>
+          185
+        </td>
+        <td>
+          580
+        </td>
+        <td>
+          6169
+          -
+          6183
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Parser.^^
+        </td>
+        <td style="background: #F0ADAD">
+          TemporalAdjustersParsers.this.literal(&quot;previous&quot;).~[java.time.DayOfWeek](TemporalAdjustersParsers.this.dayOfWeek).^^[de.juergens.time.temporal.LocalDateAdjuster](((x0$14: TemporalAdjustersParsers.this.~[String,java.time.DayOfWeek]) =&gt; x0$14 match {
+  case (_1: String, _2: java.time.DayOfWeek)TemporalAdjustersParsers.this.~[String,java.time.DayOfWeek](_, (dayOfWeek @ _)) =&gt; temporal.this.LocalDateAdjuster.Lifter(java.time.temporal.TemporalAdjusters.previous(dayOfWeek))
+}))
+        </td>
+      </tr><tr>
+        <td>
+          187
+        </td>
+        <td>
+          579
+        </td>
+        <td>
+          6245
+          -
+          6245
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          de.juergens.time.temporal.LocalDateAdjuster.Lifter
+        </td>
+        <td style="background: #F0ADAD">
+          temporal.this.LocalDateAdjuster.Lifter(java.time.temporal.TemporalAdjusters.previous(dayOfWeek))
+        </td>
+      </tr><tr>
+        <td>
+          187
+        </td>
+        <td>
+          578
+        </td>
+        <td>
+          6245
+          -
+          6245
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjusters.previous
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.temporal.TemporalAdjusters.previous(dayOfWeek)
+        </td>
+      </tr><tr>
+        <td>
+          189
+        </td>
+        <td>
+          585
+        </td>
+        <td>
+          6342
+          -
+          6356
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Parser.^^
+        </td>
+        <td style="background: #F0ADAD">
+          TemporalAdjustersParsers.this.literal(&quot;previous or same&quot;).~[java.time.DayOfWeek](TemporalAdjustersParsers.this.dayOfWeek).^^[de.juergens.time.temporal.LocalDateAdjuster](((x0$15: TemporalAdjustersParsers.this.~[String,java.time.DayOfWeek]) =&gt; x0$15 match {
+  case (_1: String, _2: java.time.DayOfWeek)TemporalAdjustersParsers.this.~[String,java.time.DayOfWeek](_, (dayOfWeek @ _)) =&gt; temporal.this.LocalDateAdjuster.Lifter(java.time.temporal.TemporalAdjusters.previousOrSame(dayOfWeek))
+}))
+        </td>
+      </tr><tr>
+        <td>
+          189
+        </td>
+        <td>
+          582
+        </td>
+        <td>
+          6344
+          -
+          6344
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.text.DateRuleParsers.dayOfWeek
+        </td>
+        <td style="background: #F0ADAD">
+          TemporalAdjustersParsers.this.dayOfWeek
+        </td>
+      </tr><tr>
+        <td>
+          189
+        </td>
+        <td>
+          581
+        </td>
+        <td>
+          6323
+          -
+          6323
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;previous or same&quot;
+        </td>
+      </tr><tr>
+        <td>
+          191
+        </td>
+        <td>
+          584
+        </td>
+        <td>
+          6424
+          -
+          6424
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          de.juergens.time.temporal.LocalDateAdjuster.Lifter
+        </td>
+        <td style="background: #F0ADAD">
+          temporal.this.LocalDateAdjuster.Lifter(java.time.temporal.TemporalAdjusters.previousOrSame(dayOfWeek))
+        </td>
+      </tr><tr>
+        <td>
+          191
+        </td>
+        <td>
+          583
+        </td>
+        <td>
+          6424
+          -
+          6424
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjusters.previousOrSame
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.temporal.TemporalAdjusters.previousOrSame(dayOfWeek)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

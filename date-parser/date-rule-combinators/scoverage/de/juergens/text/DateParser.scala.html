@@ -1,0 +1,492 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          de/juergens/text/DateParser.scala.html
+        </title>
+        <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css"/>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.18.3/addons/pager/jquery.tablesorter.pager.min.js"></script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier;'>1 <span style=''>/*
+</span>2 <span style=''> */
+</span>3 <span style=''>
+</span>4 <span style=''>package de.juergens.text
+</span>5 <span style=''>
+</span>6 <span style=''>import java.time.{LocalDate => Date}
+</span>7 <span style=''>
+</span>8 <span style=''>import scala.util.parsing.combinator._
+</span>9 <span style=''>class DateParser extends JavaTokenParsers with ExtendedRegexParsers {
+</span>10 <span style=''>  def date : Parser[Date] = RegexParser("""(\d{1,2})\.(\d{1,2})\.(\d{2,4})""".r) </span><span style='background: #AEF1AE'>^^</span><span style=''>
+</span>11 <span style=''>    { x => {
+</span>12 <span style=''>      var year       = Integer.parseInt(x.group(3))
+</span>13 <span style=''>      if(year </span><span style='background: #AEF1AE'><</span><span style=''> 100) year</span><span style='background: #F0ADAD'>+=</span><span style=''>2000 // TODO
+</span>14 <span style=''>      val month      = Integer.parseInt(x.group(2))
+</span>15 <span style=''>      val dayOfMonth = Integer.parseInt(x.group(1))
+</span>16 <span style=''>      Date.of(year, month, dayOfMonth)
+</span>17 <span style=''>    } }
+</span>18 <span style=''>
+</span>19 <span style=''>  assert( parse(date, "23.07.2015").get </span><span style='background: #AEF1AE'>equals</span><span style=''> Date.of(2015,7,23) )
+</span>20 <span style=''>}
+</span>21 <span style=''>   
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          10
+        </td>
+        <td>
+          83
+        </td>
+        <td>
+          262
+          -
+          264
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.parsing.combinator.Parsers.Parser.^^
+        </td>
+        <td style="background: #AEF1AE">
+          DateParser.this.RegexParser.apply(scala.this.Predef.augmentString(&quot;(\\d{1,2})\\.(\\d{1,2})\\.(\\d{2,4})&quot;).r).^^[java.time.LocalDate](((x: scala.util.matching.Regex.Match) =&gt; {
+  var year: Int = java.this.lang.Integer.parseInt(x.group(3));
+  if (year.&lt;(100))
+    year = year.+(2000)
+  else
+    ();
+  val month: Int = java.this.lang.Integer.parseInt(x.group(2));
+  val dayOfMonth: Int = java.this.lang.Integer.parseInt(x.group(1));
+  java.time.LocalDate.of(year, month, dayOfMonth)
+}))
+        </td>
+      </tr><tr>
+        <td>
+          10
+        </td>
+        <td>
+          70
+        </td>
+        <td>
+          259
+          -
+          259
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.immutable.StringLike.r
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.augmentString(&quot;(\\d{1,2})\\.(\\d{1,2})\\.(\\d{2,4})&quot;).r
+        </td>
+      </tr><tr>
+        <td>
+          10
+        </td>
+        <td>
+          69
+        </td>
+        <td>
+          221
+          -
+          221
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;(\\d{1,2})\\.(\\d{1,2})\\.(\\d{2,4})&quot;
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          71
+        </td>
+        <td>
+          325
+          -
+          325
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.matching.Regex.MatchData.group
+        </td>
+        <td style="background: #AEF1AE">
+          x.group(3)
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          72
+        </td>
+        <td>
+          317
+          -
+          317
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Integer.parseInt
+        </td>
+        <td style="background: #AEF1AE">
+          java.this.lang.Integer.parseInt(x.group(3))
+        </td>
+      </tr><tr>
+        <td>
+          13
+        </td>
+        <td>
+          77
+        </td>
+        <td>
+          336
+          -
+          336
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          13
+        </td>
+        <td>
+          74
+        </td>
+        <td>
+          355
+          -
+          357
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td style="background: #F0ADAD">
+          year.+(2000)
+        </td>
+      </tr><tr>
+        <td>
+          13
+        </td>
+        <td>
+          73
+        </td>
+        <td>
+          344
+          -
+          345
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&lt;
+        </td>
+        <td style="background: #AEF1AE">
+          year.&lt;(100)
+        </td>
+      </tr><tr>
+        <td>
+          13
+        </td>
+        <td>
+          76
+        </td>
+        <td>
+          336
+          -
+          336
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          13
+        </td>
+        <td>
+          75
+        </td>
+        <td>
+          355
+          -
+          357
+        </td>
+        <td>
+          Assign
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          year = year.+(2000)
+        </td>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          79
+        </td>
+        <td>
+          409
+          -
+          409
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Integer.parseInt
+        </td>
+        <td style="background: #AEF1AE">
+          java.this.lang.Integer.parseInt(x.group(2))
+        </td>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          78
+        </td>
+        <td>
+          417
+          -
+          417
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.matching.Regex.MatchData.group
+        </td>
+        <td style="background: #AEF1AE">
+          x.group(2)
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          80
+        </td>
+        <td>
+          469
+          -
+          469
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.matching.Regex.MatchData.group
+        </td>
+        <td style="background: #AEF1AE">
+          x.group(1)
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          81
+        </td>
+        <td>
+          461
+          -
+          461
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Integer.parseInt
+        </td>
+        <td style="background: #AEF1AE">
+          java.this.lang.Integer.parseInt(x.group(1))
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          82
+        </td>
+        <td>
+          487
+          -
+          487
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.LocalDate.of
+        </td>
+        <td style="background: #AEF1AE">
+          java.time.LocalDate.of(year, month, dayOfMonth)
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          86
+        </td>
+        <td>
+          576
+          -
+          576
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.LocalDate.of
+        </td>
+        <td style="background: #AEF1AE">
+          java.time.LocalDate.of(2015, 7, 23)
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          85
+        </td>
+        <td>
+          544
+          -
+          544
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;23.07.2015&quot;
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          88
+        </td>
+        <td>
+          530
+          -
+          530
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.assert
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.assert(DateParser.this.parse[java.time.LocalDate](DateParser.this.date, &quot;23.07.2015&quot;).get.equals(java.time.LocalDate.of(2015, 7, 23)))
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          87
+        </td>
+        <td>
+          562
+          -
+          568
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.LocalDate.equals
+        </td>
+        <td style="background: #AEF1AE">
+          DateParser.this.parse[java.time.LocalDate](DateParser.this.date, &quot;23.07.2015&quot;).get.equals(java.time.LocalDate.of(2015, 7, 23))
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          84
+        </td>
+        <td>
+          538
+          -
+          538
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.text.DateParser.date
+        </td>
+        <td style="background: #AEF1AE">
+          DateParser.this.date
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

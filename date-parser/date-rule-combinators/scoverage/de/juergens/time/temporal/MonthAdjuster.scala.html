@@ -1,0 +1,1520 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          de/juergens/time/temporal/MonthAdjuster.scala.html
+        </title>
+        <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css"/>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.18.3/addons/pager/jquery.tablesorter.pager.min.js"></script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier;'>1 <span style=''>package de.juergens.time.temporal
+</span>2 <span style=''>
+</span>3 <span style=''>import java.time.Month
+</span>4 <span style=''>import java.time.temporal._
+</span>5 <span style=''>
+</span>6 <span style=''>import de.juergens.util.{Direction, Down, Ordinal, Up}
+</span>7 <span style=''>import org.threeten.extra.Quarter
+</span>8 <span style=''>
+</span>9 <span style=''>case class MonthAdjuster(ordinal: Ordinal, month: Month, direction: Direction)
+</span>10 <span style=''>  extends LocalDateAdjuster {
+</span>11 <span style=''>
+</span>12 <span style=''>  private def signum = direction
+</span>13 <span style=''>  private val Ordinal(number) = ordinal
+</span>14 <span style=''>
+</span>15 <span style=''>  val isBeforeMonth = (accessor: TemporalAccessor) => accessor.get(ChronoField.MONTH_OF_YEAR) </span><span style='background: #F0ADAD'><</span><span style=''> month.getValue
+</span>16 <span style=''>  val isAfterMonth = (accessor: TemporalAccessor) => accessor.get(ChronoField.MONTH_OF_YEAR) </span><span style='background: #F0ADAD'>></span><span style=''> month.getValue
+</span>17 <span style=''>  val isMonth = (accessor: TemporalAccessor) => accessor.get(ChronoField.MONTH_OF_YEAR) </span><span style='background: #AEF1AE'>==</span><span style=''> month.getValue
+</span>18 <span style=''>
+</span>19 <span style=''>  override def adjustInto(temporal: Temporal): Temporal = {
+</span>20 <span style=''>    var date = temporal
+</span>21 <span style=''>
+</span>22 <span style=''>    require(temporal.isSupported(ChronoField.MONTH_OF_YEAR), s"$temporal has to support month-of-year")
+</span>23 <span style=''>    temporal.ensuring(_.isSupported(ChronoField.MONTH_OF_YEAR))
+</span>24 <span style=''>
+</span>25 <span style=''>    if (number </span><span style='background: #AEF1AE'>></span><span style=''> 0)
+</span>26 <span style=''>      date = date.`with`(ChronoField.MONTH_OF_YEAR, month.getValue)
+</span>27 <span style=''>
+</span>28 <span style=''>    val rest: Int = {
+</span>29 <span style=''>      if (isMonth(date)) {
+</span>30 <span style=''>        signum </span><span style='background: #AEF1AE'>*</span><span style=''> number
+</span>31 <span style=''>      } else {
+</span>32 <span style=''>        if (direction </span><span style='background: #F0ADAD'>== Up &&</span><span style=''> isBeforeMonth(date)) signum </span><span style='background: #F0ADAD'>* number -</span><span style=''> 1
+</span>33 <span style=''>        else if (direction </span><span style='background: #F0ADAD'>== Down &&</span><span style=''> isAfterMonth(date)) signum </span><span style='background: #F0ADAD'>* number +</span><span style=''> 1
+</span>34 <span style=''>        else signum </span><span style='background: #F0ADAD'>*</span><span style=''> number
+</span>35 <span style=''>      }
+</span>36 <span style=''>    }
+</span>37 <span style=''>
+</span>38 <span style=''>    val currentYear = date.get(ChronoField.YEAR)
+</span>39 <span style=''>    date = date.`with`(ChronoField.YEAR, currentYear </span><span style='background: #AEF1AE'>+</span><span style=''> rest)
+</span>40 <span style=''>
+</span>41 <span style=''>    direction match {
+</span>42 <span style=''>      case Up => date = TemporalAdjusters.lastDayOfMonth().adjustInto(date)
+</span>43 <span style=''>      case Down => date = TemporalAdjusters.firstDayOfMonth().adjustInto(date)
+</span>44 <span style=''>    }
+</span>45 <span style=''>
+</span>46 <span style=''>    assert( temporal.get(ChronoField.MONTH_OF_YEAR) </span><span style='background: #AEF1AE'>==</span><span style=''> month.getValue )
+</span>47 <span style=''>
+</span>48 <span style=''>    date
+</span>49 <span style=''>  }
+</span>50 <span style=''>}
+</span>51 <span style=''>
+</span>52 <span style=''>case class QuarterAdjuster(steps:Int)
+</span>53 <span style=''>  extends LocalDateAdjuster {
+</span>54 <span style=''>  override def adjustInto(temporal: Temporal): Temporal = {
+</span>55 <span style=''>    require(temporal.isSupported(ChronoField.MONTH_OF_YEAR), s"$temporal has to support month-of-year")
+</span>56 <span style=''>    temporal.ensuring(_.isSupported(ChronoField.MONTH_OF_YEAR))
+</span>57 <span style=''>
+</span>58 <span style=''>    val quarterOfYear = (Quarter.from(temporal).getValue + steps) </span><span style='background: #F0ADAD'>%</span><span style=''> 4
+</span>59 <span style=''>    assert(0</span><span style='background: #F0ADAD'><= quarterOfYear && quarterOfYear <=</span><span style=''>4)
+</span>60 <span style=''>    temporal.`with`(Quarter.of(quarterOfYear))
+</span>61 <span style=''>  }
+</span>62 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          1108
+        </td>
+        <td>
+          310
+          -
+          310
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.time.temporal.MonthAdjuster.direction
+        </td>
+        <td style="background: #AEF1AE">
+          MonthAdjuster.this.direction
+        </td>
+      </tr><tr>
+        <td>
+          13
+        </td>
+        <td>
+          1109
+        </td>
+        <td>
+          352
+          -
+          352
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.time.temporal.MonthAdjuster.ordinal
+        </td>
+        <td style="background: #AEF1AE">
+          MonthAdjuster.this.ordinal
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          1111
+        </td>
+        <td>
+          463
+          -
+          463
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.Month.getValue
+        </td>
+        <td style="background: #F0ADAD">
+          MonthAdjuster.this.month.getValue()
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          1110
+        </td>
+        <td>
+          440
+          -
+          440
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          MONTH_OF_YEAR
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          1112
+        </td>
+        <td>
+          455
+          -
+          456
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&lt;
+        </td>
+        <td style="background: #F0ADAD">
+          accessor.get(MONTH_OF_YEAR).&lt;(MonthAdjuster.this.month.getValue())
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          1115
+        </td>
+        <td>
+          565
+          -
+          566
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          accessor.get(MONTH_OF_YEAR).&gt;(MonthAdjuster.this.month.getValue())
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          1114
+        </td>
+        <td>
+          573
+          -
+          573
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.Month.getValue
+        </td>
+        <td style="background: #F0ADAD">
+          MonthAdjuster.this.month.getValue()
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          1113
+        </td>
+        <td>
+          550
+          -
+          550
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          MONTH_OF_YEAR
+        </td>
+      </tr><tr>
+        <td>
+          17
+        </td>
+        <td>
+          1118
+        </td>
+        <td>
+          670
+          -
+          672
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td style="background: #AEF1AE">
+          accessor.get(MONTH_OF_YEAR).==(MonthAdjuster.this.month.getValue())
+        </td>
+      </tr><tr>
+        <td>
+          17
+        </td>
+        <td>
+          1117
+        </td>
+        <td>
+          679
+          -
+          679
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.Month.getValue
+        </td>
+        <td style="background: #AEF1AE">
+          MonthAdjuster.this.month.getValue()
+        </td>
+      </tr><tr>
+        <td>
+          17
+        </td>
+        <td>
+          1116
+        </td>
+        <td>
+          655
+          -
+          655
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          MONTH_OF_YEAR
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          1120
+        </td>
+        <td>
+          835
+          -
+          835
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.s
+        </td>
+        <td style="background: #F0ADAD">
+          scala.StringContext.apply(&quot;&quot;, &quot; has to support month-of-year&quot;).s(temporal)
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          1119
+        </td>
+        <td>
+          806
+          -
+          806
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAccessor.isSupported
+        </td>
+        <td style="background: #AEF1AE">
+          temporal.isSupported(MONTH_OF_YEAR)
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          1121
+        </td>
+        <td>
+          785
+          -
+          785
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.require
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.require(temporal.isSupported(MONTH_OF_YEAR), scala.StringContext.apply(&quot;&quot;, &quot; has to support month-of-year&quot;).s(temporal))
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          1123
+        </td>
+        <td>
+          899
+          -
+          899
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.Ensuring.ensuring
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.Ensuring[java.time.temporal.Temporal](temporal).ensuring(((x$1: java.time.temporal.Temporal) =&gt; x$1.isSupported(MONTH_OF_YEAR)))
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          1122
+        </td>
+        <td>
+          913
+          -
+          913
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAccessor.isSupported
+        </td>
+        <td style="background: #AEF1AE">
+          x$1.isSupported(MONTH_OF_YEAR)
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          1124
+        </td>
+        <td>
+          958
+          -
+          959
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          MonthAdjuster.this.number.&gt;(0)
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          1129
+        </td>
+        <td>
+          947
+          -
+          947
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          1130
+        </td>
+        <td>
+          947
+          -
+          947
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          1127
+        </td>
+        <td>
+          987
+          -
+          987
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.Temporal.with
+        </td>
+        <td style="background: #AEF1AE">
+          date.`with`(MONTH_OF_YEAR, MonthAdjuster.this.month.getValue().toLong)
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          1126
+        </td>
+        <td>
+          1021
+          -
+          1021
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Int.toLong
+        </td>
+        <td style="background: #AEF1AE">
+          MonthAdjuster.this.month.getValue().toLong
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          1125
+        </td>
+        <td>
+          1000
+          -
+          1000
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          MONTH_OF_YEAR
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          1128
+        </td>
+        <td>
+          974
+          -
+          974
+        </td>
+        <td>
+          Assign
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          date = date.`with`(MONTH_OF_YEAR, MonthAdjuster.this.month.getValue().toLong)
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          1131
+        </td>
+        <td>
+          1071
+          -
+          1071
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td style="background: #AEF1AE">
+          MonthAdjuster.this.isMonth.apply(date)
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          1133
+        </td>
+        <td>
+          1096
+          -
+          1096
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.math.Numeric.IntIsIntegral
+        </td>
+        <td style="background: #AEF1AE">
+          math.this.Numeric.IntIsIntegral
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          1135
+        </td>
+        <td>
+          1096
+          -
+          1097
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          de.juergens.util.Direction.*
+        </td>
+        <td style="background: #AEF1AE">
+          MonthAdjuster.this.signum.*[Int](MonthAdjuster.this.number)(math.this.Numeric.IntIsIntegral)
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          1132
+        </td>
+        <td>
+          1098
+          -
+          1098
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.time.temporal.MonthAdjuster.number
+        </td>
+        <td style="background: #AEF1AE">
+          MonthAdjuster.this.number
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          1134
+        </td>
+        <td>
+          1096
+          -
+          1097
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          de.juergens.util.Direction.*
+        </td>
+        <td style="background: #AEF1AE">
+          MonthAdjuster.this.signum.*[Int](MonthAdjuster.this.number)(math.this.Numeric.IntIsIntegral)
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          1151
+        </td>
+        <td>
+          1128
+          -
+          1128
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          if (MonthAdjuster.this.direction.==(de.juergens.util.Up).&amp;&amp;(MonthAdjuster.this.isBeforeMonth.apply(date)))
+  MonthAdjuster.this.signum.*[Int](MonthAdjuster.this.number)(math.this.Numeric.IntIsIntegral).-(1)
+else
+  if (MonthAdjuster.this.direction.==(de.juergens.util.Down).&amp;&amp;(MonthAdjuster.this.isAfterMonth.apply(date)))
+    MonthAdjuster.this.signum.*[Int](MonthAdjuster.this.number)(math.this.Numeric.IntIsIntegral).+(1)
+  else
+    MonthAdjuster.this.signum.*[Int](MonthAdjuster.this.number)(math.this.Numeric.IntIsIntegral)
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          1136
+        </td>
+        <td>
+          1145
+          -
+          1145
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.util.Up
+        </td>
+        <td style="background: #F0ADAD">
+          de.juergens.util.Up
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          1138
+        </td>
+        <td>
+          1142
+          -
+          1150
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td style="background: #F0ADAD">
+          MonthAdjuster.this.direction.==(de.juergens.util.Up).&amp;&amp;(MonthAdjuster.this.isBeforeMonth.apply(date))
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          1140
+        </td>
+        <td>
+          1179
+          -
+          1189
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td style="background: #F0ADAD">
+          MonthAdjuster.this.signum.*[Int](MonthAdjuster.this.number)(math.this.Numeric.IntIsIntegral).-(1)
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          1137
+        </td>
+        <td>
+          1164
+          -
+          1164
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td style="background: #F0ADAD">
+          MonthAdjuster.this.isBeforeMonth.apply(date)
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          1139
+        </td>
+        <td>
+          1179
+          -
+          1189
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td style="background: #F0ADAD">
+          MonthAdjuster.this.signum.*[Int](MonthAdjuster.this.number)(math.this.Numeric.IntIsIntegral).-(1)
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          1142
+        </td>
+        <td>
+          1242
+          -
+          1242
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td style="background: #F0ADAD">
+          MonthAdjuster.this.isAfterMonth.apply(date)
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          1145
+        </td>
+        <td>
+          1257
+          -
+          1267
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td style="background: #F0ADAD">
+          MonthAdjuster.this.signum.*[Int](MonthAdjuster.this.number)(math.this.Numeric.IntIsIntegral).+(1)
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          1144
+        </td>
+        <td>
+          1257
+          -
+          1267
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td style="background: #F0ADAD">
+          MonthAdjuster.this.signum.*[Int](MonthAdjuster.this.number)(math.this.Numeric.IntIsIntegral).+(1)
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          1150
+        </td>
+        <td>
+          1205
+          -
+          1205
+        </td>
+        <td>
+          If
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          if (MonthAdjuster.this.direction.==(de.juergens.util.Down).&amp;&amp;(MonthAdjuster.this.isAfterMonth.apply(date)))
+  MonthAdjuster.this.signum.*[Int](MonthAdjuster.this.number)(math.this.Numeric.IntIsIntegral).+(1)
+else
+  MonthAdjuster.this.signum.*[Int](MonthAdjuster.this.number)(math.this.Numeric.IntIsIntegral)
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          1141
+        </td>
+        <td>
+          1222
+          -
+          1222
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.util.Down
+        </td>
+        <td style="background: #F0ADAD">
+          de.juergens.util.Down
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          1143
+        </td>
+        <td>
+          1219
+          -
+          1229
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td style="background: #F0ADAD">
+          MonthAdjuster.this.direction.==(de.juergens.util.Down).&amp;&amp;(MonthAdjuster.this.isAfterMonth.apply(date))
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          1147
+        </td>
+        <td>
+          1290
+          -
+          1290
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.math.Numeric.IntIsIntegral
+        </td>
+        <td style="background: #F0ADAD">
+          math.this.Numeric.IntIsIntegral
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          1149
+        </td>
+        <td>
+          1290
+          -
+          1291
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          de.juergens.util.Direction.*
+        </td>
+        <td style="background: #F0ADAD">
+          MonthAdjuster.this.signum.*[Int](MonthAdjuster.this.number)(math.this.Numeric.IntIsIntegral)
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          1146
+        </td>
+        <td>
+          1292
+          -
+          1292
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.time.temporal.MonthAdjuster.number
+        </td>
+        <td style="background: #F0ADAD">
+          MonthAdjuster.this.number
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          1148
+        </td>
+        <td>
+          1290
+          -
+          1291
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          de.juergens.util.Direction.*
+        </td>
+        <td style="background: #F0ADAD">
+          MonthAdjuster.this.signum.*[Int](MonthAdjuster.this.number)(math.this.Numeric.IntIsIntegral)
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          1152
+        </td>
+        <td>
+          1344
+          -
+          1344
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAccessor.get
+        </td>
+        <td style="background: #AEF1AE">
+          date.get(YEAR)
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          1154
+        </td>
+        <td>
+          1416
+          -
+          1417
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Int.toLong
+        </td>
+        <td style="background: #AEF1AE">
+          currentYear.+(rest).toLong
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          1153
+        </td>
+        <td>
+          1398
+          -
+          1398
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          YEAR
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          1155
+        </td>
+        <td>
+          1385
+          -
+          1385
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.Temporal.with
+        </td>
+        <td style="background: #AEF1AE">
+          date.`with`(YEAR, currentYear.+(rest).toLong)
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          1156
+        </td>
+        <td>
+          1429
+          -
+          1429
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.time.temporal.MonthAdjuster.direction
+        </td>
+        <td style="background: #AEF1AE">
+          MonthAdjuster.this.direction
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          1157
+        </td>
+        <td>
+          1516
+          -
+          1516
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjuster.adjustInto
+        </td>
+        <td style="background: #AEF1AE">
+          java.time.temporal.TemporalAdjusters.lastDayOfMonth().adjustInto(date)
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          1158
+        </td>
+        <td>
+          1595
+          -
+          1595
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAdjuster.adjustInto
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.temporal.TemporalAdjusters.firstDayOfMonth().adjustInto(date)
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          1160
+        </td>
+        <td>
+          1670
+          -
+          1670
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.Month.getValue
+        </td>
+        <td style="background: #AEF1AE">
+          MonthAdjuster.this.month.getValue()
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          1162
+        </td>
+        <td>
+          1619
+          -
+          1619
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.assert
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.assert(temporal.get(MONTH_OF_YEAR).==(MonthAdjuster.this.month.getValue()))
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          1159
+        </td>
+        <td>
+          1646
+          -
+          1646
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          MONTH_OF_YEAR
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          1161
+        </td>
+        <td>
+          1661
+          -
+          1663
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td style="background: #AEF1AE">
+          temporal.get(MONTH_OF_YEAR).==(MonthAdjuster.this.month.getValue())
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          1165
+        </td>
+        <td>
+          1837
+          -
+          1837
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.require
+        </td>
+        <td style="background: #F0ADAD">
+          scala.this.Predef.require(temporal.isSupported(MONTH_OF_YEAR), scala.StringContext.apply(&quot;&quot;, &quot; has to support month-of-year&quot;).s(temporal))
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          1164
+        </td>
+        <td>
+          1887
+          -
+          1887
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.s
+        </td>
+        <td style="background: #F0ADAD">
+          scala.StringContext.apply(&quot;&quot;, &quot; has to support month-of-year&quot;).s(temporal)
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          1163
+        </td>
+        <td>
+          1858
+          -
+          1858
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAccessor.isSupported
+        </td>
+        <td style="background: #F0ADAD">
+          temporal.isSupported(MONTH_OF_YEAR)
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          1167
+        </td>
+        <td>
+          1951
+          -
+          1951
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.Ensuring.ensuring
+        </td>
+        <td style="background: #F0ADAD">
+          scala.this.Predef.Ensuring[java.time.temporal.Temporal](temporal).ensuring(((x$2: java.time.temporal.Temporal) =&gt; x$2.isSupported(MONTH_OF_YEAR)))
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          1166
+        </td>
+        <td>
+          1965
+          -
+          1965
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.TemporalAccessor.isSupported
+        </td>
+        <td style="background: #F0ADAD">
+          x$2.isSupported(MONTH_OF_YEAR)
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          1168
+        </td>
+        <td>
+          2061
+          -
+          2062
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.%
+        </td>
+        <td style="background: #F0ADAD">
+          org.threeten.extra.Quarter.from(temporal).getValue().+(QuarterAdjuster.this.steps).%(4)
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          1169
+        </td>
+        <td>
+          2076
+          -
+          2076
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          1171
+        </td>
+        <td>
+          2077
+          -
+          2113
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td style="background: #F0ADAD">
+          0.&lt;=(quarterOfYear).&amp;&amp;(quarterOfYear.&lt;=(4))
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          1170
+        </td>
+        <td>
+          2111
+          -
+          2113
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&lt;=
+        </td>
+        <td style="background: #F0ADAD">
+          quarterOfYear.&lt;=(4)
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          1172
+        </td>
+        <td>
+          2075
+          -
+          2075
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.assert
+        </td>
+        <td style="background: #F0ADAD">
+          scala.this.Predef.assert(0.&lt;=(quarterOfYear).&amp;&amp;(quarterOfYear.&lt;=(4)))
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          1174
+        </td>
+        <td>
+          2135
+          -
+          2135
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.temporal.Temporal.with
+        </td>
+        <td style="background: #F0ADAD">
+          temporal.`with`(org.threeten.extra.Quarter.of(quarterOfYear))
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          1173
+        </td>
+        <td>
+          2146
+          -
+          2146
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.threeten.extra.Quarter.of
+        </td>
+        <td style="background: #F0ADAD">
+          org.threeten.extra.Quarter.of(quarterOfYear)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

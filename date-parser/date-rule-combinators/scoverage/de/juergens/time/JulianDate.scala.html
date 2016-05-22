@@ -1,0 +1,2777 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          de/juergens/time/JulianDate.scala.html
+        </title>
+        <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css"/>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.18.3/addons/pager/jquery.tablesorter.pager.min.js"></script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier;'>1 <span style=''>/*
+</span>2 <span style=''> * Copyright 2015 Hartmut Jürgens
+</span>3 <span style=''> *
+</span>4 <span style=''> * Licensed under the Apache License, Version 2.0 (the "License");
+</span>5 <span style=''> * you may not use this file except in compliance with the License.
+</span>6 <span style=''> * You may obtain a copy of the License at
+</span>7 <span style=''> *
+</span>8 <span style=''> *     http://www.apache.org/licenses/LICENSE-2.0
+</span>9 <span style=''> *
+</span>10 <span style=''> * Unless required by applicable law or agreed to in writing, software
+</span>11 <span style=''> * distributed under the License is distributed on an "AS IS" BASIS,
+</span>12 <span style=''> * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+</span>13 <span style=''> * See the License for the specific language governing permissions and
+</span>14 <span style=''> * limitations under the License.
+</span>15 <span style=''> */
+</span>16 <span style=''>
+</span>17 <span style=''>package de.juergens.time
+</span>18 <span style=''>
+</span>19 <span style=''>import java.time.{ZoneId, ZonedDateTime, LocalDate}
+</span>20 <span style=''>import java.util.{Calendar => JCalendar, GregorianCalendar}
+</span>21 <span style=''>
+</span>22 <span style=''>/**
+</span>23 <span style=''> * @author juergens
+</span>24 <span style=''> */
+</span>25 <span style=''>object JulianDate {
+</span>26 <span style=''>  /**
+</span>27 <span style=''>   * Returns the Julian day number that begins at noon of
+</span>28 <span style=''>   * this day, Positive year signifies A.D., negative year B.C.
+</span>29 <span style=''>   * Remember that the year after 1 B.C. was 1 A.D.
+</span>30 <span style=''>   *
+</span>31 <span style=''>   * ref :
+</span>32 <span style=''>   *  Numerical Recipes in C, 2nd ed., Cambridge University Press 1992
+</span>33 <span style=''>   */
+</span>34 <span style=''>  // Gregorian Calendar adopted Oct. 15, 1582 (2299161)
+</span>35 <span style=''>  val JGREG :Int = 15 </span><span style='background: #F0ADAD'>+ 31*</span><span style=''>(10+12*1582)
+</span>36 <span style=''>  val HALFSECOND:Double = 0.5
+</span>37 <span style=''>
+</span>38 <span style=''>  def toJulian(date:ZonedDateTime):Double = {
+</span>39 <span style=''>    require(date.getZone.getId </span><span style='background: #F0ADAD'>equals</span><span style=''> "UT")
+</span>40 <span style=''>    ZonedDateTime.now(ZoneId.of("UT"))
+</span>41 <span style=''>    val year= date.getYear
+</span>42 <span style=''>    val month = date.getMonthValue // jan=1, feb=2,...
+</span>43 <span style=''>    val day = date.getDayOfMonth
+</span>44 <span style=''>    var julianYear :Int= year
+</span>45 <span style=''>    if (year </span><span style='background: #F0ADAD'><</span><span style=''> 0) julianYear</span><span style='background: #F0ADAD'>+=</span><span style=''>1
+</span>46 <span style=''>    var julianMonth = month
+</span>47 <span style=''>    if (month </span><span style='background: #F0ADAD'>></span><span style=''> 2) {
+</span>48 <span style=''>      julianMonth</span><span style='background: #F0ADAD'>+=</span><span style=''>1
+</span>49 <span style=''>    }
+</span>50 <span style=''>    else {
+</span>51 <span style=''>      julianYear</span><span style='background: #F0ADAD'>-=</span><span style=''>1
+</span>52 <span style=''>      julianMonth </span><span style='background: #F0ADAD'>+=</span><span style=''> 13
+</span>53 <span style=''>    }
+</span>54 <span style=''>
+</span>55 <span style=''>    var julian :Double = (java.lang.Math.floor(365.25 * julianYear)
+</span>56 <span style=''>      </span><span style='background: #F0ADAD'>+ java.lang.Math.floor(30.6001*julianMonth) + day +</span><span style=''> 1720995.0)
+</span>57 <span style=''>    if (day </span><span style='background: #F0ADAD'>+ 31 * (month + 12 * year) >=</span><span style=''> JGREG) {
+</span>58 <span style=''>      // change over to Gregorian calendar
+</span>59 <span style=''>      val ja:Int = (0.01 * julianYear).toInt
+</span>60 <span style=''>      julian </span><span style='background: #F0ADAD'>+= 2 - ja +</span><span style=''> (0.25 </span><span style='background: #F0ADAD'>*</span><span style=''> ja)
+</span>61 <span style=''>    }
+</span>62 <span style=''>    java.lang.Math.floor(julian)
+</span>63 <span style=''>  }
+</span>64 <span style=''>
+</span>65 <span style=''>  /**
+</span>66 <span style=''>   * Converts a Julian day to a calendar date
+</span>67 <span style=''>   * ref :
+</span>68 <span style=''>   * Numerical Recipes in C, 2nd ed., Cambridge University Press 1992
+</span>69 <span style=''>   */
+</span>70 <span style=''>  def fromJulian(inJulian:Double) : LocalDate ={
+</span>71 <span style=''>    val julian :Double = inJulian </span><span style='background: #F0ADAD'>+ HALFSECOND /</span><span style=''> 86400.0
+</span>72 <span style=''>    var ja :Int = julian.toInt
+</span>73 <span style=''>    if (ja </span><span style='background: #F0ADAD'>>=</span><span style=''> JGREG) {
+</span>74 <span style=''>      val jalpha = (((ja - 1867216) - 0.25) / 36524.25).toInt
+</span>75 <span style=''>      ja = ja </span><span style='background: #F0ADAD'>+ 1 + jalpha - jalpha /</span><span style=''> 4
+</span>76 <span style=''>    }
+</span>77 <span style=''>
+</span>78 <span style=''>    val jb :Int = ja </span><span style='background: #F0ADAD'>+</span><span style=''> 1524
+</span>79 <span style=''>    val jc = (6680.0 + ((jb - 2439870) - 122.1) </span><span style='background: #F0ADAD'>/</span><span style=''> 365.25).toInt
+</span>80 <span style=''>    val jd :Int = 365 </span><span style='background: #F0ADAD'>* jc + jc /</span><span style=''> 4
+</span>81 <span style=''>    val je = ((jb - jd) / 30.6001).toInt
+</span>82 <span style=''>    val day :Int = jb </span><span style='background: #F0ADAD'>- jd -</span><span style=''> (30.6001 * je).toInt
+</span>83 <span style=''>    var month :Int = je </span><span style='background: #F0ADAD'>-</span><span style=''> 1
+</span>84 <span style=''>    if (month </span><span style='background: #F0ADAD'>></span><span style=''> 12) month = month </span><span style='background: #F0ADAD'>-</span><span style=''> 12
+</span>85 <span style=''>    var year = jc </span><span style='background: #F0ADAD'>-</span><span style=''> 4715
+</span>86 <span style=''>    if (month </span><span style='background: #F0ADAD'>></span><span style=''> 2) year</span><span style='background: #F0ADAD'>-=</span><span style=''>1
+</span>87 <span style=''>    if (year </span><span style='background: #F0ADAD'><=</span><span style=''> 0) year</span><span style='background: #F0ADAD'>-=</span><span style=''>1
+</span>88 <span style=''>
+</span>89 <span style=''>    LocalDate.of(year, month, day)
+</span>90 <span style=''>  }
+</span>91 <span style=''>
+</span>92 <span style=''>    def dateToJulian(date : java.util.Calendar) : Double ={
+</span>93 <span style=''>        val year = date.get(java.util.Calendar.YEAR)
+</span>94 <span style=''>        val month = date.get(java.util.Calendar.MONTH) </span><span style='background: #F0ADAD'>+</span><span style=''> 1
+</span>95 <span style=''>        val day = date.get(java.util.Calendar.DAY_OF_MONTH)
+</span>96 <span style=''>        val hour = date.get(java.util.Calendar.HOUR_OF_DAY)
+</span>97 <span style=''>        val minute = date.get(java.util.Calendar.MINUTE)
+</span>98 <span style=''>        val second = date.get(java.util.Calendar.SECOND)
+</span>99 <span style=''>
+</span>100 <span style=''>        val extra = (100.0 * year) </span><span style='background: #F0ADAD'>+ month -</span><span style=''> 190002.5
+</span>101 <span style=''>        (367.0 * year) </span><span style='background: #F0ADAD'>-
+</span>102 <span style=''></span><span style='background: #F0ADAD'>                (Math.floor(7.0 * (year + Math.floor((month + 9.0) / 12.0)) / 4.0)) +
+</span>103 <span style=''></span><span style='background: #F0ADAD'>                Math.floor((275.0 * month) / 9.0) +
+</span>104 <span style=''></span><span style='background: #F0ADAD'>                day + ((hour + ((minute + (second / 60.0)) / 60.0)) / 24.0) +
+</span>105 <span style=''></span><span style='background: #F0ADAD'>                1721013.5 - ((0.5 * extra) / Math.abs(extra)) +</span><span style=''> 0.5
+</span>106 <span style=''>    }
+</span>107 <span style=''>
+</span>108 <span style=''>      def currentDateToJulianDate(cal:GregorianCalendar): Double = {
+</span>109 <span style=''>          var jd = 0.0
+</span>110 <span style=''>              val hour24 = cal.get(java.util.Calendar.HOUR_OF_DAY)   // 0..23
+</span>111 <span style=''>              val min = cal.get(java.util.Calendar.MINUTE)  //0..59
+</span>112 <span style=''>              val sec = cal.get(java.util.Calendar.SECOND)
+</span>113 <span style=''>              val day = cal.get(java.util.Calendar.DAY_OF_MONTH)
+</span>114 <span style=''>              val month = cal.get(java.util.Calendar.MONTH) </span><span style='background: #F0ADAD'>+</span><span style=''> 1
+</span>115 <span style=''>              val year = cal.get(java.util.Calendar.YEAR)
+</span>116 <span style=''>
+</span>117 <span style=''>              jd = (367 * year) </span><span style='background: #F0ADAD'>- (7 * (year + ((month + 9) / 12).toInt) / 4).toInt -</span><span style=''>
+</span>118 <span style=''>                ((3 * ((year + (month - 9) </span><span style='background: #F0ADAD'>/</span><span style=''> 7) / 100).toInt + 1) / 4).toInt
+</span>119 <span style=''>                      + ((275 * month) / 9).toInt </span><span style='background: #F0ADAD'>+ day +</span><span style=''> 1721028.5
+</span>120 <span style=''>                      + (hour24 + (min / 60) + (sec / 3600)) </span><span style='background: #F0ADAD'>/</span><span style=''> 24
+</span>121 <span style=''>          jd
+</span>122 <span style=''>      }
+</span>123 <span style=''>
+</span>124 <span style=''>  /*
+</span>125 <span style=''>  public static void main(String args[]) {
+</span>126 <span style=''>    // FIRST TEST reference point
+</span>127 <span style=''>    System.out.println("Julian date for May 23, 1968 : "
+</span>128 <span style=''>      + toJulian( new int[] {1968, 5, 23 } ));
+</span>129 <span style=''>    // output : 2440000
+</span>130 <span style=''>    int results[] = fromJulian(toJulian(new int[] {1968, 5, 23 }));
+</span>131 <span style=''>    System.out.println
+</span>132 <span style=''>    ("... back to calendar : " + results[0] + " "
+</span>133 <span style=''>    + results[1] + " " + results[2]);
+</span>134 <span style=''>
+</span>135 <span style=''>    // SECOND TEST today
+</span>136 <span style=''>    Calendar today = Calendar.getInstance();
+</span>137 <span style=''>    double todayJulian = toJulian
+</span>138 <span style=''>    (new int[]{today.get(Calendar.YEAR), today.get(Calendar.MONTH)+1,
+</span>139 <span style=''>      today.get(Calendar.DATE)});
+</span>140 <span style=''>    System.out.println("Julian date for today : " + todayJulian);
+</span>141 <span style=''>    results = fromJulian(todayJulian);
+</span>142 <span style=''>    System.out.println
+</span>143 <span style=''>    ("... back to calendar : " + results[0] + " " + results[1]
+</span>144 <span style=''>    + " " + results[2]);
+</span>145 <span style=''>
+</span>146 <span style=''>    // THIRD TEST
+</span>147 <span style=''>    double date1 = toJulian(new int[]{2005,1,1});
+</span>148 <span style=''>    double date2 = toJulian(new int[]{2005,1,31});
+</span>149 <span style=''>    System.out.println("Between 2005-01-01 and 2005-01-31 : "
+</span>150 <span style=''>      + (date2 - date1) + " days");
+</span>151 <span style=''>*/
+</span>152 <span style=''>    /*
+</span>153 <span style=''>       expected output :
+</span>154 <span style=''>          Julian date for May 23, 1968 : 2440000.0
+</span>155 <span style=''>          ... back to calendar 1968 5 23
+</span>156 <span style=''>          Julian date for today : 2453487.0
+</span>157 <span style=''>          ... back to calendar 2005 4 26
+</span>158 <span style=''>          Between 2005-01-01 and 2005-01-31 : 30.0 days
+</span>159 <span style=''>    */
+</span>160 <span style=''>
+</span>161 <span style=''>}
+</span>162 <span style=''>
+</span>163 <span style=''>/*
+</span>164 <span style=''>There is a lot of variation around the idea of a "Julian date". You can have the Modified Julian Date (JD) or the Truncated Julian Date (TJD). The main difference is the starting for counting the days.
+</span>165 <span style=''>
+</span>166 <span style=''>Before Y2K, many applications (especially mainframe systems) were storing dates in a format called "the Julian format". This format is a 5 digit number, consisting of a 2 digit year and a 3 digit day-of-year number. For example, 17-July-1998 is stored as 98221, since 17-July is the 221th day of the year. This format is not really useful since Y2K! The main reason for using the 5-digits Julian date was to save disk space and still have a format easy to use to handle. dates.
+</span>167 <span style=''>
+</span>168 <span style=''>A variation of this idea is to used the first four digits for the year and 3 digits for day-of-year, 17-July-1998 will be represented by 1998221.
+</span>169 <span style=''>
+</span>170 <span style=''>This is a very simple format which can be manipulated easily from Java.
+</span>171 <span style=''>*/
+</span>172 <span style=''>
+</span>173 <span style=''>import java.util.{Calendar=>JCalendar}
+</span>174 <span style=''>import java.util.Date
+</span>175 <span style=''>import java.text.ParseException
+</span>176 <span style=''>import java.text.SimpleDateFormat
+</span>177 <span style=''>
+</span>178 <span style=''>object JulianDateUtils {
+</span>179 <span style=''>
+</span>180 <span style=''>  def getDateFromJulian7(julianDate: String) : Date =
+</span>181 <span style=''>      new SimpleDateFormat("yyyyD").parse(julianDate)
+</span>182 <span style=''>
+</span>183 <span style=''>  def getJulian7FromDate(date:Date):String = {
+</span>184 <span style=''>    val sb = new StringBuilder()
+</span>185 <span style=''>    val cal  = JCalendar.getInstance()
+</span>186 <span style=''>    cal.setTime(date)
+</span>187 <span style=''>
+</span>188 <span style=''>    sb.append(cal.get(JCalendar.YEAR))
+</span>189 <span style=''>      .append(s"%03d${cal.get(JCalendar.DAY_OF_YEAR)}")
+</span>190 <span style=''>      .toString()
+</span>191 <span style=''>  }
+</span>192 <span style=''>
+</span>193 <span style=''>  /*
+</span>194 <span style=''>  public static void main(String[] args) throws Exception {
+</span>195 <span style=''>    String test = "1998221";
+</span>196 <span style=''>    Date d = DateUtils.getDateFromJulian7(test);
+</span>197 <span style=''>    System.out.println(d);
+</span>198 <span style=''>    System.out.println(DateUtils.getJulian7FromDate(d));
+</span>199 <span style=''>*/
+</span>200 <span style=''>    /*
+</span>201 <span style=''>     * output :
+</span>202 <span style=''>     *    Sun Aug 09 00:00:00 EDT 1998
+</span>203 <span style=''>     *    1998221
+</span>204 <span style=''>     */
+</span>205 <span style=''>
+</span>206 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          860
+        </td>
+        <td>
+          1138
+          -
+          1143
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          588829
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          861
+        </td>
+        <td>
+          1182
+          -
+          1182
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          0.5
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          863
+        </td>
+        <td>
+          1244
+          -
+          1244
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.require
+        </td>
+        <td style="background: #F0ADAD">
+          scala.this.Predef.require(date.getZone().getId().equals(&quot;UT&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          862
+        </td>
+        <td>
+          1264
+          -
+          1270
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.equals
+        </td>
+        <td style="background: #F0ADAD">
+          date.getZone().getId().equals(&quot;UT&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          864
+        </td>
+        <td>
+          1308
+          -
+          1308
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.ZoneId.of
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.ZoneId.of(&quot;UT&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          865
+        </td>
+        <td>
+          1298
+          -
+          1298
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.ZonedDateTime.now
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.ZonedDateTime.now(java.time.ZoneId.of(&quot;UT&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          866
+        </td>
+        <td>
+          1335
+          -
+          1335
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.ZonedDateTime.getYear
+        </td>
+        <td style="background: #F0ADAD">
+          date.getYear()
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          867
+        </td>
+        <td>
+          1364
+          -
+          1364
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.ZonedDateTime.getMonthValue
+        </td>
+        <td style="background: #F0ADAD">
+          date.getMonthValue()
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          868
+        </td>
+        <td>
+          1417
+          -
+          1417
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.ZonedDateTime.getDayOfMonth
+        </td>
+        <td style="background: #F0ADAD">
+          date.getDayOfMonth()
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          873
+        </td>
+        <td>
+          1465
+          -
+          1465
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          872
+        </td>
+        <td>
+          1465
+          -
+          1465
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          869
+        </td>
+        <td>
+          1474
+          -
+          1475
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&lt;
+        </td>
+        <td style="background: #F0ADAD">
+          year.&lt;(0)
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          871
+        </td>
+        <td>
+          1489
+          -
+          1491
+        </td>
+        <td>
+          Assign
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          julianYear = julianYear.+(1)
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          870
+        </td>
+        <td>
+          1489
+          -
+          1491
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td style="background: #F0ADAD">
+          julianYear.+(1)
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          874
+        </td>
+        <td>
+          1535
+          -
+          1536
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          month.&gt;(2)
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          875
+        </td>
+        <td>
+          1559
+          -
+          1561
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td style="background: #F0ADAD">
+          julianMonth.+(1)
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          876
+        </td>
+        <td>
+          1559
+          -
+          1561
+        </td>
+        <td>
+          Assign
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          julianMonth = julianMonth.+(1)
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          879
+        </td>
+        <td>
+          1578
+          -
+          1578
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  julianYear = julianYear.-(1);
+  julianMonth = julianMonth.+(13)
+}
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          877
+        </td>
+        <td>
+          1596
+          -
+          1598
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td style="background: #F0ADAD">
+          julianYear.-(1)
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          878
+        </td>
+        <td>
+          1618
+          -
+          1620
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td style="background: #F0ADAD">
+          julianMonth.+(13)
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          880
+        </td>
+        <td>
+          1705
+          -
+          1756
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Double.+
+        </td>
+        <td style="background: #F0ADAD">
+          java.lang.Math.floor(365.25.*(julianYear)).+(java.lang.Math.floor(30.6001.*(julianMonth))).+(day).+(1720995.0)
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          882
+        </td>
+        <td>
+          1799
+          -
+          1800
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.*
+        </td>
+        <td style="background: #F0ADAD">
+          12.*(year)
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          881
+        </td>
+        <td>
+          1782
+          -
+          1782
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          31
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          893
+        </td>
+        <td>
+          1817
+          -
+          1817
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  val ja: Int = 0.01.*(julianYear).toInt;
+  julian = julian.+(2.-(ja).+(0.25.*(ja)))
+}
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          884
+        </td>
+        <td>
+          1785
+          -
+          1786
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.*
+        </td>
+        <td style="background: #F0ADAD">
+          31.*(month.+(12.*(year)))
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          886
+        </td>
+        <td>
+          1780
+          -
+          1809
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;=
+        </td>
+        <td style="background: #F0ADAD">
+          day.+(31.*(month.+(12.*(year)))).&gt;=(JulianDate.this.JGREG)
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          895
+        </td>
+        <td>
+          1772
+          -
+          1772
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          883
+        </td>
+        <td>
+          1794
+          -
+          1800
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td style="background: #F0ADAD">
+          month.+(12.*(year))
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          885
+        </td>
+        <td>
+          1810
+          -
+          1810
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.time.JulianDate.JGREG
+        </td>
+        <td style="background: #F0ADAD">
+          JulianDate.this.JGREG
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          894
+        </td>
+        <td>
+          1772
+          -
+          1772
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          887
+        </td>
+        <td>
+          1882
+          -
+          1882
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          0.01
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          888
+        </td>
+        <td>
+          1901
+          -
+          1901
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Double.toInt
+        </td>
+        <td style="background: #F0ADAD">
+          0.01.*(julianYear).toInt
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          891
+        </td>
+        <td>
+          1925
+          -
+          1931
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td style="background: #F0ADAD">
+          2.-(ja).+(0.25.*(ja))
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          890
+        </td>
+        <td>
+          1938
+          -
+          1939
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Double.*
+        </td>
+        <td style="background: #F0ADAD">
+          0.25.*(ja)
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          889
+        </td>
+        <td>
+          1923
+          -
+          1923
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          2
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          892
+        </td>
+        <td>
+          1920
+          -
+          1931
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Double.+
+        </td>
+        <td style="background: #F0ADAD">
+          julian.+(2.-(ja).+(0.25.*(ja)))
+        </td>
+      </tr><tr>
+        <td>
+          62
+        </td>
+        <td>
+          896
+        </td>
+        <td>
+          1974
+          -
+          1974
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Math.floor
+        </td>
+        <td style="background: #F0ADAD">
+          java.lang.Math.floor(julian)
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          898
+        </td>
+        <td>
+          2210
+          -
+          2224
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Double.+
+        </td>
+        <td style="background: #F0ADAD">
+          inJulian.+(JulianDate.this.HALFSECOND./(86400.0))
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          897
+        </td>
+        <td>
+          2223
+          -
+          2224
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Double./
+        </td>
+        <td style="background: #F0ADAD">
+          JulianDate.this.HALFSECOND./(86400.0)
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          899
+        </td>
+        <td>
+          2258
+          -
+          2258
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Double.toInt
+        </td>
+        <td style="background: #F0ADAD">
+          julian.toInt
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          911
+        </td>
+        <td>
+          2268
+          -
+          2268
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          901
+        </td>
+        <td>
+          2275
+          -
+          2277
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;=
+        </td>
+        <td style="background: #F0ADAD">
+          ja.&gt;=(JulianDate.this.JGREG)
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          910
+        </td>
+        <td>
+          2268
+          -
+          2268
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          909
+        </td>
+        <td>
+          2285
+          -
+          2285
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  val jalpha: Int = ja.-(1867216).-(0.25)./(36524.25).toInt;
+  ja = ja.+(1).+(jalpha).-(jalpha./(4))
+}
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          900
+        </td>
+        <td>
+          2278
+          -
+          2278
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          de.juergens.time.JulianDate.JGREG
+        </td>
+        <td style="background: #F0ADAD">
+          JulianDate.this.JGREG
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          902
+        </td>
+        <td>
+          2314
+          -
+          2314
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          1867216
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          905
+        </td>
+        <td>
+          2343
+          -
+          2343
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Double.toInt
+        </td>
+        <td style="background: #F0ADAD">
+          ja.-(1867216).-(0.25)./(36524.25).toInt
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          904
+        </td>
+        <td>
+          2333
+          -
+          2333
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          36524.25
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          903
+        </td>
+        <td>
+          2325
+          -
+          2325
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          0.25
+        </td>
+      </tr><tr>
+        <td>
+          75
+        </td>
+        <td>
+          908
+        </td>
+        <td>
+          2363
+          -
+          2386
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td style="background: #F0ADAD">
+          ja.+(1).+(jalpha).-(jalpha./(4))
+        </td>
+      </tr><tr>
+        <td>
+          75
+        </td>
+        <td>
+          907
+        </td>
+        <td>
+          2385
+          -
+          2386
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int./
+        </td>
+        <td style="background: #F0ADAD">
+          jalpha./(4)
+        </td>
+      </tr><tr>
+        <td>
+          75
+        </td>
+        <td>
+          906
+        </td>
+        <td>
+          2365
+          -
+          2365
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          912
+        </td>
+        <td>
+          2417
+          -
+          2418
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td style="background: #F0ADAD">
+          ja.+(1524)
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          914
+        </td>
+        <td>
+          2472
+          -
+          2473
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Double./
+        </td>
+        <td style="background: #F0ADAD">
+          jb.-(2439870).-(122.1)./(365.25)
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          913
+        </td>
+        <td>
+          2438
+          -
+          2438
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          6680.0
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          915
+        </td>
+        <td>
+          2482
+          -
+          2482
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Double.toInt
+        </td>
+        <td style="background: #F0ADAD">
+          6680.0.+(jb.-(2439870).-(122.1)./(365.25)).toInt
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          917
+        </td>
+        <td>
+          2520
+          -
+          2521
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int./
+        </td>
+        <td style="background: #F0ADAD">
+          jc./(4)
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          916
+        </td>
+        <td>
+          2506
+          -
+          2506
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          365
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          918
+        </td>
+        <td>
+          2510
+          -
+          2521
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td style="background: #F0ADAD">
+          365.*(jc).+(jc./(4))
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          920
+        </td>
+        <td>
+          2559
+          -
+          2559
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Double.toInt
+        </td>
+        <td style="background: #F0ADAD">
+          jb.-(jd)./(30.6001).toInt
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          919
+        </td>
+        <td>
+          2550
+          -
+          2550
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          30.6001
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          923
+        </td>
+        <td>
+          2587
+          -
+          2593
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td style="background: #F0ADAD">
+          jb.-(jd).-(30.6001.*(je).toInt)
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          922
+        </td>
+        <td>
+          2609
+          -
+          2609
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Double.toInt
+        </td>
+        <td style="background: #F0ADAD">
+          30.6001.*(je).toInt
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          921
+        </td>
+        <td>
+          2595
+          -
+          2595
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          30.6001
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          924
+        </td>
+        <td>
+          2639
+          -
+          2640
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td style="background: #F0ADAD">
+          je.-(1)
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          926
+        </td>
+        <td>
+          2677
+          -
+          2678
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td style="background: #F0ADAD">
+          month.-(12)
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          929
+        </td>
+        <td>
+          2647
+          -
+          2647
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          925
+        </td>
+        <td>
+          2657
+          -
+          2658
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          month.&gt;(12)
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          928
+        </td>
+        <td>
+          2647
+          -
+          2647
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          927
+        </td>
+        <td>
+          2669
+          -
+          2669
+        </td>
+        <td>
+          Assign
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          month = month.-(12)
+        </td>
+      </tr><tr>
+        <td>
+          85
+        </td>
+        <td>
+          930
+        </td>
+        <td>
+          2700
+          -
+          2701
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td style="background: #F0ADAD">
+          jc.-(4715)
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          932
+        </td>
+        <td>
+          2730
+          -
+          2732
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td style="background: #F0ADAD">
+          year.-(1)
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          935
+        </td>
+        <td>
+          2711
+          -
+          2711
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          931
+        </td>
+        <td>
+          2721
+          -
+          2722
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          month.&gt;(2)
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          934
+        </td>
+        <td>
+          2711
+          -
+          2711
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          933
+        </td>
+        <td>
+          2730
+          -
+          2732
+        </td>
+        <td>
+          Assign
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          year = year.-(1)
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          938
+        </td>
+        <td>
+          2757
+          -
+          2759
+        </td>
+        <td>
+          Assign
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          year = year.-(1)
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          937
+        </td>
+        <td>
+          2757
+          -
+          2759
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td style="background: #F0ADAD">
+          year.-(1)
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          940
+        </td>
+        <td>
+          2738
+          -
+          2738
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          936
+        </td>
+        <td>
+          2747
+          -
+          2749
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&lt;=
+        </td>
+        <td style="background: #F0ADAD">
+          year.&lt;=(0)
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          939
+        </td>
+        <td>
+          2738
+          -
+          2738
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          941
+        </td>
+        <td>
+          2778
+          -
+          2778
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.time.LocalDate.of
+        </td>
+        <td style="background: #F0ADAD">
+          java.time.LocalDate.of(year, month, day)
+        </td>
+      </tr><tr>
+        <td>
+          93
+        </td>
+        <td>
+          942
+        </td>
+        <td>
+          2889
+          -
+          2889
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.Calendar.get
+        </td>
+        <td style="background: #F0ADAD">
+          date.get(1)
+        </td>
+      </tr><tr>
+        <td>
+          94
+        </td>
+        <td>
+          943
+        </td>
+        <td>
+          2970
+          -
+          2971
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td style="background: #F0ADAD">
+          date.get(2).+(1)
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          944
+        </td>
+        <td>
+          3000
+          -
+          3000
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.Calendar.get
+        </td>
+        <td style="background: #F0ADAD">
+          date.get(5)
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          945
+        </td>
+        <td>
+          3061
+          -
+          3061
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.Calendar.get
+        </td>
+        <td style="background: #F0ADAD">
+          date.get(11)
+        </td>
+      </tr><tr>
+        <td>
+          97
+        </td>
+        <td>
+          946
+        </td>
+        <td>
+          3123
+          -
+          3123
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.Calendar.get
+        </td>
+        <td style="background: #F0ADAD">
+          date.get(12)
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          947
+        </td>
+        <td>
+          3180
+          -
+          3180
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.Calendar.get
+        </td>
+        <td style="background: #F0ADAD">
+          date.get(13)
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          948
+        </td>
+        <td>
+          3244
+          -
+          3253
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Double.-
+        </td>
+        <td style="background: #F0ADAD">
+          100.0.*(year).+(month).-(190002.5)
+        </td>
+      </tr><tr>
+        <td>
+          105
+        </td>
+        <td>
+          949
+        </td>
+        <td>
+          3286
+          -
+          3567
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Double.+
+        </td>
+        <td style="background: #F0ADAD">
+          367.0.*(year).-(java.this.lang.Math.floor(7.0.*(year.+(java.this.lang.Math.floor(month.+(9.0)./(12.0))))./(4.0))).+(java.this.lang.Math.floor(275.0.*(month)./(9.0))).+(day).+(hour.+(minute.+(second./(60.0))./(60.0))./(24.0)).+(1721013.5).-(0.5.*(extra)./(java.this.lang.Math.abs(extra))).+(0.5)
+        </td>
+      </tr><tr>
+        <td>
+          109
+        </td>
+        <td>
+          950
+        </td>
+        <td>
+          3667
+          -
+          3667
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          0.0
+        </td>
+      </tr><tr>
+        <td>
+          110
+        </td>
+        <td>
+          951
+        </td>
+        <td>
+          3705
+          -
+          3705
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.Calendar.get
+        </td>
+        <td style="background: #F0ADAD">
+          cal.get(11)
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          952
+        </td>
+        <td>
+          3780
+          -
+          3780
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.Calendar.get
+        </td>
+        <td style="background: #F0ADAD">
+          cal.get(12)
+        </td>
+      </tr><tr>
+        <td>
+          112
+        </td>
+        <td>
+          953
+        </td>
+        <td>
+          3848
+          -
+          3848
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.Calendar.get
+        </td>
+        <td style="background: #F0ADAD">
+          cal.get(13)
+        </td>
+      </tr><tr>
+        <td>
+          113
+        </td>
+        <td>
+          954
+        </td>
+        <td>
+          3907
+          -
+          3907
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.Calendar.get
+        </td>
+        <td style="background: #F0ADAD">
+          cal.get(5)
+        </td>
+      </tr><tr>
+        <td>
+          114
+        </td>
+        <td>
+          955
+        </td>
+        <td>
+          4001
+          -
+          4002
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td style="background: #F0ADAD">
+          cal.get(2).+(1)
+        </td>
+      </tr><tr>
+        <td>
+          115
+        </td>
+        <td>
+          956
+        </td>
+        <td>
+          4037
+          -
+          4037
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.Calendar.get
+        </td>
+        <td style="background: #F0ADAD">
+          cal.get(1)
+        </td>
+      </tr><tr>
+        <td>
+          117
+        </td>
+        <td>
+          959
+        </td>
+        <td>
+          4121
+          -
+          4121
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          9
+        </td>
+      </tr><tr>
+        <td>
+          117
+        </td>
+        <td>
+          962
+        </td>
+        <td>
+          4109
+          -
+          4110
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td style="background: #F0ADAD">
+          year.+(month.+(9)./(12).toInt)
+        </td>
+      </tr><tr>
+        <td>
+          117
+        </td>
+        <td>
+          964
+        </td>
+        <td>
+          4142
+          -
+          4142
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Int.toInt
+        </td>
+        <td style="background: #F0ADAD">
+          7.*(year.+(month.+(9)./(12).toInt))./(4).toInt
+        </td>
+      </tr><tr>
+        <td>
+          117
+        </td>
+        <td>
+          958
+        </td>
+        <td>
+          4099
+          -
+          4099
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          7
+        </td>
+      </tr><tr>
+        <td>
+          117
+        </td>
+        <td>
+          961
+        </td>
+        <td>
+          4130
+          -
+          4130
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Int.toInt
+        </td>
+        <td style="background: #F0ADAD">
+          month.+(9)./(12).toInt
+        </td>
+      </tr><tr>
+        <td>
+          117
+        </td>
+        <td>
+          960
+        </td>
+        <td>
+          4126
+          -
+          4126
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          12
+        </td>
+      </tr><tr>
+        <td>
+          117
+        </td>
+        <td>
+          972
+        </td>
+        <td>
+          4096
+          -
+          4149
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Int.toDouble
+        </td>
+        <td style="background: #F0ADAD">
+          367.*(year).-(7.*(year.+(month.+(9)./(12).toInt))./(4).toInt).-(3.*(year.+(month.-(9)./(7))./(100).toInt).+(1)./(4).toInt).toDouble
+        </td>
+      </tr><tr>
+        <td>
+          117
+        </td>
+        <td>
+          963
+        </td>
+        <td>
+          4139
+          -
+          4139
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          4
+        </td>
+      </tr><tr>
+        <td>
+          117
+        </td>
+        <td>
+          957
+        </td>
+        <td>
+          4084
+          -
+          4084
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          367
+        </td>
+      </tr><tr>
+        <td>
+          118
+        </td>
+        <td>
+          968
+        </td>
+        <td>
+          4205
+          -
+          4205
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Int.toInt
+        </td>
+        <td style="background: #F0ADAD">
+          year.+(month.-(9)./(7))./(100).toInt
+        </td>
+      </tr><tr>
+        <td>
+          118
+        </td>
+        <td>
+          971
+        </td>
+        <td>
+          4221
+          -
+          4221
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Int.toInt
+        </td>
+        <td style="background: #F0ADAD">
+          3.*(year.+(month.-(9)./(7))./(100).toInt).+(1)./(4).toInt
+        </td>
+      </tr><tr>
+        <td>
+          118
+        </td>
+        <td>
+          965
+        </td>
+        <td>
+          4168
+          -
+          4168
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          3
+        </td>
+      </tr><tr>
+        <td>
+          118
+        </td>
+        <td>
+          967
+        </td>
+        <td>
+          4200
+          -
+          4200
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          100
+        </td>
+      </tr><tr>
+        <td>
+          118
+        </td>
+        <td>
+          970
+        </td>
+        <td>
+          4218
+          -
+          4218
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          4
+        </td>
+      </tr><tr>
+        <td>
+          118
+        </td>
+        <td>
+          969
+        </td>
+        <td>
+          4213
+          -
+          4213
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          118
+        </td>
+        <td>
+          966
+        </td>
+        <td>
+          4193
+          -
+          4194
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int./
+        </td>
+        <td style="background: #F0ADAD">
+          month.-(9)./(7)
+        </td>
+      </tr><tr>
+        <td>
+          119
+        </td>
+        <td>
+          973
+        </td>
+        <td>
+          4277
+          -
+          4284
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td style="background: #F0ADAD">
+          275.*(month)./(9).toInt.unary_+.+(day).+(1721028.5)
+        </td>
+      </tr><tr>
+        <td>
+          120
+        </td>
+        <td>
+          974
+        </td>
+        <td>
+          4356
+          -
+          4357
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int./
+        </td>
+        <td style="background: #F0ADAD">
+          hour24.+(min./(60)).+(sec./(3600)).unary_+./(24)
+        </td>
+      </tr><tr>
+        <td>
+          181
+        </td>
+        <td>
+          975
+        </td>
+        <td>
+          6851
+          -
+          6851
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.text.DateFormat.parse
+        </td>
+        <td style="background: #AEF1AE">
+          new java.text.SimpleDateFormat(&quot;yyyyD&quot;).parse(julianDate)
+        </td>
+      </tr><tr>
+        <td>
+          184
+        </td>
+        <td>
+          976
+        </td>
+        <td>
+          6925
+          -
+          6925
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.mutable.StringBuilder.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new scala.`package`.StringBuilder()
+        </td>
+      </tr><tr>
+        <td>
+          185
+        </td>
+        <td>
+          977
+        </td>
+        <td>
+          6981
+          -
+          6981
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.Calendar.getInstance
+        </td>
+        <td style="background: #F0ADAD">
+          java.util.Calendar.getInstance()
+        </td>
+      </tr><tr>
+        <td>
+          186
+        </td>
+        <td>
+          978
+        </td>
+        <td>
+          6999
+          -
+          6999
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.Calendar.setTime
+        </td>
+        <td style="background: #F0ADAD">
+          cal.setTime(date)
+        </td>
+      </tr><tr>
+        <td>
+          190
+        </td>
+        <td>
+          979
+        </td>
+        <td>
+          7117
+          -
+          7117
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.mutable.StringBuilder.toString
+        </td>
+        <td style="background: #F0ADAD">
+          sb.append(cal.get(1)).append(scala.StringContext.apply(&quot;%03d&quot;, &quot;&quot;).s(cal.get(6))).toString()
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

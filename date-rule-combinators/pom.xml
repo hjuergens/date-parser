@@ -21,6 +21,7 @@
     <inceptionYear>2010</inceptionYear>
 
     <properties>
+        <main.basedir>${project.parent.basedir}</main.basedir>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <encoding>UTF-8</encoding>
@@ -37,7 +38,7 @@
     <repositories>
         <repository>
             <id>repo</id>
-            <url>file://${project.parent.basedir}/repo</url>
+            <url>file://${main.basedir}/repo</url>
         </repository>
     </repositories>
 
@@ -178,12 +179,12 @@
             <scope>test</scope>
         </dependency>
 
-            <dependency>
-                <groupId>org.json</groupId>
-                <artifactId>json</artifactId>
-                <version>20141113</version>
-                <scope>test</scope>
-            </dependency>
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20141113</version>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
             <groupId>org.mockito</groupId>
@@ -476,6 +477,24 @@
                 <artifactId>sonar-maven-plugin</artifactId>
             </plugin>
 
+            <plugin>
+                <!-- Deploy the web site -->
+                <groupId>com.github.github</groupId>
+                <artifactId>site-maven-plugin</artifactId>
+                <version>0.12</version>
+                <executions>
+                    <execution>
+                        <goals><goal>site</goal></goals>
+                        <phase>site</phase>
+                        <configuration>
+                            <message>com.github.github:site-maven-plugin</message>
+                            <server>github</server>
+                            <path>date-parser/${project.artifactId}</path>
+                            <merge>true</merge>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 

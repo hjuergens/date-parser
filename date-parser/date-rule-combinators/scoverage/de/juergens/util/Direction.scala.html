@@ -44,8 +44,8 @@
 </span>19 <span style=''> */
 </span>20 <span style=''>object Direction {
 </span>21 <span style=''>  def fromStr(x : String) : Direction = x.toLowerCase match {
-</span>22 <span style=''>    case "next" | "after"  => Up
-</span>23 <span style=''>    case "previous" | "before" | "prior" => Down
+</span>22 <span style=''>    case "next" | "after" => Up
+</span>23 <span style=''>    case "previous" | "before" | "prior" | "ago" => Down
 </span>24 <span style=''>  }
 </span>25 <span style=''>
 </span>26 <span style=''>  def fromNumber(x : Any) : Direction = x match {
@@ -76,7 +76,7 @@
           14
         </td>
         <td>
-          1218
+          1219
         </td>
         <td>
           378
@@ -97,7 +97,7 @@
           21
         </td>
         <td>
-          1219
+          1220
         </td>
         <td>
           490
@@ -118,12 +118,12 @@
           27
         </td>
         <td>
-          1220
+          1221
         </td>
         <td>
-          669
+          676
           -
-          670
+          677
         </td>
         <td>
           Apply
@@ -139,12 +139,12 @@
           28
         </td>
         <td>
-          1221
+          1222
         </td>
         <td>
-          700
+          707
           -
-          701
+          708
         </td>
         <td>
           Apply
@@ -160,12 +160,12 @@
           29
         </td>
         <td>
-          1222
+          1223
         </td>
         <td>
-          734
+          741
           -
-          735
+          742
         </td>
         <td>
           Apply
@@ -181,12 +181,12 @@
           30
         </td>
         <td>
-          1223
+          1224
         </td>
         <td>
-          766
+          773
           -
-          767
+          774
         </td>
         <td>
           Apply
@@ -202,12 +202,12 @@
           34
         </td>
         <td>
-          1224
+          1225
         </td>
         <td>
-          859
+          866
           -
-          859
+          866
         </td>
         <td>
           Apply
@@ -223,12 +223,12 @@
           35
         </td>
         <td>
-          1225
+          1226
         </td>
         <td>
-          889
+          896
           -
-          889
+          896
         </td>
         <td>
           Apply

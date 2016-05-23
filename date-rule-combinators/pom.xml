@@ -38,7 +38,7 @@
     <repositories>
         <repository>
             <id>repo</id>
-            <url>file://${main.basedir}/repo</url>
+            <url>file://../repo</url>
         </repository>
     </repositories>
 

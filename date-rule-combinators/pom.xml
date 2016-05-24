@@ -35,13 +35,6 @@
         <mpir.skip>false</mpir.skip> <!-- project-info-reports -->
     </properties>
 
-    <repositories>
-        <repository>
-            <id>repo</id>
-            <url>file://../repo</url>
-        </repository>
-    </repositories>
-
     <pluginRepositories>
         <pluginRepository>
             <id>scala-tools.org</id>

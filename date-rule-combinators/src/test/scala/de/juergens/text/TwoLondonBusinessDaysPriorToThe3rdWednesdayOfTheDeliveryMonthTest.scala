@@ -10,7 +10,7 @@ import org.junit.runners.JUnit4
 
 @RunWith(value = classOf[JUnit4])
 class TwoLondonBusinessDaysPriorToThe3rdWednesdayOfTheDeliveryMonthTest
-  extends ParserTest(new DateRuleParsers) {
+  extends ParserTest(new DateRuleParsers with FinancialParsers) {
 
   @Test(timeout = 1500)
   def testLondonBusinessDays() : Unit =  {

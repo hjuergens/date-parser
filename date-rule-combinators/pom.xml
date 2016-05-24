@@ -190,7 +190,7 @@
             <artifactId>jquantlib</artifactId>
             <version>0.2.4</version>
             <scope>system</scope>
-            <systemPath>${project.parent.basedir}/repo/jquantlib-0.2.4.jar</systemPath>
+            <systemPath>/home/travis/build/hjuergens/date-parser/repo/jquantlib-0.2.4.jar</systemPath>
         </dependency>
 
     </dependencies>

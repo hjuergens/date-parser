@@ -190,6 +190,7 @@
             <artifactId>jquantlib</artifactId>
             <version>0.2.4</version>
             <scope>test</scope>
+            <systemPath>../repo/jquantlib-0.2.4.jar</systemPath>
         </dependency>
 
     </dependencies>

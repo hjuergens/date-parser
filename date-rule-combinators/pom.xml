@@ -32,7 +32,7 @@
         <disable.surefire>false</disable.surefire>
         <maven.pmd.rulesetfiles>${project.basedir}/pmd.xml</maven.pmd.rulesetfiles>
         <mpir.skip>false</mpir.skip> <!-- project-info-reports -->
-        <junit.system.path>/home/juergens/workspace/date-parser/repo/org/jquantlib/jquantlib/0.2.4/jquantlib-0.2.4.jar</junit.system.path>
+        <junit.system.path>/home/travis/build/hjuergens/date-parser/repo/jquantlib-0.2.4.jar</junit.system.path>
     </properties>
 
     <pluginRepositories>
@@ -691,7 +691,7 @@
         <profile>
             <id>travis</id>
             <properties>
-                <junit.system.path>/home/travis/build/hjuergens/date-parser/repo/jquantlib-0.2.4.jar</junit.system.path>
+                <junit.system.path>/home/juergens/workspace/date-parser/repo/org/jquantlib/jquantlib/0.2.4/jquantlib-0.2.4.jar</junit.system.path>
             </properties>
         </profile>
     <profile>

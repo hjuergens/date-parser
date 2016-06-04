@@ -3,9 +3,7 @@ package de.juergens
 import java.time.temporal._
 import java.time.{DayOfWeek, LocalDate}
 
-import de.juergens.time.temporal.{DayOfWeekAdjuster, LocalDateAdjuster, MonthAdjuster}
 import de.juergens.util.{Direction, Down, Ordinal, Up}
-import xuwei_k.Scala2Java8.unaryOperator
 
 import scala.language.implicitConversions
 

@@ -16,16 +16,13 @@
 
 package de.juergens.text
 
-import java.time.{LocalDate, _}
 import java.time.temporal._
-
+import java.time.{LocalDate, _}
 import java.util.function.{Predicate => JPredicate}
 
 import de.juergens.time._
 import de.juergens.time.impl.{DayShifter, TimeUnitShifter}
-import de.juergens.time.temporal._
 import de.juergens.util._
-
 
 import scala.language.postfixOps
 import scala.util.parsing.combinator._

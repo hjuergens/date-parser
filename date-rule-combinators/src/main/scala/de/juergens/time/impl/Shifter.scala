@@ -10,8 +10,7 @@ package de.juergens.time.impl
 import java.time.Duration
 import java.time.temporal._
 
-import de.juergens.time._
-import de.juergens.time.temporal.LocalDateAdjuster
+import de.juergens.time.{LocalDateAdjuster, _}
 import de.juergens.util.{Direction, Up}
 
 import scala.language.implicitConversions

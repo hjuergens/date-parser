@@ -13,7 +13,6 @@ import java.util.function.Predicate
 import xuwei_k.Scala2Java8.predicate
 import de.juergens.rule.PredicateHelper._
 import de.juergens.time.impl.DateShifter
-import de.juergens.time.temporal.LocalDateAdjuster
 
 import scala.language.implicitConversions
 

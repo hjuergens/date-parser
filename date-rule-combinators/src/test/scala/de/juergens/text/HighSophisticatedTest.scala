@@ -6,7 +6,7 @@ package de.juergens.text
 
 import java.{io => jio, lang => jl, util => ju}
 
-import de.juergens.time.temporal.LocalDateAdjuster
+import de.juergens.time.LocalDateAdjuster
 import org.hamcrest.Description
 import org.junit.Assert._
 import org.junit._

@@ -25,7 +25,7 @@ package de.juergens
 import java.time.temporal._
 
 import de.juergens.rule.WeekDayPredicate
-import de.juergens.time.temporal.LocalDateAdjuster
+import de.juergens.time.LocalDateAdjuster
 import de.juergens.util.Ordinal
 
 case class Ordinal_WeekDay(ordinal:Ordinal, weekDayPredicate: WeekDayPredicate)

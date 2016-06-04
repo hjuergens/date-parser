@@ -58,7 +58,8 @@ trait SeasonParsers  extends JavaTokenParsers with ExtendedRegexParsers {
 
   import java.time.{LocalDate, MonthDay}
   import java.time.temporal.{TemporalAccessor, TemporalQuery}
-  import de.juergens.time.temporal.LocalDateAdjuster
+
+  import de.juergens.time.LocalDateAdjuster
 
   def season : Parser[LocalDateAdjuster] = ("spring" | "summer" | "autumn" | "fall" | "winter") ^^
     {
@@ -136,7 +137,8 @@ trait TemporalAdjustersParsers  extends JavaTokenParsers with ExtendedRegexParse
   self : DateRuleParsers =>
 
   import java.time.temporal.TemporalAdjusters
-  import de.juergens.time.temporal.LocalDateAdjuster
+
+  import de.juergens.time.LocalDateAdjuster
 
   def firstDayOfMonth : Parser[LocalDateAdjuster] = "first day of month" ^^
     {

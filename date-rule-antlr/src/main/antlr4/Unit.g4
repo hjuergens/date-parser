@@ -16,11 +16,20 @@ unit: SECONDS
  | MILLIS
   ;
 
-SECONDS : 'seconds';
-MINUTES : 'minutes';
-HOURS   : 'hours';
-DAYS    : 'days';
-WEEKS   : 'weeks';
-MONTHS  : 'months';
-YEARS   : 'years';
-DECADES : 'decades';
+SECONDS   : 'seconds';
+MINUTES   : 'minutes';
+HOURS     : 'hours';
+DAYS      : 'days';
+WEEKS     : 'weeks';
+MONTHS    : 'months';
+YEARS     : 'years';
+DECADES   : 'decades';
+NANOS     : 'nanos';
+MICROS    : 'micros';
+MILLIS    : 'millis';
+WEEKYEARS : 'weekyears';
+HALFDAYS  : 'halfdays';
+CENTURIES : 'centuries';
+MILLENNIA : 'millennia';
+ERAS      : 'eras';
+FOREVER   : 'forever';

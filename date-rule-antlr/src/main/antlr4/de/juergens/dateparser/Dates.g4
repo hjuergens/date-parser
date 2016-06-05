@@ -12,11 +12,9 @@ options {
 //dates  : date+ EOF ;
 input           : date+ EOF;
 
-date : month=twodigit SLASH day=twodigit ( year=SLASH (twodigit)+ )? '\n';
+date : month=twodigit SLASH day=twodigit (SLASH year=twodigit+)? '\n';
 
 twodigit : DIGIT? DIGIT ;
-
-yearn   : DIGIT? DIGIT ;
 
 INT     : ('0'..'9')+;
 NEWLINE : [\r\n]+ ;

@@ -26,8 +26,8 @@
     <test verbose="1" name="date-parser" annotations="JDK">
         <classes>
             <class name="de.juergens.dateparser.GenerateParseTreeAST"/>
-            <class name="de.juergens.dateparser.ExampleFieldTest"/>
-            <class name="de.juergens.dateparser.ExampleExprTest"/>
+            <class name="de.juergens.dateparser.SimpleCalcTest"/>
+            <class name="de.juergens.dateparser.PeriodTermTest"/>
         </classes>
     </test>
 </suite>

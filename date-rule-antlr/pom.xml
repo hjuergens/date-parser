@@ -152,14 +152,6 @@
                 </executions>
             </plugin>
 
-            <!--plugin>
-                <groupId>com.soebes.maven.plugins.dmg</groupId>
-                <artifactId>doxygen-maven-plugin</artifactId>
-                <version>1.0.1</version>
-                configuration>
-                    <configurationFile>${project.basedir}/src/site/doxygen.config</configurationFile>
-                </configuration
-            </plugin-->
             <plugin>
                 <groupId>de.oscillation.maven</groupId>
                 <artifactId>doxygen-maven-plugin</artifactId>
@@ -187,50 +179,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <!--plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>1.2.1</version>
-                <executions>
-                    <execution>
-                        <id>make-latex</id>
-                        <phase>none</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <configuration>
-                            <executable>/usr/bin/make</executable>
-                            <workingDirectory>${project.build.directory}/site/doxygen/latex/</workingDirectory>
-                            <arguments>
-                                <argument>_-file=Makefile</argument>
-                                <argument>clean</argument>
-                                <argument>all</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>de.akquinet.jbosscc.latex</groupId>
-                <artifactId>maven-latex-plugin</artifactId>
-                <version>1.2</version>
-                <executions>
-                <execution>
-                    <phase>site</phase>
-                    <goals>
-                        <goal>latex</goal>
-                    </goals>
-                    <configuration>
-                        <settings>
-                            <texDirectory>${project.build.directory}/site/doxygen/latex</texDirectory>
-                            <cleanUp>true</cleanUp>
-                        </settings>
-                    </configuration>
-                </execution>
-                </executions>
-            </plugin-->
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
@@ -243,7 +191,6 @@
                             <encoding>UTF-8</encoding>
                             <consoleOutput>true</consoleOutput>
                             <failsOnError>false</failsOnError>
-                            <linkXRef>false</linkXRef>
                             <configLocation>${project.basedir}/checkstyle.xml</configLocation>
                         </configuration>
                         <goals>
@@ -255,26 +202,6 @@
 
         </plugins>
     </build>
-
-    <reporting>
-        <plugins>
-            <!--plugin>
-                <groupId>de.oscillation.maven</groupId>
-                <artifactId>doxygen-maven-plugin</artifactId>
-                <version>0.1.0</version>
-                <configuration>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>com.soebes.maven.plugins.dmg</groupId>
-                <artifactId>doxygen-maven-plugin</artifactId>
-                <version>1.0.1</version>
-                <configuration>
-                    <configurationFile>${project.basedir}/src/site/doxygen.config</configurationFile>
-                </configuration>
-            </plugin-->
-        </plugins>
-    </reporting>
 
     <profiles>
         <profile>

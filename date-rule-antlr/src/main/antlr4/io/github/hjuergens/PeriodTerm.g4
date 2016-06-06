@@ -15,7 +15,7 @@ options {
 
 input           : (expr NEWLINE)+ EOF;
 
-expr    : period ( direction  period )* ;
+expr    :  ( direction  (period | QUARTER) )* ;
 
 direction : PLUS | MINUS
     ;
@@ -72,7 +72,7 @@ YEAR : 'Y';
 MONTH : 'M';
 WEEK : 'W';
 DAY : 'D';
-
+QUARTER : 'Q';
 
 PLUS    : '+' ;
 MINUS   : '-' ;

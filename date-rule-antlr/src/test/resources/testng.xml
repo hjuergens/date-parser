@@ -27,7 +27,7 @@
         <classes>
             <class name="de.juergens.dateparser.GenerateParseTreeAST"/>
             <class name="de.juergens.dateparser.SimpleCalcTest"/>
-            <class name="de.juergens.dateparser.PeriodTermTest"/>
+            <class name="io.github.hjuergens.PeriodTermTest"/>
         </classes>
     </test>
 </suite>

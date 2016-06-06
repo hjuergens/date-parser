@@ -1,15 +1,17 @@
 package de.juergens;
 
-import de.juergens.dateparser.PeriodTermBaseListener;
-import de.juergens.dateparser.PeriodTermLexer;
-import de.juergens.dateparser.PeriodTermParser;
+import io.github.hjuergens.PeriodTermBaseListener;
+import io.github.hjuergens.PeriodTermLexer;
+import io.github.hjuergens.PeriodTermParser;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.joda.time.DateTime;
 import org.joda.time.Period;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicReference;
 
 class DateTimeAdjusterLogWrapperLogger implements DateTimeAdjuster {
@@ -98,6 +100,47 @@ public class DateTimeAdjusterFactory {
         };
         return new DateTimeAdjusterLogWrapperLogger(logger, adjuster);
     }
+    static class Quarterly implements Iterator<DateTime> {
+        volatile DateTime current = null;
+        final int scalar;
+
+        Quarterly(DateTime current, int scalar) {
+            this.current = current.withTime(0,0,0,0);
+            this.scalar = scalar;
+        }
+        @Override
+        public boolean hasNext() {
+            return true;
+        }
+
+        @Override
+        public DateTime next() {
+            current = current.plusMonths(1).dayOfMonth().setCopy(1);
+            int month = current.getMonthOfYear() % 4;
+            current.monthOfYear().setCopy(month);
+            return current;
+        }
+
+        @Override
+        public void remove() { throw new NotImplementedException(); }
+    }
+
+    public static DateTimeAdjuster quarter(final int scalar) {
+        final Logger logger = LoggerFactory.getLogger(DateTimeAdjuster.class);
+
+        DateTimeAdjuster adjuster = new DateTimeAdjusterAbstract() {
+            @Override
+            public DateTime adjustInto(DateTime dateTime) {
+                return new Quarterly(dateTime, scalar).next();
+            }
+
+            @Override
+            public String toString() {
+                return "Quarterly";
+            }
+        };
+        return new DateTimeAdjusterLogWrapperLogger(logger, adjuster);
+    }
 
     public static DateTimeAdjuster parseAdjuster(String exprStr) {
         PeriodTermLexer lex = new PeriodTermLexer(new ANTLRInputStream(exprStr));
@@ -119,30 +162,30 @@ public class DateTimeAdjusterFactory {
         parser.addParseListener(new PeriodTermBaseListener() {
             @Override
             public void exitExpr(PeriodTermParser.ExprContext ctx) {
-                Period period = Period.parse("P" + ctx.period(0).getText());
-
-                DateTimeAdjuster periodAdjuster = DateTimeAdjusterFactory.apply(period,1);
-                adjuster.set(periodAdjuster);
+                adjuster.set(DateTimeAdjusterFactory.apply());
 
                 int i = 0;
                 for(PeriodTermParser.DirectionContext periodCtx : ctx.direction()) {
-                    i += 1;
 
                     final int scalar;
-                    if( periodCtx.PLUS() != null ) {
+                    if( periodCtx.PLUS() != null )
                         scalar = 1;
-                    }
-                    else if( periodCtx.MINUS() != null ) {
+                    else if( periodCtx.MINUS() != null )
                         scalar = -1;
-                    }
-                    else {
-                        throw new IllegalArgumentException("");
-                    }
+                    else throw new IllegalArgumentException("");
 
-                    Period loopPeriod = Period.parse("P" + ctx.period(i).getText());
-                    DateTimeAdjuster loopPeriodAdjuster = DateTimeAdjusterFactory.apply(loopPeriod, scalar);
+                    final DateTimeAdjuster loopPeriodAdjuster;
+                    if(ctx.QUARTER(i) != null) {
+                        loopPeriodAdjuster = DateTimeAdjusterFactory.quarter(scalar);
+                    } else if(ctx.period(i) != null) {
+                        Period loopPeriod = Period.parse("P" + ctx.period(i).getText());
+                        loopPeriodAdjuster = DateTimeAdjusterFactory.apply(loopPeriod, scalar);
+                    } else throw new IllegalArgumentException("");
 
                     adjuster.set(adjuster.get().andThen(loopPeriodAdjuster));
+
+                    i += 1;
+
                 }
             }
 

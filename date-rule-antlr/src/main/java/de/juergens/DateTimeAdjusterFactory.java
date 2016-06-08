@@ -6,6 +6,7 @@ import io.github.hjuergens.PeriodTermParser;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeConstants;
 import org.joda.time.Period;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,7 +86,6 @@ public class DateTimeAdjusterFactory {
         return new DateTimeAdjusterLogWrapperLogger(logger, adjuster);
     }
     public static DateTimeAdjuster apply(final Period period, final int scalar) {
-        final Logger logger = LoggerFactory.getLogger(DateTimeAdjuster.class);
         DateTimeAdjuster adjuster = new DateTimeAdjusterAbstract() {
             @Override
             public DateTime adjustInto(DateTime dateTime) {
@@ -126,8 +126,6 @@ public class DateTimeAdjusterFactory {
     }
 
     public static DateTimeAdjuster quarter(final int scalar) {
-        final Logger logger = LoggerFactory.getLogger(DateTimeAdjuster.class);
-
         DateTimeAdjuster adjuster = new DateTimeAdjusterAbstract() {
             @Override
             public DateTime adjustInto(DateTime dateTime) {
@@ -141,6 +139,30 @@ public class DateTimeAdjusterFactory {
         };
         return new DateTimeAdjusterLogWrapperLogger(logger, adjuster);
     }
+
+    static final Logger logger = LoggerFactory.getLogger(DateTimeAdjuster.class);
+
+    // WEDNESDAY = the third day of the week (ISO)
+    private static DateTimeAdjuster dayOfWeek(final int dayOfWeek, final int scalar) {
+
+        DateTimeAdjuster adjuster = new DateTimeAdjusterAbstract() {
+            @Override
+            public DateTime adjustInto(DateTime dateTime) {
+                DateTime expected = dateTime;
+                while(expected.getDayOfWeek() != dayOfWeek)
+                    expected = expected.plusDays( Integer.signum(scalar) );
+                expected = expected.plusWeeks(scalar - Integer.signum(scalar) * 1);
+                return expected;
+            }
+
+            @Override
+            public String toString() {
+                return "dayOfWeek";
+            }
+        };
+        return new DateTimeAdjusterLogWrapperLogger(logger, adjuster);
+    }
+
 
     public static DateTimeAdjuster parseAdjuster(String exprStr) {
         PeriodTermLexer lex = new PeriodTermLexer(new ANTLRInputStream(exprStr));
@@ -161,23 +183,21 @@ public class DateTimeAdjusterFactory {
 
         parser.addParseListener(new PeriodTermBaseListener() {
             @Override
-            public void exitExpr(PeriodTermParser.ExprContext ctx) {
+            public void exitShift(PeriodTermParser.ShiftContext ctx) {
                 adjuster.set(DateTimeAdjusterFactory.apply());
 
                 int i = 0;
-                for(PeriodTermParser.DirectionContext periodCtx : ctx.direction()) {
+                for(PeriodTermParser.OperatorContext operatorCtx : ctx.operator()) {
 
                     final int scalar;
-                    if( periodCtx.PLUS() != null )
+                    if( operatorCtx.PLUS() != null )
                         scalar = 1;
-                    else if( periodCtx.MINUS() != null )
+                    else if( operatorCtx.MINUS() != null )
                         scalar = -1;
                     else throw new IllegalArgumentException("");
 
                     final DateTimeAdjuster loopPeriodAdjuster;
-                    if(ctx.QUARTER(i) != null) {
-                        loopPeriodAdjuster = DateTimeAdjusterFactory.quarter(scalar);
-                    } else if(ctx.period(i) != null) {
+                    if(ctx.period(i) != null) {
                         Period loopPeriod = Period.parse("P" + ctx.period(i).getText());
                         loopPeriodAdjuster = DateTimeAdjusterFactory.apply(loopPeriod, scalar);
                     } else throw new IllegalArgumentException("");
@@ -188,8 +208,28 @@ public class DateTimeAdjusterFactory {
 
                 }
             }
+            @Override
+            public void exitSelector(PeriodTermParser.SelectorContext ctx) {
+                adjuster.compareAndSet(null, DateTimeAdjusterFactory.apply());
 
+                int i = 0;
+                for(PeriodTermParser.DirectionContext directionCtx : ctx.direction()) {
 
+                    final int scale = directionCtx.NEXT().size() - directionCtx.PREVIOUS().size();
+
+                    if(ctx.QUARTER(i) != null) {
+                        DateTimeAdjuster shifter = DateTimeAdjusterFactory.quarter(scale);
+                        adjuster.set(adjuster.get().andThen(shifter));
+                    } else if(ctx.WEDNESDAY(i) != null) {
+                        DateTimeAdjuster shifter = DateTimeAdjusterFactory.dayOfWeek(DateTimeConstants.WEDNESDAY, scale);
+                        adjuster.set(adjuster.get().andThen(shifter));
+                    }
+
+                    i += 1;
+                }
+            }
+
+            /*
             @Override public void exitDirection(PeriodTermParser.DirectionContext ctx) {
                 if( ctx.PLUS() != null ) {
                     direction.set(1);
@@ -201,6 +241,7 @@ public class DateTimeAdjusterFactory {
                     direction.set(1);
                 }
             }
+            */
 
             @Override
             public void exitPeriod(PeriodTermParser.PeriodContext ctx) {
@@ -208,7 +249,7 @@ public class DateTimeAdjusterFactory {
 
         });
 
-        parser.expr();
+        parser.adjust();
 
         return adjuster.get();
     }

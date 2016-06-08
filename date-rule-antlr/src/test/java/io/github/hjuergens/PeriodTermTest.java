@@ -2,7 +2,9 @@ package io.github.hjuergens;
 
 import de.juergens.DateTimeAdjuster;
 import de.juergens.DateTimeAdjusterFactory;
+import jdk.nashorn.internal.ir.annotations.Ignore;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeConstants;
 import org.joda.time.Period;
 import org.testng.annotations.Test;
 
@@ -69,11 +71,39 @@ public class PeriodTermTest {
 
     @Test
     public void testNextQuarter() throws Exception {
-        DateTimeAdjuster adjuster = DateTimeAdjusterFactory.parseAdjuster("+Q");
+        DateTimeAdjuster adjuster = DateTimeAdjusterFactory.parseAdjuster(">Q");
 
         DateTime referenceDateTime = new DateTime(2016, 12, 5, 15, 18, 22, 65);
         DateTime actual = adjuster.adjustInto(referenceDateTime);
         DateTime expected = new DateTime(2017, 1, 1, 0, 0, 0, 0);
+
+        assertEquals( actual, expected, adjuster.toString() );
+    }
+
+    @Test
+    public void testNextWednesday() throws Exception {
+        DateTimeAdjuster adjuster = DateTimeAdjusterFactory.parseAdjuster(">wednesday");
+
+        DateTime referenceDateTime = new DateTime(2016, 12, 5, 15, 18, 22, 65);
+        DateTime actual = adjuster.adjustInto(referenceDateTime);
+        DateTime expected = referenceDateTime;
+        while(expected.getDayOfWeek() != DateTimeConstants.WEDNESDAY)
+            expected = expected.plusDays(1);
+
+        assertEquals( actual, expected, adjuster.toString() );
+    }
+
+    @Test
+    @Ignore
+    public void testThirdWednesday() throws Exception {
+        DateTimeAdjuster adjuster = DateTimeAdjusterFactory.parseAdjuster(">>>wednesday");
+
+        DateTime referenceDateTime = new DateTime(2016, 12, 5, 15, 18, 22, 65);
+        DateTime actual = adjuster.adjustInto(referenceDateTime);
+        DateTime expected = referenceDateTime;
+        while(expected.getDayOfWeek() != DateTimeConstants.WEDNESDAY)
+            expected = expected.plusDays(1);
+        expected = expected.plusWeeks(2);
 
         assertEquals( actual, expected, adjuster.toString() );
     }

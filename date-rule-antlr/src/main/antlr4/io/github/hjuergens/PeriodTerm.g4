@@ -13,11 +13,28 @@ options {
  * PARSER RULES
  *------------------------------------------------------------------*/
 
-input           : (expr NEWLINE)+ EOF;
+input           : (adjust NEWLINE)+ EOF;
 
-expr    :  ( direction  (period | QUARTER) )* ;
+adjust : (shift | selector)
+    ;
 
-direction : PLUS | MINUS
+
+shift  :  ( operator  period )* ;
+
+
+operator : PLUS | MINUS
+    ;
+
+
+selector : ( direction (QUARTER|WEDNESDAY) )*
+    ;
+
+direction : PREVIOUS* | NEXT*
+    ;
+
+direction3 returns [int z]
+    : { $z = 0; }
+      (PREVIOUS    { $z = $z-1; } )+ |  (NEXT    { $z = $z+1; } )+
     ;
 
 /*
@@ -44,7 +61,7 @@ dayssub : days
     ;
 
 // units
-years   : twodigit YEAR
+years   : cardinal=twodigit YEAR // Labels become fields in the appropriate parse tree node class
     ;
 
 months : twodigit MONTH
@@ -57,7 +74,7 @@ days : twodigit DAY
     ;
 
 // cardinal
-twodigit  : (DIGIT?DIGIT)
+twodigit  : (DIGIT?DIGIT) { System.out.println($DIGIT.text); }
     ;
 
 /*------------------------------------------------------------------
@@ -68,16 +85,23 @@ DIGIT   : '0'..'9'
     ;
 
 
+// DIRECTION : PREVIOUS | NEXT ;
+
 YEAR : 'Y';
 MONTH : 'M';
 WEEK : 'W';
 DAY : 'D';
 QUARTER : 'Q';
 
-PLUS    : '+' ;
-MINUS   : '-' ;
-MULT    : '*' ;
-DIV : '/' ;
+WEDNESDAY : 'wednesday'
+    ;
+
+NEXT     : '>' ;
+PREVIOUS : '<' ;
+PLUS   : '+' ;
+MINUS  : '-' ;
+MULT   : '*' ;
+DIV    : '/' ;
 
 NEWLINE   : '\r' '\n' | '\n' | '\r';
 

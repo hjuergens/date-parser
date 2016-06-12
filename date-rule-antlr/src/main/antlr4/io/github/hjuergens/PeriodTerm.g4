@@ -15,9 +15,11 @@ options {
 
 input           : (adjust NEWLINE)+ EOF;
 
-adjust : (shift | selector)
+chain : '^' adjust
     ;
 
+adjust : (shift | selector)
+    ;
 
 shift  :  ( operator  period )* ;
 
@@ -26,11 +28,12 @@ operator : PLUS | MINUS
     ;
 
 
-selector : ( direction (QUARTER|WEDNESDAY) )*
+selector : ( direction (DAY|MONTH|QUARTER|DAY_OF_WEEK) )*
     ;
 
 direction : PREVIOUS* | NEXT*
     ;
+
 
 direction3 returns [int z]
     : { $z = 0; }
@@ -93,7 +96,7 @@ WEEK : 'W';
 DAY : 'D';
 QUARTER : 'Q';
 
-WEDNESDAY : 'wednesday'
+DAY_OF_WEEK : 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday'
     ;
 
 NEXT     : '>' ;

@@ -5,13 +5,11 @@ import io.github.hjuergens.PeriodTermLexer;
 import io.github.hjuergens.PeriodTermParser;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeConstants;
-import org.joda.time.Period;
+import org.joda.time.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -66,9 +64,9 @@ abstract class DateTimeAdjusterAbstract implements DateTimeAdjuster {
     }
 }
 
-public class DateTimeAdjusterFactory {
+public class SchedulerFactory {
 
-    private DateTimeAdjusterFactory(){}
+    private SchedulerFactory(){}
 
     public static DateTimeAdjuster apply() {
         final Logger logger = LoggerFactory.getLogger(DateTimeAdjuster.class);
@@ -100,30 +98,6 @@ public class DateTimeAdjusterFactory {
         };
         return new DateTimeAdjusterLogWrapperLogger(logger, adjuster);
     }
-    static class Quarterly implements Iterator<DateTime> {
-        volatile DateTime current = null;
-        final int scalar;
-
-        Quarterly(DateTime current, int scalar) {
-            this.current = current.withTime(0,0,0,0);
-            this.scalar = scalar;
-        }
-        @Override
-        public boolean hasNext() {
-            return true;
-        }
-
-        @Override
-        public DateTime next() {
-            current = current.plusMonths(1).dayOfMonth().setCopy(1);
-            int month = current.getMonthOfYear() % 4;
-            current.monthOfYear().setCopy(month);
-            return current;
-        }
-
-        @Override
-        public void remove() { throw new NotImplementedException(); }
-    }
 
     public static DateTimeAdjuster quarter(final int scalar) {
         DateTimeAdjuster adjuster = new DateTimeAdjusterAbstract() {
@@ -134,7 +108,26 @@ public class DateTimeAdjusterFactory {
 
             @Override
             public String toString() {
-                return "Quarterly";
+                return "de.juergens.Quarterly";
+            }
+        };
+        return new DateTimeAdjusterLogWrapperLogger(logger, adjuster);
+    }
+
+    static LocalTime zero = new LocalTime(0,0,0,0);
+    static LocalTime twentyFour = zero.minusMillis(1);
+
+
+    public static DateTimeAdjuster field(DateTimeFieldType dateTimeFieldType, int scale) {
+        DateTimeAdjuster adjuster = new DateTimeAdjusterAbstract() {
+            @Override
+            public DateTime adjustInto(DateTime dateTime) {
+                return dateTime.property(dateTimeFieldType).addToCopy(scale).withTime(scale >= 0 ? zero : twentyFour);
+            }
+
+            @Override
+            public String toString() {
+                return dateTimeFieldType.toString();
             }
         };
         return new DateTimeAdjusterLogWrapperLogger(logger, adjuster);
@@ -151,7 +144,8 @@ public class DateTimeAdjusterFactory {
                 DateTime expected = dateTime;
                 while(expected.getDayOfWeek() != dayOfWeek)
                     expected = expected.plusDays( Integer.signum(scalar) );
-                expected = expected.plusWeeks(scalar - Integer.signum(scalar) * 1);
+                expected = expected.plusWeeks(scalar - Integer.signum(scalar));
+                expected = expected.withTime(LocalTime.MIDNIGHT).minusMillis(scalar<0?1:0);
                 return expected;
             }
 
@@ -164,17 +158,12 @@ public class DateTimeAdjusterFactory {
     }
 
 
-    public static DateTimeAdjuster parseAdjuster(String exprStr) {
+    public static Iterator<DateTimeAdjuster> parseSchedule(String exprStr) {
         PeriodTermLexer lex = new PeriodTermLexer(new ANTLRInputStream(exprStr));
         CommonTokenStream tokens = new CommonTokenStream(lex);
 
         PeriodTermParser parser = new PeriodTermParser(tokens);
 
-        /*
-        final AtomicReference<Integer> number = new AtomicReference<Integer>();
-        final AtomicReference<Period> period = new AtomicReference<Period>();
-        */
-        final AtomicReference<Integer> direction = new AtomicReference<Integer>();
         final AtomicReference<DateTimeAdjuster> adjuster = new AtomicReference<DateTimeAdjuster>();
 
         parser.addParseListener(new PeriodTermBaseListener() {
@@ -184,7 +173,7 @@ public class DateTimeAdjusterFactory {
         parser.addParseListener(new PeriodTermBaseListener() {
             @Override
             public void exitShift(PeriodTermParser.ShiftContext ctx) {
-                adjuster.set(DateTimeAdjusterFactory.apply());
+                adjuster.set(SchedulerFactory.apply());
 
                 int i = 0;
                 for(PeriodTermParser.OperatorContext operatorCtx : ctx.operator()) {
@@ -199,7 +188,7 @@ public class DateTimeAdjusterFactory {
                     final DateTimeAdjuster loopPeriodAdjuster;
                     if(ctx.period(i) != null) {
                         Period loopPeriod = Period.parse("P" + ctx.period(i).getText());
-                        loopPeriodAdjuster = DateTimeAdjusterFactory.apply(loopPeriod, scalar);
+                        loopPeriodAdjuster = SchedulerFactory.apply(loopPeriod, scalar);
                     } else throw new IllegalArgumentException("");
 
                     adjuster.set(adjuster.get().andThen(loopPeriodAdjuster));
@@ -210,7 +199,7 @@ public class DateTimeAdjusterFactory {
             }
             @Override
             public void exitSelector(PeriodTermParser.SelectorContext ctx) {
-                adjuster.compareAndSet(null, DateTimeAdjusterFactory.apply());
+                adjuster.compareAndSet(null, SchedulerFactory.apply());
 
                 int i = 0;
                 for(PeriodTermParser.DirectionContext directionCtx : ctx.direction()) {
@@ -218,30 +207,28 @@ public class DateTimeAdjusterFactory {
                     final int scale = directionCtx.NEXT().size() - directionCtx.PREVIOUS().size();
 
                     if(ctx.QUARTER(i) != null) {
-                        DateTimeAdjuster shifter = DateTimeAdjusterFactory.quarter(scale);
+                        DateTimeAdjuster shifter = quarter(scale);
                         adjuster.set(adjuster.get().andThen(shifter));
-                    } else if(ctx.WEDNESDAY(i) != null) {
-                        DateTimeAdjuster shifter = DateTimeAdjusterFactory.dayOfWeek(DateTimeConstants.WEDNESDAY, scale);
+                    }
+                    if(ctx.DAY_OF_WEEK(i) != null) {
+                        // TODO consider all days of week
+                        DateTimeAdjuster shifter = dayOfWeek(DateTimeConstants.WEDNESDAY, scale);
+                        adjuster.set(adjuster.get().andThen(shifter));
+                    }
+                    if(ctx.DAY(i) != null) {
+                        DateTimeAdjuster shifter = field(DateTimeFieldType.dayOfMonth(), scale);
+                        adjuster.set(adjuster.get().andThen(shifter));
+                    }
+                    if(ctx.MONTH(i) != null) {
+                        System.out.print(scale + "~~" + ctx.MONTH(i));
+                        DateTimeAdjuster shifter = field(DateTimeFieldType.monthOfYear(), scale);
+
                         adjuster.set(adjuster.get().andThen(shifter));
                     }
 
                     i += 1;
                 }
             }
-
-            /*
-            @Override public void exitDirection(PeriodTermParser.DirectionContext ctx) {
-                if( ctx.PLUS() != null ) {
-                    direction.set(1);
-                }
-                else if( ctx.MINUS() != null ) {
-                    direction.set(-1);
-                }
-                else {
-                    direction.set(1);
-                }
-            }
-            */
 
             @Override
             public void exitPeriod(PeriodTermParser.PeriodContext ctx) {
@@ -251,7 +238,9 @@ public class DateTimeAdjusterFactory {
 
         parser.adjust();
 
-        return adjuster.get();
+        ArrayList<DateTimeAdjuster> arrayList = new ArrayList<>();
+        arrayList.add(adjuster.get());
+        return arrayList.iterator();
     }
 
 }

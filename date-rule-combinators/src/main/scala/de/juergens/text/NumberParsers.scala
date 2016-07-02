@@ -53,10 +53,13 @@ trait OrdinalParsers  extends RegexParsers with ExtendedRegexParsers {
 
 
   assert( parseAll(ordinalNumbers,
-    "1st 2nd 3rd 4th 5th 6th 7th 8th 9th 10th 11th 12th 13th 14th 15th 16th 17th 18th 19th 20th 21st 22nd 23rd 24th 25th 26th 27th 28th 29th 30th 101st 102nd 103rd 104th 105th 106th 107th 108th 109th 110th").isEmpty
+    "1st 2nd 3rd 4th 5th 6th 7th 8th 9th 10th 11th 12th 13th 14th 15th 16th 17th 18th 19th 20th 21st 22nd 23rd" +
+      "24th 25th 26th 27th 28th 29th 30th 101st 102nd 103rd 104th 105th 106th 107th 108th 109th 110th").isEmpty
   )
 
-  def ordinal : Parser[Ordinal] = textual | numerical | ordinalNumbers
+  import scala.language.postfixOps
+  def ordinal : Parser[Ordinal] = ("the"?) ~ (textual | numerical | ordinalNumbers) ^^
+  {case _ ~ ord => ord}
 }
 
 trait NumberParsers extends RegexParsers with CardinalParsers with OrdinalParsers

@@ -42,7 +42,8 @@ trait EveryParsers  extends JavaTokenParsers with ExtendedRegexParsers {
 
 /**
  * date: on 27.05.15
- * @author juergens
+  *
+  * @author juergens
  *
  */
 class DateRuleParsers
@@ -59,7 +60,8 @@ class DateRuleParsers
     ("Jan"|"Feb"|"Mar"|"Apr"|"May"|"Jun"|"Jul"|"Aug"|"Sep"|"Oct" |"Nov"|"Dec") ^^
     { MonthFormat("MMM")(_) }
   private def monthLong : Parser[Month] =
-    ("march"| "april" | "may" | "june" | "august" | "september" | "december") ^^
+    ("january" | "february" | "march"| "april" | "may" | "june"
+      | "july" | "august" | "september" | "october" | "november" | "december") ^^
     { MonthFormat("MMMM")(_)}
   def monthName : Parser[Month] = month3 | monthLong
 
@@ -173,11 +175,25 @@ class DateRuleParsers
   def ordinalUnit : Parser[LocalDateAdjuster] = ordinal ~ timeUnitSingular ^^
     { x=> TemporalPeriodSeek(x._1, x._2) }
 
+  /** e.g. fourth july */
   def ordinalName : Parser[LocalDateAdjuster] = ordinal ~ (dayOfWeek | monthName | "quarter") ^^
     {
       case ~(ordinal, w:DayOfWeek) => DayOfWeekAdjuster(ordinal.abs, w, Direction(ordinal.toInt))
-      case ~(ordinal, m:java.time.Month) => MonthAdjuster(ordinal.abs, m, Direction(ordinal.toInt))
+      case ordinal ~ (m:java.time.Month) => MonthAdjuster(ordinal.abs, m, Direction(ordinal.toInt))
       case ~(ordinal, "quarter") => QuarterAdjuster(ordinal.toInt)
+    }
+
+  /** e.g. the fourth of july, 17. day of second quarter */
+  def dayOf : Parser[LocalDateAdjuster] = ordinal ~ ("day"?) ~ "of" ~ (monthName | ordinalQuarter) ^^
+    {
+      case ordinal ~ _ ~ _ ~ (m:Month) =>
+        new TemporalAdjusterWrapper(
+          (m.adjustInto _).andThen(_.`with`(ChronoField.DAY_OF_MONTH,ordinal))
+        )
+      case ordinal ~ _ ~ _ ~ (q:Quarter) =>
+        new TemporalAdjusterWrapper(
+          (q.adjustInto _).andThen(_.`with`(ChronoField.DAY_OF_MONTH,ordinal))
+        )
     }
 
   @deprecated("use ordinalUnit instead", "0.0.3")
@@ -195,8 +211,21 @@ class DateRuleParsers
           MonthAdjuster(Ordinal(1),m,Up).andThen[LocalDate](adjuster)
     }
 
-/*
-*/
+  /** If July 4 is a Saturday, it is observed on Friday, "If July 4 is a Sunday, it is observed on Monday" */
+  def observe : Parser[LocalDateAdjuster] =
+    "if" ~  "july 4" ~ "is"  ~ "a" ~ dayOfWeek ~ "," ~ "it is observed on" ~ dayOfWeek ^^
+    {
+      case "if" ~  "july 4" ~ "is"  ~ "a" ~ dayOfWeekOrigin ~ "," ~ "it is observed on" ~ dayOfWeekDestination => {
+        def prepone(t: Temporal) : LocalDate =
+          if(t.get(ChronoField.DAY_OF_WEEK) == dayOfWeekOrigin.getValue) {
+            val direction = Direction.fromNumber( dayOfWeekDestination.getValue - dayOfWeekOrigin.getValue )
+            DayOfWeekAdjuster(Ordinal(1), dayOfWeekDestination, direction)(t)
+          } else LocalDate.from(t)
+        new TemporalAdjusterWrapper(prepone)
+      }
+    }
+
+
 
   def dayOfWeekInMonth : Parser[LocalDateAdjuster] = ordinal ~ dayOfWeek ~ "in" ~ monthName ^^
     {

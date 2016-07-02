@@ -43,7 +43,7 @@ case class MonthAdjuster(ordinal: Ordinal, month: Month, direction: Direction)
       case Down => date = TemporalAdjusters.firstDayOfMonth().adjustInto(date)
     }
 
-    assert( temporal.get(ChronoField.MONTH_OF_YEAR) == month.getValue )
+    assert( date.get(ChronoField.MONTH_OF_YEAR) == month.getValue )
 
     date
   }

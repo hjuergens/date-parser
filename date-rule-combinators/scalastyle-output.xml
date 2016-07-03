@@ -39,7 +39,7 @@
  <file name="/home/juergens/workspace/date-parser/date.rule/src/test/scala/de/juergens/util/IntervalTest.scala">
   <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
  </file>
- <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/text/DateParser.scala">
+ <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/text/DateParsers.scala">
   <error source="org.scalastyle.file.FileLengthChecker" severity="warning" message="File length exceeds 1 lines"/>
  </file>
  <file name="/home/juergens/workspace/date-parser/date.rule/src/main/scala/de/juergens/rule/Predicate.scala">

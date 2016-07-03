@@ -49,21 +49,9 @@ trait EveryParsers  extends JavaTokenParsers with ExtendedRegexParsers {
 class DateRuleParsers
   extends JavaTokenParsers
     with NumberParsers
+    with DateParsers
     with ExtendedRegexParsers
     with EveryParsers {
-
-  def dayOfWeek : Parser[DayOfWeek] =
-    ("monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday") ^^
-    { DayOfWeekFormat("EEEE") }
-
-  private def month3 : Parser[Month] =
-    ("Jan"|"Feb"|"Mar"|"Apr"|"May"|"Jun"|"Jul"|"Aug"|"Sep"|"Oct" |"Nov"|"Dec") ^^
-    { MonthFormat("MMM")(_) }
-  private def monthLong : Parser[Month] =
-    ("january" | "february" | "march"| "april" | "may" | "june"
-      | "july" | "august" | "september" | "october" | "november" | "december") ^^
-    { MonthFormat("MMMM")(_)}
-  def monthName : Parser[Month] = month3 | monthLong
 
   /** PnYnMnD */
   def timeUnitSingular : Parser[TemporalUnit] = ("year" | "month" | "week" | "day" | "quarter") ^^

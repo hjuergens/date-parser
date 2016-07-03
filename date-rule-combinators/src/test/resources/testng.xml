@@ -11,7 +11,7 @@
                     <exclude name="firstDayOfNextMonthTest" />
                 </methods>
             </class>
-            <class name="de.juergens.text.DateParserTestNG" />
+            <class name="de.juergens.text.DateParsersTestNG" />
         </classes>
     </test>
 

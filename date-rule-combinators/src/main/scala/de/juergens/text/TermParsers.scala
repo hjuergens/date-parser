@@ -3,21 +3,20 @@
 
 package de.juergens.text
 
-import java.time
 import java.time._
 import java.time.temporal._
 
 import de.juergens.time.{PeriodDuration => _}
 import org.threeten.extra.DayOfMonth
 
-import scala.util.parsing.combinator._
 import scala.language.postfixOps
+import scala.util.parsing.combinator._
 
 trait TermParsers extends JavaTokenParsers {
 
   type BusinessDayConvention = (LocalDate) => LocalDate
 
-  def term: Parser[Any] = periodTerm | date
+  def term: Parser[Any] = periodTerm | isoDate
 
   def standardPeriod: Parser[Period] = wholeNumber ~ timeUnitTerm ^^ {
     case number ~ ChronoUnit.DAYS => Period.ofDays(number.toInt)
@@ -55,7 +54,7 @@ trait TermParsers extends JavaTokenParsers {
       case "Y" => ChronoUnit.YEARS
     }
 
-  def date: Parser[LocalDate] = year4~"-"~month~"-"~dayOfMonth ^^
+  def isoDate: Parser[LocalDate] = year4~"-"~month~"-"~dayOfMonth ^^
     { case year~"-"~month~"-"~dayOfMonth => LocalDate.of(year.getValue,month,dayOfMonth.getValue) }
 
   def year4: Parser[Year] = """\d\d\d\d""".r ^^

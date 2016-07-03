@@ -9,7 +9,8 @@ import scala.io.Source
 
 object FileTesterCompanion {
 
-  def parserMethod[T](parser: scala.util.parsing.combinator.Parsers = new DateRuleParsers, methodName : String = "adjuster") : parser.Parser[T] = {
+  def parserMethod[T](parser: scala.util.parsing.combinator.Parsers =
+                      new DateRuleParsers, methodName : String = "adjuster") : parser.Parser[T] = {
     val m : AnyRef = parser.getClass.getMethod(methodName).invoke(parser)
     m.asInstanceOf[parser.Parser[T]]
   }
@@ -30,4 +31,22 @@ object FileTesterCompanion {
 
     filteredLines.map(Array[Object](_))
   }
+
+  def getListOfFiles(dir: File):List[File] =
+    dir.listFiles.filter(_.isFile).toList
+
+  import scala.util.matching.Regex
+
+  /**
+    * http://stackoverflow.com/questions/2637643/how-do-i-list-all-files-in-a-subdirectory-in-scala
+    */
+  def recursiveListFiles(f: File, r: Regex): Array[File] = {
+    val these = f.listFiles
+    val good = listFiles(f,r)
+    good ++ these.filter(_.isDirectory).flatMap(listFiles(_,r))
+  }
+
+  def listFiles(f: File, r: Regex): Array[File] =
+    f.listFiles.filter(f => r.findFirstIn(f.getName).isDefined)
+
 }

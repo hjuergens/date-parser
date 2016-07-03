@@ -1,6 +1,6 @@
 package de.juergens.text
 
-import java.time.temporal.ChronoField
+import java.time.temporal.{ChronoField, TemporalAdjuster}
 import java.time.{DayOfWeek, LocalDate, Month, Year}
 
 import de.juergens.util.Ordinal
@@ -16,13 +16,13 @@ import org.junit.runners.JUnit4
   */
 @RunWith(value = classOf[JUnit4])
 class IndependenceDayTest
-  extends ParserTest(new DateRuleParsers) {
+  extends ParserTest[TemporalAdjuster](new DateRuleParsers) {
 
   @Test(timeout = 1500)
   def testFourth() : Unit =  {
     val parseResult = parse("ordinal", "Fourth".toLowerCase)
     assertTrue("", parseResult.successful)
-    assertTrue("", parseResult.get.isInstanceOf[Ordinal])
+    assertTrue("", parseResult.get.isInstanceOf[Ordinal]) // TODO fruitless
   }
 
   @Test(timeout = 1500)

@@ -2,9 +2,9 @@ package de.juergens.text
 
 import java.time.LocalDate
 
-import org.testng.annotations.{AfterMethod, BeforeMethod, Test}
+import org.testng.annotations.Test
 
-class DateParserTestNG extends DateParser {
+class DateParsersTestNG extends DateParsers {
   @Test
   @throws(classOf[Exception])
   def testParse() {

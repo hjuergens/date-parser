@@ -9,7 +9,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 @RunWith(value = classOf[JUnit4])
-class ThreeMonthsAfterNextImmTest extends ParserTest(new DateRuleParsers) {
+class ThreeMonthsAfterNextImmTest extends ParserTest[TemporalAdjuster](new DateRuleParsers) {
   @Test(timeout = 1500)
   def testThree() : Unit =  {
     val parseResult = parser.parseAll(parserMethod("cardinal"), "three".toLowerCase)
@@ -33,7 +33,7 @@ class ThreeMonthsAfterNextImmTest extends ParserTest(new DateRuleParsers) {
   }
   @Test(timeout = 1500)
   def testNextImm() : Unit =  {
-    val parserTest = new ParserTest(new TermParsers{})
+    val parserTest = new ParserTest[TemporalAdjuster](new TermParsers{})
     val parseResult = parserTest.parser.parseAll(parserTest.parserMethod("imm"), "next imm".toLowerCase)
     assertTrue("", parseResult.successful)
 

@@ -1,7 +1,7 @@
 package de.juergens.text
 
-import java.time.temporal.{Temporal, TemporalAdjuster}
 import java.time._
+import java.time.temporal.{Temporal, TemporalAdjuster}
 
 import org.junit.Assert._
 import org.junit.Test
@@ -9,7 +9,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 @RunWith(value = classOf[JUnit4])
-class ThreeDaysFromNowTest extends ParserTest(new DateRuleParsers) {
+class ThreeDaysFromNowTest extends ParserTest[TemporalAdjuster](new DateRuleParsers) {
   private val clock : Clock = Clock.system(ZoneId.systemDefault())  // dependency inject
 
   @Test(timeout = 1500)

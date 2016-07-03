@@ -12,7 +12,7 @@ class TermParsersTest extends TermParsers {
 
   @Test
   def testDate() :Unit ={
-    val result = parseAll(date, "2015-Aug-20")
+    val result = parseAll(isoDate, "2015-Aug-20")
     assertTrue(result.toString, result.successful)
   }
 

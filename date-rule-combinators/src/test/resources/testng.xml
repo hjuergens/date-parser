@@ -19,7 +19,6 @@
         <classes>
             <class name="de.juergens.text.AdjusterTest" />
             <class name="de.juergens.text.PeriodDurationTest" />
-            <class name="de.juergens.text.PrefixesTest" />
             <class name="de.juergens.text.HighSophisticatedTest" />
             <class name="de.juergens.text.LastTradingDayTestNG" />
             <class name="de.juergens.text.TermParsersTest" />

@@ -33,8 +33,10 @@ class AdjusterTest(line: String) extends ParserTest(new DateRuleParsers) {
   def test() : Unit =  { test(line) }
 
   private[text] def test(_line:String) : Unit =  {
-    parse("adjuster", _line.toLowerCase).get
+    val result = parse("adjuster", _line.toLowerCase)
+    assert( result.successful, "parse unsuccessful" )
   }
+
 }
 
 object AdjusterTest extends ParserTestCompanion {

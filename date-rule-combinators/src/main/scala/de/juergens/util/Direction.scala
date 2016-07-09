@@ -20,7 +20,7 @@ case object Down extends Direction {
 object Direction {
   def fromStr(x : String) : Direction = x.toLowerCase match {
     case "next" | "after" | "following" => Up
-    case "previous" | "before" | "prior" | "preceding" => Down
+    case "previous" | "before" | "prior" | "preceding" | "ago" => Down
   }
 
   def fromNumber(x : Any) : Direction = x match {

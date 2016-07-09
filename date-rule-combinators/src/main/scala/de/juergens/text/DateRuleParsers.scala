@@ -21,7 +21,7 @@ import java.time.{LocalDate, _}
 import java.util.function.{Predicate => JPredicate}
 
 import de.juergens.time._
-import de.juergens.time.impl.{DayShifter, TimeUnitShifter}
+import de.juergens.time.impl.DayShifter
 import de.juergens.time.predicate.{Attribute, WeekDayPredicate}
 import de.juergens.util._
 
@@ -116,7 +116,7 @@ class DateRuleParsers
 
   def previous : Parser[Direction] = ("next" | "previous" ) ^^
     { Direction(_) }
-  def afterOrBefore : Parser[Direction] = ( "after" | "before" | "later" | "prior" ) ^^
+  def afterOrBefore : Parser[Direction] = ( "after" | "before" | "later" | "prior" | "ago") ^^
     { Direction(_) }
   def direction : Parser[Direction] = afterOrBefore
 
@@ -124,14 +124,24 @@ class DateRuleParsers
     { Direction(_) }
 
   /** e.g. second friday after */
-  def seekDayOfWeek : Parser[LocalDateAdjuster] =  (ordinal?) ~ ( dayOfWeek ~ (direction?) ) ^^
+  private def seekDayOfWeekOrd : Parser[LocalDateAdjuster] =  ("the"?) ~ (ordinal?) ~ ( dayOfWeek ~ (direction?) ) ^^
     {
-      case optionalOrdinal~ (dayOfWeek ~ optionalDirection) => {
+      case _ ~ optionalOrdinal ~ (dayOfWeek ~ optionalDirection) => {
         val ord = optionalOrdinal.getOrElse(Ordinal(1))
         val dir = optionalDirection.getOrElse(Up)
         DayOfWeekAdjuster(ord, dayOfWeek, dir)
       }
     }
+
+  /** e.g. two fridays before */
+  private def seekDayOfWeekCard : Parser[LocalDateAdjuster] =  cardinal ~ dayOfWeek ~ direction ^^
+    {
+      case number ~ dayOfWeek ~ dir => {
+        DayOfWeekAdjuster(Ordinal(number), dayOfWeek, dir)
+      }
+    }
+
+  def seekDayOfWeek = seekDayOfWeekOrd | seekDayOfWeekCard
 
   def seekMonth :   Parser[LocalDateAdjuster] = (ordinal?) ~ (monthName ~ (direction?)) ^^
     {
@@ -146,10 +156,11 @@ class DateRuleParsers
   def periodUnit : Parser[TemporalAmount] = cardinal~dateUnit ^^
     {
       case ~(card,ChronoUnit.DAYS) => Period.ofDays(card)
+      case ~(card,ChronoUnit.WEEKS) => Period.ofWeeks(card)
       case ~(card,ChronoUnit.MONTHS) => Period.ofMonths(card)
       case ~(card,ChronoUnit.YEARS) => Period.ofYears(card)
     }
-  def durationUnit : Parser[Duration] = cardinal~dateUnit ^^
+  def durationUnit : Parser[Duration] = cardinal~timeUnit ^^
     { case ~(card,unit) =>Duration.of(card, unit) }
 
   def period : Parser[Period] = repsep(periodUnit, "and" | ",") ^^
@@ -190,10 +201,6 @@ class DateRuleParsers
           (q.adjustInto _).andThen(_.`with`(ChronoField.DAY_OF_MONTH,ordinal))
         )
     }
-
-  @deprecated("use ordinalUnit instead", "0.0.3")
-  def ordinalTimeUnit : Parser[TimeUnitShifter] = ordinal~timeUnitSingular ^^
-    { x=> TimeUnitShifter(x._1.toInt, x._2) }
 
   import LocalDateAdjuster._
 
@@ -274,7 +281,7 @@ class DateRuleParsers
   //  finding the next or previous day-of-week, such as "next Thursday"
 
   def adjuster : Parser[LocalDateAdjuster] =
-    dayOfWeekInMonth | tomorrowYesterdayToday | seekDayOfWeek | seekMonth | ordinalUnit | ordinalName
+    dayOfWeekInMonth | tomorrowYesterdayToday | seekDayOfWeek | seekMonth | ordinalUnit | ordinalName | shifter
 }
 
 

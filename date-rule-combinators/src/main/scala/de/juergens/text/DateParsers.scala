@@ -16,8 +16,8 @@ trait DateParsers
     with NumberParsers {
 
   def dayOfWeek : Parser[DayOfWeek] =
-    ("monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday") ^^
-      { DayOfWeekFormat("EEEE") }
+    RegexParser("""(monday|tuesday|wednesday|thursday|friday|fridays|saturday|sunday)s?""".r) ^^
+      { x => DayOfWeekFormat("EEEE")(x.group(1)) }
 
   private def month3 : Parser[Month] =
     ("Jan"|"Feb"|"Mar"|"Apr"|"May"|"Jun"|"Jul"|"Aug"|"Sep"|"Oct" |"Nov"|"Dec") ^^

@@ -8,7 +8,7 @@ next week
 next month
 next year
 # 3 days from now
-# three weeks ago
+three weeks ago
 
 last wednesday
 first monday
@@ -20,8 +20,10 @@ Yesterday
 day after
 day before
 the day before
-# the monday after
-# the monday before
+the monday after
+the monday before
+
+5 days prior
 
 day after tomorrow
 day before yesterday
@@ -38,6 +40,7 @@ previous april
 # weekend after next
 # the week after next
 
-# 2 fridays before
-# 4 tuesdays after
+2 fridays before
+4 tuesdays after
+
 

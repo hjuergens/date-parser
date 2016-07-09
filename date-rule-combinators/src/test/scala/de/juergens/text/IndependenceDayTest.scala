@@ -3,7 +3,6 @@ package de.juergens.text
 import java.time.temporal.{ChronoField, TemporalAdjuster}
 import java.time.{DayOfWeek, LocalDate, Month, Year}
 
-import de.juergens.util.Ordinal
 import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -20,27 +19,26 @@ class IndependenceDayTest
 
   @Test(timeout = 1500)
   def testFourth() : Unit =  {
-    val parseResult = parse("ordinal", "Fourth".toLowerCase)
+    val parseResult = parse("ordinal", "Fourth")
     assertTrue("", parseResult.successful)
-    assertTrue("", parseResult.get.isInstanceOf[Ordinal]) // TODO fruitless
   }
 
   @Test(timeout = 1500)
   def testJuly() : Unit =  {
-    val parseResult = parse("monthName", "July".toLowerCase)
+    val parseResult = parse("monthName", "July")
     assertTrue("", parseResult.successful)
     assertTrue("", parseResult.get.isInstanceOf[Month])
   }
 
   @Test(timeout = 1500)
   def testFourthOfJuly() : Unit =  {
-    val parseResult = parse("dayOf", "Fourth of July".toLowerCase)
+    val parseResult = parse("dayOf", "Fourth of July")
     assertTrue("", parseResult.successful)
   }
 
   @Test(timeout = 1500)
   def testTheFourthOfJuly() : Unit =  {
-    val parseResult = parse("dayOf", "the Fourth of July".toLowerCase)
+    val parseResult = parse("dayOf", "the Fourth of July")
     assertTrue("", parseResult.successful)
     assertEquals( Month.JULY.getValue,
       parseResult.get.adjustInto(LocalDate.now()).get(ChronoField.MONTH_OF_YEAR) )
@@ -57,8 +55,13 @@ class IndependenceDayTest
     */
   @Test(timeout = 1500)
   def testIfJuly4IsASaturdayItIsObservedOnFriday() : Unit =  {
-    val parseResult = parse("observe", "If July 4 is a Saturday, it is observed on Friday".toLowerCase)
+    val parseResult = parse("observe", "If July 4th is a Saturday, it is observed on Friday")
     assertTrue("", parseResult.successful)
+
+    val fourthOfJulyIn2010 = LocalDate.parse("2020-07-04")
+    assertEquals( DayOfWeek.FRIDAY.getValue,
+      parseResult.get.adjustInto(fourthOfJulyIn2010).get(ChronoField.DAY_OF_WEEK) )
+
     val fourthOfJulyIn2015 = LocalDate.parse("2015-07-04")
     assertEquals( DayOfWeek.FRIDAY.getValue,
       parseResult.get.adjustInto(fourthOfJulyIn2015).get(ChronoField.DAY_OF_WEEK) )
@@ -70,10 +73,15 @@ class IndependenceDayTest
     */
   @Test(timeout = 1500)
   def testIfJuly4ISASundayItIsObservedOnMonday() : Unit =  {
-    val parseResult = parse("observe", "If July 4 is a Sunday, it is observed on Monday".toLowerCase)
+    val parseResult = parse("observe", "If July 4 is a Sunday, it is observed on Monday")
     assertTrue("", parseResult.successful)
+
     val fourthOfJulyIn2016 = LocalDate.parse("2016-07-04")
     assertEquals( DayOfWeek.MONDAY.getValue,
       parseResult.get.adjustInto(fourthOfJulyIn2016).get(ChronoField.DAY_OF_WEEK) )
+
+    val ninthOfJulyIn2016 = LocalDate.parse("2016-07-09")
+    assertEquals( DayOfWeek.SATURDAY.getValue,
+      parseResult.get.adjustInto(ninthOfJulyIn2016).get(ChronoField.DAY_OF_WEEK) )
   }
 }

@@ -42,7 +42,7 @@ object Cardinal {
     def unapply(x: Any): Option[Cardinal] = condOpt(x){k andThen string2Long}.map(Cardinal(_))
   }
 
-  //implicit def int2Cardinal(x:Int) : Cardinal = Cardinal(x)
+  implicit def cardinal2Int(x:Cardinal) : Int = x.toLong.toInt
   implicit def cardinal2Long(x:Cardinal) : Long = x.toLong
 }
 

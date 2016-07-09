@@ -22,26 +22,27 @@
 
 package de.juergens
 
+import java.time.DayOfWeek
 import java.time.temporal._
 
-import de.juergens.rule.WeekDayPredicate
 import de.juergens.time.LocalDateAdjuster
+import de.juergens.time.predicate.Attribute
 import de.juergens.util.Ordinal
 
-case class Ordinal_WeekDay(ordinal:Ordinal, weekDayPredicate: WeekDayPredicate)
-  extends OrdinalAttribute(ordinal, weekDayPredicate.evaluate)
+case class Ordinal_WeekDay(ordinal:Ordinal, weekDay: DayOfWeek)
+  extends OrdinalAttribute(ordinal, new Attribute(weekDay).test)
   with LocalDateAdjuster
 {
 
   val Ordinal(number) = ordinal
 
-  val shifter = time.impl.DateShifter(weekDayPredicate.test)
+  val shifter = time.impl.DateShifter(predicate)
 
   def forward(count:Int) = new TemporalQuery[Temporal] {
     override def queryFrom(temporal: TemporalAccessor): Temporal =
     {
       TemporalQueries.localDate().queryFrom(temporal)
-        .`with`(TemporalAdjusters.nextOrSame(weekDayPredicate.weekDay))
+        .`with`(TemporalAdjusters.nextOrSame(weekDay))
         .plusWeeks(count-1)
     }
   }
@@ -49,7 +50,7 @@ case class Ordinal_WeekDay(ordinal:Ordinal, weekDayPredicate: WeekDayPredicate)
     override def queryFrom(temporal: TemporalAccessor): Temporal =
     {
       TemporalQueries.localDate().queryFrom(temporal)
-        .`with`(TemporalAdjusters.previousOrSame(weekDayPredicate.weekDay))
+        .`with`(TemporalAdjusters.previousOrSame(weekDay))
         .minusWeeks(count-1)
     }
   }

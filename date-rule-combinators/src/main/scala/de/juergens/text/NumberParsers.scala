@@ -35,9 +35,10 @@ trait CardinalParsers extends RegexParsers {
 trait OrdinalParsers  extends RegexParsers with ExtendedRegexParsers {
   val regExp = """(\d*1)st|(\d*2)nd|(\d*3)rd|(\d*[4,5,6,7,8,9,0])th|(1[1,2,3])th""".r
 
+
   private def textual = ("first" | "eleventh" | "second" | "twelfth" | "third" | "thirteenth"| "fourth" |
     "fourteenth" | "fifth" | "fifteenth" | "sixth" | "sixteenth" | "seventh " | "seventeenth" |
-    "eighth" | "eighteenth" | "ninth" | "nineteenth" | "tenth" | "twentieth") ^^
+    "eighth" | "eighteenth" | "ninth" | "nineteenth" | "tenth" | "twelfth" | "twelfe" | "twelveth" | "twentieth") ^^
     {
       Ordinal.string2Int.andThen(Ordinal.apply)
     }

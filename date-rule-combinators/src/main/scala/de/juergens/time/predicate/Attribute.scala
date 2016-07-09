@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package de.juergens.time
+package de.juergens.time.predicate
 
 import java.time.DayOfWeek
 import java.time.temporal.{TemporalAccessor, TemporalQuery}

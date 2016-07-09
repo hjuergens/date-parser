@@ -11,7 +11,7 @@ object Ordinal {
     case "second" => 2
     case "third" => 3
     case "eleventh" => 11
-    case "twelfth" => 12
+    case "twelfth" | "twelfe" | "twelveth" => 12
     case "thirteenth" => 13
     case "fourth" => 4
     case "fourteenth" => 14

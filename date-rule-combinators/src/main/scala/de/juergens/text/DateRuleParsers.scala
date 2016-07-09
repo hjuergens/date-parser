@@ -22,6 +22,7 @@ import java.util.function.{Predicate => JPredicate}
 
 import de.juergens.time._
 import de.juergens.time.impl.{DayShifter, TimeUnitShifter}
+import de.juergens.time.predicate.{Attribute, WeekDayPredicate}
 import de.juergens.util._
 
 import scala.language.postfixOps
@@ -82,6 +83,10 @@ class DateRuleParsers
   def attribute : Parser[JPredicate[TemporalAccessor]] = temporalAccessor ^^
     { (accessor: TemporalAccessor)  => new Attribute(accessor) }
 
+  def daysOfWeek : Parser[WeekDayPredicate] = repsep(dayOfWeek, "or" | ",") ^^
+    { new WeekDayPredicate(_ :_*) }
+
+
   def dayUnit : Parser[ChronoUnit] = ("days" | "day(s)") ^^
     { _=> ChronoUnit.DAYS }
   def weekUnit : Parser[ChronoUnit] = ("weeks" | "week(s)") ^^
@@ -115,6 +120,8 @@ class DateRuleParsers
     { Direction(_) }
   def direction : Parser[Direction] = afterOrBefore
 
+  def direction2 : Parser[Direction] = ("preceding" |  "following") ^^
+    { Direction(_) }
 
   /** e.g. second friday after */
   def seekDayOfWeek : Parser[LocalDateAdjuster] =  (ordinal?) ~ ( dayOfWeek ~ (direction?) ) ^^
@@ -138,12 +145,12 @@ class DateRuleParsers
   /** e.g. three months */
   def periodUnit : Parser[TemporalAmount] = cardinal~dateUnit ^^
     {
-      case ~(card,ChronoUnit.DAYS) => Period.ofDays(card.toInt)
-      case ~(card,ChronoUnit.MONTHS) => Period.ofMonths(card.toInt)
-      case ~(card,ChronoUnit.YEARS) => Period.ofYears(card.toInt)
+      case ~(card,ChronoUnit.DAYS) => Period.ofDays(card)
+      case ~(card,ChronoUnit.MONTHS) => Period.ofMonths(card)
+      case ~(card,ChronoUnit.YEARS) => Period.ofYears(card)
     }
   def durationUnit : Parser[Duration] = cardinal~dateUnit ^^
-    { case ~(card,unit) =>Duration.of(card.toInt, unit) }
+    { case ~(card,unit) =>Duration.of(card, unit) }
 
   def period : Parser[Period] = repsep(periodUnit, "and" | ",") ^^
     { _.foldRight(Period.ZERO)( (amount:TemporalAmount,period:Period) => period.plus(amount))}
@@ -199,20 +206,27 @@ class DateRuleParsers
           MonthAdjuster(Ordinal(1),m,Up).andThen[LocalDate](adjuster)
     }
 
-  /** If July 4 is a Saturday, it is observed on Friday, "If July 4 is a Sunday, it is observed on Monday" */
+  /**
+    * If July 4 is a Saturday, it is observed on Friday
+    * "If July 4 is a Sunday, it is observed on Monday"
+    * "If October 10 is a Tuesday, Wednesday or Thursday, it is observed on preceding Monday"
+    * "If October 10 is a Friday, it is observed on following Monday"
+    **/
   def observe : Parser[LocalDateAdjuster] =
-    "if" ~  "july 4" ~ "is"  ~ "a" ~ dayOfWeek ~ "," ~ "it is observed on" ~ dayOfWeek ^^
-    {
-      case "if" ~  "july 4" ~ "is"  ~ "a" ~ dayOfWeekOrigin ~ "," ~ "it is observed on" ~ dayOfWeekDestination => {
-        def prepone(t: Temporal) : LocalDate =
-          if(t.get(ChronoField.DAY_OF_WEEK) == dayOfWeekOrigin.getValue) {
-            val direction = Direction.fromNumber( dayOfWeekDestination.getValue - dayOfWeekOrigin.getValue )
-            DayOfWeekAdjuster(Ordinal(1), dayOfWeekDestination, direction)(t)
-          } else LocalDate.from(t)
-        new TemporalAdjusterWrapper(prepone)
+    "if" ~  monthDay ~ "is"  ~ "a" ~ daysOfWeek ~ "," ~ "it is observed on" ~ (direction2?) ~ dayOfWeek ^^
+      {
+        case "if" ~  monthDay ~ "is"  ~ "a" ~ ds ~ "," ~
+          "it is observed on" ~ optDir ~ dayOfWeekDestination => {
+          val direction = optDir.getOrElse{
+            Direction.fromNumber( ds.weekDay.map(dayOfWeekDestination.getValue - _.getValue).min )
+          }
+          def preOrPostPone(t: Temporal) : LocalDate =
+            if(ds.test(t)) {
+              DayOfWeekAdjuster(Ordinal(1), dayOfWeekDestination, direction)(t)
+            } else LocalDate.from(t)
+          new TemporalAdjusterWrapper(preOrPostPone)
+        }
       }
-    }
-
 
 
   def dayOfWeekInMonth : Parser[LocalDateAdjuster] = ordinal ~ dayOfWeek ~ "in" ~ monthName ^^

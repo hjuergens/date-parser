@@ -19,8 +19,8 @@ case object Down extends Direction {
  */
 object Direction {
   def fromStr(x : String) : Direction = x.toLowerCase match {
-    case "next" | "after"  => Up
-    case "previous" | "before" | "prior" => Down
+    case "next" | "after" | "following" => Up
+    case "previous" | "before" | "prior" | "preceding" => Down
   }
 
   def fromNumber(x : Any) : Direction = x match {
@@ -32,6 +32,6 @@ object Direction {
 
   def apply(x : Any) : Direction = x match {
     case str : String => fromStr(str)
-    case x => fromNumber(x)
+    case a => fromNumber(a)
   }
 }

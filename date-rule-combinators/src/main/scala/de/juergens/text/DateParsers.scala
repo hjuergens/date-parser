@@ -6,6 +6,8 @@ package de.juergens.text
 import java.time.temporal._
 import java.time.{DayOfWeek, Month, Year, LocalDate => Date}
 
+import de.juergens.util.{Cardinal, Ordinal}
+
 import scala.util.parsing.combinator._
 
 trait DateParsers
@@ -46,9 +48,12 @@ trait DateParsers
     override def apply(t: TemporalAccessor): Date = queryFrom(t)
   }
 
-  private def monthOrdinal : Parser[TemporalQuery[Date]] = monthName ~ ordinal ^^
+  import Cardinal.cardinal2Int
+
+  private def monthOrdinal : Parser[TemporalQuery[Date]] = monthName ~ (ordinal|cardinal) ^^
     {
-      case m ~ d => (temporal: TemporalAccessor) => Year.from(temporal).atMonth(m).atDay(d)
+      case m ~ (ord:Ordinal)   => (temporal: TemporalAccessor) => Year.from(temporal).atMonth(m).atDay(ord)
+      case m ~ (card:Cardinal) => (temporal: TemporalAccessor) => Year.from(temporal).atMonth(m).atDay(card)
     }
 
   private def ordinalOfMonth : Parser[TemporalQuery[Date]] = ordinal ~ "of" ~ monthName ^^
@@ -61,6 +66,7 @@ trait DateParsers
     * fourth of July
     * February 29th
     * 16th of september
+    * july 4th
     */
   def monthDay : Parser[TemporalQuery[Date]] = monthOrdinal | ordinalOfMonth
 }

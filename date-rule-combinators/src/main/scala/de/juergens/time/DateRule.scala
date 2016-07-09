@@ -10,16 +10,16 @@ import java.time.LocalDate
 import java.time.temporal.{ChronoField, Temporal, TemporalAccessor}
 import java.util.function.Predicate
 
-import xuwei_k.Scala2Java8.predicate
 import de.juergens.rule.PredicateHelper._
 import de.juergens.time.impl.DateShifter
+import xuwei_k.Scala2Java8
 
 import scala.language.implicitConversions
 
 sealed abstract class DateRule {
   def evaluate(anchor: LocalDate)(t: Temporal): Boolean
 
-  def test(anchor: LocalDate): Predicate[Temporal] = evaluate(anchor) _
+  def test(anchor: LocalDate): Predicate[Temporal] = Scala2Java8.predicate(evaluate(anchor) _)
 
   def date(anchor: LocalDate, calendar: Calendar): LocalDate = {
     val shifter = new DateShifter(test(anchor))

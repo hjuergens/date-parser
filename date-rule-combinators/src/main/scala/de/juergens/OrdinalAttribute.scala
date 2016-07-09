@@ -1,16 +1,11 @@
 package de.juergens
 
 import java.time.temporal._
-import java.time.{LocalDate => Date, DayOfWeek}
+import java.time.{LocalDate => Date}
 
-import de.juergens.rule.WeekDayPredicate
-import de.juergens.time._
-import de.juergens.time.impl.{DayShifter, TimeUnitShifter, WeekShifter}
-import de.juergens.util.{Cardinal, Direction, Ordinal, Sign}
+import de.juergens.util.Ordinal
 
-import scala.util.parsing.combinator.JavaTokenParsers
-
-abstract class OrdinalAttribute(ordinal:Ordinal, predicate:(Date)=>Boolean)
+abstract class OrdinalAttribute(ordinal:Ordinal, val predicate:(TemporalAccessor)=>Boolean)
   extends TemporalAdjuster
 
 

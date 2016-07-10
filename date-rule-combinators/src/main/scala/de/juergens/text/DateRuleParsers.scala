@@ -42,6 +42,20 @@ trait EveryParsers  extends JavaTokenParsers with ExtendedRegexParsers {
 }
 
 /**
+  * Composition with TermParsers
+  */
+trait Composition extends Parsers {
+  self: DateRuleParsers with TermParsers =>
+
+  /** e.g. "three months after next imm" */
+  def compose: Parser[TemporalAdjuster] = shifter ~ imm ^^
+    {
+      case ~(rhs, lhs) => (tp: Temporal) => rhs.adjustInto(lhs.adjustInto(tp))
+    }
+}
+
+
+/**
  * date: on 27.05.15
   *
   * @author juergens

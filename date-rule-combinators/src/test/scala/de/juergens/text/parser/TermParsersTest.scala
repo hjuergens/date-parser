@@ -1,4 +1,4 @@
-package de.juergens.text.parsers
+package de.juergens.text.parser
 
 import java.time.{LocalDate, Period, Year}
 

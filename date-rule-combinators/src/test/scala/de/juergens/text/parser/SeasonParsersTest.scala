@@ -1,4 +1,4 @@
-package de.juergens.text.parsers
+package de.juergens.text.parser
 
 import de.juergens.text.{DateRuleParsers, SeasonParsers}
 import org.junit.Assert.assertTrue

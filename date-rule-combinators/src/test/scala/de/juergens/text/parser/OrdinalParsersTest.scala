@@ -20,7 +20,7 @@
  *
  */
 
-package de.juergens.text.parsers
+package de.juergens.text.parser
 
 import de.juergens.text.DateRuleParsers
 import org.testng.Assert.assertTrue

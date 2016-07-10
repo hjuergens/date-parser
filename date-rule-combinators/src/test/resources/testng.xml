@@ -11,18 +11,18 @@
                     <exclude name="firstDayOfNextMonthTest" />
                 </methods>
             </class>
-            <class name="de.juergens.text.parsers.DateParsersTestNG" />
+            <class name="de.juergens.text.parser.DateParsersTestNG" />
         </classes>
     </test>
 
     <test name="Junit.text" junit="true" time-out="2000" verbose="3">
         <classes>
-            <class name="de.juergens.text.parsers.AdjusterTest" />
-            <class name="de.juergens.text.parsers.PeriodDurationTest" />
+            <class name="de.juergens.text.parser.AdjusterTest" />
+            <class name="de.juergens.text.parser.PeriodDurationTest" />
             <class name="de.juergens.text.complex.HighSophisticatedTest" />
             <class name="de.juergens.text.complex.LastTradingDayTestNG" />
-            <class name="de.juergens.text.parsers.TermParsersTest" />
-            <class name="de.juergens.text.parsers.OrdinalParsersTest" />
+            <class name="de.juergens.text.parser.TermParsersTest" />
+            <class name="de.juergens.text.parser.OrdinalParsersTest" />
         </classes>
     </test>
 

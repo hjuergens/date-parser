@@ -19,7 +19,7 @@ import org.junit.runners.JUnit4
   **/
 @RunWith(value = classOf[JUnit4])
 class DíaDeLaRazaTest
-  extends ParserTest[TemporalAdjuster](new DateRuleParsers) {
+  extends ParserTest(new DateRuleParsers) {
 
   val twelvesOfOctober = MonthDay.of(Month.OCTOBER,12)
 
@@ -75,7 +75,7 @@ class DíaDeLaRazaTest
   @Test(timeout = 1500)
   def testIfOctober12IsATuesdayWednesdayOrThursdayItIsObservedOnPrecedingMonday() : Unit =  {
     val rule = "If October 12 is a Tuesday, Wednesday or Thursday, it is observed on preceding Monday"
-    val parseResult = parse("observe", rule)
+    val parseResult = parse[TemporalAdjuster]("observe", rule)
     assertTrue("parse error", parseResult.successful)
 
     val columbusHoliday = parseResult.get
@@ -132,7 +132,7 @@ class DíaDeLaRazaTest
   @Test(timeout = 1500)
   def testIfOctober12IsAFridayItIsObservedOnFollowingMonday() : Unit =  {
     val rule = "If October 12 is a Friday, it is observed on following Monday"
-    val parseResult = parse("observe", rule)
+    val parseResult = parse[TemporalAdjuster]("observe", rule)
     assertTrue("", parseResult.successful)
 
     val columbusDayIn2012 = LocalDate.parse("2012-10-12") // FRIDAY

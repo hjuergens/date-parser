@@ -10,7 +10,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 @RunWith(value = classOf[JUnit4])
-class ThreeDaysFromNowTest extends ParserTest[TemporalAdjuster](new DateRuleParsers) {
+class ThreeDaysFromNowTest extends ParserTest(new DateRuleParsers) {
   private val clock : Clock = Clock.system(ZoneId.systemDefault())  // dependency inject
 
   @Test(timeout = 1500)
@@ -30,7 +30,7 @@ class ThreeDaysFromNowTest extends ParserTest[TemporalAdjuster](new DateRulePars
   }
   @Test(timeout = 1500)
   def testNow() : Unit =  {
-    val parseResult = parser.parseAll(parserMethod("tomorrowYesterdayToday"), "now".toLowerCase)
+    val parseResult = parser.parseAll(parserMethod[TemporalAdjuster]("tomorrowYesterdayToday"), "now".toLowerCase)
     assertTrue("", parseResult.successful)
 
     assertEquals(LocalDate.now(clock), parseResult.get.adjustInto(LocalDate.parse("2016-06-14")))

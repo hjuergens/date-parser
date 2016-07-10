@@ -25,14 +25,12 @@ import scala.util.parsing.combinator.JavaTokenParsers
 trait FinancialParsers extends JavaTokenParsers {
   self : DateRuleParsers =>
 
-  import java.time.temporal.{Temporal, TemporalUnit, TemporalAdjuster}
+  import java.time.temporal.{Temporal, TemporalAdjuster, TemporalUnit}
+
   import de.juergens.time.BusinessDay
 
-  def londonBusinessDayUnit : Parser[Set[Temporal] => TemporalUnit] = ("london business" ~ dayUnit) ^^
-    { case _ => (holidays : Set[Temporal]) => BusinessDay.unit(holidays) }
-
-  def businessDays : Parser[(Set[Temporal]) => TemporalUnit] = ("""business days?""".r) ^^
-    { _=>(holidays: Set[Temporal]) => BusinessDay.unit(holidays) }
+  def businessDays : Parser[(Set[Temporal]) => TemporalUnit] = ("""(london )?business days?""".r) ^^
+    { _=> (holidays: Set[Temporal]) => BusinessDay.unit(holidays) }
 
   /** e.g. two business days prior */
   def seek3 : Parser[(Set[Temporal]) => TemporalAdjuster] = cardinal ~ businessDays ~ direction ^^
@@ -46,8 +44,6 @@ trait FinancialParsers extends JavaTokenParsers {
         }
       }
     }
-
-
 }
 
 /**
@@ -56,8 +52,8 @@ trait FinancialParsers extends JavaTokenParsers {
 trait SeasonParsers  extends JavaTokenParsers with ExtendedRegexParsers {
   self : DateRuleParsers =>
 
-  import java.time.{LocalDate, MonthDay}
   import java.time.temporal.{TemporalAccessor, TemporalQuery}
+  import java.time.{LocalDate, MonthDay}
 
   import de.juergens.time.LocalDateAdjuster
 

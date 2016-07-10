@@ -16,7 +16,7 @@ import org.junit.runners.JUnit4
   */
 @RunWith(value = classOf[JUnit4])
 class IndependenceDayTest
-  extends ParserTest[TemporalAdjuster](new DateRuleParsers) {
+  extends ParserTest(new DateRuleParsers) {
 
   @Test(timeout = 1500)
   def testFourth() : Unit =  {
@@ -39,7 +39,7 @@ class IndependenceDayTest
 
   @Test(timeout = 1500)
   def testTheFourthOfJuly() : Unit =  {
-    val parseResult = parse("dayOf", "the Fourth of July")
+    val parseResult = parse[TemporalAdjuster]("dayOf", "the Fourth of July")
     assertTrue("", parseResult.successful)
     assertEquals( Month.JULY.getValue,
       parseResult.get.adjustInto(LocalDate.now()).get(ChronoField.MONTH_OF_YEAR) )
@@ -56,7 +56,7 @@ class IndependenceDayTest
     */
   @Test(timeout = 1500)
   def testIfJuly4IsASaturdayItIsObservedOnFriday() : Unit =  {
-    val parseResult = parse("observe", "If July 4th is a Saturday, it is observed on Friday")
+    val parseResult = parse[TemporalAdjuster]("observe", "If July 4th is a Saturday, it is observed on Friday")
     assertTrue("", parseResult.successful)
 
     val fourthOfJulyIn2010 = LocalDate.parse("2020-07-04")
@@ -74,7 +74,7 @@ class IndependenceDayTest
     */
   @Test(timeout = 1500)
   def testIfJuly4ISASundayItIsObservedOnMonday() : Unit =  {
-    val parseResult = parse("observe", "If July 4 is a Sunday, it is observed on Monday")
+    val parseResult = parse[TemporalAdjuster]("observe", "If July 4 is a Sunday, it is observed on Monday")
     assertTrue("", parseResult.successful)
 
     val fourthOfJulyIn2016 = LocalDate.parse("2016-07-04")

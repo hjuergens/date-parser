@@ -1,12 +1,14 @@
-package de.juergens.text.parsers
+package de.juergens.text.parser
 
 /**
- * Created by juergens on 31.05.15.
- */
-
+  * Created by juergens on 03.07.16.
+  */
 import java.io.File
+import java.time.temporal.TemporalQuery
+import java.time.{LocalDate, Year}
 
-import de.juergens.text.{DateRuleParsers, ParserTest, ParserTestCompanion}
+import de.juergens.FileTesterCompanion
+import de.juergens.text.{DateParsers, ParserTest, ParserTestCompanion}
 import org.junit._
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -14,12 +16,11 @@ import org.junit.runners.Parameterized.Parameters
 import org.testng.Reporter
 
 import scala.collection.JavaConversions._
-import scala.io.Source
 
 
 
 @RunWith(value = classOf[Parameterized])
-class AdjusterTest(line: String) extends ParserTest(new DateRuleParsers) {
+class MonthdayTest(line: String) extends ParserTest(new DateParsers {}) {
 
   @Before
   def before() {
@@ -34,18 +35,14 @@ class AdjusterTest(line: String) extends ParserTest(new DateRuleParsers) {
   def test() : Unit =  { test(line) }
 
   private[text] def test(_line:String) : Unit =  {
-    val result = parse("adjuster", _line.toLowerCase)
-    assert( result.successful, "parse unsuccessful" )
+    val result = parse[TemporalQuery[LocalDate]]("monthDay", _line.toLowerCase).get
+    val localDate = result.queryFrom(Year.of(2016))
   }
-
 }
 
-object AdjusterTest extends ParserTestCompanion {
+object MonthdayTest extends ParserTestCompanion {
 
-  val textFile = {
-    val url = getClass.getResource("/parsers/adjuster.txt")
-    new File(url.getFile)
-  }
+  val textFile = new File("/parsers/monthday.txt")
 
   @org.junit.BeforeClass
   def before() {
@@ -57,16 +54,8 @@ object AdjusterTest extends ParserTestCompanion {
     Reporter.log(s"textFile=$textFile")
   }
 
-  private[text] def _lines : Iterator[Array[Object]] = {
-    val filteredLines = Source.fromURI {
-      textFile.toURI
-    }.getLines().map(_.trim)
-      .filterNot(_.startsWith("#"))
-      .filterNot(_.isEmpty)
-      .filterNot(_.forall(_.isWhitespace))
-      .filterNot(_.forall(_ == '\u200B'))
-    filteredLines.map(Array[Object](_))
-  }
+  private[text] def _lines : Iterator[Array[Object]] =
+    FileTesterCompanion.linesOfFile("/parsers/monthday.txt").iterator()
 
   // NOTE: Must return collection of Array[AnyRef] (NOT Array[Any]).
   @Parameters(name = "{index}: {0}")

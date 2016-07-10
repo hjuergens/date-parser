@@ -1,4 +1,4 @@
-package de.juergens.text.parsers
+package de.juergens.text.parser
 
 /**
  * Created by juergens on 31.05.15.

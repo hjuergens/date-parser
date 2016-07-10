@@ -7,16 +7,19 @@ import scala.util.parsing.combinator.JavaTokenParsers
 /**
   * Created by juergens on 15.05.16.
   */
-class ParserTest[T](val parser:JavaTokenParsers) {
-  type P = parser.Parser[T]
+class ParserTest[Q<:JavaTokenParsers](val parser:Q) {
 
-  def parserMethod(methodName : String) : P = {
+  def parserMethod[T](methodName : String) : parser.Parser[T] = {
     val m : AnyRef = parser.getClass.getMethod(methodName).invoke(parser)
-    m.asInstanceOf[P]
+    m.asInstanceOf[parser.Parser[T]]
   }
 
-  def parse(parserName:String, text:String) =
+  def parse[T](parserName:String, text:String) :parser.ParseResult[T] =
     parser.parseAll(parserMethod(parserName), text.toLowerCase)
+
+  implicit class TextParser[T](parserName: String) {
+    def parse(text: String) :parser.ParseResult[T] = ParserTest.this.parse[T](parserName, text)
+  }
 }
 
 trait ParserTestCompanion {

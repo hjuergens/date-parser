@@ -20,8 +20,9 @@
  *
  */
 
-package de.juergens.text
+package de.juergens.text.parsers
 
+import de.juergens.text.DateRuleParsers
 import org.testng.Assert.assertTrue
 import org.testng.Reporter
 import org.testng.annotations.{BeforeMethod, Test}

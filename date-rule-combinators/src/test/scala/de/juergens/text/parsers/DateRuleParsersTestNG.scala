@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package de.juergens.text
+package de.juergens.text.parsers
 
 import java.time.temporal._
-import java.time.{YearMonth, DayOfWeek, LocalDate}
+import java.time.{DayOfWeek, LocalDate, YearMonth}
 
+import de.juergens.text.DateRuleParsers
 import de.juergens.util.Ordinal
 import org.scalatest.Assertions._
 import org.testng.Assert._

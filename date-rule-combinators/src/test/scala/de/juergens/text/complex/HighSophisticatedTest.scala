@@ -1,4 +1,4 @@
-package de.juergens.text
+package de.juergens.text.complex
 
 /**
  * Created by juergens on 31.05.15.
@@ -6,6 +6,7 @@ package de.juergens.text
 
 import java.{io => jio, lang => jl, util => ju}
 
+import de.juergens.text.DateRuleParsers
 import de.juergens.time.LocalDateAdjuster
 import org.hamcrest.Description
 import org.junit.Assert._
@@ -69,7 +70,7 @@ class HighSophisticatedTest(line: String) {
 object HighSophisticatedTest {
 
   val inputStream = {
-    getClass.getResourceAsStream("/high_sophisticated.txt")
+    getClass.getResourceAsStream("/complex/high_sophisticated.txt")
   }
 
   @org.junit.BeforeClass

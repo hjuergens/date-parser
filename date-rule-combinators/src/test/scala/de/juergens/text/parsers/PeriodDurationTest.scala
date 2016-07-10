@@ -1,4 +1,4 @@
-package de.juergens.text
+package de.juergens.text.parsers
 
 /**
  * Created by juergens on 31.05.15.
@@ -6,12 +6,13 @@ package de.juergens.text
 
 import java.time.temporal.TemporalAmount
 
+import de.juergens.text.DateRuleParsers
 import org.junit._
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
-import org.testng.Reporter
 import org.testng.Assert._
+import org.testng.Reporter
 
 import scala.collection.JavaConversions._
 import scala.io.Source
@@ -46,7 +47,7 @@ class PeriodDurationTest(line: String) {
 
 object PeriodDurationTest {
 
-  val textFileURI = getClass.getResource("/period.txt").toURI
+  val textFileURI = getClass.getResource("/parsers/period.txt").toURI
 
   @org.junit.BeforeClass
   def before {

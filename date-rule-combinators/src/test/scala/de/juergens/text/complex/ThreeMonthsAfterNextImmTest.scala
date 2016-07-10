@@ -1,8 +1,9 @@
-package de.juergens.text
+package de.juergens.text.complex
 
 import java.time.temporal.{Temporal, TemporalAdjuster}
 import java.time.{LocalDate, Year}
 
+import de.juergens.text.{DateRuleParsers, ParserTest, TermParsers}
 import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith

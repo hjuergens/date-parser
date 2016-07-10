@@ -1,7 +1,8 @@
-package de.juergens.text
+package de.juergens.text.parsers
 
 import java.time.LocalDate
 
+import de.juergens.text.DateParsers
 import org.testng.annotations.Test
 
 class DateParsersTestNG extends DateParsers {

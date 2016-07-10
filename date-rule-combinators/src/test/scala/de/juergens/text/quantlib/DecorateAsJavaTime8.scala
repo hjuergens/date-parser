@@ -1,5 +1,4 @@
-package de.juergens.text
-
+package de.juergens.text.quantlib
 
 import java.time.LocalDate
 import java.time.temporal.Temporal

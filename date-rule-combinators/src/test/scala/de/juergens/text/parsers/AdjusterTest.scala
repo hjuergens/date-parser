@@ -1,4 +1,4 @@
-package de.juergens.text
+package de.juergens.text.parsers
 
 /**
  * Created by juergens on 31.05.15.
@@ -6,6 +6,7 @@ package de.juergens.text
 
 import java.io.File
 
+import de.juergens.text.{DateRuleParsers, ParserTest, ParserTestCompanion}
 import org.junit._
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -42,7 +43,7 @@ class AdjusterTest(line: String) extends ParserTest(new DateRuleParsers) {
 object AdjusterTest extends ParserTestCompanion {
 
   val textFile = {
-    val url = getClass.getResource("/adjuster.txt")
+    val url = getClass.getResource("/parsers/adjuster.txt")
     new File(url.getFile)
   }
 

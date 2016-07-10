@@ -16,7 +16,7 @@ object FileTesterCompanion {
   }
 
   // NOTE: Must return collection of Array[AnyRef] (NOT Array[Any]).
-  def linesOfFile(path:String= "/adjuster.txt"): java.lang.Iterable[Array[Object]] ={
+  def linesOfFile(path:String= "/parsers/adjuster.txt"): java.lang.Iterable[Array[Object]] ={
     val textFile = {
       val url = getClass.getResource(path)
       new File(url.getFile)

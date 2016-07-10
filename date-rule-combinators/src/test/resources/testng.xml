@@ -6,23 +6,23 @@
     <test name="TestNG.text"  verbose="1"  annotations="JDK" >
         <parameter name="line" value="three day after next sunday" />
         <classes>
-            <class name="de.juergens.text.DateRuleParsersTestNG">
+            <class name="de.juergens.text.parsers.DateRuleParsersTestNG">
                 <methods>
                     <exclude name="firstDayOfNextMonthTest" />
                 </methods>
             </class>
-            <class name="de.juergens.text.DateParsersTestNG" />
+            <class name="de.juergens.text.parsers.DateParsersTestNG" />
         </classes>
     </test>
 
     <test name="Junit.text" junit="true" time-out="2000" verbose="3">
         <classes>
-            <class name="de.juergens.text.AdjusterTest" />
-            <class name="de.juergens.text.PeriodDurationTest" />
-            <class name="de.juergens.text.HighSophisticatedTest" />
-            <class name="de.juergens.text.LastTradingDayTestNG" />
-            <class name="de.juergens.text.TermParsersTest" />
-            <class name="de.juergens.text.OrdinalParsersTest" />
+            <class name="de.juergens.text.parsers.AdjusterTest" />
+            <class name="de.juergens.text.parsers.PeriodDurationTest" />
+            <class name="de.juergens.text.complex.HighSophisticatedTest" />
+            <class name="de.juergens.text.complex.LastTradingDayTestNG" />
+            <class name="de.juergens.text.parsers.TermParsersTest" />
+            <class name="de.juergens.text.parsers.OrdinalParsersTest" />
         </classes>
     </test>
 

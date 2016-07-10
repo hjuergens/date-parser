@@ -1,11 +1,12 @@
-package de.juergens.text
+package de.juergens.text.complex
 
 import java.time.temporal.TemporalAdjuster
 
 import de.juergens.FileTesterCompanion.linesOfFile
+import de.juergens.text.DateRuleParsers
 import org.testng.AssertJUnit._
 import org.testng.Reporter
-import org.testng.annotations.{Parameters, DataProvider, Test}
+import org.testng.annotations.{DataProvider, Parameters, Test}
 
 @Test(groups = Array { "seek"  })
 class LastTradingDayTestNG {
@@ -41,5 +42,5 @@ object LastTradingDayTestNG {
   import java.util.{Iterator => JIterator}
 
   @DataProvider(name = "lines in text file", parallel = true)
-  def lines: JIterator[Array[Object]] = linesOfFile("/last_trading_day.txt").iterator()
+  def lines: JIterator[Array[Object]] = linesOfFile("/complex/last_trading_day.txt").iterator()
 }

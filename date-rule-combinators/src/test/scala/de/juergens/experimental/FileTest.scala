@@ -35,7 +35,7 @@ object FileTest2 {
   @DataProvider(name="files")
   def dp : Array[Array[Object]] = {
     for {
-      i <- Array("/_prefixes.txt", "/adjuster.txt")
+      i <- Array("/_prefixes.txt", "/parsers/adjuster.txt")
     } yield Array[Object](i.asInstanceOf[Object])
     FileTest.files
   }

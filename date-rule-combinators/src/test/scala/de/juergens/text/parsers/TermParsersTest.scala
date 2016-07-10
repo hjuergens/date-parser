@@ -1,7 +1,8 @@
-package de.juergens.text;
+package de.juergens.text.parsers
 
 import java.time.{LocalDate, Period, Year}
 
+import de.juergens.text.TermParsers
 import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith

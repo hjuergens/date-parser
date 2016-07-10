@@ -1,8 +1,9 @@
-package de.juergens.text
+package de.juergens.text.complex
 
 import java.time.temporal.{ChronoField, TemporalAdjuster}
 import java.time.{DayOfWeek, LocalDate, Month, Year}
 
+import de.juergens.text.{DateRuleParsers, ParserTest}
 import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith

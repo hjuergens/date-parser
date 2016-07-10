@@ -1,9 +1,10 @@
-package de.juergens.text
+package de.juergens.text.parsers
 
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import de.juergens.text.{DateRuleParsers, SeasonParsers}
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.junit.runners.JUnit4
 
 @RunWith(value = classOf[JUnit4])
 class SeasonParsersTest {

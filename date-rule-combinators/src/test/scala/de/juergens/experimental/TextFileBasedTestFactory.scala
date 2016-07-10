@@ -1,4 +1,4 @@
-package de.juergens.text
+package de.juergens.experimental
 
 import java.io.File
 import java.nio.file.Paths

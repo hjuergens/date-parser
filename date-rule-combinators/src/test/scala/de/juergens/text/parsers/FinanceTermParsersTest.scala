@@ -1,18 +1,18 @@
-package de.juergens.text
+package de.juergens.text.parsers
 
+import java.time.LocalDate
 import java.time.temporal._
-import java.time.{LocalDate, Month, Period, Year}
-import org.jquantlib.time.{Date=>QL_Date}
 
+import de.juergens.text.TermParsers
+import de.juergens.text.quantlib.QuantLibConverters._
+import de.juergens.text.quantlib.{IsBusinessDay, QLDate}
 import org.jquantlib.time.calendars.{Target => QLTarget}
-import org.jquantlib.time.{Calendar => QLCalendar}
-import org.jquantlib.time.{BusinessDayConvention, Period => QLPeriod}
+import org.jquantlib.time.{BusinessDayConvention, Calendar => QLCalendar, Date => QL_Date, Period => QLPeriod}
 import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.specs2.mutable
-import QantLibConverters._
+
 import scala.language.implicitConversions
 
 @RunWith(value = classOf[JUnit4])

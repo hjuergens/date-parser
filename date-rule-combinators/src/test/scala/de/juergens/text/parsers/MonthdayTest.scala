@@ -1,4 +1,4 @@
-package de.juergens.text
+package de.juergens.text.parsers
 
 /**
   * Created by juergens on 03.07.16.
@@ -8,6 +8,7 @@ import java.time.temporal.TemporalQuery
 import java.time.{LocalDate, Year}
 
 import de.juergens.FileTesterCompanion
+import de.juergens.text.{DateParsers, ParserTest, ParserTestCompanion}
 import org.junit._
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -41,7 +42,7 @@ class MonthdayTest(line: String) extends ParserTest[TemporalQuery[LocalDate]](ne
 
 object MonthdayTest extends ParserTestCompanion {
 
-  val textFile = new File("/monthday.txt")
+  val textFile = new File("/parsers/monthday.txt")
 
   @org.junit.BeforeClass
   def before() {
@@ -54,7 +55,7 @@ object MonthdayTest extends ParserTestCompanion {
   }
 
   private[text] def _lines : Iterator[Array[Object]] =
-    FileTesterCompanion.linesOfFile("/monthday.txt").iterator()
+    FileTesterCompanion.linesOfFile("/parsers/monthday.txt").iterator()
 
   // NOTE: Must return collection of Array[AnyRef] (NOT Array[Any]).
   @Parameters(name = "{index}: {0}")

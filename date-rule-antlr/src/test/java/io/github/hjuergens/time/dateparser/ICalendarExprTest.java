@@ -1,10 +1,10 @@
-package de.juergens.dateparser;
+package io.github.hjuergens.time.dateparser;
 
 
+import io.github.hjuergens.time.ICalendarLexer;
+import io.github.hjuergens.time.ICalendarParser;
 import org.antlr.v4.runtime.*;
 import org.testng.annotations.Test;
-
-import static org.testng.AssertJUnit.*;
 
 /**
  * Created by haj on 01/02/2015.

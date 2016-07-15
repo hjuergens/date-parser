@@ -20,7 +20,7 @@
  *
  */
 
-package de.juergens.dateparser;
+package io.github.hjuergens.time;
 
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.atn.ATNState;

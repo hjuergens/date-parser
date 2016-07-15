@@ -1,14 +1,10 @@
-package de.juergens.dateparser;
+package io.github.hjuergens.time;
 
 import org.antlr.v4.runtime.*;
-import org.joda.time.DurationFieldType;
 import org.joda.time.PeriodType;
-import org.joda.time.base.BaseSingleFieldPeriod;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class DateRuleFactory {

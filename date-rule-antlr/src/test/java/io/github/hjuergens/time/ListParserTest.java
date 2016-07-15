@@ -1,4 +1,4 @@
-package io.github.hjuergens.util;
+package io.github.hjuergens.time;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -16,7 +16,7 @@ public class ListParserTest {
         ListLexer lexer = new ListLexer(inputStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
         ListParser lp = new ListParser(tokenStream);
-        List expected = new ArrayList<Integer>(12);
+        List<Integer> expected = new ArrayList<>(12);
         expected.add(3+0*5);
         expected.add(3+1*5);
         expected.add(3+2*5);

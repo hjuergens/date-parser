@@ -1,8 +1,5 @@
-package de.juergens;
+package io.github.hjuergens.time;
 
-import io.github.hjuergens.PeriodTermBaseListener;
-import io.github.hjuergens.PeriodTermLexer;
-import io.github.hjuergens.PeriodTermParser;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.joda.time.*;
@@ -108,7 +105,7 @@ public class SchedulerFactory {
 
             @Override
             public String toString() {
-                return "de.juergens.Quarterly";
+                return "io.github.hjuergens.time.Quarterly";
             }
         };
         return new DateTimeAdjusterLogWrapperLogger(logger, adjuster);

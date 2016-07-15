@@ -3,11 +3,6 @@ grammar PeriodTerm;
 options {
     language = Java;
 }
-/*
-@header {
-    package de.juergens.dateparser;
-}
-*/
 
 /*------------------------------------------------------------------
  * PARSER RULES
@@ -21,7 +16,8 @@ chain : '^' adjust
 adjust : (shift | selector)
     ;
 
-shift  :  ( operator  period )* ;
+shift  :  ( operator  period )*
+    ;
 
 
 operator : PLUS | MINUS
@@ -31,7 +27,7 @@ operator : PLUS | MINUS
 selector : ( direction (DAY|MONTH|QUARTER|DAY_OF_WEEK) )*
     ;
 
-direction : PREVIOUS* | NEXT*
+direction : (PREVIOUS+ | NEXT+) ORTHIS?
     ;
 
 
@@ -101,6 +97,7 @@ DAY_OF_WEEK : 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'satu
 
 NEXT     : '>' ;
 PREVIOUS : '<' ;
+ORTHIS   : '=' ;
 PLUS   : '+' ;
 MINUS  : '-' ;
 MULT   : '*' ;

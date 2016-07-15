@@ -1,11 +1,5 @@
 grammar DateRule;
 
-/*
-@header {
-    package de.juergens.dateparser;
-}
-*/
-
 import Cardinal, Unit;
 
 duration: cardinal unit ;

@@ -1,4 +1,4 @@
-package de.juergens;
+package io.github.hjuergens.time;
 
 import org.joda.time.DateTime;
 

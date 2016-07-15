@@ -1,11 +1,6 @@
-package de.juergens.dateparser;
+package io.github.hjuergens.time;
 
 import org.joda.time.PeriodType;
-import org.joda.time.base.BaseSingleFieldPeriod;
-
-import java.util.Map;
-import java.util.Scanner;
-import java.util.concurrent.TimeUnit;
 
 public class DateRule {
     private int cardinal;

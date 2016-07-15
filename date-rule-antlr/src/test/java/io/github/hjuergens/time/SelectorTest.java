@@ -1,7 +1,5 @@
-package io.github.hjuergens;
+package io.github.hjuergens.time;
 
-import de.juergens.DateTimeAdjuster;
-import de.juergens.SchedulerFactory;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeConstants;
 import org.joda.time.LocalDate;

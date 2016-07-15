@@ -1,7 +1,5 @@
-package io.github.hjuergens;
+package io.github.hjuergens.time;
 
-import de.juergens.DateTimeAdjuster;
-import de.juergens.SchedulerFactory;
 import org.joda.time.DateTime;
 import org.joda.time.Period;
 import org.testng.annotations.Test;

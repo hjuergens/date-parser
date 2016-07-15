@@ -1,4 +1,4 @@
-package de.juergens.dateparser;
+package io.github.hjuergens.time;
 
 import java.io.InputStream;
 

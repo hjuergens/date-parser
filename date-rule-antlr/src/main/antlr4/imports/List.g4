@@ -33,7 +33,7 @@ list returns [List<Integer> listOut] : LPARAM s=intExp (':' p=intExp)? ':' e=int
 
 intExp returns [int value]
     : n=INT { $value = Integer.parseInt($n.text); }
-;
+    ;
 
 /*------------------------------------------------------------------
  * LEXER RULES

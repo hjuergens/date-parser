@@ -1,7 +1,14 @@
 grammar PeriodTerm;
 
+import Period;
+
 options {
     language = Java;
+}
+
+@header
+{
+    import org.joda.time.Period;
 }
 
 /*------------------------------------------------------------------
@@ -31,60 +38,15 @@ direction : (PREVIOUS+ | NEXT+) ORTHIS?
     ;
 
 
-direction3 returns [int z]
-    : { $z = 0; }
-      (PREVIOUS    { $z = $z-1; } )+ |  (NEXT    { $z = $z+1; } )+
-    ;
-
-/*
-schedul    : period ( scheduling  period )* ;
-
-scheduling : MULT | DIV
-    ;
-*/
-
-// period, TODO consider The standard ISO format - PyYmMwWdDThHmMsS.
-period : yearssub | monthssub | weekssub | dayssub
-    ;
-
-yearssub : years (monthssub | weekssub | dayssub)?
-    ;
-
-monthssub : months (weekssub | dayssub)?
-    ;
-
-weekssub : weeks (dayssub)?
-    ;
-
-dayssub : days
-    ;
-
-// units
-years   : cardinal=twodigit YEAR // Labels become fields in the appropriate parse tree node class
-    ;
-
-months : twodigit MONTH
-    ;
-
-weeks : twodigit WEEK
-    ;
-
-days : twodigit DAY
-    ;
-
-// cardinal
-twodigit  : (DIGIT?DIGIT) { System.out.println($DIGIT.text); }
-    ;
-
 /*------------------------------------------------------------------
  * LEXER RULES
  *------------------------------------------------------------------*/
 
-DIGIT   : '0'..'9'
-    ;
+TWODIGITNUMBER  : NONNULLDIGIT?DIGIT ;
 
+fragment DIGIT  : '0'..'9' ;
+fragment NONNULLDIGIT  : '1'..'9' ;
 
-// DIRECTION : PREVIOUS | NEXT ;
 
 YEAR : 'Y';
 MONTH : 'M';

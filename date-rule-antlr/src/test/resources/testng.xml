@@ -23,11 +23,20 @@
 
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 <suite name="Custom suite" parallel="false">
-    <test verbose="1" name="date-parser" annotations="JDK">
+    <test verbose="1" name="examples" annotations="JDK">
         <classes>
-            <class name="io.github.hjuergens.GenerateParseTreeAST"/>
-            <class name="io.github.hjuergens.SimpleCalcTest"/>
-            <class name="io.github.hjuergens.ShifterTest"/>
+            <class name="io.github.hjuergens.time.GenerateParseTreeAST"/>
+            <class name="io.github.hjuergens.time.SimpleCalcTest"/>
         </classes>
     </test>
+    <test name="date-parser">
+        <classes>
+            <class name="io.github.hjuergens.time.ChainTest"/>
+            <class name="io.github.hjuergens.time.ListParserTest"/>
+            <class name="io.github.hjuergens.time.PeriodTermTest"/>
+            <class name="io.github.hjuergens.time.PeriodTest"/>
+            <class name="io.github.hjuergens.time.SelectorTest"/>
+            <class name="io.github.hjuergens.time.ShifterTest"/>
+        </classes>
+    </test> <!-- date-parser -->
 </suite>

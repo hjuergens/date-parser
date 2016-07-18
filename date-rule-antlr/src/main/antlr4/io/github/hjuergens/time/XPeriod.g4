@@ -1,4 +1,4 @@
-grammar Period;
+grammar XPeriod;
 
 options {
     language = Java;
@@ -7,7 +7,6 @@ options {
 @header
 {
     import org.joda.time.Period;
-    import java.util.LinkedList;
 }
 
 /*------------------------------------------------------------------

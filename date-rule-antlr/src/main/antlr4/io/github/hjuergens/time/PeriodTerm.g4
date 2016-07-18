@@ -1,6 +1,7 @@
 grammar PeriodTerm;
 
-import Period;
+import Period, List;
+
 
 options {
     language = Java;
@@ -9,6 +10,8 @@ options {
 @header
 {
     import org.joda.time.Period;
+    import java.util.List;
+    import java.util.LinkedList;
 }
 
 /*------------------------------------------------------------------
@@ -20,12 +23,12 @@ input           : (adjust NEWLINE)+ EOF;
 chain : '^' adjust
     ;
 
-adjust : (shift | selector)
+adjust : shift | selector
     ;
+
 
 shift  :  ( operator  period )*
     ;
-
 
 operator : PLUS | MINUS
     ;

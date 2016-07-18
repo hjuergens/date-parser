@@ -1,11 +1,5 @@
 lexer grammar NewDate;
 
-/*
-@parser::header {
-    package de.juergens.dateparser;
-}
-*/
-
 DATE	:	INT '/' INT '/' INT
     ;
     

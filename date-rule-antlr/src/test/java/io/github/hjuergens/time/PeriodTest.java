@@ -79,4 +79,26 @@ public class PeriodTest {
         assertEquals(parser.monthssub().p, Period.parse("P14M7W9D"));
     }
 
+    /*
+    @Test(expectedExceptions= org.antlr.v4.runtime.misc.ParseCancellationException.class)
+    public void test1M2D3W() throws Exception {
+        ANTLRInputStream inputStream = new ANTLRInputStream("1M2D3W");
+        PeriodLexer lexer = new PeriodLexer(inputStream);
+        lexer.removeErrorListeners();
+        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+        PeriodParser parser = new PeriodParser(tokenStream);
+        parser.setErrorHandler(new BailErrorStrategy());
+        assertNotNull( parser.period().p );
+    }
+    */
+
+    @Test
+    public void testMonths() throws Exception {
+        ANTLRInputStream inputStream = new ANTLRInputStream("1M");
+        PeriodLexer lexer = new PeriodLexer(inputStream);
+        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+        PeriodParser parser = new PeriodParser(tokenStream);
+
+        assertEquals(parser.months().p, Period.parse("P1M"));
+    }
 }

@@ -22,9 +22,12 @@ RPARAM : ')';
 SEP : ',';
 DP: ':';
 
-NEWLINE   : '\r' '\n' | '\n' | '\r';
+PLUS   : '+' ;
+MULT   : '.*' ;
 
-WS      : (' '|'\t'|'\f'|'\r'|'\n')+ {skip();};
-SPACE : (' ' | '\t' | '\r' | '\n') {skip();};
+NEWLINE   : '\r'? '\n'; //'\r' '\n' | '\n' | '\r';
+
+//WS      : (' '|'\t'|'\f'|'\r'|'\n')+ {skip();};
+//SPACE : (' ' | '\t' | '\r' | '\n') {skip();};
 
 

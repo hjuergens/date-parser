@@ -2,13 +2,18 @@ package io.github.hjuergens.time;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.joda.time.*;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeConstants;
+import org.joda.time.DateTimeFieldType;
+import org.joda.time.Period;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static io.github.hjuergens.time.DateTimeAdjusterFactory.*;
 
 class DateTimeAdjusterLogWrapperLogger implements DateTimeAdjuster {
     private final DateTimeAdjuster adjuster;
@@ -39,121 +44,9 @@ class DateTimeAdjusterLogWrapperLogger implements DateTimeAdjuster {
     }
 }
 
-abstract class DateTimeAdjusterAbstract implements DateTimeAdjuster {
-
-    @Override
-    public DateTimeAdjuster andThen(final DateTimeAdjuster andThenDateTimeAdjuster) {
-        DateTimeAdjuster adjuster = new DateTimeAdjusterAbstract() {
-            @Override
-            public DateTime adjustInto(DateTime dateTime) {
-                return andThenDateTimeAdjuster.adjustInto(
-                        DateTimeAdjusterAbstract.this.adjustInto(dateTime)
-                );
-            }
-
-            @Override
-            public String toString() {
-                return DateTimeAdjusterAbstract.this.toString()
-                        + "->" + andThenDateTimeAdjuster.toString();
-            }
-        };
-        return adjuster;
-    }
-}
-
 public class SchedulerFactory {
 
     private SchedulerFactory(){}
-
-    public static DateTimeAdjuster apply() {
-        final Logger logger = LoggerFactory.getLogger(DateTimeAdjuster.class);
-        DateTimeAdjuster adjuster = new DateTimeAdjusterAbstract() {
-            @Override
-            public DateTime adjustInto(DateTime dateTime) {
-                return dateTime;
-            }
-
-            @Override
-            public String toString() {
-                return "identity";
-            }
-        };
-        return new DateTimeAdjusterLogWrapperLogger(logger, adjuster);
-    }
-    public static DateTimeAdjuster apply(final Period period, final int scalar) {
-        DateTimeAdjuster adjuster = new DateTimeAdjusterAbstract() {
-            @Override
-            public DateTime adjustInto(DateTime dateTime) {
-
-                return dateTime.withPeriodAdded(period, scalar);
-            }
-
-            @Override
-            public String toString() {
-                return period.toString();
-            }
-        };
-        return new DateTimeAdjusterLogWrapperLogger(logger, adjuster);
-    }
-
-    public static DateTimeAdjuster quarter(final int scalar) {
-        DateTimeAdjuster adjuster = new DateTimeAdjusterAbstract() {
-            @Override
-            public DateTime adjustInto(DateTime dateTime) {
-                return new Quarterly(dateTime, scalar).next();
-            }
-
-            @Override
-            public String toString() {
-                return "io.github.hjuergens.time.Quarterly";
-            }
-        };
-        return new DateTimeAdjusterLogWrapperLogger(logger, adjuster);
-    }
-
-    static LocalTime zero = new LocalTime(0,0,0,0);
-    static LocalTime twentyFour = zero.minusMillis(1);
-
-
-    public static DateTimeAdjuster field(DateTimeFieldType dateTimeFieldType, int scale) {
-        DateTimeAdjuster adjuster = new DateTimeAdjusterAbstract() {
-            @Override
-            public DateTime adjustInto(DateTime dateTime) {
-                return dateTime.property(dateTimeFieldType).addToCopy(scale).withTime(scale >= 0 ? zero : twentyFour);
-            }
-
-            @Override
-            public String toString() {
-                return dateTimeFieldType.toString();
-            }
-        };
-        return new DateTimeAdjusterLogWrapperLogger(logger, adjuster);
-    }
-
-    static final Logger logger = LoggerFactory.getLogger(DateTimeAdjuster.class);
-
-    // WEDNESDAY = the third day of the week (ISO)
-    private static DateTimeAdjuster dayOfWeek(final int dayOfWeek, final int scalar) {
-
-        DateTimeAdjuster adjuster = new DateTimeAdjusterAbstract() {
-            @Override
-            public DateTime adjustInto(DateTime dateTime) {
-                DateTime expected = dateTime;
-                while(expected.getDayOfWeek() != dayOfWeek)
-                    expected = expected.plusDays( Integer.signum(scalar) );
-                expected = expected.plusWeeks(scalar - Integer.signum(scalar));
-                expected = expected.withTime(LocalTime.MIDNIGHT).minusMillis(scalar<0?1:0);
-                return expected;
-            }
-
-            @Override
-            public String toString() {
-                return "dayOfWeek";
-            }
-        };
-        return new DateTimeAdjusterLogWrapperLogger(logger, adjuster);
-    }
-
 
     public static Iterator<DateTimeAdjuster> parseSchedule(String exprStr) {
         PeriodTermLexer lex = new PeriodTermLexer(new ANTLRInputStream(exprStr));
@@ -161,6 +54,7 @@ public class SchedulerFactory {
 
         PeriodTermParser parser = new PeriodTermParser(tokens);
 
+        /*
         final AtomicReference<DateTimeAdjuster> adjuster = new AtomicReference<DateTimeAdjuster>();
 
         parser.addParseListener(new PeriodTermBaseListener() {
@@ -170,7 +64,7 @@ public class SchedulerFactory {
         parser.addParseListener(new PeriodTermBaseListener() {
             @Override
             public void exitShift(PeriodTermParser.ShiftContext ctx) {
-                adjuster.set(SchedulerFactory.apply());
+                adjuster.set(apply());
 
                 int i = 0;
                 for(PeriodTermParser.OperatorContext operatorCtx : ctx.operator()) {
@@ -185,7 +79,7 @@ public class SchedulerFactory {
                     final DateTimeAdjuster loopPeriodAdjuster;
                     if(ctx.period(i) != null) {
                         Period loopPeriod = Period.parse("P" + ctx.period(i).getText());
-                        loopPeriodAdjuster = SchedulerFactory.apply(loopPeriod, scalar);
+                        loopPeriodAdjuster = apply(loopPeriod, scalar);
                     } else throw new IllegalArgumentException("");
 
                     adjuster.set(adjuster.get().andThen(loopPeriodAdjuster));
@@ -196,7 +90,7 @@ public class SchedulerFactory {
             }
             @Override
             public void exitSelector(PeriodTermParser.SelectorContext ctx) {
-                adjuster.compareAndSet(null, SchedulerFactory.apply());
+                adjuster.compareAndSet(null, apply());
 
                 int i = 0;
                 for(PeriodTermParser.DirectionContext directionCtx : ctx.direction()) {
@@ -232,11 +126,12 @@ public class SchedulerFactory {
             }
 
         });
+        */
 
-        parser.adjust();
+        DateTimeAdjuster adjuster = parser.adjust().adjusterOut;
 
         ArrayList<DateTimeAdjuster> arrayList = new ArrayList<>();
-        arrayList.add(adjuster.get());
+        arrayList.add(adjuster);
         return arrayList.iterator();
     }
 

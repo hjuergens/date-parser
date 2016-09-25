@@ -1,5 +1,7 @@
 package io.github.hjuergens.time;
 
+import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CommonTokenStream;
 import org.joda.time.DateTime;
 import org.joda.time.Period;
 import org.testng.annotations.Test;
@@ -15,8 +17,8 @@ public class ShifterTest {
     @Test
     public void model2Y3D() {
         Period period = Period.parse("P" + "2Y3D");
-        DateTimeAdjuster adjuster = SchedulerFactory.apply();
-        DateTimeAdjuster periodAdjuster = SchedulerFactory.apply(period,1);
+        DateTimeAdjuster adjuster = DateTimeAdjusterFactory.apply();
+        DateTimeAdjuster periodAdjuster = DateTimeAdjusterFactory.apply(period,1);
 
         adjuster= adjuster.andThen(periodAdjuster);
 
@@ -29,7 +31,16 @@ public class ShifterTest {
 
     @Test
     public void test2Y3D() throws Exception {
-        DateTimeAdjuster adjuster = SchedulerFactory.parseSchedule("+2Y3D").next();
+        PeriodTermLexer lex = new PeriodTermLexer(new ANTLRInputStream("+2Y3D"));
+        CommonTokenStream tokens = new CommonTokenStream(lex);
+        PeriodTermParser parser = new PeriodTermParser(tokens);
+
+        /*
+        System.out.println("signum="+ parser.operator().signum);
+        System.out.println("period="+ parser.period().p);
+        */
+        DateTimeAdjuster adjuster = parser.shift().adjusterOut;
+        //DateTimeAdjuster adjuster = SchedulerFactory.parseSchedule("+2Y3D").next();
 
         DateTime dt = new DateTime(1972, 12, 3, 0, 0, 0, 0);
         DateTime actual = adjuster.adjustInto(dt);

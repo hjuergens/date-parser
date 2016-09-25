@@ -1,7 +1,6 @@
 package io.github.hjuergens.time;
 
 import org.joda.time.DateTime;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.Iterator;
 
@@ -37,5 +36,5 @@ public class Quarterly implements Iterator<DateTime> {
     }
 
     @Override
-    public void remove() { throw new NotImplementedException(); }
+    public void remove() { throw new java.lang.UnsupportedOperationException(); }
 }

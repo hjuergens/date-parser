@@ -39,4 +39,18 @@ public class TermStructureTest {
     }
 
 
+    @Test
+    public void testFutures() throws Exception {
+        ANTLRInputStream inputStream = new ANTLRInputStream("[3M,5M,7M]+3M1W");
+        TermStructureLexer lexer = new TermStructureLexer(inputStream);
+        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+        TermStructureParser parser = new TermStructureParser(tokenStream);
+
+        List<Pair<Period,DateTimeAdjuster>> result = parser.futures().listOut;
+        assertEquals(result.size(), 2);
+        System.out.println("testSequence:" + result);
+        assertEquals(result.get(0).getFirst(), Period.months(3));
+        assertEquals(result.get(1).getFirst(), Period.months(7));
+    }
+
 }

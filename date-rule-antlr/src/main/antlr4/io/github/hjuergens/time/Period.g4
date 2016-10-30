@@ -23,6 +23,29 @@ period returns [Period p]
     | dayssub { $p = $dayssub.p; }
     ;
 
+periodSimple returns [Period p]
+    :
+    yearMonth { $p = $yearMonth.p; }
+    |
+    weeksDays { $p = $weeksDays.p; }
+    ;
+
+yearMonth returns [Period p]
+    :
+    (
+    (years {$p = $years.p;} (months { $p = $p.plus($months.p); })?)
+    |
+    months { $p = $months.p; }
+    )
+    ;
+
+weeksDays returns [Period p]
+    :
+    (weeks {$p = $weeks.p;} (days { $p = $p.plus($days.p); })?)
+    |
+    days {$p = $days.p;}
+    ;
+
 yearssub returns [Period p]
     : years (monthssub | weekssub | dayssub)?
     {

@@ -37,6 +37,7 @@
             <class name="io.github.hjuergens.time.PeriodTest"/>
             <class name="io.github.hjuergens.time.SelectorTest"/>
             <class name="io.github.hjuergens.time.ShifterTest"/>
+            <class name="io.github.hjuergens.time.TermStructureTest"/>
         </classes>
     </test> <!-- date-parser -->
 </suite>

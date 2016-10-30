@@ -15,7 +15,7 @@ final class DateTimeAdjusterFactory {
     static LocalTime zero = new LocalTime(0,0,0,0);
     static LocalTime twentyFour = zero.minusMillis(1);
 
-    static final Logger logger = LoggerFactory.getLogger(DateTimeAdjuster.class);
+    private static final Logger logger = LoggerFactory.getLogger(DateTimeAdjuster.class);
 
     private DateTimeAdjusterFactory(){}
 

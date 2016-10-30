@@ -9,18 +9,24 @@ options {
 }
 */
 
-//dates  : date+ EOF ;
-input           : date+ EOF;
+// ***********************************************************************
+// PARSER
+// ***********************************************************************
+dates  : (date NEWLINE)+ EOF ;
+//input           : date+ EOF;
 
-date : month=twodigit SLASH day=twodigit (SLASH year=twodigit+)? '\n';
+date : month=twodigit SLASH day=twodigit (SLASH year=twodigit+)?;
 
-twodigit : DIGIT? DIGIT ;
+//dd: DIGIT? DIGIT ;
 
-INT     : ('0'..'9')+;
+twodigit : (ZERODIGIT DIGITWOZERO?) | (DIGITWOZERO? (ZERODIGIT | DIGITWOZERO));
+
+// ***********************************************************************
+// TOKEN
+// ***********************************************************************
+ZERODIGIT   : [0];
+DIGITWOZERO : [1-9];
 NEWLINE : [\r\n]+ ;
-//INT     : [0-9]+ ;
-DIGIT   : [0-9] ;
-//TWODIGIT: DIGIT? DIGIT ;
 SLASH   : '/' ;
-DELIMETER : ',' ;
-WS      : (' '|'\t'|'\f'|'\r'|'\n')+ {skip();};
+//DELIMETER : ',' ;
+//WS      : (' '|'\t'|'\f'|'\r'|'\n')+ {skip();};

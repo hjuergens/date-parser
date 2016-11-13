@@ -39,32 +39,7 @@ adjust returns [DateTimeAdjuster adjusterOut]
     ;
 
 
-shift3  returns [DateTimeAdjuster adjusterOut]
-    :
-    (operator period)*
-    {
-        DateTimeAdjuster adjuster = DateTimeAdjusterFactory.apply();
-        int i = 0;
-
-        final int scalar = $operator.signum;
-
-        System.out.println("scalar=" + $operator.signum);
-
-        assert($period.p != null);
-
-        final DateTimeAdjuster loopPeriodAdjuster;
-        loopPeriodAdjuster = apply($period.p, scalar);
-
-        assert(loopPeriodAdjuster != null);
-
-        adjuster = adjuster.andThen(loopPeriodAdjuster);
-        System.out.println("adjuster=" + adjuster);
-        i += 1;
-
-         $adjusterOut = adjuster;
-    }
-    ;
-
+// +3M
 shift  returns [DateTimeAdjuster adjusterOut]
     :
     {
@@ -89,6 +64,7 @@ shift  returns [DateTimeAdjuster adjusterOut]
     }
     ;
 
+// +,-
 operator returns [int signum]
     : PLUS { $signum = 1; } | MINUS { $signum = -1; }
     {
@@ -108,13 +84,16 @@ selector returns [DateTimeAdjuster adjusterOut]
     |
     QUARTER { $adjusterOut = quarter(scale);}
     |
-    DAY_OF_WEEK {
-            final int dayWeek = DateTimeConstants.WEDNESDAY;
-            $adjusterOut = dayOfWeek(dayWeek, scale);
-        } // TODO
+    dayWeek {
+            final int dayWeek = $dayWeek.weekDayConstant;
+            $adjusterOut = dayOfWeek(dayWeek, scale, $direction.dir.getSecond());
+        }
     ) )*
     ;
+//selectorByName
+//selectorByUnit
 
+// <<
 direction returns [Pair<Integer,Boolean> dir]
     :
     {
@@ -127,6 +106,16 @@ direction returns [Pair<Integer,Boolean> dir]
     }
     ;
 
+dayWeek returns [int weekDayConstant]
+    :
+    MONDAY { $weekDayConstant = DateTimeConstants.MONDAY; }
+    | TUESDAY { $weekDayConstant = DateTimeConstants.TUESDAY; }
+    | WEDNESDAY { $weekDayConstant = DateTimeConstants.WEDNESDAY; }
+    | THURSDAY { $weekDayConstant = DateTimeConstants.THURSDAY; }
+    | FRIDAY { $weekDayConstant = DateTimeConstants.FRIDAY; }
+    | SATURDAY { $weekDayConstant = DateTimeConstants.SATURDAY; }
+    | SUNDAY { $weekDayConstant = DateTimeConstants.SUNDAY; }
+    ;
 
 /*------------------------------------------------------------------
  * LEXER RULES
@@ -144,8 +133,15 @@ WEEK : 'W';
 DAY : 'D';
 QUARTER : 'Q';
 
-DAY_OF_WEEK : 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday'
-    ;
+//DAY_OF_WEEK : 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday'
+//    ;
+MONDAY : 'monday';
+TUESDAY : 'tuesday';
+WEDNESDAY : 'wednesday';
+THURSDAY : 'thursday';
+FRIDAY : 'friday';
+SATURDAY : 'saturday';
+SUNDAY : 'sunday';
 
 NEXT     : '>' ;
 PREVIOUS : '<' ;

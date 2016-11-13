@@ -1,9 +1,7 @@
 package io.github.hjuergens.time;
 
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeFieldType;
-import org.joda.time.LocalTime;
-import org.joda.time.Period;
+import io.github.hjuergens.util.Ring;
+import org.joda.time.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,18 +79,31 @@ final class DateTimeAdjusterFactory {
         return new DateTimeAdjusterLogWrapperLogger(logger, adjuster);
     }
 
+    private static final Ring weekRing = new Ring(7);
     // WEDNESDAY = the third day of the week (ISO)
-    static DateTimeAdjuster dayOfWeek(final int dayOfWeek, final int scalar) {
+    static DateTimeAdjuster dayOfWeek(final int dayOfWeek, final int scalar, final boolean equalCount) {
 
         DateTimeAdjuster adjuster = new DateTimeAdjusterAbstract() {
             @Override
             public DateTime adjustInto(DateTime dateTime) {
-                DateTime expected = dateTime;
+                MutableDateTime expected = dateTime.withTimeAtStartOfDay().toMutableDateTime();
+
                 while(expected.getDayOfWeek() != dayOfWeek)
-                    expected = expected.plusDays( Integer.signum(scalar) );
-                expected = expected.plusWeeks(scalar - Integer.signum(scalar));
-                expected = expected.withTime(LocalTime.MIDNIGHT).minusMillis(scalar<0?1:0);
-                return expected;
+                    expected.addDays( Integer.signum(scalar) );
+
+                int s = 0;//Integer.signum(scalar);
+                if(dateTime.getDayOfWeek() == dayOfWeek) {
+                    s = equalCount ? Integer.signum(scalar) : 0;
+                } else {
+                    s = Integer.signum(scalar);
+                }
+                expected.addWeeks(scalar - s);
+
+                if(scalar<0) {
+                    expected.addDays(1);
+                    expected.addMillis(-1);
+                }
+                return expected.toDateTime();
             }
 
             @Override

@@ -18,7 +18,7 @@ public class TermStructureTest {
     final static private Logger logger = LoggerFactory.getLogger(Test.class);
 
     @Test
-    public void testSequenceSingle() throws Exception {
+    public void sequenceSingle() throws Exception {
         ANTLRInputStream inputStream = new ANTLRInputStream("[7W]");
         TermStructureLexer lexer = new TermStructureLexer(inputStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
@@ -31,7 +31,7 @@ public class TermStructureTest {
     }
 
     @Test
-    public void testSequence() throws Exception {
+    public void sequence() throws Exception {
         ANTLRInputStream inputStream = new ANTLRInputStream("[3M,5M,7M]");
         TermStructureLexer lexer = new TermStructureLexer(inputStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
@@ -46,7 +46,7 @@ public class TermStructureTest {
     }
 
     @Test
-    public void testLoopWithStep() throws Exception {
+    public void loopWithStep() throws Exception {
         ANTLRInputStream inputStream = new ANTLRInputStream("(4M:1M:9M)");
         TermStructureLexer lexer = new TermStructureLexer(inputStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
@@ -62,7 +62,7 @@ public class TermStructureTest {
     }
 
     @Test
-    public void testLoop() throws Exception {
+    public void loop() throws Exception {
         ANTLRInputStream inputStream = new ANTLRInputStream("(4Y:9Y)");
         TermStructureLexer lexer = new TermStructureLexer(inputStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
@@ -75,8 +75,8 @@ public class TermStructureTest {
     }
 
 
-    @Test
-    public void testFutures() throws Exception {
+    @Test(enabled = false)
+    public void futures() throws Exception {
         ANTLRInputStream inputStream = new ANTLRInputStream("[3M,5M,7M]+3M1W");
         TermStructureLexer lexer = new TermStructureLexer(inputStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
@@ -85,13 +85,13 @@ public class TermStructureTest {
         List<Pair<Period,DateTimeAdjuster>> result = parser.futures().listOut;
         assertEquals(result.size(), 3);
         logger.debug("testSequence:" + result);
-        assertEquals(result.get(0).getFirst(), Period.months(3));
-        assertEquals(result.get(1).getFirst(), Period.months(5));
-        assertEquals(result.get(2).getFirst(), Period.months(7));
+        assertEquals(result.get(0).getFirst(), Period.months(3+3).plusWeeks(1));
+        assertEquals(result.get(1).getFirst(), Period.months(5+3).plusWeeks(1));
+        assertEquals(result.get(2).getFirst(), Period.months(7+3).plusWeeks(1));
     }
 
     @Test
-    public void testForward() throws Exception {
+    public void forward() throws Exception {
         ANTLRInputStream inputStream = new ANTLRInputStream("3Mx6M");
         TermStructureLexer lexer = new TermStructureLexer(inputStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
@@ -104,7 +104,7 @@ public class TermStructureTest {
     }
 
     @Test
-    public void testForwards() throws Exception {
+    public void forwards() throws Exception {
         ANTLRInputStream inputStream = new ANTLRInputStream("[3M,4M,6M]x(4M:1M:9M)");
         TermStructureLexer lexer = new TermStructureLexer(inputStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
@@ -126,6 +126,30 @@ public class TermStructureTest {
         pair = list.get(2);
         assertEquals(pair.getFirst().adjustInto(dt), dt.withPeriodAdded(Period.months(6),1));
         assertEquals(pair.getSecond().adjustInto(dt), dt.withPeriodAdded(Period.months(6),1));
+    }
+
+    @Test
+    public void listVsSequence() throws Exception {
+        ANTLRInputStream inputStream;
+        TermStructureLexer lexer;
+        CommonTokenStream tokenStream;
+        TermStructureParser parser;
+
+        inputStream  = new ANTLRInputStream("[3M,5M,7M]");
+        lexer      = new TermStructureLexer(inputStream);
+        tokenStream = new CommonTokenStream(lexer);
+        parser    = new TermStructureParser(tokenStream);
+
+        List<Pair<DateTimeAdjuster, DateTimeAdjuster>> list = parser.forwards().listOut;
+
+        inputStream = new ANTLRInputStream("(3M:2M:7M)");
+        lexer = new TermStructureLexer(inputStream);
+        tokenStream = new CommonTokenStream(lexer);
+        parser = new TermStructureParser(tokenStream);
+
+        List<Pair<DateTimeAdjuster, DateTimeAdjuster>> sequence = parser.forwards().listOut;
+
+        assertEquals(list, sequence);
     }
 
 }

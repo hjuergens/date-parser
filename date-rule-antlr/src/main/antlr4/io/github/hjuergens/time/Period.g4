@@ -71,12 +71,9 @@ monthssub returns [Period p]
     ;
 
 weekssub returns [Period p]
-    : weeks dayssub?
-    {
-        $p = $weeks.p;
-        if($dayssub.ctx != null)
-            $p = $weeks.p.plus($dayssub.p);
-    }
+    :
+    weeks { $p = $weeks.p; }
+    (dayssub { $p = $weeks.p.plus($dayssub.p); } )?
     ;
 
 dayssub returns [Period p]

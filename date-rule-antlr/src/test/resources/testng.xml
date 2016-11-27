@@ -29,6 +29,12 @@
             <class name="io.github.hjuergens.time.SimpleCalcTest"/>
         </classes>
     </test>
+    <test name="utilities">
+        <classes>
+            <class name="io.github.hjuergens.util.RingTest"/>
+            <class name="io.github.hjuergens.util.RingCheck"/>
+        </classes>
+    </test>
     <test name="date-parser">
         <classes>
             <class name="io.github.hjuergens.time.ChainTest"/>

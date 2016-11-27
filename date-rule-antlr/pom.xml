@@ -56,6 +56,24 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.scalatest</groupId>
+            <artifactId>scalatest_${scala.compat.version}</artifactId>
+            <version>3.0.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.specs2</groupId>
+            <artifactId>specs2-core_${scala.compat.version}</artifactId>
+            <version>3.8.6-20161107094644-7ddfac2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.specs2</groupId>
+            <artifactId>specs2-scalacheck_${scala.compat.version}</artifactId>
+            <version>3.8.6-20161107094644-7ddfac2</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -63,19 +81,73 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>${maven.compiler.source}</source>
-                    <target>${maven.compiler.target}</target>
-                    <compilerArgs>
-                        <compilerArg>
-                            -Xlint:unchecked
-                        </compilerArg>
-                        <compilerArg>
-                            -Xlint:deprecation
-                        </compilerArg>
-                    </compilerArgs>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <phase>none</phase> <!-- let scala-maven-plugin do the work -->
+                    </execution>
+                </executions>
             </plugin>
+
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <version>3.2.2</version>
+                <!--
+                  The scala plugin detects the version of the scala library in the dependents and
+                  uses that version to compile the scala code
+                -->
+                <configuration>
+                    <!-- enable detailed feature warnings of the scala compiler by setting its command line parameter -feature -->
+                    <args>
+                        <arg>-feature</arg>
+                        <arg>-deprecation</arg>
+                        <arg>-explaintypes</arg>
+                    </args>
+                    <!-- enable incremental compilation mode for faster compiling -->
+                    <recompileMode>incremental</recompileMode>
+                    <!-- use zink server as scalac provider -->
+                    <!-- <useZincServer>true</useZincServer> -->
+                    <reportPlugins>
+                        <plugin>
+                            <artifactId>maven-project-info-reports-plugin</artifactId>
+                            <version>2.2</version>
+                        </plugin>
+                        <plugin>
+                            <groupId>net.alchim31.maven</groupId>
+                            <artifactId>scala-maven-plugin</artifactId>
+                            <version>3.2.2</version>
+                            <configuration>
+                                <jvmArgs>
+                                    <jvmArg>-Xms64m</jvmArg>
+                                    <jvmArg>-Xmx1024m</jvmArg>
+                                </jvmArgs>
+                            </configuration>
+                        </plugin>
+                    </reportPlugins>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>scala-compile-first</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <testSourceDir>${project.basedir}/src/integration-test/scala</testSourceDir>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>scala-test-compile</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <artifactId>maven-site-plugin</artifactId>
                 <configuration>
@@ -103,6 +175,7 @@
                 </executions>
             </plugin>
 
+            <!-- test with surefire -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -116,6 +189,46 @@
                 </configuration>
 
             </plugin>
+
+            <!-- integration-test with failsafe -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>2.19.1</version>
+                <configuration>
+                    <parallel>methods</parallel>
+                    <threadCount>10</threadCount>
+                    <includes>
+                        <include>**/*Spec.*</include>
+                    </includes>
+                </configuration>
+            </plugin>
+
+            <!-- ScalaTest
+            <plugin>
+                <groupId>org.scalatest</groupId>
+                <artifactId>scalatest-maven-plugin</artifactId>
+                <version>1.0</version>
+                <configuration>
+                    <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
+                    <junitxml>.</junitxml>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>test</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>pre-site</phase>
+                        <goals>
+                            <goal>reporter</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin> -->
 
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -136,7 +249,6 @@
                             </arguments>
                         </configuration>
                     </execution>
-
                 </executions>
                 <configuration>
                     <mainClass>org.antlr.v4.gui.TestRig</mainClass>
@@ -210,7 +322,6 @@
                     </execution>
                 </executions>
             </plugin>
-
         </plugins>
     </build>
 

@@ -46,8 +46,8 @@ public class PeriodTermTest {
             final DateTime result
                     = parser.selector().adjusterOut.adjustInto(DateTime.parse("2016-11-14"));
 
-            Assert.assertTrue(result.withTimeAtStartOfDay().isEqual(
-                    DateTime.parse("2016-11-07T23:59:59.999+01:00").withTimeAtStartOfDay()));
+            Assert.assertEquals(result.withTimeAtStartOfDay().toString(),
+                    DateTime.parse("2016-11-07T23:59:59.999+01:00").withTimeAtStartOfDay().toString());
         }
 
         {
@@ -59,8 +59,8 @@ public class PeriodTermTest {
             final DateTime result
                     = parser.selector().adjusterOut.adjustInto(DateTime.parse("2016-11-14"));
 
-            Assert.assertTrue(result.withTimeAtStartOfDay().isEqual(
-                    DateTime.parse("2016-10-31T23:59:59.999+01:00").withTimeAtStartOfDay()));
+            Assert.assertEquals(result.withTimeAtStartOfDay().toString(),
+                    DateTime.parse("2016-10-31T23:59:59.999+01:00").withTimeAtStartOfDay().toString());
         }
 
 

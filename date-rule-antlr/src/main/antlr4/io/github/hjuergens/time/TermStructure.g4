@@ -31,18 +31,26 @@ file           : ( row NEWLINE )+ EOF
 row : (futures | forwards)
     ;
 
-list returns [List<Period> listOut]
-    : sequence { $listOut = $sequence.listOut; }
-    | loop { $listOut  = $loop.listOut; }
+list returns [List<Period> periods]
+    : sequence { $periods = $sequence.listOut; }
+    | loop { $periods  = $loop.listOut; }
+    | x=list '.' period { $periods  = $x.periods; }
+    {
+        $periods = new ArrayList<Period>( $x.periods.size() );
+        for(Period p : $x.periods) {
+            $periods.add( p.plus($period.p) );
+        }
+    }
     ;
 
 //BaseInterval(ReadableInstant start, ReadableDuration duration)
+// [1M,2M,3M]+3M
 futures returns [List<Pair<Period, DateTimeAdjuster>> listOut]
-    : list shift
+    : x=list shift
     {
         List<Pair<Period, DateTimeAdjuster>> listOfPairs
             = new LinkedList<Pair<Period, DateTimeAdjuster>>();
-        for(Period p : $list.listOut) {
+        for(Period p : $x.periods) {
             listOfPairs.add( new Pair<Period, DateTimeAdjuster>(p, $shift.adjusterOut) );
         }
         $listOut = listOfPairs;
@@ -57,7 +65,7 @@ future returns [Pair<Period, DateTimeAdjuster> fut]
     ;
 
 //BaseInterval(ReadableInstant start, ReadableInstant end)
-// 3Mx6M, (3M,4M,5M)x(6M,7M,8M)
+// 3Mx6M
 forward returns [Pair<DateTimeAdjuster, DateTimeAdjuster> fwd]
     :  p1=period 'x' p2=period
     {
@@ -67,16 +75,17 @@ forward returns [Pair<DateTimeAdjuster, DateTimeAdjuster> fwd]
     }
     ;
 
+// [3M,4M,5M]x[6M,7M,8M]
 forwards returns [List<Pair<DateTimeAdjuster, DateTimeAdjuster>> listOut]
     :  lhs=list 'x' rhs=list
     {
-        final int n = Math.min($lhs.listOut.size(), $rhs.listOut.size());
+        final int n = Math.min($lhs.periods.size(), $rhs.periods.size());
 
         List<Pair<DateTimeAdjuster, DateTimeAdjuster>> list
             = new LinkedList<Pair<DateTimeAdjuster, DateTimeAdjuster>>();
         for (int i = 0; i < n; i += 1) {
-            DateTimeAdjuster begin = DateTimeAdjusterFactory.apply($lhs.listOut.get(i),1);
-            DateTimeAdjuster end   = DateTimeAdjusterFactory.apply($rhs.listOut.get(i),1);
+            DateTimeAdjuster begin = DateTimeAdjusterFactory.apply($lhs.periods.get(i),1);
+            DateTimeAdjuster end   = DateTimeAdjusterFactory.apply($rhs.periods.get(i),1);
             list.add( new Pair<DateTimeAdjuster, DateTimeAdjuster>(begin, end) );
         }
 
@@ -90,7 +99,7 @@ forwards returns [List<Pair<DateTimeAdjuster, DateTimeAdjuster>> listOut]
 // SP=TD+2D
 
 
-// [1M,2M,3M]+3M
+
 // [1M,2M,3M] .* [4M,5M,6M]
 
 // [1M,3M]

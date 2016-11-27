@@ -74,10 +74,37 @@ public class TermStructureTest {
         assertEquals(result.get(60), Period.years(9));
     }
 
-
-    @Test(enabled = false)
+    @Test
     public void futures() throws Exception {
         ANTLRInputStream inputStream = new ANTLRInputStream("[3M,5M,7M]+3M1W");
+        TermStructureLexer lexer = new TermStructureLexer(inputStream);
+        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+        TermStructureParser parser = new TermStructureParser(tokenStream);
+
+        DateTime dt = DateTime.parse("2016-11-13");
+
+        List<Pair<Period,DateTimeAdjuster>> list = parser.futures().listOut;
+
+        assertEquals(list.size(), 3);
+
+        Pair<Period, DateTimeAdjuster> pair;
+
+        pair = list.get(0);
+        assertEquals(pair.getFirst(), Period.months(3));
+        assertEquals(pair.getSecond().adjustInto(dt), DateTime.parse("2017-02-20"));
+
+        pair = list.get(1);
+        assertEquals(pair.getFirst(), Period.months(5));
+        assertEquals(pair.getSecond().adjustInto(dt), DateTime.parse("2017-02-20"));
+
+        pair = list.get(2);
+        assertEquals(pair.getFirst(), Period.months(7));
+        assertEquals(pair.getSecond().adjustInto(dt), DateTime.parse("2017-02-20"));
+    }
+
+    @Test
+    public void concat1() throws Exception {
+        ANTLRInputStream inputStream = new ANTLRInputStream("[3M,5M,7M].3M1W");
         TermStructureLexer lexer = new TermStructureLexer(inputStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
         TermStructureParser parser = new TermStructureParser(tokenStream);
@@ -88,6 +115,20 @@ public class TermStructureTest {
         assertEquals(result.get(0).getFirst(), Period.months(3+3).plusWeeks(1));
         assertEquals(result.get(1).getFirst(), Period.months(5+3).plusWeeks(1));
         assertEquals(result.get(2).getFirst(), Period.months(7+3).plusWeeks(1));
+    }
+
+    @Test
+    public void concat2() throws Exception {
+        ANTLRInputStream inputStream = new ANTLRInputStream("(4M:1M:9M).1D");
+        TermStructureLexer lexer = new TermStructureLexer(inputStream);
+        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+        TermStructureParser parser = new TermStructureParser(tokenStream);
+
+        List<Period> list = parser.list().periods;
+
+        assertEquals(list.get(0), Period.parse("P4M1D"));
+        assertEquals(list.get(1), Period.parse("P5M1D"));
+        assertEquals(list.get(5), Period.parse("P9M1D"));
     }
 
     @Test

@@ -101,4 +101,14 @@ public class PeriodTest {
 
         assertEquals(parser.months().p, Period.parse("P1M"));
     }
+
+    @Test
+    public void concat() throws Exception {
+        ANTLRInputStream inputStream = new ANTLRInputStream("1M2D.1Y2M7W");
+        PeriodLexer lexer = new PeriodLexer(inputStream);
+        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+        PeriodParser parser = new PeriodParser(tokenStream);
+
+        assertEquals(parser.period().p, Period.parse("P1Y3M7W2D"));
+    }
 }

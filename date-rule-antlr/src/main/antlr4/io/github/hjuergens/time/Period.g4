@@ -21,6 +21,7 @@ period returns [Period p]
     | monthssub { $p = $monthssub.p; }
     | weekssub { $p = $weekssub.p; }
     | dayssub { $p = $dayssub.p; }
+    | lhs=period '.' rhs=period { $p = $lhs.p.plus($rhs.p); }
     ;
 
 periodSimple returns [Period p]

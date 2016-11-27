@@ -64,6 +64,8 @@ shift  returns [DateTimeAdjuster adjusterOut]
     }
     ;
 
+// 3M.2W = 3M2W
+
 // +,-
 operator returns [int signum]
     : PLUS { $signum = 1; } | MINUS { $signum = -1; }

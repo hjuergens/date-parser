@@ -238,6 +238,8 @@ class DateRuleParsersTestNG extends DateRuleParsers {
 
   @Test(enabled = false)
   def thirdWednesdayInNextQuarter() : Unit = {
+    val nextQuarter = parseAll(adjuster, "next quarter")
+
     val anchor = Date(2014, 11, 30)
     val thirdWednesdayInNextQuarter = parseAll(adjuster, "third wednesday in next quarter")
     assertTrue(thirdWednesdayInNextQuarter.successful, thirdWednesdayInNextQuarter.toString)

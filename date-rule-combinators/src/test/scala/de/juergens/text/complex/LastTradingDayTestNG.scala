@@ -8,13 +8,13 @@ import org.testng.AssertJUnit._
 import org.testng.Reporter
 import org.testng.annotations.{DataProvider, Parameters, Test}
 
-@Test(groups = Array { "seek"  })
+@Test(groups = Array { "adjuster"  })
 class LastTradingDayTestNG {
 
   val parser = new DateRuleParsers
 
   val parserMethod : parser.Parser[TemporalAdjuster] = {
-    val m : AnyRef = parser.getClass.getMethod("seek3").invoke(parser)
+    val m : AnyRef = parser.getClass.getMethod("adjuster").invoke(parser)
     m.asInstanceOf[parser.Parser[TemporalAdjuster]]
   }
 

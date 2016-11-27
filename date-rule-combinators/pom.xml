@@ -24,7 +24,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <encoding>UTF-8</encoding>
-        <scala.version>2.11.2</scala.version>
+        <scala.version>2.11.8</scala.version>
         <scala.compat.version>2.11</scala.compat.version>
         <scoverage.plugin.version>1.0.4</scoverage.plugin.version>
         <scoverage.scalacPluginVersion>1.0.4</scoverage.scalacPluginVersion>
@@ -32,14 +32,8 @@
         <disable.surefire>false</disable.surefire>
         <maven.pmd.rulesetfiles>${project.basedir}/pmd.xml</maven.pmd.rulesetfiles>
         <mpir.skip>false</mpir.skip> <!-- project-info-reports -->
+        <junit.system.path>/home/travis/build/hjuergens/date-parser/repo/jquantlib-0.2.4.jar</junit.system.path>
     </properties>
-
-    <repositories>
-        <repository>
-            <id>repo</id>
-            <url>file://${project.basedir}/repo</url>
-        </repository>
-    </repositories>
 
     <pluginRepositories>
         <pluginRepository>
@@ -693,6 +687,12 @@
     </reporting>
 
     <profiles>
+        <profile>
+            <id>travis</id>
+            <properties>
+                <junit.system.path>/home/juergens/workspace/date-parser/repo/org/jquantlib/jquantlib/0.2.4/jquantlib-0.2.4.jar</junit.system.path>
+            </properties>
+        </profile>
     <profile>
         <id>javadoc</id>
         <build>

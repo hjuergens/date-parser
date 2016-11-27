@@ -26,7 +26,6 @@
     </prerequisites>
 
     <properties>
-        <main.basedir>${project.basedir}</main.basedir>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <scala.version>2.11.1</scala.version>
@@ -57,8 +56,8 @@
         <url>http://github.com/hjuergens/date-parser/</url>
     </scm>
 
-    <repositories>
-        <repository>
+    <!--repositories>
+        <!repository>
             <id>oss.sonatype.org</id>
             <name>oss.sonatype.org</name>
             <url>https://oss.sonatype.org/content/repositories/releases</url>
@@ -66,11 +65,7 @@
                 <enabled>true</enabled>
             </releases>
         </repository>
-        <repository>
-            <id>repo</id>
-            <url>file://${main.basedir}/repo</url>
-        </repository>
-    </repositories>
+    </repositories-->
 
     <url>http://home.arcor.de/hjuergens</url>
 
@@ -199,7 +194,6 @@
             <!--<version>1.6.9</version>-->
         <!--</dependency>-->
 
-
     </dependencies>
     </dependencyManagement>
 
@@ -215,6 +209,11 @@
 
         <pluginManagement>
             <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-install-plugin</artifactId>
+                    <version>2.5.2</version>
+                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-site-plugin</artifactId>
@@ -307,6 +306,25 @@
         </pluginManagement>
 
         <plugins>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-install-plugin</artifactId>
+                <inherited>false</inherited>
+                <executions>
+                    <execution>
+                        <id>validate</id>
+                        <phase>validate</phase>
+                        <configuration>
+                            <pomFile>repo/org/jquantlib/jquantlib/0.2.4/jquantlib-0.2.4.pom</pomFile>
+                            <file>repo/org/jquantlib/jquantlib/0.2.4/jquantlib-0.2.4.jar</file>
+                        </configuration>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
 
             <!-- checkstyle -->
             <plugin>

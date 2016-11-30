@@ -20,6 +20,8 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <encoding>UTF-8</encoding>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <scala.version>2.11.8</scala.version>
+        <scala.compat.version>2.11</scala.compat.version>
     </properties>
 
     <dependencies>
@@ -59,6 +61,11 @@
         <dependency>
             <groupId>org.scalatest</groupId>
             <artifactId>scalatest_${scala.compat.version}</artifactId>
+            <version>3.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.scalatest</groupId>
+            <artifactId>scalatest_2.11</artifactId>
             <version>3.0.1</version>
         </dependency>
 
@@ -106,25 +113,6 @@
                     </args>
                     <!-- enable incremental compilation mode for faster compiling -->
                     <recompileMode>incremental</recompileMode>
-                    <!-- use zink server as scalac provider -->
-                    <!-- <useZincServer>true</useZincServer> -->
-                    <reportPlugins>
-                        <plugin>
-                            <artifactId>maven-project-info-reports-plugin</artifactId>
-                            <version>2.2</version>
-                        </plugin>
-                        <plugin>
-                            <groupId>net.alchim31.maven</groupId>
-                            <artifactId>scala-maven-plugin</artifactId>
-                            <version>3.2.2</version>
-                            <configuration>
-                                <jvmArgs>
-                                    <jvmArg>-Xms64m</jvmArg>
-                                    <jvmArg>-Xmx1024m</jvmArg>
-                                </jvmArgs>
-                            </configuration>
-                        </plugin>
-                    </reportPlugins>
                 </configuration>
                 <executions>
                     <execution>
@@ -325,6 +313,25 @@
         </plugins>
     </build>
 
+    <reporting>
+        <plugins>
+            <plugin>
+                <artifactId>maven-project-info-reports-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <version>3.2.2</version>
+                <configuration>
+                    <jvmArgs>
+                        <jvmArg>-Xms64m</jvmArg>
+                        <jvmArg>-Xmx1024m</jvmArg>
+                    </jvmArgs>
+                </configuration>
+            </plugin>
+        </plugins>
+    </reporting>
+
     <profiles>
         <profile>
             <id>calendar</id>
@@ -332,7 +339,7 @@
                 <dependency>
                     <groupId>org.mnode.ical4j</groupId>
                     <artifactId>ical4j</artifactId>
-                    <version>2.0-beta1</version>
+                    <version>2.0.0</version>
                 </dependency>
 
                 <dependency>

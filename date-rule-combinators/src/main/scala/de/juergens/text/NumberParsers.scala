@@ -43,6 +43,7 @@ trait OrdinalParsers  extends RegexParsers with ExtendedRegexParsers {
       Ordinal.string2Int.andThen(Ordinal.apply)
     }
 
+  @SuppressWarnings(Array("all"))
   private def ordinalNumbers : Parser[Ordinal] = RegexParser(regExp) ^^
     { case m =>
       val matchingStr = (1 to m.groupCount).map(m.group).filterNot(_ == null).head

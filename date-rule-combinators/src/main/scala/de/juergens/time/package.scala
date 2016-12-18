@@ -108,6 +108,6 @@ package object time {
           }
       }
 
-    override def toString = s"TemporalPeriodSeek()"
+    override def toString = "TemporalPeriodSeek()"
   }
 }

@@ -33,6 +33,8 @@
         <project.reporting.outputEncoding>${encoding}</project.reporting.outputEncoding>
         <project.resources.sourceEncoding>${encoding}</project.resources.sourceEncoding>
         <github.global.server>github</github.global.server>
+        <cobertura-maven-plugin.version>2.6</cobertura-maven-plugin.version>
+        <javadoc.opts>-Xdoclint:none</javadoc.opts>
     </properties>
 
     <!-- Licensing -->
@@ -113,88 +115,88 @@
     </dependencies>
 
     <dependencyManagement>
-    <dependencies>
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-            <version>${scala.version}</version>
-        </dependency>
-        <!-- dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-parser-combinators</artifactId>
-            <version>2.11.0-M4</version>
-        </dependency -->
-        <dependency>
-            <groupId>org.scala-lang.modules</groupId>
-            <artifactId>scala-parser-combinators_2.11</artifactId>
-            <version>1.0.2</version>
-        </dependency>
+        <dependencies>
+            <dependency>
+                <groupId>org.scala-lang</groupId>
+                <artifactId>scala-library</artifactId>
+                <version>${scala.version}</version>
+            </dependency>
+            <!-- dependency>
+                <groupId>org.scala-lang</groupId>
+                <artifactId>scala-parser-combinators</artifactId>
+                <version>2.11.0-M4</version>
+            </dependency -->
+            <dependency>
+                <groupId>org.scala-lang.modules</groupId>
+                <artifactId>scala-parser-combinators_2.11</artifactId>
+                <version>1.0.2</version>
+            </dependency>
 
-        <!--dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-compiler-bundle</artifactId>
-            <version>2.11.2</version>
-        </dependency-->
+            <!--dependency>
+                <groupId>org.scala-lang</groupId>
+                <artifactId>scala-compiler-bundle</artifactId>
+                <version>2.11.2</version>
+            </dependency-->
 
-        <!--<dependency>-->
-            <!--<groupId>joda-time</groupId>-->
-            <!--<artifactId>joda-time</artifactId>-->
-            <!--<version>2.7</version>-->
-        <!--</dependency>-->
+            <!--<dependency>-->
+                <!--<groupId>joda-time</groupId>-->
+                <!--<artifactId>joda-time</artifactId>-->
+                <!--<version>2.7</version>-->
+            <!--</dependency>-->
 
-        <!--<dependency>-->
-            <!--<groupId>com.joestelmach</groupId>-->
-            <!--<artifactId>natty</artifactId>-->
-            <!--<version>0.10.1</version>-->
-        <!--</dependency>-->
-        <dependency>
-            <groupId>org.apache.poi</groupId>
-            <artifactId>poi</artifactId>
-            <version>3.12-beta1</version>
-        </dependency>
+            <!--<dependency>-->
+                <!--<groupId>com.joestelmach</groupId>-->
+                <!--<artifactId>natty</artifactId>-->
+                <!--<version>0.10.1</version>-->
+            <!--</dependency>-->
+            <dependency>
+                <groupId>org.apache.poi</groupId>
+                <artifactId>poi</artifactId>
+                <version>3.12-beta1</version>
+            </dependency>
 
-        <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
-            <version>6.9.4</version>
-            <scope>test</scope>
-        </dependency>
+            <dependency>
+                <groupId>org.testng</groupId>
+                <artifactId>testng</artifactId>
+                <version>6.9.4</version>
+                <scope>test</scope>
+            </dependency>
 
-        <!-- Allows configuration of holiday dates and a simple API to figure out if a date is a holiday. -->
-        <!--<dependency>-->
-            <!--<groupId>nz.co.senanque</groupId>-->
-            <!--<artifactId>madura-date-time</artifactId>-->
-            <!--<version>1.6.0</version>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-            <!--<groupId>org.mnode.ical4j</groupId>-->
-            <!--<artifactId>ical4j</artifactId>-->
-            <!--<version>2.0-alpha1</version>-->
-        <!--</dependency>-->
+            <!-- Allows configuration of holiday dates and a simple API to figure out if a date is a holiday. -->
+            <!--<dependency>-->
+                <!--<groupId>nz.co.senanque</groupId>-->
+                <!--<artifactId>madura-date-time</artifactId>-->
+                <!--<version>1.6.0</version>-->
+            <!--</dependency>-->
+            <!--<dependency>-->
+                <!--<groupId>org.mnode.ical4j</groupId>-->
+                <!--<artifactId>ical4j</artifactId>-->
+                <!--<version>2.0-alpha1</version>-->
+            <!--</dependency>-->
 
-        <!-- Test -->
-        <!--
-        <dependency>
-          <groupId>org.scala-tools.testing</groupId>
-          <artifactId>specs_${scala.version}</artifactId>
-          <version>1.6.5</version>
-          <scope>test</scope>
-        </dependency>
-        -->
-        <!--<dependency>-->
-            <!--<groupId>org.scalatest</groupId>-->
-            <!--<artifactId>scalatest_2.11</artifactId>-->
-            <!--<version>2.2.0</version>-->
-            <!--<scope>test</scope>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-            <!--<groupId>org.scala-tools.testing</groupId>-->
-            <!--<artifactId>specs_2.10</artifactId>-->
-            <!--<version>1.6.9</version>-->
-        <!--</dependency>-->
-
-    </dependencies>
+            <!-- Test -->
+            <!--
+            <dependency>
+              <groupId>org.scala-tools.testing</groupId>
+              <artifactId>specs_${scala.version}</artifactId>
+              <version>1.6.5</version>
+              <scope>test</scope>
+            </dependency>
+            -->
+            <!--<dependency>-->
+                <!--<groupId>org.scalatest</groupId>-->
+                <!--<artifactId>scalatest_2.11</artifactId>-->
+                <!--<version>2.2.0</version>-->
+                <!--<scope>test</scope>-->
+            <!--</dependency>-->
+            <!--<dependency>-->
+                <!--<groupId>org.scala-tools.testing</groupId>-->
+                <!--<artifactId>specs_2.10</artifactId>-->
+                <!--<version>1.6.9</version>-->
+            <!--</dependency>-->
+        </dependencies>
     </dependencyManagement>
+
 
     <build>
 
@@ -300,6 +302,59 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-resources-plugin</artifactId>
                     <version>2.7</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>cobertura-maven-plugin</artifactId>
+                    <version>${cobertura-maven-plugin.version}</version>
+                    <configuration>
+                        <check>
+                            <haltOnFailure>true</haltOnFailure>
+                            <branchRate>50</branchRate>
+                            <lineRate>50</lineRate>
+                            <haltOnFailure>true</haltOnFailure>
+                            <totalBranchRate>50</totalBranchRate>
+                            <totalLineRate>50</totalLineRate>
+                            <packageLineRate>50</packageLineRate>
+                            <packageBranchRate>50</packageBranchRate>
+                        </check>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>clean</id>
+                            <phase>pre-site</phase>
+                            <goals>
+                                <goal>clean</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>instrument</id>
+                            <phase>site</phase>
+                            <goals>
+                                <!--<goal>instrument</goal>-->
+                                <goal>cobertura</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>instrument-code</id>
+                            <phase>process-classes</phase>
+                            <goals>
+                                <goal>instrument</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>verify</id>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>check</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>0.7.8</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -432,7 +487,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>2.9</version>
+                <version>2.10.4</version>
                 <inherited>false</inherited>
                 <reportSets>
                     <reportSet><!-- aggregate reportSet, to define in poms having modules -->
@@ -444,11 +499,14 @@
                     </reportSet>
                 </reportSets>
                 <configuration>
-                <notimestamp>true</notimestamp>
+                    <aggregate>true</aggregate>
+                    <notimestamp>true</notimestamp>
                     <quiet>true</quiet>
                     <links>
-                        <link>http://junit.org/javadoc/latest</link>
+                        <link>http://junit.org/junit4/javadoc/latest/</link>
+                        <link>http://docs.oracle.com/javase/1.4.2/docs/api</link>
                     </links>
+                    <!--<additionalparam>${javadoc.opts}</additionalparam>-->
                 </configuration>
             </plugin>
 
@@ -541,12 +599,68 @@
                 <version>1.2</version>
                 <inherited>false</inherited>
             </plugin>
+
             <!-- creating a diagram of all dependencies, dependency graph -->
             <plugin>
                 <groupId>com.googlecode.maven-overview-plugin</groupId>
                 <artifactId>maven-overview-plugin</artifactId>
                 <version>1.6</version>
             </plugin>
+
+            <!-- jacoco - code coverage -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.7.8</version>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <!-- select non-aggregate reports -->
+                            <report>report</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
         </plugins>
     </reporting>
+
+    <profiles>
+        <profile>
+            <id>doclint-java8-disable</id>
+            <activation>
+                <jdk>[1.8,)</jdk>
+            </activation>
+
+            <reporting>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>2.10.4</version>
+                        <inherited>false</inherited>
+                        <reportSets>
+                            <reportSet><!-- aggregate reportSet, to define in poms having modules -->
+                                <id>aggregate</id>
+                                <inherited>false</inherited><!-- don't run aggregate in child modules -->
+                                <reports>
+                                    <report>aggregate</report>
+                                </reports>
+                            </reportSet>
+                        </reportSets>
+                        <configuration>
+                            <aggregate>true</aggregate>
+                            <notimestamp>true</notimestamp>
+                            <quiet>true</quiet>
+                            <links>
+                                <link>http://junit.org/junit4/javadoc/latest/</link>
+                                <link>http://docs.oracle.com/javase/1.4.2/docs/api</link>
+                            </links>
+                            <additionalparam>${javadoc.opts}</additionalparam>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </reporting>
+        </profile>
+    </profiles>
+
 </project>

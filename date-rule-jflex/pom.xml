@@ -147,4 +147,22 @@
         </plugins>
     </build>
 
+    <reporting>
+        <plugins>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <version>2.10.4</version>
+            <configuration>
+                <!--<excludePackageNames>*.internal:org.acme.exclude1.*:org.acme.exclude2</excludePackageNames>-->
+                <sourceFileExcludes>
+                    <exclude>pascal.*</exclude>
+                    <exclude>**pascal*.java</exclude>
+                    <sourceFileExclude>**pascal*.*</sourceFileExclude>
+                </sourceFileExcludes>
+                <sourcepath>${project.build.directory}/generated-sources/cup</sourcepath>
+            </configuration>
+        </plugin>
+        </plugins>
+    </reporting>
 </project>

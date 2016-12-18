@@ -8,7 +8,7 @@ import java.time.{Duration, LocalDate}
  */
 object BusinessDay  {
 
-  def temporalQuery(holidays : Seq[LocalDate]) = new TemporalQuery[Boolean] {
+  def temporalQuery(holidays : Seq[TemporalAccessor]) = new TemporalQuery[Boolean] {
     override def queryFrom(t: TemporalAccessor) = !holidays.contains(t)
   }
 

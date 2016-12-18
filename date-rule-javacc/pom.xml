@@ -12,7 +12,7 @@
     <packaging>jar</packaging>
 
     <name>${project.artifactId}</name>
-    <url>http://home.arcor.de/hjuergens/${project.artifactId}</url>
+    <url>${distributionManagement.site.url}/${project.artifactId}</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

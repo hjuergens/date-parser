@@ -11,6 +11,7 @@
     <artifactId>date-rule-cup</artifactId>
     <packaging>jar</packaging>
     <version>0.0.1</version>
+    <name>${project.artifactId}</name>
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>

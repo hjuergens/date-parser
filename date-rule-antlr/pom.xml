@@ -63,11 +63,6 @@
             <artifactId>scalatest_${scala.compat.version}</artifactId>
             <version>3.0.1</version>
         </dependency>
-        <dependency>
-            <groupId>org.scalatest</groupId>
-            <artifactId>scalatest_2.11</artifactId>
-            <version>3.0.1</version>
-        </dependency>
 
         <dependency>
             <groupId>org.specs2</groupId>
@@ -180,7 +175,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
-                <version>2.19.1</version>
                 <configuration>
                     <parallel>methods</parallel>
                     <threadCount>10</threadCount>
@@ -262,33 +256,6 @@
             </plugin>
 
             <plugin>
-                <groupId>de.oscillation.maven</groupId>
-                <artifactId>doxygen-maven-plugin</artifactId>
-                <version>0.1.0</version>
-                <configuration>
-                    <workingDirectory>${project.build.directory}/site/doxygen</workingDirectory>
-                    <!--doxyfilePath>/site/doxygen.config</doxyfilePath-->
-                    <autogen>false</autogen>
-                    <executablePath>/usr/bin/doxygen</executablePath>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>clean</id>
-                        <phase>none</phase>
-                        <goals>
-                            <goal>clean</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>generate</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
                 <version>2.17</version>
@@ -317,6 +284,7 @@
                 <version>${cobertura-maven-plugin.version}</version>
                 <configuration>
                     <skip>true</skip>
+                    <check>true</check>
                     <instrumentation>
                         <excludes>
                             <exclude>io/github/hjuergens/time/*.class</exclude>
@@ -329,6 +297,20 @@
 
     <reporting>
         <plugins>
+            <!-- surefire -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-report-plugin</artifactId>
+                <version>2.18.1</version>
+                <reportSets>
+                    <reportSet>
+                        <id>integration-tests</id>
+                        <reports>
+                            <report>failsafe-report-only</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
             <plugin>
                 <artifactId>maven-project-info-reports-plugin</artifactId>
             </plugin>
@@ -360,7 +342,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>2.10.4</version>
                 <configuration>
                     <additionalparam>-Xdoclint:none</additionalparam>
                     <links>
@@ -391,18 +372,57 @@
 
     <profiles>
         <profile>
+            <id>doxygen</id>
+            <activation>
+                <file>
+                    <exists>
+                        /usr/bin/doxygen
+                    </exists>
+                </file>
+            </activation>
+            <properties>
+                <doxygen.executable.path>/usr/bin/doxygen</doxygen.executable.path>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <!-- github.com/os-cillation/doxygen-maven-plugin -->
+                        <groupId>de.oscillation.maven</groupId>
+                        <artifactId>doxygen-maven-plugin</artifactId>
+                        <version>0.1.0</version>
+                        <configuration>
+                            <workingDirectory>${project.build.directory}/site/doxygen</workingDirectory>
+                            <!--doxyfilePath>/site/doxygen.config</doxyfilePath-->
+                            <autogen>false</autogen>
+                            <executablePath>${doxygen.executable.path}</executablePath>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>clean</id>
+                                <phase>none</phase>
+                                <goals>
+                                    <goal>clean</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>generate</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>generate</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
             <id>calendar</id>
             <dependencies>
                 <dependency>
                     <groupId>org.mnode.ical4j</groupId>
                     <artifactId>ical4j</artifactId>
-                    <version>2.0-beta1</version>
-                </dependency>
-
-                <dependency>
-                    <groupId>org.bedework</groupId>
-                    <artifactId>bw-ical4j-cl</artifactId>
-                    <version>1.1.3</version>
+                    <version>2.0.0</version>
                 </dependency>
             </dependencies>
         </profile>

@@ -8,6 +8,7 @@
  *
  */
 
+package io.github.hjuergens;
 
 import java_cup.runtime.*;
 

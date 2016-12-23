@@ -9,15 +9,26 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>date-rule-jflex</artifactId>
-    <version>0.0.2-SNAPSHOT</version>
+    <artifactId>date-rule-cup-jflex</artifactId>
+    <version>0.0.3-SNAPSHOT</version>
     <name>${project.artifactId}</name>
 
     <description>
         Date Rule Interpreter for date descriptions like \"next sunday\" and \"the day before christmas\" based on
-        jflex
+        cup and jflex
     </description>
 
+
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <encoding>UTF-8</encoding>
+        <project.build.sourceEncoding>${encoding}</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>${encoding}</project.reporting.outputEncoding>
+        <project.resources.sourceEncoding>${encoding}</project.resources.sourceEncoding>
+        <github.global.server>github</github.global.server>
+        <cup.packageName>io.github.hjuergens</cup.packageName>
+    </properties>
 
     <repositories>
         <repository>
@@ -102,6 +113,11 @@
             <artifactId>java-cup-runtime</artifactId>
             <version>0.11-a-czt01-SNAPSHOT</version>
         </dependency>
+        <!-- dependency>
+            <groupId>com.github.vbmacher</groupId>
+            <artifactId>java-cup-runtime</artifactId>
+            <version>11b-20160615</version>
+        </dependency-->
         <dependency>
             <groupId>de.jflex</groupId>
             <artifactId>jflex</artifactId>
@@ -119,10 +135,60 @@
                 </configuration>
             </plugin>
 
+            <!--plugin>
+                <groupId>com.github.vbmacher</groupId>
+                <artifactId>cup-maven-plugin</artifactId>
+                <version>11b-20160615</version>
+                <configuration>
+                    <packageName>${cup.packageName}</packageName>
+                    <debug>true</debug>
+                    <dumpGrammar>true</dumpGrammar>
+                    <dumpStates>true</dumpStates>
+                    <dumpTables>true</dumpTables>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin-->
+
+            <!-- checkstyle -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>validate</id>
+                        <phase>none<!--validate--></phase>
+                        <configuration>
+                            <encoding>UTF-8</encoding>
+                            <consoleOutput>false</consoleOutput>
+                            <failsOnError>false</failsOnError>
+                            <!--configLocation>${project.parent.basedir}/checkstyle.xml</configLocation-->
+                        </configuration>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <groupId>net.sourceforge.czt.dev</groupId>
                 <artifactId>cup-maven-plugin</artifactId>
                 <version>1.6-SNAPSHOT</version>
+                <configuration>
+                    <packageName>${cup.packageName}</packageName>
+                    <!--
+                    <debug>true</debug>
+                    <dumpGrammar>true</dumpGrammar>
+                    <dumpStates>true</dumpStates>
+                    <dumpTables>true</dumpTables>
+                    -->
+                </configuration>
                 <executions>
                     <execution>
                         <goals>
@@ -163,6 +229,23 @@
                 <sourcepath>${project.build.directory}/generated-sources/cup</sourcepath>
             </configuration>
         </plugin>
+
+            <!-- checkstyle -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>2.17</version>
+                <configuration>
+                    <headerLocation>LICENSE.txt</headerLocation>
+                </configuration>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>checkstyle</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
         </plugins>
     </reporting>
 </project>

@@ -12,7 +12,7 @@
     <packaging>jar</packaging>
 
     <name>${project.artifactId}</name>
-    <url>${distributionManagement.site.url}/${project.artifactId}</url>
+    <url>${project.distributionManagement.site.url}/${project.artifactId}</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -20,6 +20,11 @@
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>net.java.dev.javacc</groupId>
+            <artifactId>javacc</artifactId>
+            <version>7.0.0</version>
+        </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -37,6 +42,44 @@
     <build>
         <plugins>
             <plugin>
+                <!-- http://javacc.org/ -->
+                <groupId>com.helger.maven</groupId>
+                <artifactId>ph-javacc-maven-plugin</artifactId>
+                <version>2.8.2</version>
+                <executions>
+                    <execution>
+                        <id>jjc1</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>javacc</goal>
+                        </goals>
+                        <configuration>
+                            <jdkVersion>1.8</jdkVersion>
+                            <packageName>org.javacc.parser</packageName>
+                            <!--sourceDirectory>src/main/java/org/javacc/parser</sourceDirectory>
+                            <outputDirectory>${project.build.directory}/generated-sources/javacc1</outputDirectory-->
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>jjt1</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>jjtree-javacc</goal>
+                        </goals>
+                        <configuration>
+                            <jdkVersion>1.8</jdkVersion>
+                            <!--sourceDirectorysrc/main/java/org/javacc/jjtree</sourceDirectory-->
+                            <excludes>
+                                <exclude>**/parser/**</exclude>
+                            </excludes>
+                            <outputDirectory>${project.build.directory}/generated-sources/jjtree1</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- compiiler -->
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
@@ -44,6 +87,23 @@
                     <target>1.8</target> <!-- override parent -->
                 </configuration>
             </plugin>
+
+            <!-- skip default JaCoCo check -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-check</id>
+                        <phase>none</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+
         </plugins>
     </build>
 

@@ -383,7 +383,7 @@
                 <version>${scoverage.plugin.version}</version>
                 <configuration>
                     <minimumCoverage>5</minimumCoverage>
-                    <failOnMinimumCoverage>true</failOnMinimumCoverage>
+                    <failOnMinimumCoverage>false</failOnMinimumCoverage>
                 </configuration>
                 <executions>
                     <execution>

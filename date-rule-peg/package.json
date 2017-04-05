@@ -1,0 +1,24 @@
+{
+  "name": "date-rule-peg",
+  "version": "0.0.1",
+  "description": "Date rule parser in java-script.",
+  "main": "index.js",
+  "dependencies": {
+    "node": "^0.0.0",
+    "pegjs": "^0.10.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "parser",
+    "date"
+  ],
+  "author": "Hartmut Jürgens",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/hjuergens/date-parser/date-rule-peg.git"
+  }
+}

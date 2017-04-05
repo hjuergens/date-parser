@@ -151,6 +151,8 @@
                         </goals>
                         <configuration>
                             <atn>true</atn>
+                            <listener>true</listener>
+                            <visitor>true</visitor>
                         </configuration>
                     </execution>
                 </executions>

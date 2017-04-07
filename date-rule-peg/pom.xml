@@ -51,6 +51,31 @@
                     <!--<workingDirectory>${project.build.directory}</workingDirectory>-->
                 </configuration>
             </plugin>
+
+            <plugin>
+                <artifactId>exec-maven-plugin</artifactId>
+                <groupId>org.codehaus.mojo</groupId>
+                <version>1.6.0</version>
+                <executions>
+                    <execution>
+                        <id>pegjs</id>
+                        <phase>none<!--generate-sources--></phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>
+                                <argument>list.pegjs</argument>
+                            </arguments>
+                            <!--<environmentVariables>-->
+                                <!--PATH=$PATH:./node-->
+                            <!--</environmentVariables>-->
+                            <executable>node_modules/pegjs/bin/pegjs</executable>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
 </project>

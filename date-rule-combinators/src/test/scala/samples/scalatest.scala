@@ -57,10 +57,10 @@ Here's an example of a FunSuite with ShouldMatchers mixed in:
 */
 
 import org.scalatest.FunSuite
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.Matchers
 
 @RunWith(classOf[JUnitRunner])
-class ListSuite extends FunSuite with ShouldMatchers {
+class ListSuite extends FunSuite with Matchers {
 
   test("An empty list should be empty") {
     List() should be('empty)
@@ -94,7 +94,8 @@ import org.scalatest.enablers.Size._
 
 @RunWith(classOf[JUnitRunner])
 class MapSpec extends FunSpec with MustMatchers {
-  implicit val sz: org.scalatest.enablers.Size[Map[Nothing, Nothing]] = org.scalatest.enablers.Size.sizeOfGenTraversable[Map[Nothing, Nothing]]
+  implicit val sz: org.scalatest.enablers.Size[Map[Nothing, Nothing]]
+    = org.scalatest.enablers.Size.sizeOfGenTraversable[Map[Nothing, Nothing]]
 
   describe("A Map") {
 

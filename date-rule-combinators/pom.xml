@@ -63,13 +63,19 @@
         <dependencies>
             <dependency>
                 <groupId>org.scala-lang.modules</groupId>
-                <artifactId>scala-parser-combinators_2.11</artifactId>
-                <version>1.0.3</version>
+                <artifactId>scala-parser-combinators_${scala.compat.version}</artifactId>
+                <version>1.0.6</version>
             </dependency>
             <dependency>
                 <groupId>org.specs2</groupId>
-                <artifactId>specs2_2.11</artifactId>
-                <version>2.4.2</version>
+                <artifactId>specs2_${scala.compat.version}</artifactId>
+                <version>3.8.9</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.specs2</groupId>
+                        <artifactId>specs2-cats_2.12</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -84,60 +90,61 @@
         <dependency>
             <groupId>org.scala-lang.modules</groupId>
             <artifactId>scala-parser-combinators_${scala.compat.version}</artifactId>
-            <version>1.0.3</version>
+            <!--<version>1.0.3</version>-->
             <scope>compile</scope>
         </dependency>
 
-        <dependency>
+        <!--dependency>
             <groupId>net.time4j</groupId>
-            <artifactId>time4j-range</artifactId>
-            <version>4.2</version>
-        </dependency>
+            <artifactId>time4j-parent</artifactId>
+            <version>4.27.2</version>
+        </dependency-->
 
         <dependency>
             <groupId>org.threeten</groupId>
             <artifactId>threeten-extra</artifactId>
-            <version>0.9</version>
+            <version>1.1</version>
         </dependency>
 
         <!-- for parsing purpose -->
         <dependency>
             <groupId>org.pojava</groupId>
-            <artifactId>org.pojava.datetime</artifactId>
-            <version>3.0.0</version>
+            <artifactId>datetime</artifactId>
+            <version>3.0.2</version>
         </dependency>
 
         <!-- julian date -->
         <dependency>
             <groupId>org.jodd</groupId>
             <artifactId>jodd-core</artifactId>
-            <version>3.6.6</version>
+            <version>3.8.6</version>
         </dependency>
 
         <dependency>
             <groupId>org.codehaus.plexus</groupId>
             <artifactId>plexus-utils</artifactId>
-            <version>3.0.22</version>
+            <version>3.0.24</version>
             <scope>compile</scope>
         </dependency>
 
         <dependency>
             <groupId>org.specs2</groupId>
             <artifactId>specs2_${scala.compat.version}</artifactId>
+            <!--<version>3.8.9</version>-->
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.scalatest</groupId>
             <artifactId>scalatest_${scala.compat.version}</artifactId>
-            <version>2.2.4</version>
+            <version>3.0.3</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
-            <version>6.9.4</version>
+            <version>6.11</version>
             <scope>test</scope>
         </dependency>
 
@@ -150,7 +157,7 @@
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
-            <version>20141113</version>
+            <version>20170516</version>
             <scope>test</scope>
         </dependency>
 
@@ -673,7 +680,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>3.0.1</version>
                 <reportSets>
                     <reportSet>
                         <reports>

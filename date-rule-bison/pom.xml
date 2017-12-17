@@ -15,4 +15,82 @@
 
     <inceptionYear>2016</inceptionYear>
 
+    <profiles>
+        <profile>
+            <id>bison</id>
+            <activation>
+                <file>
+                    <exists>/usr/bin/bison</exists>
+                </file>
+            </activation>
+            <properties>
+                <bison.executable>/usr/bin/bison</bison.executable>
+                <bison.target>${project.build.directory}/generated-sources/bison</bison.target>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>generate-sources</id>
+                                <phase>generate-sources</phase>
+                                <configuration>
+                                    <tasks>
+                                        <mkdir dir="${bison.target}"/>
+                                        <exec executable="${bison.executable}">
+                                            <arg value="${project.basedir}/src/main/resources/calc.y"/>
+                                            <arg value="--output=${bison.target}/Calc.java"/>
+                                        </exec>
+                                    </tasks>
+                                </configuration>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <!--plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>1.2.1</version>
+                        <executions>
+                            <execution>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <executable>${bison.executable}</executable>
+                            <arguments>
+                                <argument>${project.basedir}/src/main/resources/calc.y</argument>
+                                <argument>-o=${bison.target}/Calc.java</argument>
+                            </arguments>
+                        </configuration>
+                    </plugin-->
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>add-source</goal>
+                                </goals>
+                                <configuration>
+                                    <sources>
+                                        <source>${bison.target}</source>
+                                    </sources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+
 </project>

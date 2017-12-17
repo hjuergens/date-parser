@@ -1,0 +1,747 @@
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>de.juergens</groupId>
+        <artifactId>date-parser</artifactId>
+        <version>0.0.2-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>date-rule-parboiled</artifactId>
+    <version>0.0.4-SNAPSHOT</version>
+    <name>${project.artifactId}</name>
+
+    <description>
+        Date Rule Interpreter for date descriptions like &quot;next sunday&quot; and &quot;the day before christmas&quot;
+        based on
+        java.time and parboiled
+    </description>
+
+    <inceptionYear>2017</inceptionYear>
+
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <encoding>UTF-8</encoding>
+        <scoverage.plugin.version>1.0.4</scoverage.plugin.version>
+        <scoverage.scalacPluginVersion>1.0.4</scoverage.scalacPluginVersion>
+        <surefire.version>2.18.1</surefire.version>
+        <disable.surefire>false</disable.surefire>
+        <maven.pmd.rulesetfiles>${project.basedir}/pmd.xml</maven.pmd.rulesetfiles>
+        <mpir.skip>false</mpir.skip> <!-- project-info-reports -->
+        <scalac.plugin.scapegoat.version>1.3.0</scalac.plugin.scapegoat.version>
+
+        <junit.version>4.12</junit.version>
+        <junit.jupiter.version>5.0.2</junit.jupiter.version>
+        <junit.vintage.version>${junit.version}.2</junit.vintage.version>
+        <junit.platform.version>1.0.2</junit.platform.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.parboiled</groupId>
+                <artifactId>parboiled-core</artifactId>
+                <version>1.1.8</version>
+            </dependency>
+            <dependency>
+                <groupId>org.parboiled</groupId>
+                <artifactId>parboiled_2.12</artifactId>
+                <version>2.1.4</version>
+            </dependency>
+            <dependency>
+                <groupId>org.parboiled</groupId>
+                <artifactId>parboiled-scala_2.12</artifactId>
+                <version>1.1.8</version>
+            </dependency>
+            <dependency>
+                <groupId>org.specs2</groupId>
+                <artifactId>specs2_${scala.compat.version}</artifactId>
+                <version>3.8.9</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.specs2</groupId>
+                        <artifactId>specs2-cats_2.12</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <!-- JUNIT 5 -->
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-api</artifactId>
+                <version>${junit.jupiter.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <!-- Only required to run tests in an IDE that bundles an older version -->
+            <dependency>
+                <groupId>org.junit.platform</groupId>
+                <artifactId>junit-platform-launcher</artifactId>
+                <version>${junit.platform.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <!-- Only required to run tests in an IDE that bundles an older version -->
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-engine</artifactId>
+                <version>${junit.jupiter.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <!-- Only required to run tests in an IDE that bundles an older version -->
+            <dependency>
+                <groupId>org.junit.vintage</groupId>
+                <artifactId>junit-vintage-engine</artifactId>
+                <version>${junit.vintage.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <!-- To avoid compiler warnings about @API annotations in JUnit code -->
+            <dependency>
+                <groupId>org.apiguardian</groupId>
+                <artifactId>apiguardian-api</artifactId>
+                <version>1.0.0</version>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+            <version>${scala.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.parboiled</groupId>
+            <artifactId>parboiled-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.parboiled</groupId>
+            <artifactId>parboiled_2.12</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.parboiled</groupId>
+            <artifactId>parboiled-scala_2.12</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.specs2</groupId>
+            <artifactId>specs2_${scala.compat.version}</artifactId>
+            <!--<version>3.8.9</version>-->
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.scalatest</groupId>
+            <artifactId>scalatest_${scala.compat.version}</artifactId>
+            <version>3.0.3</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <sourceDirectory>src/main/scala</sourceDirectory>
+        <testSourceDirectory>src/test/scala</testSourceDirectory>
+
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>findbugs-maven-plugin</artifactId>
+                    <version>3.0.1</version>
+                    <configuration>
+                        <onlyAnalyze>de.juergens.*</onlyAnalyze>
+                        <findbugsXmlOutput>true</findbugsXmlOutput>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <!-- scala-maven-plugin -->
+        <plugins>
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <configuration>
+                    <scalaCompatVersion>${scala.major.version}</scalaCompatVersion>
+                    <scalaVersion>${scala.version}</scalaVersion>
+                    <dependencies>
+                        <dependency>
+                            <!-- static code analysis -->
+                            <groupId>com.sksamuel.scapegoat</groupId>
+                            <artifactId>scalac-scapegoat-plugin_${scala.major.version}</artifactId>
+                            <version>${scalac.plugin.scapegoat.version}</version>
+                        </dependency>
+                    </dependencies>
+                    <compilerPlugins>
+                        <compilerPlugin>
+                            <groupId>com.sksamuel.scapegoat</groupId>
+                            <artifactId>scalac-scapegoat-plugin_${scala.major.version}</artifactId>
+                            <version>${scalac.plugin.scapegoat.version}</version>
+                        </compilerPlugin>
+                    </compilerPlugins>
+                    <args>
+                        <arg>-P:scapegoat:dataDir:target</arg>
+                        <arg>-P:scapegoat:consoleOutput:true</arg>
+                        <arg>-P:scapegoat:overrideLevels:TraversableHead=Warning:OptionGet=Warning</arg>
+                    </args>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>scala-compile-first</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <excludes>
+                                <exclude>
+                                    ${project.build.sourceDirectory}/../scala
+                                    **/genjavadoc/**/*.scala
+                                </exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>scala-test-compile</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- surefire -->
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${surefire.version}</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.maven.surefire</groupId>
+                        <artifactId>surefire-junit47</artifactId>
+                        <version>${surefire.version}</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <threadCount>3</threadCount>
+                </configuration>
+            </plugin>
+
+            <!-- ScalaTest -->
+            <plugin>
+                <groupId>org.scalatest</groupId>
+                <artifactId>scalatest-maven-plugin</artifactId>
+                <version>1.0</version>
+                <configuration>
+                    <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
+                    <junitxml>.</junitxml>
+                    <!--<parallel>true</parallel>-->
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>test</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>pre-site</phase>
+                        <goals>
+                            <goal>reporter</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- scala style -->
+            <!-- default phase of execution is verify -->
+            <plugin>
+                <groupId>org.scalastyle</groupId>
+                <artifactId>scalastyle-maven-plugin</artifactId>
+                <version>0.7.0</version>
+                <configuration>
+                    <verbose>true</verbose>
+                    <failOnViolation>true</failOnViolation>
+                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                    <failOnWarning>false</failOnWarning>
+                    <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
+                    <testSourceDirectory>${project.build.testSourceDirectory}</testSourceDirectory>
+                    <configLocation>${project.parent.basedir}/scalastyle_config.xml</configLocation>
+                    <outputFile>${project.build.directory}/scalastyle-output.xml</outputFile>
+                    <outputEncoding>UTF-8</outputEncoding>
+                    <failOnWarning>false</failOnWarning>
+                    <inputEncoding>${project.build.sourceEncoding}</inputEncoding>
+                    <outputEncoding>${project.reporting.outputEncoding}</outputEncoding>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>scalastyle</id>
+                        <phase>process-sources</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- JXR -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jxr-plugin</artifactId>
+            </plugin>
+
+            <!-- pmd -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <dependencies>
+                    <dependency>
+                        <groupId>net.sourceforge.pmd</groupId>
+                        <artifactId>pmd-scala</artifactId>
+                        <version>5.3.2</version>
+                    </dependency>
+                </dependencies>
+                <executions>
+                    <execution>
+                        <phase>verify</phase>
+                        <goals> <!-- Only CPD is supported. There are no PMD rules for Scala. -->
+                            <goal>cpd</goal>
+                            <goal>cpd-check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <sourceEncoding>utf-8</sourceEncoding>
+                    <linkXRef>true</linkXRef>
+                    <minimumTokens>100</minimumTokens>
+                    <targetJdk>${maven.compiler.source}</targetJdk>
+                    <skipEmptyReport>false</skipEmptyReport>
+                    <!--<rulesets><ruleset>rulesets/maven.xml</ruleset></rulesets>-->
+                    <excludeRoots>
+                        <excludeRoot>${project.build.directory}/generated-sources</excludeRoot>
+                    </excludeRoots>
+                </configuration>
+            </plugin>
+
+            <!-- scoverage -->
+            <plugin>
+                <groupId>org.scoverage</groupId>
+                <artifactId>scoverage-maven-plugin</artifactId>
+                <version>${scoverage.plugin.version}</version>
+                <configuration>
+                    <minimumCoverage>5</minimumCoverage>
+                    <failOnMinimumCoverage>false</failOnMinimumCoverage>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- taglist -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>taglist-maven-plugin</artifactId>
+                <configuration>
+                    <tagListOptions>
+                        <tagClasses>
+                            <tagClass>
+                                <displayName>Todo Work</displayName>
+                                <tags>
+                                    <tag>
+                                        <matchString>todo</matchString>
+                                        <matchType>ignoreCase</matchType>
+                                    </tag>
+                                    <tag>
+                                        <matchString>FIXME</matchString>
+                                        <matchType>exact</matchType>
+                                    </tag>
+                                </tags>
+                            </tagClass>
+                        </tagClasses>
+                    </tagListOptions>
+                </configuration>
+            </plugin>
+
+            <!-- changelog -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-changelog-plugin</artifactId>
+            </plugin>
+
+            <!-- checkstyle -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>validate</id>
+                        <phase>validate</phase>
+                        <configuration>
+                            <skip>true</skip>
+                            <failOnViolation>false</failOnViolation>
+                            <logViolationsToConsole>true</logViolationsToConsole>
+                        </configuration>
+                        <!--<configuration>-->
+                            <!--<encoding>UTF-8</encoding>-->
+                            <!--<consoleOutput>true</consoleOutput>-->
+                            <!--<failsOnError>true</failsOnError>-->
+                            <!--<includeTestSourceDirectory>true</includeTestSourceDirectory>-->
+                        <!--</configuration>-->
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- findbugs -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>findbugs-maven-plugin</artifactId>
+                <!--configuration>
+                    <onlyAnalyze>de.juergens.*</onlyAnalyze>
+                    <findbugsXmlOutput>true</findbugsXmlOutput>
+                    <findbugsXmlWithMessages>true</findbugsXmlWithMessages>
+                </configuration-->
+            </plugin>
+
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <!-- Deploy the web site -->
+                <groupId>com.github.github</groupId>
+                <artifactId>site-maven-plugin</artifactId>
+                <version>0.12</version>
+                <executions>
+                    <execution>
+                        <goals><goal>site</goal></goals>
+                        <phase>none</phase> <!--site-->
+                        <configuration>
+                            <message>com.github.github:site-maven-plugin</message>
+                            <server>github</server>
+                            <path>date-parser/${project.artifactId}</path>
+                            <merge>true</merge>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <url>https://github.com/hjuergens/date-parser</url>
+
+    <reporting>
+        <plugins>
+            <!-- Surefire -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-report-plugin</artifactId>
+                <version>${surefire.version}</version>
+            </plugin>
+
+            <!-- ScalaDoc -->
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <version>3.1.5</version>
+                <configuration>
+                    <args>
+                        <arg>-feature</arg>
+                        <arg>-unchecked</arg>
+                        <arg>-deprecation</arg>
+                        <arg>-explaintypes</arg>
+                    </args>
+                </configuration>
+            </plugin>
+
+            <!-- ScalaTest -->
+            <plugin>
+                <groupId>org.scalatest</groupId>
+                <artifactId>scalatest-maven-plugin</artifactId>
+                <version>1.0</version>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>reporter</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+
+            <!-- Coverage -->
+            <plugin>
+            <groupId>org.scoverage</groupId>
+            <artifactId>scoverage-maven-plugin</artifactId>
+            <version>${scoverage.plugin.version}</version>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>report</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+
+            <!-- JXR -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jxr-plugin</artifactId>
+                <version>2.5</version>
+                <reportSets><reportSet><id>default</id><reports><report>jxr</report><report>test-jxr</report></reports></reportSet></reportSets>            </plugin>
+
+            <!-- PMD -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <configuration>
+                    <targetJdk>${maven.compiler.source}</targetJdk>
+                    <!--<rulesets><ruleset>rulesets/maven.xml</ruleset></rulesets>-->
+                    <excludeRoots>
+                        <excludeRoot>${project.build.directory}/generated-sources/plugin</excludeRoot>
+                    </excludeRoots>
+                </configuration>
+            </plugin>
+
+            <!-- taglist -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>taglist-maven-plugin</artifactId>
+                <version>2.4</version>
+                <configuration>
+                    <tagListOptions>
+                        <tagClasses>
+                            <tagClass>
+                                <displayName>FIXME Work</displayName>
+                                <tags>
+                                    <tag><matchString>fixme</matchString><matchType>ignoreCase</matchType></tag>
+                                    <tag><matchString>@fixme</matchString><matchType>ignoreCase</matchType></tag>
+                                </tags>
+                            </tagClass>
+                            <tagClass>
+                            <displayName>Todo Work</displayName>
+                            <tags>
+                                <tag><matchString>todo</matchString><matchType>ignoreCase</matchType></tag>
+                                <tag><matchString>@todo</matchString><matchType>ignoreCase</matchType></tag>
+                            </tags>
+                            </tagClass>
+                            <tagClass><displayName>Deprecated Work</displayName>
+                                <tags>
+                                    <tag><matchString>@deprecated</matchString><matchType>ignoreCase</matchType></tag>
+                                </tags>
+                            </tagClass>
+                        </tagClasses>
+                    </tagListOptions>
+                </configuration>
+           </plugin>
+
+            <!-- changelog -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-changelog-plugin</artifactId>
+                <version>2.3</version>
+                <reportSets>
+                    <reportSet>
+                        <id>dual-report</id>
+                        <configuration>
+                            <type>range</type>
+                            <range>30</range>
+                        </configuration>
+                        <reports>
+                            <report>changelog</report>
+                            <report>file-activity</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+
+            <!-- checkstyle -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>checkstyle</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+
+            <!-- findbugs -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>findbugs-maven-plugin</artifactId>
+                <version>3.0.1</version>
+                <!--configuration>
+                    <onlyAnalyze>de.juergens.*</onlyAnalyze>
+                    <findbugsXmlOutput>true</findbugsXmlOutput>
+                    <findbugsXmlWithMessages>true</findbugsXmlWithMessages>
+                </configuration-->
+            </plugin>
+
+            <!-- reports -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-project-info-reports-plugin</artifactId>
+                <version>2.8</version>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>index</report>
+                            <report>project-team</report>
+                            <report>dependency-convergence</report>
+                            <report>dependency-info</report>
+                            <report>dependency-management</report>
+                            <report>mailing-list</report>
+                            <report>cim</report>
+                            <report>issue-tracking</report>
+                            <report>license</report>
+                            <report>scm</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+            <!--  report to show dependecies in DSM view -->
+            <plugin>
+                <groupId>com.github.sevntu-checkstyle</groupId>
+                <artifactId>dsm-maven-plugin</artifactId>
+                <version>2.1.4</version>
+            </plugin>
+            <!-- dependency analyze-report -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.0.1</version>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>analyze-report</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+
+        </plugins>
+    </reporting>
+
+    <profiles>
+        <profile>
+            <id>travis</id>
+            <properties>
+                <junit.system.path>/home/juergens/workspace/date-parser/repo/org/jquantlib/jquantlib/0.2.4/jquantlib-0.2.4.jar</junit.system.path>
+            </properties>
+        </profile>
+    <profile>
+        <id>javadoc</id>
+        <build>
+            <plugins>
+                <plugin>
+                    <groupId>net.alchim31.maven</groupId>
+                    <artifactId>scala-maven-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>doc</id>
+                            <phase>generate-sources</phase>
+                            <goals>
+                                <goal>compile</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                    <configuration>
+                        <args>
+                            <arg>-P:genjavadoc:out=${project.build.directory}/genjavadoc</arg>
+                        </args>
+                        <compilerPlugins>
+                            <compilerPlugin>
+                                <groupId>com.typesafe.genjavadoc</groupId>
+                                <artifactId>genjavadoc-plugin_${scala.version}</artifactId>
+                                <version>0.9</version>
+                            </compilerPlugin>
+                        </compilerPlugins>
+                    </configuration>
+                </plugin>
+                <!--plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>build-helper-maven-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <phase>generate-sources</phase>
+                            <goals>
+                                <goal>add-source</goal>
+                            </goals>
+                            <configuration>
+                                <sources>
+                                    <source>${project.build.directory}/genjavadoc</source>
+                                </sources>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin-->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>2.9</version>
+                    <configuration>
+                        <minmemory>64m</minmemory>
+                        <maxmemory>2g</maxmemory>
+                        <outputDirectory>${project.build.directory}</outputDirectory>
+                        <detectLinks>true</detectLinks>
+                        <source>${project.build.directory}/genjavadoc</source>
+                        <sourcepath>${project.build.directory}/genjavadoc</sourcepath>
+                        <detectLinks>false</detectLinks>
+                        <detectOfflineLinks>true</detectOfflineLinks>
+                        <linksource>true</linksource>
+                        <additionalparam>-Xdoclint:none</additionalparam>
+                        <detectJavaApiLink>true</detectJavaApiLink>
+                        <links>
+                            <link>http://www.scala-lang.org/api/${scala.version}</link>
+                            <link>http://commons.apache.org/lang/api</link>
+                            <link>http://java.sun.com/j2se/1.5.0/docs/api</link>
+                            <link>http://this-one-will-not-work</link>
+                        </links>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>javadoc</goal>
+                                <goal>test-javadoc</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </build>
+    </profile>
+    </profiles>
+</project>

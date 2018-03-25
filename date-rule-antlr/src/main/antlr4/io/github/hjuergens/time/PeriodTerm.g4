@@ -17,6 +17,12 @@ options {
     import static io.github.hjuergens.time.DateTimeAdjusterFactory.*;
     import org.joda.time.DateTimeConstants;
     import org.joda.time.DateTimeFieldType;
+    import org.slf4j.Logger;
+    import org.slf4j.LoggerFactory;
+}
+@members
+{
+     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 }
 
 /*------------------------------------------------------------------
@@ -31,7 +37,7 @@ chain : '^' adjust
 adjust returns [DateTimeAdjuster adjusterOut]
     :
     {
-        System.out.println("adjust start");
+        logger.info("adjust start");
     }
     shift { $adjusterOut = $shift.adjusterOut; }
     |
@@ -50,12 +56,12 @@ shift  returns [DateTimeAdjuster adjusterOut]
     {
         final int scalar = $operator.signum;
 
-        System.out.println("scalar=" + scalar);
+        logger.info("scalar=" + scalar);
 
         final DateTimeAdjuster loopPeriodAdjuster = apply($period.p, scalar);
 
         adjuster = adjuster.andThen(loopPeriodAdjuster);
-        System.out.println("adjuster=" + adjuster);
+        logger.info("adjuster=" + adjuster);
         i += 1;
     }
     )*
@@ -70,30 +76,48 @@ shift  returns [DateTimeAdjuster adjusterOut]
 operator returns [int signum]
     : PLUS { $signum = 1; } | MINUS { $signum = -1; }
     {
-        System.out.println("operator=" + $signum);
+        logger.info("operator=" + $signum);
     }
     ;
 
 
 selector returns [DateTimeAdjuster adjusterOut]
     :
+    {
+        DateTimeAdjuster adjuster = DateTimeAdjusterFactory.apply();
+        int i = 0;
+    }
     (
     direction { final int scale = $direction.dir.getFirst(); }
     (
-    DAY { $adjusterOut = field(DateTimeFieldType.dayOfMonth(), scale); }
+    DAY {
+        final DateTimeAdjuster adjusterOut = field(DateTimeFieldType.dayOfMonth(), scale);
+        adjuster = adjuster.andThen(adjusterOut);
+        }
     |
-    MONTH { $adjusterOut = field(DateTimeFieldType.monthOfYear(), scale); }
+    MONTH {
+        final DateTimeAdjuster adjusterOut = field(DateTimeFieldType.monthOfYear(), scale);
+        adjuster = adjuster.andThen(adjusterOut);
+        }
     |
-    QUARTER { $adjusterOut = quarter(scale);}
+    QUARTER {
+        final DateTimeAdjuster adjusterOut = quarter(scale);
+        adjuster = adjuster.andThen(adjusterOut);
+        }
     |
     dayWeek {
             final int dayWeek = $dayWeek.weekDayConstant;
-            $adjusterOut = dayOfWeek(dayWeek, scale, $direction.dir.getSecond());
+            final DateTimeAdjuster adjusterOut = dayOfWeek(dayWeek, scale, $direction.dir.getSecond());
+            adjuster = adjuster.andThen(adjusterOut);
         }
     ) )*
+    {
+            $adjusterOut = adjuster;
+    }
     ;
 //selectorByName
 //selectorByUnit
+
 
 // <<
 direction returns [Pair<Integer,Boolean> dir]

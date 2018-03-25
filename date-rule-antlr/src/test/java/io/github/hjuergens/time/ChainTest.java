@@ -7,9 +7,6 @@ import static org.testng.Assert.assertEquals;
 
 
 public class ChainTest {
-    {
-        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "DEBUG");
-    }
 
     @Test
     public void testNextQuarter() throws Exception {

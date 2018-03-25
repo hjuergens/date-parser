@@ -18,7 +18,7 @@ options {
 }
 @members
 {
-     private final Logger logger = LoggerFactory.getLogger(this.getClass());
+     //private final Logger logger = LoggerFactory.getLogger(this.getClass());
 }
 
 /*------------------------------------------------------------------
@@ -129,9 +129,12 @@ loop returns [List<Period> listOut]
         final Period start = $s.p;
         final Period step = ($step.ctx != null) ? $step.p : Period.months(1);
         final Period end = $end.p;
+        int counter = 0;
         for (Period j = start; !j.equals(end); j = j.plus(step).normalizedStandard()) {
             logger.debug("j="+j);
             $listOut.add(j);
+            counter += 1;
+            if(counter > 256) break;
         }
         $listOut.add(end);
     }

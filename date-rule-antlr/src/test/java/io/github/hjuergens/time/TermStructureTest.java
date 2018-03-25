@@ -4,6 +4,7 @@ import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.joda.time.DateTime;
 import org.joda.time.Period;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,11 +12,24 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
 
 public class TermStructureTest {
 
     final static private Logger logger = LoggerFactory.getLogger(Test.class);
+
+    private void printLoggerInformation(final Logger logger) {
+        System.out.println(logger.getName());
+        System.out.println("traceEnabled:" + logger.isTraceEnabled());
+        System.out.println("debugEnabled:" + logger.isDebugEnabled());
+        System.out.println("infoEnabled: " + logger.isInfoEnabled());
+        System.out.println("warnEnabled: " + logger.isWarnEnabled());
+        System.out.println("errorEnabled:" + logger.isErrorEnabled());
+    }
+
+    @BeforeClass
+    public void printLoggerInformation() {
+        printLoggerInformation(logger);
+    }
 
     @Test
     public void sequenceSingle() throws Exception {
@@ -129,6 +143,26 @@ public class TermStructureTest {
         assertEquals(list.get(0), Period.parse("P4M1D"));
         assertEquals(list.get(1), Period.parse("P5M1D"));
         assertEquals(list.get(5), Period.parse("P9M1D"));
+    }
+
+    @Test
+    public void concat3() throws Exception {
+
+        logger.trace(Period.parse("P15M").toString());
+        ANTLRInputStream inputStream = new ANTLRInputStream("(9M:3M:15M).2W");
+        logger.trace("initialize input stream");
+        TermStructureLexer lexer = new TermStructureLexer(inputStream);
+        logger.trace("initialize lexer");
+        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+        logger.trace("initialize token stream");
+        TermStructureParser parser = new TermStructureParser(tokenStream);
+        logger.trace("initialize parser");
+
+        List<Period> list = parser.list().periods;
+
+        assertEquals(list.get(0), Period.parse("P9M2W"));
+        assertEquals(list.get(1), Period.parse("P1Y2W"));
+        assertEquals(list.get(2), Period.parse("P1Y3M2W"));
     }
 
     @Test

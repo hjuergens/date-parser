@@ -3,17 +3,10 @@ package io.github.hjuergens.time;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeConstants;
-import org.joda.time.DateTimeFieldType;
-import org.joda.time.Period;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.concurrent.atomic.AtomicReference;
-
-import static io.github.hjuergens.time.DateTimeAdjusterFactory.*;
 
 class DateTimeAdjusterLogWrapperLogger implements DateTimeAdjuster {
     private final DateTimeAdjuster adjuster;

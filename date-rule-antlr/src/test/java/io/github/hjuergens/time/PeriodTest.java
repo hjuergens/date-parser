@@ -25,7 +25,7 @@ public class PeriodTest {
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
         PeriodParser parser = new PeriodParser(tokenStream);
 
-        assertEquals(parser.days().p, Period.days(28));
+        assertEquals(parser.days().p, Period.weeks(4));
     }
 
     @Test
@@ -35,7 +35,7 @@ public class PeriodTest {
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
         PeriodParser parser = new PeriodParser(tokenStream);
 
-        assertEquals(parser.dayssub().p, Period.days(28));
+        assertEquals(parser.dayssub().p, Period.weeks(4));
     }
 
     @Test
@@ -65,7 +65,7 @@ public class PeriodTest {
             CommonTokenStream tokenStream = new CommonTokenStream(lexer);
             PeriodParser parser = new PeriodParser(tokenStream);
 
-            assertEquals(parser.weekssub().p, Period.parse("P12W99D"));
+            assertEquals(parser.weekssub().p, Period.parse("P26W1D"));
         }
     }
 
@@ -76,7 +76,7 @@ public class PeriodTest {
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
         PeriodParser parser = new PeriodParser(tokenStream);
 
-        assertEquals(parser.monthssub().p, Period.parse("P14M7W9D"));
+        assertEquals(parser.monthssub().p, Period.parse("P1Y2M8W2D"));
     }
 
     /*
@@ -100,6 +100,18 @@ public class PeriodTest {
         PeriodParser parser = new PeriodParser(tokenStream);
 
         assertEquals(parser.months().p, Period.parse("P1M"));
+    }
+
+    @Test
+    public void testMonthsOverYear() throws Exception {
+        ANTLRInputStream inputStream = new ANTLRInputStream("15M");
+        PeriodLexer lexer = new PeriodLexer(inputStream);
+        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+        PeriodParser parser = new PeriodParser(tokenStream);
+
+        final Period p = parser.months().p;
+        assertEquals(p, Period.parse("P15M").normalizedStandard());
+        assertEquals(p, Period.parse("P1Y3M").normalizedStandard());
     }
 
     @Test

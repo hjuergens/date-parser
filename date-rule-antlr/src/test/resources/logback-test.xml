@@ -1,0 +1,30 @@
+<!-- Level hierarchy:
+    Trace
+    Debug
+    Info
+    Warn
+    Error
+-->
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="de.juergens.dateparser.PeriodTermParser" level="INFO"/>
+
+    <logger name="de.juergens.dateparser.DateTimeAdjuster" level="DEBUG"/>
+
+    <logger name="org.testng.annotations.Test" level="TRACE"/>
+
+    <logger name="io.github.hjuergens.time.TermStructureTest" level="DEBUG"/>
+
+    <logger name="io.github.hjuergens.time.Quarterly" level="TRACE"/>
+
+    <logger name="io.github.hjuergens.time.PeriodTermParser" level="TRACE"/>
+
+    <root level="DEBUG">
+        <appender-ref ref="STDOUT" />
+    </root>
+</configuration>

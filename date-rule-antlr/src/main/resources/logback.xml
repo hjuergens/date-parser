@@ -1,3 +1,12 @@
+<!--
+There are three valid standard file names you can choose from:
+
+    logback-test.xml
+    logback.groovy
+    logback.xml
+
+A note worth understanding here is that Logback will search for these files in this exact order.
+-->
 <configuration>
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
@@ -9,7 +18,11 @@
 
     <logger name="de.juergens.dateparser.DateTimeAdjuster" level="DEBUG"/>
 
-    <root level="DEBUG">
+    <logger name="org.testng.annotations.Test" level="TRACE"/>
+
+    <logger name="io.github.hjuergens.time.TermStructureTest" level="DEBUG"/>
+
+    <root level="TRACE">
         <appender-ref ref="STDOUT" />
     </root>
 </configuration>

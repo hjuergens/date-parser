@@ -1,6 +1,8 @@
 package io.github.hjuergens.time;
 
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 
@@ -15,26 +17,35 @@ import java.util.Iterator;
  * [https://en.wikipedia.org/wiki/Calendar_year]
  */
 public class Quarterly implements Iterator<DateTime> {
+    final private Logger logger = LoggerFactory.getLogger(this.getClass());
+
     volatile DateTime current = null;
     final int scalar;
 
     Quarterly(DateTime current, int scalar) {
         this.current = current.withTime(0,0,0,0);
         this.scalar = scalar;
+        logger.trace(current.toString() + ";" + scalar);
     }
     @Override
     public boolean hasNext() {
+        logger.trace(current.toString() + ";" + scalar);
         return true;
     }
 
     @Override
     public DateTime next() {
-        current = current.plusMonths(1).dayOfMonth().setCopy(1);
-        int month = current.getMonthOfYear() % 4;
-        current.monthOfYear().setCopy(month);
+        final int addMonth = 3 - (current.getMonthOfYear()-1) % 3;
+        logger.trace("addMonth=" + addMonth);
+        logger.trace("before=" + current);
+        current = current.plusMonths(addMonth).dayOfMonth().setCopy(1); // next month first day
+        logger.trace("after=" + current);
         return current;
     }
 
     @Override
-    public void remove() { throw new java.lang.UnsupportedOperationException(); }
+    public void remove() {
+        logger.trace("remove");
+        throw new java.lang.UnsupportedOperationException();
+    }
 }

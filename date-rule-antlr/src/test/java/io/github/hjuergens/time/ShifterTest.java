@@ -10,9 +10,6 @@ import static org.testng.Assert.assertEquals;
 
 
 public class ShifterTest {
-    {
-        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "DEBUG");
-    }
 
     @Test
     public void model2Y3D() {

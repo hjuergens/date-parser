@@ -88,7 +88,7 @@ years returns [Period p]
     ;
 
 months returns [Period p]
-    : twodigit MONTH { $p = Period.months($twodigit.value); }
+    : twodigit MONTH { $p = Period.months($twodigit.value).normalizedStandard(); }
     ;
 
 weeks returns [Period p]
@@ -96,7 +96,7 @@ weeks returns [Period p]
     ;
 
 days returns [Period p]
-    : twodigit DAY { $p = Period.days($twodigit.value); }
+    : twodigit DAY { $p = Period.days($twodigit.value).normalizedStandard(); }
     ;
 
 // cardinal

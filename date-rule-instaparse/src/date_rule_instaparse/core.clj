@@ -1,7 +1,8 @@
 (ns date-rule-instaparse.core
   (:require [instaparse.core :as insta])
   (:gen-class)
-  (:import (java.time Year)))
+  (:import [java.time Year Period LocalDateTime]
+           java.util.Date))
 
 (def as-and-bs
   (insta/parser
@@ -37,8 +38,21 @@
   "Parse string to year."
   [^String s]
   (insta/transform
-    {:year #(java.time.Year/parse %1)}
+    {:year #(Year/parse %1)}
     ((insta/parser "year = #'[1-9]\\d{3}'") s)))
+
+(defn period
+  "shift time date"
+  [^String s]
+  s)
+
+(defn make-period-adder [x]
+  (let [y x]
+    (fn [dt] (.plus dt y))))
+
+(def threedays-adder (make-period-adder (Period/parse "P3D")))
+(threedays-adder (LocalDateTime/parse "2018-03-28T10:18:06.689"))
+
 
 (defn -main
     "I don't do a whole lot...yet."

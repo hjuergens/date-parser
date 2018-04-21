@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Iterator;
 
 /**
+ * TODO migrate to org.threeten.extra.Quarter
  * The calendar year can be divided into four quarters, often abbreviated as Q1, Q2, Q3, and Q4.
  * First quarter, Q1: 1 January–31 March (90 days or 91 days in leap years)
  * Second quarter, Q2: 1 April-30 June (91 days)
@@ -19,8 +20,8 @@ import java.util.Iterator;
 public class Quarterly implements Iterator<DateTime> {
     final private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    volatile DateTime current = null;
-    final int scalar;
+    volatile private DateTime current = null;
+    private final int scalar;
 
     Quarterly(DateTime current, int scalar) {
         this.current = current.withTime(0,0,0,0);

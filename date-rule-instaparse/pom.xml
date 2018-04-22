@@ -3,7 +3,7 @@
   <groupId>date-rule-instaparse</groupId>
   <artifactId>date-rule-instaparse</artifactId>
   <packaging>jar</packaging>
-  <version>0.1.0-SNAPSHOT</version>
+  <version>0.1.1-SNAPSHOT</version>
   <name>date-rule-instaparse</name>
   <description>Date Rule Interpreter using Instaparse</description>
   <url>http://hjuergens.github.io/date-parser/date-rule-instaparse</url>
@@ -52,6 +52,9 @@
       </releases>
     </repository>
   </repositories>
+  <dependencyManagement>
+    <dependencies/>
+  </dependencyManagement>
   <dependencies>
     <dependency>
       <groupId>org.clojure</groupId>
@@ -61,12 +64,22 @@
     <dependency>
       <groupId>instaparse</groupId>
       <artifactId>instaparse</artifactId>
-      <version>1.4.2</version>
+      <version>1.4.8</version>
     </dependency>
     <dependency>
       <groupId>rhizome</groupId>
       <artifactId>rhizome</artifactId>
-      <version>0.2.5</version>
+      <version>0.2.9</version>
+    </dependency>
+    <dependency>
+      <groupId>clojure.java-time</groupId>
+      <artifactId>clojure.java-time</artifactId>
+      <version>0.3.2</version>
+    </dependency>
+    <dependency>
+      <groupId>org.threeten</groupId>
+      <artifactId>threeten-extra</artifactId>
+      <version>1.3.2</version>
     </dependency>
   </dependencies>
 </project>

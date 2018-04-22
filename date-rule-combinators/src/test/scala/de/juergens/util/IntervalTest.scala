@@ -8,12 +8,16 @@ package de.juergens.util
 
 
 import java.time.temporal.ChronoUnit
-
+import net.time4j.PlainDate
 import org.junit.Assert._
+import org.junit.Assume.assumeThat
 import org.junit._
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-
+import org.junit.Assume.assumeThat
+import org.hamcrest.CoreMatchers._
+import org.junit.Assert.assertThat
+import org.junit.Assume.assumeThat
 
 @RunWith(classOf[JUnit4])
 class IntervalTest {
@@ -398,5 +402,24 @@ class IntervalTest {
     assertTrue(interval.contains(start.plusDays(1)))
     assertTrue(interval.contains(end.minusDays(1)))
     assertFalse(interval.contains(end))
+  }
+
+  @Test
+  def time4jDateInterval():Unit = {
+    import java.time.LocalDate
+
+    import net.time4j.range.DateInterval
+    val start = LocalDate.of(2015,9,19)
+    val end = start.plus(3, ChronoUnit.MONTHS)
+
+    import scala.languageFeature.implicitConversions
+    implicit def local2plain(ld:LocalDate) = PlainDate.from(ld)
+
+    val interval = DateInterval.between(start,end)
+
+    assertTrue(interval.contains(start))
+    assertTrue(interval.contains(start.plusDays(1)))
+    assertTrue(interval.contains(end.minusDays(1)))
+    assumeThat(interval.contains(end), is(true))
   }
 }

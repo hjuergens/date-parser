@@ -4,6 +4,7 @@
   (:import [java.time Year Period LocalDateTime DayOfWeek]
            java.util.Date
            [java.time.temporal Temporal TemporalAdjusters]))
+;; @formatter:off
 
 (def as-and-bs
   (insta/parser
@@ -24,8 +25,6 @@
      <term> = number | <'('> add-sub <')'>
      number = #'[0-9]+'"))
 
-(Year/parse "2003")
-
 (def yearparser
   (insta/parser
     "year = #'[1-9]\\d{3}' | twodigityear
@@ -42,21 +41,10 @@
     {:year #(Year/parse %1)}
     ((insta/parser "year = #'[1-9]\\d{3}'") s)))
 
-(defn period
-  "shift time date"
-  [^String s]
-  s)
-
 (defn make-period-adder [period]
+  "usage example: (def twomonth-adder (make-period-adder (Period/parse \"P2M\")))"
   (let [p period]
     (fn [ldt] (.plus ldt p))))
-
-(def threedays-adder (make-period-adder (Period/parse "P3D")))
-
-(def twomonth-adder (make-period-adder (Period/parse "P2M")))
-
-(threedays-adder (LocalDateTime/parse "2018-03-28T10:18:06.689"))
-
 
 
 (comment"
@@ -80,5 +68,5 @@ public void testThirdWednesday() throws Exception {
     "I don't do a whole lot...yet."
     [& args]
     (insta/visualize (as-and-bs "aaabbab")
-                     :output-file "vizexample1.png"
-                      :options {:dpi 63}))
+                     :output-file "target/vizexample1.png"
+                     :options {:dpi 63}))

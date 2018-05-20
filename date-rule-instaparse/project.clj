@@ -1,4 +1,4 @@
-(defproject date-rule-instaparse "0.1.1-SNAPSHOT"
+(defproject date-parser/date-rule-instaparse "0.1.1-SNAPSHOT"
   :description "Date Rule Interpreter using Instaparse"
   :url "http://hjuergens.github.io/date-parser/date-rule-instaparse"
   :license {:name "Eclipse Public License"

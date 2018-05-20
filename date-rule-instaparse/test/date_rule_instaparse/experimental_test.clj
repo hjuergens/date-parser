@@ -7,8 +7,9 @@
   (:require [clojure.test :refer :all]
             [date-rule-instaparse.experimental :refer :all])
   (:import [java.time Year Period LocalDate]
-           java.util.Date))
-(use 'java-time)
+           java.util.Date)
+  (:use java-time))
+
 
 (deftest adjustIntoThirdWednesdayInMonth-test
   (testing

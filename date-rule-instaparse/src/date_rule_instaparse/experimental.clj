@@ -1,6 +1,10 @@
 (#_  "
 => (use 'date-rule-instaparse.experimental :reload)
 => (ns date-rule-instaparse.experimental)
+
+require loads libs (that aren't already loaded), use does the same plus it refers to their namespaces with
+clojure.core/refer (so you also get the possibility of using :exclude etc like with clojure.core/refer). Both
+are recommended for use in ns rather than directly.
 ")
 (ns date-rule-instaparse.experimental
   (:refer-clojure :exclude [range iterate format max min contains? zero?])
@@ -30,8 +34,6 @@
 ;;(Temporal#with(TemporalAdjuster))
 
 (fn [ldt] (adjust ldt :next-or-same-day-of-week :wednesday))
-
-(adjust now :next-or-same-day-of-week :wednesday)
 
 (adjust now :next-or-same-day-of-week :wednesday)
 
@@ -70,6 +72,25 @@
       thirdWednesdayInMonth
       (adjust (adjust ldt :first-day-of-next-month) :day-of-week-in-month 3 :wednesday))))
 
+(defn adjustIntoNextThirdWednesdayInMonth
+  "shift a local date to third wednesday in the month"
+  [^LocalDate ldt]
+  (let [^LocalDate thirdWednesdayInMonth (adjust ldt :day-of-week-in-month 3 :wednesday)]
+    (if (> (.compareTo thirdWednesdayInMonth ldt) 0)
+      thirdWednesdayInMonth
+      (adjust (adjust ldt :first-day-of-next-month) :day-of-week-in-month 3 :wednesday))))
+
+
+
+(local-date-time 2015 10)
+(format "MM/dd" (zoned-date-time 2015 9 28))
+
+(defn as-localdate
+  "Parse a string into an integer, or `nil` if the string cannot be parsed."
+  [^String s]
+  (try
+    (local-date "yyyy-MM-dd" s)
+    (catch NumberFormatException _ nil)))
 
 
 ;;(def nt-adjusters {:next-third-wednesday-in-month [#(adjustIntoNextThirdWednesdayInMonth %) 0]})

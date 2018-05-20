@@ -1,10 +1,9 @@
 (ns date-rule-instaparse.core
   (:require [instaparse.core :as insta])
-  (:gen-class)
+  (:gen-class); for -main method in uberjar
   (:import [java.time Year Period LocalDateTime DayOfWeek]
            java.util.Date
            [java.time.temporal Temporal TemporalAdjusters]))
-;; @formatter:off
 
 (def as-and-bs
   (insta/parser
@@ -41,10 +40,10 @@
     {:year #(Year/parse %1)}
     ((insta/parser "year = #'[1-9]\\d{3}'") s)))
 
-(defn make-period-adder [period]
+(defn make-period-adder [^Period period]
   "usage example: (def twomonth-adder (make-period-adder (Period/parse \"P2M\")))"
   (let [p period]
-    (fn [ldt] (.plus ldt p))))
+    (fn [^LocalDateTime ldt] (.plus ldt p))))
 
 
 (comment"

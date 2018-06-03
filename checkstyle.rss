@@ -19,20 +19,20 @@ under the License.
 -->
 <rss version="0.91">
   <channel>
-    <title>date-rule-combinators - Checkstyle report</title>
-    <link>https://github.com/hjuergens/date-parser</link>
-    <description>date-rule-combinators - Checkstyle report</description>
+    <title>date-parser - Checkstyle report</title>
+    <link>https://hjuergens.github.io</link>
+    <description>date-parser - Checkstyle report</description>
     <language>en-us</language>
-    <copyright>&#169;2010 - 2015 Jürgens</copyright>
+    <copyright>&#169;2015 - 2018 Jürgens</copyright>
     <item>
-      <title>File: 2,
-             Errors: 0,
+      <title>File: 18,
+             Errors: 231,
              Warnings: 0,
              Infos: 0
       </title>
-            <link>https://github.com/hjuergens/date-parser/checkstyle.html</link>
+            <link>https://hjuergens.github.io/checkstyle.html</link>
       <description>
-        <p>Click <a href="https://github.com/hjuergens/date-parser/checkstyle.html">here</a> for the full Checkstyle report.</p>
+        <p>Click <a href="https://hjuergens.github.io/checkstyle.html">here</a> for the full Checkstyle report.</p>
 
         <table summary="Files" boder="1">
           <thead>
@@ -46,7 +46,35 @@ under the License.
           <tbody>
                           <tr>
                 <td>
-                  <a href="https://github.com/hjuergens/date-parser/checkstyle.html#project-info-report.properties">project-info-report.properties</a>
+                  <a href="https://hjuergens.github.io/checkstyle.html#io.github.hjuergens.time.IntegerListVisitor.java">io/github/hjuergens/time/IntegerListVisitor.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  4
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://hjuergens.github.io/checkstyle.html#io.github.hjuergens.util.Ring.java">io/github/hjuergens/util/Ring.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  40
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://hjuergens.github.io/checkstyle.html#io.github.hjuergens.package-info.java">io/github/hjuergens/package-info.java</a>
                 </td>
                 <td>
                   0
@@ -60,7 +88,7 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="https://github.com/hjuergens/date-parser/checkstyle.html#cpd-report.properties">cpd-report.properties</a>
+                  <a href="https://hjuergens.github.io/checkstyle.html#cpd-report.properties">cpd-report.properties</a>
                 </td>
                 <td>
                   0
@@ -70,6 +98,202 @@ under the License.
                 </td>
                 <td>
                   0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://hjuergens.github.io/checkstyle.html#io.github.hjuergens.time.DateTimeAdjusterAbstract.java">io/github/hjuergens/time/DateTimeAdjusterAbstract.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  2
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://hjuergens.github.io/checkstyle.html#io.github.hjuergens.time.DateTimeAdjusterFactory.java">io/github/hjuergens/time/DateTimeAdjusterFactory.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  45
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://hjuergens.github.io/checkstyle.html#io.github.hjuergens.time.SchedulerFactory.java">io/github/hjuergens/time/SchedulerFactory.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  31
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://hjuergens.github.io/checkstyle.html#io.github.hjuergens.JavaApp.java">io/github/hjuergens/JavaApp.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  17
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://hjuergens.github.io/checkstyle.html#io.github.hjuergens.JavaScriptApp.java">io/github/hjuergens/JavaScriptApp.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  3
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://hjuergens.github.io/checkstyle.html#io.github.hjuergens.JythonApp.java">io/github/hjuergens/JythonApp.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  5
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://hjuergens.github.io/checkstyle.html#io.github.hjuergens.ClojureApp.java">io/github/hjuergens/ClojureApp.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  8
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://hjuergens.github.io/checkstyle.html#io.github.hjuergens.Overview.java">io/github/hjuergens/Overview.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  5
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://hjuergens.github.io/checkstyle.html#project-info-report.properties">project-info-report.properties</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://hjuergens.github.io/checkstyle.html#io.github.hjuergens.time.Quarterly.java">io/github/hjuergens/time/Quarterly.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  23
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://hjuergens.github.io/checkstyle.html#de.juergens.App.java">de/juergens/App.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://hjuergens.github.io/checkstyle.html#de.juergens.package-info.java">de/juergens/package-info.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://hjuergens.github.io/checkstyle.html#io.github.hjuergens.time.DateTimeAdjuster.java">io/github/hjuergens/time/DateTimeAdjuster.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  1
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://hjuergens.github.io/checkstyle.html#io.github.hjuergens.time.Pair.java">io/github/hjuergens/time/Pair.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  47
                 </td>
               </tr>
                       </tbody>

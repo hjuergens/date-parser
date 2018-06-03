@@ -1,0 +1,14 @@
+
+de.juergens
+de.juergens.simpleAdder.analysis
+de.juergens.simpleAdder.lexer
+de.juergens.simpleAdder.node
+de.juergens.simpleAdder.parser
+de.juergens.tiny.analysis
+de.juergens.tiny.lexer
+de.juergens.tiny.node
+de.juergens.tiny.parser
+io.github.hjuergens
+io.github.hjuergens.parser
+io.github.hjuergens.time
+io.github.hjuergens.util

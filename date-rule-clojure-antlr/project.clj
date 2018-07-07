@@ -1,4 +1,4 @@
-(defproject date-parser/date-rule-clojure-antlr "0.1.1-SNAPSHOT"
+(defproject date-parser/date-rule-clojure-antlr "0.1.2-SNAPSHOT"
   :description "Date Rule Interpreter using Antlr"
   :url "http://hjuergens.github.io/date-parser/date-rule-clojure-antlr"
   :license {:name "Eclipse Public License"

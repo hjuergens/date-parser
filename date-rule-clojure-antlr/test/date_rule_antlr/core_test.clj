@@ -68,20 +68,20 @@
              (is (= (LocalDateTime/of 2018 07 07 10 56 22)
                     ((adjust-day-of-week-m TemporalAdjusters/previousOrSame DayOfWeek/SATURDAY) anyDate))))))
 
-(deftest adjust-day-of-week-fn-test
+(deftest adjust-day-of-week-expr-fn-test
   (testing "next wednesday"
            (let [^Temporal anyDate (LocalDateTime/of 2018 07 07 10 56 22)]
              (is (= (LocalDateTime/of 2018 07 11 10 56 22)
                     (binding [*ns* *ns*] (in-ns 'date-rule-antlr.core)
-                      ((eval (adjust-day-of-week-fn 'TemporalAdjusters/next 'DayOfWeek/WEDNESDAY)) anyDate))))))
+                      ((eval (adjust-day-of-week-expr-fn 'TemporalAdjusters/next 'DayOfWeek/WEDNESDAY)) anyDate))))))
   (testing "previous or same saturday"
            (let [^Temporal anyDate (LocalDateTime/of 2018 07 07 10 56 22)]
              (is (= (LocalDateTime/of 2018 07 07 10 56 22)
                     (binding [*ns* *ns*] (in-ns 'date-rule-antlr.core)
-                      ((eval (adjust-day-of-week-fn 'TemporalAdjusters/previousOrSame 'DayOfWeek/SATURDAY)) anyDate)))))))
+                      ((eval (adjust-day-of-week-expr-fn 'TemporalAdjusters/previousOrSame 'DayOfWeek/SATURDAY)) anyDate)))))))
 
 
-(deftest loop-adjust-day-of-week-fn-test
+(deftest loop-adjust-day-of-week-expr-fn-test
    (testing "6j"
             (let [rule "<<<=sunday"
                   result (parse-rule rule)
@@ -99,9 +99,9 @@
                   result (parse-rule rule)
                   dow-adjusters-prs (let [[x [u & direction] [d dayOfWeek]] result]
                                       (map list (map dowadjuster-string-keys direction) (repeat (dow-string-keys dayOfWeek))))
-                  fn-coll (map #(eval (apply adjust-day-of-week-fn %)) dow-adjusters-prs)
-                  ^Temporal anyDate (LocalDateTime/of 2018 07 07 12 18 22)]
-              (is (= (LocalDateTime/of 2018 06 17 12 18 22)
+                  fn-coll (map #(eval (apply adjust-day-of-week-expr-fn %)) dow-adjusters-prs)
+                  ^Temporal anyDate (LocalDateTime/of 2018 7 7 12 18 22)]
+              (is (= (LocalDateTime/of 2018 6 17 12 18 22)
                      (binding [*ns* *ns*] (in-ns 'date-rule-antlr.core)
                        (loop [c (reduce conj '() fn-coll) t anyDate]
                          (let [[f & rest] c]
@@ -109,14 +109,34 @@
   (testing "2.) <<<=sunday"
            (defn fn-coll-fn
              [dow-adjusters-prs]
-             (map #(apply adjust-day-of-week-fn %) dow-adjusters-prs))
-           (defn loop-adjust-day-of-week-fn
-             [fn-coll anyDate](binding [*ns* *ns*] (in-ns 'date-rule-antlr.core)
+             (map #(apply adjust-day-of-week-expr-fn %) dow-adjusters-prs))
+           (defn loop-adjust-day-of-week-expr-fn
+             [fn-coll anyDate](binding [*ns* (in-ns 'date-rule-antlr.core)]
                  (loop [c (reduce conj '() fn-coll) t anyDate] (let [[f & rest] c] (if (empty? c) t (recur rest (f t)))))))
            (let [rule "<<<=sunday"
                  result (parse-rule rule)
                  fn-coll (fn-coll-fn (parse-to-adjuster-3 rule))
-                 ^Temporal anyDate (LocalDateTime/of 2018 07 07 12 18 22)]
-             (is (= (LocalDateTime/of 2018 06 17 12 18 22)
-                    (loop-adjust-day-of-week-fn (map eval fn-coll) anyDate))))))
+                 ^Temporal anyDate (LocalDateTime/of 2018 7 7 12 18 22)]
+             (is (= (LocalDateTime/of 2018 6 17 12 18 22)
+                    (loop-adjust-day-of-week-expr-fn (map eval fn-coll) anyDate)))))
+  (testing "beforeOrSame sunday"
+           (let [rule "<=sunday"
+                 fn (loop-expr-fn (binding [*ns* (in-ns 'date-rule-antlr.core)]
+                                    (map eval (map #(apply adjust-day-of-week-expr-fn %) (parse-to-adjuster-3 rule)))))]
+             (is (= (LocalDate/of 2018 7 1)
+                    (fn (LocalDate/of 2018 7 7))))
+             (is (= (LocalDate/of 2018 7 8)
+                    (fn (LocalDate/of 2018 7 8))))
+             (is (= (LocalDate/of 2018 7 8)
+                    (fn (LocalDate/of 2018 7 9))))))
+  (testing "next monday"
+           (let [rule ">monday"
+                 fn (loop-expr-fn (binding [*ns* (in-ns 'date-rule-antlr.core)]
+                                    (map eval (map #(apply adjust-day-of-week-expr-fn %) (parse-to-adjuster-3 rule)))))]
+             (is (= (LocalDate/of 2018 7 9)
+                    (fn (LocalDate/of 2018 7 8))))
+             (is (= (LocalDate/of 2018 7 16)
+                    (fn (LocalDate/of 2018 7 9))))
+             (is (= (LocalDate/of 2018 7 16)
+                    (fn (LocalDate/of 2018 7 10)))))))
 

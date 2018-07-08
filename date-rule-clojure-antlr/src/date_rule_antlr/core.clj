@@ -114,28 +114,30 @@
 ((adjust-day-of-week-m TemporalAdjusters/next DayOfWeek/WEDNESDAY) anyDate)
 
 ; TODO use this ..
-(eval (let [adjuster 'TemporalAdjusters/next dayOfWeek 'DayOfWeek/WEDNESDAY] (list 'fn ['d] (list '.adjustInto (with-meta (list adjuster dayOfWeek) {:tag 'TemporalAdjuster}) 'd))))
+(eval (let [adjuster 'TemporalAdjusters/next dayOfWeek 'DayOfWeek/WEDNESDAY]
+        (list 'fn ['d] (list '.adjustInto (with-meta (list adjuster dayOfWeek) {:tag 'TemporalAdjuster}) 'd))))
 ; TODO to correct this
-(defn adjust-day-of-week-fn
+(defn adjust-day-of-week-expr-fn
+  "Returns an expression for a function taking one date parameter"
   [adjuster ^DayOfWeek dayOfWeek]
   (let [a adjuster d dayOfWeek t (gensym)] (list 'fn (vector t) (list '.adjustInto (list a d) t))))
 
-(println "the function " adjust-day-of-week-fn " should return adjuster functions")
-((eval (adjust-day-of-week-fn 'TemporalAdjusters/next 'DayOfWeek/WEDNESDAY)) anyDate)
+(println "the function " adjust-day-of-week-expr-fn " should return adjuster functions")
+((eval (adjust-day-of-week-expr-fn 'TemporalAdjusters/next 'DayOfWeek/WEDNESDAY)) anyDate)
 
 ; list of adjuster functions
-(def fn-coll (map #(eval (apply adjust-day-of-week-fn %)) dow-adjusters-prs))
+(def fn-coll (map #(eval (apply adjust-day-of-week-expr-fn %)) dow-adjusters-prs))
 
 
-(map #(apply adjust-day-of-week-fn %) dow-adjusters-prs)
-(def fncts ( map #(apply adjust-day-of-week-fn %) dow-adjusters-prs))
+(map #(apply adjust-day-of-week-expr-fn %) dow-adjusters-prs)
+(def fncts ( map #(apply adjust-day-of-week-expr-fn %) dow-adjusters-prs))
 ;(reduce (fn [x y] (y x)) anyDate fncts)
 
 (println "apply recursivly any function in 'fn-coll starting with 'anyDate")
 (println (let [rule "<<<=sunday"
                result (parse-rule rule)
                dow-adjusters-prs (let [[x [u & direction] [d dayOfWeek]] result] (reverse (map list (map dowadjuster-string-keys direction) (repeat (dow-string-keys dayOfWeek)))))
-               fn-coll (map #(eval (apply adjust-day-of-week-fn %)) dow-adjusters-prs)
+               fn-coll (map #(eval (apply adjust-day-of-week-expr-fn %)) dow-adjusters-prs)
                ^Temporal anyDate (LocalDateTime/of 2018 07 07 12 18 22)]
            (loop [c fn-coll t anyDate] (let [[f & rest] c] (if (empty? c) t (recur rest (f t)))))))
 
@@ -149,7 +151,6 @@
 ;(defmacro next-day-of-week [dow i] (let [x (gensym)] `(iterate (fn*[~x] (.adjustInto (TemporalAdjusters/next ~dow) ~x)) anyDate)))
 
 (defmacro next-day-of-week [dow c] (let [x (gensym) d (with-meta (gensym) { :tag 'Temporal})] `(fn* [~d] (nth (iterate (fn*[~x] (.adjustInto (TemporalAdjusters/next ~dow) ~x)) ~d) ~c))))
-
 
 (macroexpand-1 '(next-day-of-week DayOfWeek/WEDNESDAY 4))
 
@@ -191,9 +192,17 @@
 (defmacro nextDayOfWeekAdjuster [dow i] (let [t (gensym)] `(reify TemporalAdjuster (adjustInto ^Temporal [this ^Temporal ~t] ((next-day-of-week ~dow ~i) ~t)))))
 
 
-(defn adjust-day-of-week-fn
+(defn adjust-day-of-week-expr-fn
   [adjuster ^DayOfWeek dayOfWeek]
   (let [a adjuster d dayOfWeek t (gensym)] (list 'fn (vector t) (list '.adjustInto (list a d) t))))
+
+(defn loop-expr-fn
+  "Returns function which recursivly apply the functions in a collection"
+  [coll](binding [*ns* *ns*] (in-ns 'date-rule-antlr.core)
+               (fn* [temporal]
+                 (loop [c (reduce conj '() coll) t temporal]
+      (let [[f & rest] c] (if (empty? c) t (recur rest (f t))))))))
+
 
 (#_"defn thirdWednesday
   [^Temporal t]

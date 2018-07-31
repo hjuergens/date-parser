@@ -18,7 +18,7 @@ import org.junit.runners.JUnit4
   * [wikipedia]
   **/
 @RunWith(value = classOf[JUnit4])
-class DíaDeLaRazaTest
+class DaDeLaRazaTest
   extends ParserTest(new DateRuleParsers) {
 
   val twelvesOfOctober = MonthDay.of(Month.OCTOBER,12)

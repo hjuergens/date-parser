@@ -27,11 +27,11 @@
         <scoverage.plugin.version>1.0.4</scoverage.plugin.version>
         <scoverage.scalacPluginVersion>1.0.4</scoverage.scalacPluginVersion>
         <surefire.version>2.18.1</surefire.version>
+        <scala.plugin.version>3.4.2</scala.plugin.version>
         <disable.surefire>false</disable.surefire>
         <maven.pmd.rulesetfiles>${project.basedir}/pmd.xml</maven.pmd.rulesetfiles>
         <mpir.skip>false</mpir.skip> <!-- project-info-reports -->
-        <junit.system.path>/home/travis/build/hjuergens/date-parser/repo/jquantlib-0.2.4.jar</junit.system.path>
-
+        <junit.system.path>C:\Users\User\workspace\date-parser\repo/date-parser/repo/jquantlib-0.2.4.jar</junit.system.path>
         <scalac.plugin.scapegoat.version>1.3.4</scalac.plugin.scapegoat.version>
     </properties>
 
@@ -518,7 +518,7 @@
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
-                <version>3.3.2</version>
+                <version>${scala.plugin.version}</version>
                 <configuration>
                     <args>
                         <arg>-feature</arg>
@@ -526,6 +526,7 @@
                         <arg>-deprecation</arg>
                         <arg>-explaintypes</arg>
                     </args>
+                    <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
 

@@ -10,8 +10,8 @@ import org.slf4j.LoggerFactory;
  */
 final class DateTimeAdjusterFactory {
 
-    static LocalTime zero = new LocalTime(0,0,0,0);
-    static LocalTime twentyFour = zero.minusMillis(1);
+    static private LocalTime zero = new LocalTime(0,0,0,0);
+    static private LocalTime twentyFour = zero.minusMillis(1);
 
     private static final Logger logger = LoggerFactory.getLogger(DateTimeAdjuster.class);
 
@@ -79,7 +79,6 @@ final class DateTimeAdjusterFactory {
         return new DateTimeAdjusterLogWrapperLogger(logger, adjuster);
     }
 
-    private static final Ring weekRing = new Ring(7);
     // WEDNESDAY = the third day of the week (ISO)
     static DateTimeAdjuster dayOfWeek(final int dayOfWeek, final int scalar, final boolean equalCount) {
 

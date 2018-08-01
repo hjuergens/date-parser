@@ -10,7 +10,7 @@ public class Ring {
     public int minus(int lhs, int rhs) {
         if(lhs <= 0 || lhs > m) throw new IllegalArgumentException("Left hand side out of range.");
         if(rhs <= 0 || rhs > m) throw new IllegalArgumentException("Right hand side out of range.");
-        return lhs-rhs < 0 ? (lhs-rhs)+m : lhs-rhs;
+        return lhs-rhs < 0 ? lhs-rhs+m : lhs-rhs;
     }
 
     public int plus(int lhs, int amount) {

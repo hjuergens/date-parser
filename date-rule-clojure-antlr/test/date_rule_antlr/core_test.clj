@@ -106,20 +106,20 @@
                  ^Temporal anyDate (LocalDateTime/of 2018 7 7 12 18 22)]
              (is (= (LocalDateTime/of 2018 6 17 12 18 22)
                     (loop-adjust-day-of-week-expr-fn (map eval fn-coll) anyDate)))))
-  (testing "beforeOrSame sunday"
+  #_(testing "beforeOrSame sunday"
            (let [rule "<=sunday"
-                 fn (loop-fn (binding [*ns* (in-ns 'date-rule-antlr.core)]
-                                    (map eval (map #(apply adjust-day-of-week-expr-fn %) (parse-to-adjuster-3 rule)))))]
+                 fn  (binding [*ns* (in-ns 'date-rule-antlr.core)]
+                                    (map eval (map #(apply adjust-day-of-week-expr-fn-2 %) (parse-to-adjuster-3 rule))))]
              (is (= (LocalDate/of 2018 7 1)
                     (fn (LocalDate/of 2018 7 7))))
              (is (= (LocalDate/of 2018 7 8)
                     (fn (LocalDate/of 2018 7 8))))
              (is (= (LocalDate/of 2018 7 8)
                     (fn (LocalDate/of 2018 7 9))))))
-  (testing "next monday"
+  #_(testing "next monday"
            (let [rule ">monday"
-                 fn (loop-fn (binding [*ns* (in-ns 'date-rule-antlr.core)]
-                                    (map eval (map #(apply adjust-day-of-week-expr-fn %) (parse-to-adjuster-3 rule)))))]
+                 fn (binding [*ns* (in-ns 'date-rule-antlr.core)]
+                                    (map eval (map #(apply adjust-day-of-week-expr-fn %) (parse-to-adjuster-3 rule))))]
              (is (= (LocalDate/of 2018 7 9)
                     (fn (LocalDate/of 2018 7 8))))
              (is (= (LocalDate/of 2018 7 16)
@@ -127,12 +127,10 @@
              (is (= (LocalDate/of 2018 7 16)
                     (fn (LocalDate/of 2018 7 10)))))))
 
-(deftest rule-to-fn-test
+(deftest rule-to-fm-test
   (testing "raw:next monday"
          (let [rule ">monday"
-               fn (apply clojure.core/comp
-                  (binding [*ns* (in-ns 'date-rule-antlr.core)]
-                    (map eval (rule-to-expr-fn rule))))]
+               fn (eval (rule-to-fm rule))]
            (is (= (LocalDate/of 2018 7 9)
                   (fn (LocalDate/of 2018 7 8))))
            (is (= (LocalDate/of 2018 7 16)
@@ -150,3 +148,20 @@
     (is (instance? TemporalAdjuster ta))
     (is (= (LocalDate/of 2018 8 12) (.adjustInto ta (LocalDate/of 2018 8 19))))
     (is (= (LocalDate/of 2018 8 12) (.with (LocalDate/of 2018 8 19) ta)))))))
+
+(deftest loop-fm-fn-tests
+  (testing "translate"
+    (is (not-empty (loop-fm-fn (parse-to-adjuster-3 ">=>sunday")))))
+  (testing "evaluated is function"
+      (let [fm (loop-fm-fn (parse-to-adjuster-3 ">=>sunday"))]
+      (is (function? (eval fm)))))
+  (testing "apply function"
+      (let [fn (eval (loop-fm-fn (parse-to-adjuster-3 ">=>sunday")))]
+      (is (= (LocalDate/of 2018 9 30)
+        (fn (LocalDate/of 2018 9 23))))
+      (is (= (LocalDate/of 2018 10 7)
+        (fn (LocalDate/of 2018 9 24))))))
+  (testing "apply another function"
+      (let [fn (eval (loop-fm-fn (parse-to-adjuster-3 "<<<<<<<<friday")))]
+      (is (= (LocalDate/of 2018 8 3)
+        (fn (LocalDate/of 2018 9 23)))))))

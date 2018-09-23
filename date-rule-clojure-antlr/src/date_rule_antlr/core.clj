@@ -1,7 +1,9 @@
-(#_"
+#_(
 => (ns date-rule-antlr.core)
 => (use 'date-rule-antlr.core :reload)
-")
+=> (use 'clojure.repl)
+)
+
 (ns date-rule-antlr.core
   (:gen-class); for -main method in uberjar
   (:import [java.nio.file Files Paths])
@@ -17,10 +19,10 @@
                            AA : [Aa]+ ;
                            WS : ' ' -> channel(HIDDEN) ;"))
 
-(#_ "for documentation
+#_(for documentation
 => (use 'clojure.repl)
 => (doc antlr/parser)
-")
+)
 
 ;(def url (io/resource "Json.g4" (clojure.lang.RT/baseLoader)))
 ;(def grammarTxt (String/join "\n" (Files/readAllLines (Paths/get (.toURI (-> "Json.g4" io/resource))))))
@@ -28,7 +30,7 @@
 ;(def json (antlr/parser grammarTxt))
 ;(->> "[1,,3]" (antlr/parse json {:throw? false}) pprint)
 ;(try (json "[1,2,,3,]") (catch clj_antlr.ParseError e (pprint @e)))
-(def rule ">>>=wednesday")
+(def rule ">=>>wednesday")
 (def grammarTxt (String/join "\n" (Files/readAllLines (Paths/get (.toURI (-> "SelectorByName.g4" io/resource))))))
 (def selByName (antlr/parser grammarTxt))
 (defn parse-rule [rule] (->> rule (antlr/parse selByName {:throw? false})))
@@ -40,10 +42,6 @@
 (let [[x [u & direction] z] result] (reduce + (map {">" 1 "<" -1 ">=" 0} direction)))
 
 (def nextWednesdayAdjuster (TemporalAdjusters/next DayOfWeek/WEDNESDAY))
-;(defn nextDayOfWeek [^DayOfWeek dayOfWeek] (^TemporalAdjuster TemporalAdjusters/next dayOfWeek))
-
-;(def nextWednesday (nextDayOfWeek DayOfWeek/WEDNESDAY))
-;TODO prefer with over adjustInto
 
 
 (def ^TemporalAdjuster nextWednesday
@@ -99,7 +97,7 @@
 
 (let [direction '(">" ">" ">=") dayOfWeek "wednesday"]
   (into '() (for [[k v] (frequencies direction)] (list 'repeat v (list (dowadjuster-string-keys k) (dow-string-keys dayOfWeek))))))
-(println ">" ">" ">=" "wednesday" " produces ")
+(println ">=" ">" ">" "wednesday" " produces ")
 (prn (let [direction '(">" ">" ">=") dayOfWeek "wednesday"]
        (into '() (for [[k v] (frequencies direction)] (list 'repeat v (list (dowadjuster-string-keys k) (dow-string-keys dayOfWeek)))))))
 
@@ -130,7 +128,7 @@
 ;(reduce (fn [x y] (y x)) anyDate fncts)
 
 (println "apply recursivly any function in 'fn-coll starting with 'anyDate")
-(println (let [rule "<<<=sunday"
+#_(println (let [rule "<=<<sunday"
                result (parse-rule rule)
                dow-adjusters-prs (let [[x [u & direction] [d dayOfWeek]] result] (reverse (map list (map dowadjuster-string-keys direction) (repeat (dow-string-keys dayOfWeek)))))
                fn-coll (map #(eval (apply adjust-day-of-week-expr-fn %)) dow-adjusters-prs)
@@ -152,7 +150,6 @@
 
 ((next-day-of-week DayOfWeek/WEDNESDAY 4) anyDate)
 
-(#_"")
 
 (defmacro nextDayOfWeekAdjuster [dow i] (let [t (gensym)] `(reify TemporalAdjuster (adjustInto ^Temporal [this ^Temporal ~t] ((next-day-of-week ~dow ~i) ~t)))))
 
@@ -160,7 +157,10 @@
 
 
 (def parsedAdjuster (let [[x [u & direction] [d dayOfWeek]] result] (list 'nextDayOfWeekAdjuster (dow-string-keys dayOfWeek) (counter direction))))
+
+
 (.adjustInto ^TemporalAdjuster (eval parsedAdjuster) anyDate)
+
 (.with anyDate (eval parsedAdjuster))
 
 
@@ -175,11 +175,26 @@
 (defmacro nextDayOfWeekAdjuster [dow i] (let [t (gensym)] `(reify TemporalAdjuster (adjustInto ^Temporal [this ^Temporal ~t] ((next-day-of-week ~dow ~i) ~t)))))
 
 
-(defn adjust-day-of-week-expr-fn
+#_(defn adjust-day-of-week-expr-fn
   [adjuster ^DayOfWeek dayOfWeek]
   (let [a adjuster d dayOfWeek t (gensym)] (list 'fn (vector t) (list '.adjustInto (list a d) t))))
 
-(defn loop-fn
+(defn adjust-day-of-week-expr-fn-2
+  [temporalVar adjuster ^DayOfWeek dayOfWeek]
+  (let [adj adjuster dow dayOfWeek x temporalVar] (list '.adjustInto (list adj dow) x)))
+
+(defn loop-fm-fn
+      "Returns form which recursivly apply the functions in a collection"
+      [coll]
+      (let [t (gensym)]
+      (binding [*ns* *ns*] (in-ns 'date-rule-antlr.core)
+                   (list 'fn (vector t)
+                     (loop [c coll x t]
+                      (let [[f & rest] c] (if (empty? c) x (recur rest (apply adjust-day-of-week-expr-fn-2 (cons x f))))))))))
+
+(loop-fm-fn (parse-to-adjuster-3 ">=>sunday"))
+
+#_(defn loop-fn
   "Returns function which recursivly apply the functions in a collection"
   [coll](binding [*ns* *ns*] (in-ns 'date-rule-antlr.core)
                (fn* [temporal]
@@ -187,30 +202,27 @@
                   (let [[f & rest] c] (if (empty? c) t (recur rest (f t))))))))
 
 
-(defn rule-to-expr-fn
-  "Returns form of a temporal function according to the rule"
-  [^String rule]
-  ;(prn (parse-to-adjuster-3 rule))
-  (map #(apply adjust-day-of-week-expr-fn %) (parse-to-adjuster-3 rule)))
-
-(defn rule-to-fn
+(defn rule-to-fm
   "Returns form of a temporal function according to the rule"
   [^String rule]
   ;(prn (parse-to-adjuster-3 rule))
   ;(map #(apply adjust-day-of-week-expr-fn %) (parse-to-adjuster-3 rule))
-  (apply clojure.core/comp (map eval (rule-to-expr-fn rule))))
+  (loop-fm-fn (parse-to-adjuster-3 rule)))
 
 
-(def adjuster-fn (rule-to-fn "<<=sunday"))
+(defn rule-to-fn
+  "Returns form of a temporal function according to the rule"
+  [^String rule]
+  ;(apply clojure.core/comp (map eval (rule-to-expr-fn rule)))
+  (eval (loop-fm-fn (parse-to-adjuster-3 rule))))
+
+
+(def adjuster-fn (rule-to-fn "<=<sunday"))
 (adjuster-fn (LocalDate/of 2018 8 17))
-
 
 (defn ^TemporalAdjuster temporal-adjuster-fn [^String rule]
   (reify TemporalAdjuster (adjustInto [this t] ((rule-to-fn rule) t))))
-(#_"defn thirdWednesday
-  [^Temporal t]
-  (let [^Temporal w (.next TemporalAdjusters DayOfWeek/WEDNESDAY)]
-                 (.adjustInto w t))")
+
 
 ;; https://github.com/clojure/tools.cli
 (defn -main [& args]

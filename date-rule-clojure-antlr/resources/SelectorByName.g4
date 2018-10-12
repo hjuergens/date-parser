@@ -8,13 +8,16 @@ selector
     :
     direction
     (
-    dayWeek
+    dayWeek | month
     )
     ;
 
 direction
     :
-    PREVIOUSORSAME | NEXTORSAME | (PREVIOUSORSAME? PREVIOUS+) | (NEXTORSAME? NEXT+)
+    PREVIOUSORSAME
+    | NEXTORSAME
+    | (PREVIOUSORSAME? PREVIOUS+)
+    | (NEXTORSAME? NEXT+)
     ;
 
 dayWeek
@@ -26,6 +29,22 @@ dayWeek
     | FRIDAY
     | SATURDAY
     | SUNDAY
+    ;
+
+month
+    :
+    JAN
+    | FEB
+    | MAR
+    | APR
+    | MAY
+    | JUN
+    | JUL
+    | AUG
+    | SEP
+    | OCT
+    | NOV
+    | DEC
     ;
 
 /*------------------------------------------------------------------
@@ -44,8 +63,7 @@ WEEK : 'W';
 DAY : 'D';
 QUARTER : 'Q';
 
-//DAY_OF_WEEK : 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday'
-//    ;
+
 MONDAY : 'monday';
 TUESDAY : 'tuesday';
 WEDNESDAY : 'wednesday';
@@ -53,6 +71,19 @@ THURSDAY : 'thursday';
 FRIDAY : 'friday';
 SATURDAY : 'saturday';
 SUNDAY : 'sunday';
+
+JAN : 'january';
+FEB : 'february';
+MAR : 'march';
+APR : 'april';
+MAY : 'may';
+JUN : 'june';
+JUL : 'july';
+AUG : 'august';
+SEP : 'september';
+OCT : 'october';
+NOV : 'november';
+DEC : 'december';
 
 NEXT       : '>' ;
 NEXTORSAME : '>=' ;

@@ -10,7 +10,7 @@
   (:require [clj-antlr.core :as antlr]
             [clojure.java.io :as io]
             [clojure.tools.cli :refer [parse-opts]])
-  (:import [java.time Year Period LocalDate LocalDateTime DayOfWeek]
+  (:import [java.time Year Period LocalDate LocalDateTime DayOfWeek Month]
            [java.time.temporal Temporal TemporalAdjusters TemporalAdjuster])
   (:use clojure.pprint))
 
@@ -30,25 +30,25 @@
 ;(def json (antlr/parser grammarTxt))
 ;(->> "[1,,3]" (antlr/parse json {:throw? false}) pprint)
 ;(try (json "[1,2,,3,]") (catch clj_antlr.ParseError e (pprint @e)))
-(def rule ">=>>wednesday")
+(def rule ">=>>november")
 (def grammarTxt (String/join "\n" (Files/readAllLines (Paths/get (.toURI (-> "SelectorByName.g4" io/resource))))))
 (def selByName (antlr/parser grammarTxt))
 (defn parse-rule [rule] (->> rule (antlr/parse selByName {:throw? false})))
 
 ;(defn counter [^String l] (reduce + (filter identity (map {\> 1 \< -1} l))))
-(defn counter [l] (reduce + (map {"<" -1 ">" 1 "<=" -1 ">=" 1} l)))
+;(defn counter [l] (reduce + (map {"<" -1 ">" 1 "<=" -1 ">=" 1} l)))
 
 (def result (parse-rule rule))
-(let [[x [u & direction] z] result] (reduce + (map {">" 1 "<" -1 ">=" 0} direction)))
+;(let [[x [u & direction] z] result] (reduce + (map {">" 1 "<" -1 ">=" 0} direction)))
 
-(def nextWednesdayAdjuster (TemporalAdjusters/next DayOfWeek/WEDNESDAY))
+;(def nextWednesdayAdjuster (TemporalAdjusters/next DayOfWeek/WEDNESDAY))
 
 
 (def ^TemporalAdjuster nextWednesday
   (reify TemporalAdjuster (adjustInto [this t] (.adjustInto (TemporalAdjusters/next DayOfWeek/WEDNESDAY) t))))
 (instance? TemporalAdjuster nextWednesday)
 
-(def ^Temporal anyDate (LocalDateTime/of 2016 12 3 12 18 22 65))
+(def ^Temporal anyDate (LocalDateTime/of 2016 5 3 12 18 22 65))
 
 (.adjustInto nextWednesday anyDate)
 (.with anyDate nextWednesday)
@@ -66,6 +66,10 @@
                        "saturday" 'DayOfWeek/SATURDAY
                        "sunday" 'DayOfWeek/SUNDAY})
 
+; {"january" Month/JANUARY "february" Month/FEBRUARY ...}
+(def month-string-keys
+  "{\"january\" Month/JANUARY \"february\" Month/FEBRUARY ...}"
+  (into {} (for [m (Month/values)] (vector (.toLowerCase (.toString m)) m))))
 
 (def dowadjuster-string-keys {
                                 ">" 'TemporalAdjusters/next
@@ -73,7 +77,53 @@
                                 "<" 'TemporalAdjusters/previous
                                 "<=" 'TemporalAdjusters/previousOrSame})
 
+;; Month
 
+
+(defn- _nextOrSameMonth
+  [^Month month ^Temporal t orSame]
+  (let [
+    m  (.compareTo (Month/from t) month)
+    sameMonth (and orSame (zero? m))
+    pm (if (neg? m) (* -1 m) (if sameMonth 0 (- 12 m)))]
+    (.plusMonths t pm)))
+
+(defn nextMonth
+  [^Month month ^Temporal t]
+  (_nextOrSameMonth month t false))
+
+(defn nextOrSameMonth
+  [^Month month ^Temporal t]
+  (_nextOrSameMonth month t true))
+
+(defn- _previousOrSameMonth
+  [^Month month ^Temporal t orSame]
+  (let [
+    m  (.compareTo (Month/from t) month)
+    sameMonth (and orSame (zero? m))
+    pm (if (pos? m) m (if sameMonth 0 (+ 12 m)))]
+    (.minusMonths t pm)))
+
+(defn previousMonth
+  [^Month month ^Temporal t]
+  (_previousOrSameMonth month t false))
+
+(defn previousOrSameMonth
+  [^Month month ^Temporal t]
+  (_previousOrSameMonth month t true))
+
+(nextMonth Month/JULY anyDate)
+
+
+(prn (nextMonth Month/JUNE (LocalDate/of 2018 3 31)))
+
+(= (LocalDate/of 2018 7 30) (nextMonth Month/JUNE (LocalDate/of 2018 3 31)))
+
+(def monthadjuster-string-keys {
+                                ">" 'nextMonth
+                                ">=" 'nextOrSameMonth
+                                "<" 'previousMonth
+                                "<=" 'previousOrSameMonth})
 
 (let [[x [u & direction] [d dayOfWeek]] result] (reverse (map list (map dowadjuster-string-keys direction) (repeat (dow-string-keys dayOfWeek)))))
 
@@ -90,10 +140,10 @@
 (def dow-adjusters-prs (let [[x [u & direction] [d dayOfWeek]] result] (reverse (map list (map dowadjuster-string-keys direction) (repeat (dow-string-keys dayOfWeek))))))
 (println rule " produces list " dow-adjusters-prs)
 
-(eval (list 'TemporalAdjusters/next (dow-string-keys "wednesday")))
+;(eval (list 'TemporalAdjusters/next (dow-string-keys "wednesday")))
 
-(let [[x [u & direction] [d dayOfWeek]] result]
-  (list 'repeat (counter direction) (list 'TemporalAdjusters/next (dow-string-keys dayOfWeek))))
+;(let [[x [u & direction] [d dayOfWeek]] result]
+;  (list 'repeat (counter direction) (list 'TemporalAdjusters/next (dow-string-keys dayOfWeek))))
 
 (let [direction '(">" ">" ">=") dayOfWeek "wednesday"]
   (into '() (for [[k v] (frequencies direction)] (list 'repeat v (list (dowadjuster-string-keys k) (dow-string-keys dayOfWeek))))))
@@ -105,7 +155,7 @@
   "TODO"
   [adjuster ^DayOfWeek dayOfWeek]  (let [d (gensym)] `(fn [~d] (.adjustInto (~adjuster ~dayOfWeek ) ~d))))
 
-((adjust-day-of-week-m TemporalAdjusters/next DayOfWeek/WEDNESDAY) anyDate)
+;((adjust-day-of-week-m TemporalAdjusters/next DayOfWeek/WEDNESDAY) anyDate)
 
 ; TODO use this ..
 (eval (let [adjuster 'TemporalAdjusters/next dayOfWeek 'DayOfWeek/WEDNESDAY]
@@ -156,12 +206,12 @@
 (.adjustInto (nextDayOfWeekAdjuster DayOfWeek/WEDNESDAY 4) anyDate)
 
 
-(def parsedAdjuster (let [[x [u & direction] [d dayOfWeek]] result] (list 'nextDayOfWeekAdjuster (dow-string-keys dayOfWeek) (counter direction))))
+;(def parsedAdjuster (let [[x [u & direction] [d dayOfWeek]] result] (list 'nextDayOfWeekAdjuster (dow-string-keys dayOfWeek) (counter direction))))
 
 
-(.adjustInto ^TemporalAdjuster (eval parsedAdjuster) anyDate)
+;(.adjustInto ^TemporalAdjuster (eval parsedAdjuster) anyDate)
 
-(.with anyDate (eval parsedAdjuster))
+;(.with anyDate (eval parsedAdjuster))
 
 
 (defn parse-to-adjuster-3

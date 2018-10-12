@@ -3,13 +3,14 @@
             ;[clojure.test.check.generators :as gen]
             [date-rule-antlr.core :refer :all]
             [clojure.string :as str])
-  (:import [java.time Year Period LocalDate LocalDateTime DayOfWeek]
+  (:import [java.time Year Period LocalDate LocalDateTime DayOfWeek Month]
            [java.time.temporal Temporal TemporalAdjusters TemporalAdjuster]))
 
-; (list 'repeat 2 (list 'TemporalAdjusters/next 'DayOfWeek/TUESDAY))
-; (require '[clojure.test :refer [run-tests]])
-; (require 'date-rule-antlr.core-test :reload)
-; (run-tests 'date-rule-antlr.core-test)
+#_(
+(require '[clojure.test :refer [run-tests]])
+(require 'date-rule-antlr.core-test :reload)
+(run-tests 'date-rule-antlr.core-test)
+)
 
 (deftest aaa-test
   (testing "parse 'aAAaA a'"
@@ -164,4 +165,59 @@
   (testing "apply another function"
       (let [fn (eval (loop-fm-fn (parse-to-adjuster-3 "<<<<<<<<friday")))]
       (is (= (LocalDate/of 2018 8 3)
-        (fn (LocalDate/of 2018 9 23)))))))
+        (fn (LocalDate/of 2018 9 23))))))
+  (testing "apply another function"
+      (let [fn (eval (loop-fm-fn (parse-to-adjuster-3 ">november")))]
+      (is (thrown? java.lang.NullPointerException (fn (LocalDate/of 2018 9 23)))))))
+
+(deftest nextMonth-tests
+  (testing "is function"
+    (is (function? nextMonth)))
+  (testing "same year"
+      (let [d  (LocalDate/of 2018 3 31)]
+      (is (= (LocalDate/of 2018 6 30) (nextMonth Month/JUNE d)))))
+  (testing "same year/month"
+      (let [d  (LocalDate/of 2018 6 30)]
+      (is (= (LocalDate/of 2019 6 30) (nextMonth Month/JUNE d)))))
+  (testing "next year"
+    (let [d  (LocalDate/of 2018 10 31)]
+    (is (= (LocalDate/of 2019 6 30) (nextMonth Month/JUNE d))))))
+
+(deftest nextOrSameMonth-tests
+  (testing "is function"
+    (is (function? nextOrSameMonth)))
+  (testing "same year"
+      (let [d  (LocalDate/of 2018 3 31)]
+      (is (= (LocalDate/of 2018 6 30) (nextOrSameMonth Month/JUNE d)))))
+  (testing "same year/month"
+      (let [d  (LocalDate/of 2018 6 30)]
+      (is (= (LocalDate/of 2018 6 30) (nextOrSameMonth Month/JUNE d)))))
+  (testing "next year"
+    (let [d  (LocalDate/of 2018 10 31)]
+    (is (= (LocalDate/of 2019 6 30) (nextOrSameMonth Month/JUNE d))))))
+
+(deftest previousMonth-tests
+  (testing "is function"
+    (is (function? previousMonth)))
+  (testing "previous year"
+      (let [d  (LocalDate/of 2018 3 31)]
+      (is (= (LocalDate/of 2017 6 30) (previousMonth Month/JUNE d)))))
+  (testing "previous year/same month"
+      (let [d  (LocalDate/of 2018 6 30)]
+      (is (= (LocalDate/of 2017 6 30) (previousMonth Month/JUNE d)))))
+  (testing "same year"
+    (let [d  (LocalDate/of 2018 10 31)]
+    (is (= (LocalDate/of 2018 6 30) (previousMonth Month/JUNE d))))))
+
+(deftest previousOrSameMonth-tests
+  (testing "is function"
+    (is (function? previousOrSameMonth)))
+  (testing "previous year"
+      (let [d  (LocalDate/of 2018 3 31)]
+      (is (= (LocalDate/of 2017 6 30) (previousOrSameMonth Month/JUNE d)))))
+  (testing "previous year/same month"
+      (let [d  (LocalDate/of 2018 6 30)]
+      (is (= (LocalDate/of 2018 6 30) (previousOrSameMonth Month/JUNE d)))))
+  (testing "same year"
+    (let [d  (LocalDate/of 2018 10 31)]
+    (is (= (LocalDate/of 2018 6 30) (previousOrSameMonth Month/JUNE d))))))

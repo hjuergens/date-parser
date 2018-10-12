@@ -167,57 +167,61 @@
       (is (= (LocalDate/of 2018 8 3)
         (fn (LocalDate/of 2018 9 23))))))
   (testing "apply another function"
-      (let [fn (eval (loop-fm-fn (parse-to-adjuster-3 ">november")))]
+      (let [fn (eval (loop-fm-fn (parse-to-adjuster-4 ">december")))]
+      (is (= (LocalDate/of 2018 12 23)
+        (fn (LocalDate/of 2018 9 23))))))
+  #_(testing "apply another function"
+      (let [fn (eval (loop-fm-fn (parse-to-adjuster-4 ">november")))]
       (is (thrown? java.lang.NullPointerException (fn (LocalDate/of 2018 9 23)))))))
 
-(deftest nextMonth-tests
+(deftest nextMonthAdjuster-tests
   (testing "is function"
-    (is (function? nextMonth)))
+    (is (function? nextMonthAdjuster)))
   (testing "same year"
       (let [d  (LocalDate/of 2018 3 31)]
-      (is (= (LocalDate/of 2018 6 30) (nextMonth Month/JUNE d)))))
+      (is (= (LocalDate/of 2018 6 30) (.adjustInto (nextMonthAdjuster Month/JUNE) d)))))
   (testing "same year/month"
       (let [d  (LocalDate/of 2018 6 30)]
-      (is (= (LocalDate/of 2019 6 30) (nextMonth Month/JUNE d)))))
+      (is (= (LocalDate/of 2019 6 30) (.adjustInto (nextMonthAdjuster Month/JUNE) d)))))
   (testing "next year"
     (let [d  (LocalDate/of 2018 10 31)]
-    (is (= (LocalDate/of 2019 6 30) (nextMonth Month/JUNE d))))))
+    (is (= (LocalDate/of 2019 6 30) (.adjustInto (nextMonthAdjuster Month/JUNE) d))))))
 
-(deftest nextOrSameMonth-tests
+(deftest nextOrSameMonthAdjuster-tests
   (testing "is function"
-    (is (function? nextOrSameMonth)))
+    (is (function? nextOrSameMonthAdjuster)))
   (testing "same year"
       (let [d  (LocalDate/of 2018 3 31)]
-      (is (= (LocalDate/of 2018 6 30) (nextOrSameMonth Month/JUNE d)))))
+      (is (= (LocalDate/of 2018 6 30) (.adjustInto (nextOrSameMonthAdjuster Month/JUNE) d)))))
   (testing "same year/month"
       (let [d  (LocalDate/of 2018 6 30)]
-      (is (= (LocalDate/of 2018 6 30) (nextOrSameMonth Month/JUNE d)))))
+      (is (= (LocalDate/of 2018 6 30) (.adjustInto (nextOrSameMonthAdjuster Month/JUNE) d)))))
   (testing "next year"
     (let [d  (LocalDate/of 2018 10 31)]
-    (is (= (LocalDate/of 2019 6 30) (nextOrSameMonth Month/JUNE d))))))
+    (is (= (LocalDate/of 2019 6 30) (.adjustInto (nextOrSameMonthAdjuster Month/JUNE) d))))))
 
-(deftest previousMonth-tests
+(deftest previousMonthAdjuster-tests
   (testing "is function"
-    (is (function? previousMonth)))
+    (is (function? previousMonthAdjuster)))
   (testing "previous year"
       (let [d  (LocalDate/of 2018 3 31)]
-      (is (= (LocalDate/of 2017 6 30) (previousMonth Month/JUNE d)))))
+      (is (= (LocalDate/of 2017 6 30) (.adjustInto (previousMonthAdjuster Month/JUNE) d)))))
   (testing "previous year/same month"
       (let [d  (LocalDate/of 2018 6 30)]
-      (is (= (LocalDate/of 2017 6 30) (previousMonth Month/JUNE d)))))
+      (is (= (LocalDate/of 2017 6 30) (.adjustInto (previousMonthAdjuster Month/JUNE) d)))))
   (testing "same year"
     (let [d  (LocalDate/of 2018 10 31)]
-    (is (= (LocalDate/of 2018 6 30) (previousMonth Month/JUNE d))))))
+    (is (= (LocalDate/of 2018 6 30) (.adjustInto (previousMonthAdjuster Month/JUNE) d))))))
 
-(deftest previousOrSameMonth-tests
+(deftest previousOrSameMonthAdjuster-tests
   (testing "is function"
-    (is (function? previousOrSameMonth)))
+    (is (function? previousOrSameMonthAdjuster)))
   (testing "previous year"
       (let [d  (LocalDate/of 2018 3 31)]
-      (is (= (LocalDate/of 2017 6 30) (previousOrSameMonth Month/JUNE d)))))
+      (is (= (LocalDate/of 2017 6 30) (.adjustInto (previousOrSameMonthAdjuster Month/JUNE) d)))))
   (testing "previous year/same month"
       (let [d  (LocalDate/of 2018 6 30)]
-      (is (= (LocalDate/of 2018 6 30) (previousOrSameMonth Month/JUNE d)))))
+      (is (= (LocalDate/of 2018 6 30) (.adjustInto (previousOrSameMonthAdjuster Month/JUNE) d)))))
   (testing "same year"
     (let [d  (LocalDate/of 2018 10 31)]
-    (is (= (LocalDate/of 2018 6 30) (previousOrSameMonth Month/JUNE d))))))
+    (is (= (LocalDate/of 2018 6 30) (.adjustInto (previousOrSameMonthAdjuster Month/JUNE) d))))))

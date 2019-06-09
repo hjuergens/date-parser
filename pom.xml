@@ -19,18 +19,18 @@
         <module>date-rule-peg</module>
     </modules>
     <name>${project.artifactId}</name>
-    <description>Date Parser</description>
+    <description>Date Parser - evaluating various technologies</description>
     <inceptionYear>2015</inceptionYear>
 
     <prerequisites>
-        <maven>3.5.4</maven>
+        <maven>3.3.3</maven>
     </prerequisites>
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <scala.major.version>2.12</scala.major.version>
-        <scala.version>2.12.2</scala.version>
+        <scala.version>2.12.5</scala.version>
         <scala.compat.version>2.12</scala.compat.version>
         <scalaCompatVersion>${scala.compat.version}</scalaCompatVersion>
         <encoding>UTF-8</encoding>
@@ -40,7 +40,7 @@
         <github.global.server>github</github.global.server>
         <cobertura-maven-plugin.version>2.7</cobertura-maven-plugin.version>
         <jacoco-maven-plugin.version>0.7.8</jacoco-maven-plugin.version>
-        <scala-maven-plugin.version>3.4.2</scala-maven-plugin.version>
+        <scala-maven-plugin.version>3.2.1</scala-maven-plugin.version>
         <maven-checkstyle-plugin-version>2.17</maven-checkstyle-plugin-version>
         <maven-surefire-report-plugin-version>2.22.0</maven-surefire-report-plugin-version>
         <javadoc.opts>-Xdoclint:none</javadoc.opts>
@@ -475,6 +475,46 @@
                 </executions>
             </plugin>
 
+            <!--
+            ************************************************************************
+            JavaDoc
+            ************************************************************************
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <minmemory>128m</minmemory>
+                    <maxmemory>512m</maxmemory>
+                    <useStandardDocletOptions>true</useStandardDocletOptions>
+                    <charset>${encoding}</charset>
+                    <encoding>${encoding}</encoding>
+                    <docencoding>${encoding}</docencoding>
+                    <docfilessubdirs>true</docfilessubdirs>
+                    <breakiterator>true</breakiterator>
+                    <version>true</version>
+                    <author>true</author>
+                    <keywords>true</keywords>
+                    <attach>false</attach>
+                    <!--
+                   <doctitle>${project.name} API Reference (${project.version}, r${buildNumber})</doctitle>
+                   <windowtitle>${project.name} API Reference (${project.version}, r${buildNumber})</windowtitle>
+                    -->
+                    <links>
+                        <link>http://java.sun.com/j2se/${maven.compiler.source}/docs/api/</link>
+                        <link>http://slf4j.org/api/</link>
+                        <link>http://commons.apache.org/lang/api-release/</link>
+                        <link>http://commons.apache.org/io/api-release/</link>
+                        <link>http://junit.sourceforge.net/javadoc/</link>
+                    </links>
+                    <!-- additionalparam>-nopackagediagram</additionalparam-->
+                    <!-- additionalparam>-sourceclasspath ${project.build.outputDirectory}</additionalparam-->
+                    <!-- -sourceclasspath ${project.build.outputDirectory} -->
+                    <excludePackageNames>${project.groupId}.example*:${project.groupId}.util.internal*
+                    </excludePackageNames>
+                </configuration>
+            </plugin>
+
         </plugins>
     </build>
 
@@ -484,7 +524,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-project-info-reports-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>2.8</version>
                 <!--reportSets>
                     <reportSet>
                         <reports>
@@ -522,7 +562,7 @@
                         <link>http://junit.org/junit4/javadoc/latest/</link>
                         <link>http://docs.oracle.com/javase/1.4.2/docs/api</link>
                     </links>
-                    <!--<additionalparam>${javadoc.opts}</additionalparam>-->
+                    <additionalparam>${javadoc.opts}</additionalparam>
                 </configuration>
             </plugin>
 
@@ -744,8 +784,33 @@
                     </plugin>
                 </plugins>
             </reporting>
-
-    </profile>
+        </profile>
+        <profile>
+            <id>github-site</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <!-- Deploy the web site -->
+                        <groupId>com.github.github</groupId>
+                        <artifactId>site-maven-plugin</artifactId>
+                        <version>0.12</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>site</goal>
+                                </goals>
+                                <phase>site</phase>
+                                <configuration>
+                                    <server>github</server>
+                                    <message>Creating site for ${project.version} with site-maven-plugin 0.12</message>
+                                    <merge>true</merge>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 
 </project>

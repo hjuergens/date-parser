@@ -55,11 +55,24 @@
                         </goals>
                         <configuration>
                             <jdkVersion>1.8</jdkVersion>
-                            <packageName>io.github.hjuergens.parser</packageName>
-                            <!--sourceDirectory>src/main/java/org/javacc/parser</sourceDirectory>
-                            <outputDirectory>${project.build.directory}/generated-sources/javacc1</outputDirectory-->
+                            <!--<packageName>io.github.hjuergens.parser</packageName>-->
+                            <!--sourceDirectory>src/main/java/org/javacc/parser</sourceDirectory-->
+                            <outputDirectory>${project.build.directory}/generated-sources/javacc1</outputDirectory>
                         </configuration>
                     </execution>
+                    <!--execution>
+                        <id>jjt2</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>javacc</goal>
+                        </goals>
+                        <configuration>
+                            <jdkVersion>1.8</jdkVersion>
+                            <javadocFriendlyComments>true</javadocFriendlyComments>
+                            <packageName>io.github.hjuergens.parser</packageName>
+                            <outputDirectory>${project.build.directory}/generated-sources/javacc2</outputDirectory>
+                        </configuration>
+                    </execution-->
                     <execution>
                         <id>jjt1</id>
                         <phase>generate-sources</phase>

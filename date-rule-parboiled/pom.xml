@@ -30,7 +30,8 @@
         <disable.surefire>false</disable.surefire>
         <maven.pmd.rulesetfiles>${project.basedir}/pmd.xml</maven.pmd.rulesetfiles>
         <mpir.skip>false</mpir.skip> <!-- project-info-reports -->
-        <scalac.plugin.scapegoat.version>1.3.0</scalac.plugin.scapegoat.version>
+        <scala.binary.version>2.12</scala.binary.version>
+        <scalac.plugin.scapegoat.version>1.3.3</scalac.plugin.scapegoat.version>
 
         <junit.version>4.12</junit.version>
         <junit.jupiter.version>5.0.2</junit.jupiter.version>
@@ -117,20 +118,29 @@
             <artifactId>scala-library</artifactId>
             <version>${scala.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.scala-lang.modules</groupId>
+            <artifactId>scala-xml_${scala.compat.version}</artifactId>
+            <version>1.1.0</version>
+        </dependency>
         <dependency>
             <groupId>org.parboiled</groupId>
             <artifactId>parboiled-core</artifactId>
         </dependency>
         <dependency>
             <groupId>org.parboiled</groupId>
-            <artifactId>parboiled_2.12</artifactId>
+            <artifactId>parboiled_${scala.compat.version}</artifactId>
         </dependency>
         <dependency>
             <groupId>org.parboiled</groupId>
-            <artifactId>parboiled-scala_2.12</artifactId>
+            <artifactId>parboiled-scala_${scala.compat.version}</artifactId>
         </dependency>
-
+        <!-- static code analysis -->
+        <dependency>
+            <groupId>com.sksamuel.scapegoat</groupId>
+            <artifactId>scalac-scapegoat-plugin_${scala.binary.version}</artifactId>
+            <version>${scalac.plugin.scapegoat.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.specs2</groupId>
             <artifactId>specs2_${scala.compat.version}</artifactId>
@@ -181,55 +191,26 @@
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.scala-lang.modules</groupId>
+                        <artifactId>scala-xml_${scala.compat.version}</artifactId>
+                        <version>1.1.0</version>
+                    </dependency>
+
+                </dependencies>
                 <configuration>
-                    <scalaCompatVersion>${scala.major.version}</scalaCompatVersion>
-                    <scalaVersion>${scala.version}</scalaVersion>
-                    <dependencies>
-                        <dependency>
-                            <!-- static code analysis -->
-                            <groupId>com.sksamuel.scapegoat</groupId>
-                            <artifactId>scalac-scapegoat-plugin_${scala.major.version}</artifactId>
-                            <version>${scalac.plugin.scapegoat.version}</version>
-                        </dependency>
-                    </dependencies>
+                    <args>
+                        <arg>-P:scapegoat:dataDir:./target/scapegoat</arg>
+                    </args>
                     <compilerPlugins>
                         <compilerPlugin>
                             <groupId>com.sksamuel.scapegoat</groupId>
-                            <artifactId>scalac-scapegoat-plugin_${scala.major.version}</artifactId>
+                            <artifactId>scalac-scapegoat-plugin_${scala.binary.version}</artifactId>
                             <version>${scalac.plugin.scapegoat.version}</version>
                         </compilerPlugin>
                     </compilerPlugins>
-                    <args>
-                        <arg>-P:scapegoat:dataDir:target</arg>
-                        <arg>-P:scapegoat:consoleOutput:true</arg>
-                        <arg>-P:scapegoat:overrideLevels:TraversableHead=Warning:OptionGet=Warning</arg>
-                    </args>
                 </configuration>
-                <executions>
-                    <execution>
-                        <id>scala-compile-first</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>add-source</goal>
-                            <goal>compile</goal>
-                        </goals>
-                        <configuration>
-                            <excludes>
-                                <exclude>
-                                    ${project.build.sourceDirectory}/../scala
-                                    **/genjavadoc/**/*.scala
-                                </exclude>
-                            </excludes>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>scala-test-compile</id>
-                        <phase>process-test-resources</phase>
-                        <goals>
-                            <goal>testCompile</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
 
             <!-- surefire -->
@@ -614,7 +595,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-project-info-reports-plugin</artifactId>
-                <version>2.8</version>
+                <version>2.9</version>
                 <reportSets>
                     <reportSet>
                         <reports>

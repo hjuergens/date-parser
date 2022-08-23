@@ -35,10 +35,10 @@
         <project.resources.sourceEncoding>${encoding}</project.resources.sourceEncoding>
         <github.global.server>github</github.global.server>
         <cobertura-maven-plugin.version>2.7</cobertura-maven-plugin.version>
-        <jacoco-maven-plugin.version>0.8.8</jacoco-maven-plugin.version>
+        <jacoco-maven-plugin.version>0.7.8</jacoco-maven-plugin.version>
         <scala-maven-plugin.version>3.2.1</scala-maven-plugin.version>
         <maven-checkstyle-plugin-version>2.17</maven-checkstyle-plugin-version>
-        <maven-surefire-report-plugin-version>2.22.2</maven-surefire-report-plugin-version>
+        <maven-surefire-report-plugin-version>2.22.0</maven-surefire-report-plugin-version>
         <javadoc.opts>-Xdoclint:none</javadoc.opts>
     </properties>
 
@@ -130,7 +130,7 @@
             <dependency>
                 <groupId>org.apache.poi</groupId>
                 <artifactId>poi</artifactId>
-                <version>4.1.1</version>
+                <version>3.17</version>
             </dependency>
 
             <dependency>

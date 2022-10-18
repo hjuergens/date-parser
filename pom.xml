@@ -24,10 +24,10 @@
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-        <scala.major.version>2.12</scala.major.version>
-        <scala.version>2.12.5</scala.version>
-        <scala.compat.version>2.12</scala.compat.version>
+        <maven.compiler.release>11</maven.compiler.release>
+        <scala.major.version>2.11</scala.major.version>
+        <scala.version>2.11.12</scala.version>
+        <scala.compat.version>2.11</scala.compat.version>
         <scalaCompatVersion>${scala.compat.version}</scalaCompatVersion>
         <encoding>UTF-8</encoding>
         <project.build.sourceEncoding>${encoding}</project.build.sourceEncoding>
@@ -36,7 +36,7 @@
         <github.global.server>github</github.global.server>
         <cobertura-maven-plugin.version>2.7</cobertura-maven-plugin.version>
         <jacoco-maven-plugin.version>0.8.8</jacoco-maven-plugin.version>
-        <scala-maven-plugin.version>3.2.1</scala-maven-plugin.version>
+        <scala-maven-plugin.version>4.7.2</scala-maven-plugin.version>
         <maven-checkstyle-plugin-version>2.17</maven-checkstyle-plugin-version>
         <maven-surefire-report-plugin-version>2.22.0</maven-surefire-report-plugin-version>
         <javadoc.opts>-Xdoclint:none</javadoc.opts>

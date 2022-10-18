@@ -27,7 +27,7 @@ trait CardinalParsers extends RegexParsers {
 
   private def textual : Parser[Cardinal] =
     ( "one" | "two" | "three" | "four" | "five" | "six" | "seven" | "eight" | "nine" | "ten" | "eleven" | "twelve") ^^
-      { Cardinal.string2Long.andThen(Cardinal.apply) }
+      { Cardinal.string2Long.andThen(Cardinal.apply _) }
 
   def cardinal : Parser[Cardinal] = textual | numerical
 }
@@ -40,7 +40,7 @@ trait OrdinalParsers  extends RegexParsers with ExtendedRegexParsers {
     "fourteenth" | "fifth" | "fifteenth" | "sixth" | "sixteenth" | "seventh " | "seventeenth" |
     "eighth" | "eighteenth" | "ninth" | "nineteenth" | "tenth" | "twelfth" | "twelfe" | "twelveth" | "twentieth") ^^
     {
-      Ordinal.string2Int.andThen(Ordinal.apply)
+      Ordinal.string2Int.andThen(Ordinal.apply _)
     }
 
   @SuppressWarnings(Array("all"))

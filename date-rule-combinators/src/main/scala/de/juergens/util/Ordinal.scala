@@ -6,7 +6,7 @@ import scala.language.implicitConversions
  * Created by juergens on 25.05.15.
  */
 object Ordinal {
-  val string2Int = PartialFunction[String,Int] {
+  val string2Int : PartialFunction[String,Int] = {
     case "first" => 1
     case "second" => 2
     case "third" => 3
@@ -63,6 +63,8 @@ object Ordinal {
     def toFloat(x: Ordinal) = toInt(x)
     def toDouble(x: Ordinal) = toInt(x)
     def compare(x:Ordinal,y:Ordinal) = num.compare(x,y)
+
+    override def parseString(str: String): Option[Ordinal] = { val OrdinalText(ord) = str; Some(ord) }
   }
   assert(Down * Ordinal(1) == Ordinal(-1))
 }

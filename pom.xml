@@ -24,6 +24,7 @@
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
         <maven.compiler.release>11</maven.compiler.release>
         <scala.major.version>2.11</scala.major.version>
         <scala.version>2.11.12</scala.version>
@@ -38,7 +39,7 @@
         <jacoco-maven-plugin.version>0.8.8</jacoco-maven-plugin.version>
         <scala-maven-plugin.version>4.7.2</scala-maven-plugin.version>
         <maven-checkstyle-plugin-version>2.17</maven-checkstyle-plugin-version>
-        <maven-surefire-report-plugin-version>2.22.0</maven-surefire-report-plugin-version>
+        <maven-surefire-report-plugin-version>3.0.0-M7</maven-surefire-report-plugin-version>
         <javadoc.opts>-Xdoclint:none</javadoc.opts>
     </properties>
 

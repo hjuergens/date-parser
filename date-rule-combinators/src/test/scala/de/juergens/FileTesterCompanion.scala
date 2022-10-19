@@ -4,7 +4,6 @@ import java.io.File
 
 import de.juergens.text.DateRuleParsers
 
-import scala.collection.JavaConversions._
 import scala.io.Source
 
 object FileTesterCompanion {
@@ -16,7 +15,7 @@ object FileTesterCompanion {
   }
 
   // NOTE: Must return collection of Array[AnyRef] (NOT Array[Any]).
-  def linesOfFile(path:String= "/parsers/adjuster.txt"): java.lang.Iterable[Array[Object]] ={
+  def linesOfFile(path:String= "/parsers/adjuster.txt"): Seq[Array[Object]] ={
     val textFile = {
       val url = getClass.getResource(path)
       new File(url.getFile)

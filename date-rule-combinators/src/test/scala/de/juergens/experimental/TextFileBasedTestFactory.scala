@@ -4,13 +4,12 @@ import java.io.File
 import java.nio.file.Paths
 import java.util.{Iterator => JIterator}
 
+import scala.jdk.CollectionConverters._
+
 import de.juergens.FileTesterCompanion._
 import org.testng.annotations.{DataProvider, Factory, Parameters, Test}
 
-import scala.collection.JavaConversions._
-
 case class TestLine(file:File, line :String) {
-
 
   @Parameters(value=Array{"line"})
   @Test(dataProvider = "single line", timeOut = 1000)
@@ -19,7 +18,7 @@ case class TestLine(file:File, line :String) {
   }
 
   @DataProvider(name = "single line")
-  def lines: JIterator[Array[Object]] = Seq(Array(line.asInstanceOf[Object])).iterator
+  def lines: JIterator[Array[Object]] = Iterator(Array(line.asInstanceOf[Object])).asJava
 
 }
 
@@ -48,6 +47,6 @@ object TestFile {
     val list = listFiles(new File(url.getFile), """^[a-z].*\.txt""".r)
     list
       .map(f => root.relativize(f.toPath))
-      .map(p => Array.apply(p.toFile.asInstanceOf[Object])).iterator
+      .map(p => Array.apply(p.toFile.asInstanceOf[Object])).iterator.asJava
   }
 }

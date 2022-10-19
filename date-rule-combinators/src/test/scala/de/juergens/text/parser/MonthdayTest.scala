@@ -15,8 +15,7 @@ import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
 import org.testng.Reporter
 
-import scala.collection.JavaConversions._
-
+import scala.jdk.CollectionConverters._
 
 
 @RunWith(value = classOf[Parameterized])
@@ -55,10 +54,10 @@ object MonthdayTest extends ParserTestCompanion {
   }
 
   private[text] def _lines : Iterator[Array[Object]] =
-    FileTesterCompanion.linesOfFile("/parsers/monthday.txt").iterator()
+    FileTesterCompanion.linesOfFile("/parsers/monthday.txt").iterator
 
   // NOTE: Must return collection of Array[AnyRef] (NOT Array[Any]).
   @Parameters(name = "{index}: {0}")
-  def linesJUnit: java.lang.Iterable[Array[Object]] = _lines.toSeq
+  def linesJUnit: java.lang.Iterable[Array[Object]] = _lines.toIterable.asJava
 
 }

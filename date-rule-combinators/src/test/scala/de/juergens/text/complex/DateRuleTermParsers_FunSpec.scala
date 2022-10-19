@@ -2,17 +2,15 @@ package de.juergens.text.complex
 
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjuster
-
 import de.juergens.text.{Composition, DateRuleParsers, ParserTest, TermParsers}
 import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
-import org.scalatest.{FunSpec, MustMatchers}
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.must.Matchers
 
 import scala.language.implicitConversions
 
-@RunWith(classOf[JUnitRunner])
 class DateRuleTermParsers_FunSpec
-  extends FunSpec with MustMatchers {
+  extends AnyFunSpec with Matchers {
 
   val test = new ParserTest(new DateRuleParsers with TermParsers)
   import test.TextParser

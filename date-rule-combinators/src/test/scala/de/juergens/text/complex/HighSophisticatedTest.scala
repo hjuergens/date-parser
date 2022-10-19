@@ -17,7 +17,7 @@ import org.junit.runners.Parameterized.Parameters
 import org.testng.Reporter
 import org.testng.annotations.{DataProvider => DataProviderNG, Parameters => ParametersNG, Test => TestNG}
 
-import scala.collection.JavaConversions._
+import scala.jdk.CollectionConverters._
 import scala.io.Source
 
 @TestNG
@@ -93,9 +93,9 @@ object HighSophisticatedTest {
 
   // NOTE: Must return collection of Array[AnyRef] (NOT Array[Any]).
   @Parameters(name = "{index}: {0}")
-  def linesJUnit: java.lang.Iterable[Array[Object]] = _lines.toSeq
+  def linesJUnit: java.lang.Iterable[Array[Object]] = _lines.toIterable.asJava
 
-  val linesNG: java.util.Iterator[Array[Object]] = _lines
+  val linesNG: java.util.Iterator[Array[Object]] = _lines.asJava
 
 //  @Factory
 //  def factoryMethod(): Array[Object] = {

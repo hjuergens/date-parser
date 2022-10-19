@@ -1,14 +1,12 @@
 package de.juergens.experimental
 
-import java.io.{File, InputStream}
-import java.nio.file.{DirectoryStream, Files, Path, Paths}
-
 import de.juergens.experimental.FileTest._
 import org.testng.AssertJUnit._
 import org.testng.Reporter
 import org.testng.annotations._
 
-import scala.collection.JavaConversions._
+import java.io.{File, InputStream}
+import java.nio.file.{DirectoryStream, Files, Path, Paths}
 import scala.io.Source
 
 class FileTest2  {
@@ -67,8 +65,7 @@ object FileTest {
       override def accept(entry: Path): Boolean =
         entry.toString.endsWith("txt")
     }
-    for (path <- Files.newDirectoryStream(dir, filter))
-      builder += path
+    Files.newDirectoryStream(dir, filter).forEach( builder += _)
 
     for {
       path <- builder.result()

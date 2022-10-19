@@ -1,9 +1,5 @@
 package de.juergens.experimental
 
-import java.io.{File, FilenameFilter}
-import java.time.temporal.Temporal
-import java.{io => jio, lang => jl, util => ju}
-
 import de.juergens.text.DateRuleParsers
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -12,7 +8,9 @@ import org.junit.runners.Parameterized.Parameters
 import org.testng.Reporter
 import org.testng.annotations.{DataProvider => DataProviderNG, Test => TestNG}
 
-import scala.collection.JavaConversions._
+import java.io.{File, FilenameFilter}
+import java.time.temporal.Temporal
+import java.{io => jio}
 
 @RunWith(value = classOf[Parameterized])
 class JUnit4ParameterizedTest(textFile: jio.File) {
@@ -30,7 +28,7 @@ class JUnit4ParameterizedTest(textFile: jio.File) {
   import scala.io.Source
 
   @DataProviderNG(name = "lines in text file", parallel = true)
-  def lines: java.util.Iterator[Array[Object]] =
+  def lines: Iterator[Array[Object]] =
     Source.fromURI {
       textFile.toURI
     }.getLines().filterNot(_.trim.startsWith("#")).filterNot(_.isEmpty).map(Array[Object](_))
@@ -63,14 +61,15 @@ object JUnit4ParameterizedTest {
 //    (1 to 10).foreach(n => list.add(Array(n)))
 //    list
 //  }
+  import scala.jdk.CollectionConverters._
 
   @Parameters(name = "{index}: {0}")
-  def listTextFiles: java.lang.Iterable[Array[AnyRef]] = {
+  def listTextFiles: java.lang.Iterable[Array[Object]] = {
     val dir = new File(getClass.getResource("/").getFile)
     val files = (dir.listFiles(new FilenameFilter {
       def accept(dir: File, name: String): Boolean = name.endsWith("txt")
     }))
-    files.map(Array[AnyRef](_)).toSeq
+    files.map(Array[AnyRef](_)).toIterable.asJava
   }
 
 }

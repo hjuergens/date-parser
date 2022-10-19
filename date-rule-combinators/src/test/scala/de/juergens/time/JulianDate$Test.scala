@@ -19,12 +19,12 @@ package de.juergens.time
 import java.text.SimpleDateFormat
 
 import org.junit.Test
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 /**
  * @author juergens
  */
-class JulianDate$Test extends FunSuite {
+class JulianDate$Test extends AnyFunSuite {
 
   test("parse '113029' as '29.01.2013' ") {
     val j = "113029"

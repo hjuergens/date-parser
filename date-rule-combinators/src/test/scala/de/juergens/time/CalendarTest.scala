@@ -6,7 +6,6 @@ import java.time.temporal.ChronoUnit
 import org.junit.runner.RunWith
 import org.specs2.mutable.Specification
 
-@RunWith(classOf[org.specs2.runner.JUnitRunner])
 class CalendarTest extends Specification {
 
   override def is = sequential ^ s2"""

@@ -13,7 +13,7 @@ import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
 import org.testng.Reporter
 
-import scala.collection.JavaConversions._
+import scala.jdk.CollectionConverters._
 import scala.io.Source
 
 
@@ -65,11 +65,11 @@ object AdjusterTest extends ParserTestCompanion {
       .filterNot(_.isEmpty)
       .filterNot(_.forall(_.isWhitespace))
       .filterNot(_.forall(_ == '\u200B'))
-    filteredLines.map(Array[Object](_))
+    filteredLines.map(Array[Object](_)).iterator
   }
 
   // NOTE: Must return collection of Array[AnyRef] (NOT Array[Any]).
   @Parameters(name = "{index}: {0}")
-  def linesJUnit: java.lang.Iterable[Array[Object]] = _lines.toSeq
+  def linesJUnit: java.lang.Iterable[Array[Object]] = _lines.toIterable.asJava
 
 }

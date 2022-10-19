@@ -2,12 +2,11 @@ package de.juergens.text.parsers
 
 import de.juergens.text.{DateRuleParsers, FinancialParsers, ParserTest}
 import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
-import org.scalatest.{FunSpec, MustMatchers}
+import org.specs2.matcher.MustMatchers
+import org.scalatest.funspec.AnyFunSpec
 
-@RunWith(classOf[JUnitRunner])
 class FinancialParsers_FunSpec
-  extends FunSpec with MustMatchers {
+  extends AnyFunSpec with MustMatchers {
 
   val test = new ParserTest(new DateRuleParsers with FinancialParsers)
   import test.TextParser
@@ -15,11 +14,11 @@ class FinancialParsers_FunSpec
   describe("The parser businessDays") {
       it("should succeed when parse 'business days'") {
         val parseResult = "businessDays" parse "business days"
-        parseResult mustBe 'successful
+        parseResult must be("successful")
       }
     it("should succeed when parse 'London business days'") {
         val parseResult = "businessDays" parse "London business days"
-        parseResult mustBe 'successful
+        parseResult must be("successful")
       }
 
       it("should produce no result when parsing failed on 'New York business day'") {
@@ -32,7 +31,7 @@ class FinancialParsers_FunSpec
     describe("when parse 'two business days prior'") {
       it("should succeed") {
         val parseResult = "seek3" parse "two business days prior"
-        parseResult mustBe 'successful
+        parseResult must be ("successful")
       }
     }
   }
@@ -40,7 +39,7 @@ class FinancialParsers_FunSpec
     describe("when parse 'prior'") {
       it("should succeed") {
         val parseResult = "afterOrBefore" parse "prior"
-        parseResult mustBe 'successful
+        parseResult must be ("successful")
       }
     }
   }
@@ -48,7 +47,7 @@ class FinancialParsers_FunSpec
     describe("when parse '3rd Wednesday'") {
       it("should succeed") {
         val parseResult = "seekDayOfWeek" parse "3rd Wednesday"
-        parseResult mustBe 'successful
+        parseResult must be ("successful")
       }
     }
   }

@@ -8,6 +8,8 @@ import org.testng.AssertJUnit._
 import org.testng.Reporter
 import org.testng.annotations.{DataProvider, Parameters, Test}
 
+import scala.jdk.CollectionConverters._
+
 @Test(groups = Array { "adjuster"  })
 class LastTradingDayTestNG {
 
@@ -42,5 +44,5 @@ object LastTradingDayTestNG {
   import java.util.{Iterator => JIterator}
 
   @DataProvider(name = "lines in text file", parallel = true)
-  def lines: JIterator[Array[Object]] = linesOfFile("/complex/last_trading_day.txt").iterator()
+  def lines: JIterator[Array[Object]] = linesOfFile("/complex/last_trading_day.txt").iterator.asJava
 }

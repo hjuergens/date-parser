@@ -3,7 +3,7 @@ package samples
 
 import org.junit.runner.RunWith
 import org.specs2._
-import org.specs2.runner.JUnitRunner
+
 
 import scala.languageFeature.postfixOps
 import scala.util.parsing.combinator.Parsers
@@ -11,7 +11,6 @@ import scala.util.parsing.combinator.Parsers
 /**
  * Created by juergens on 15.05.15.
  */
-@RunWith(classOf[JUnitRunner])
 class SimpleParser$Test extends mutable.Specification {
   "Parsing the word 'world' should" >> {
     "lead to success" in {

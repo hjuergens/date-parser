@@ -14,7 +14,7 @@ import org.junit.runners.Parameterized.Parameters
 import org.testng.Assert._
 import org.testng.Reporter
 
-import scala.collection.JavaConversions._
+import scala.jdk.CollectionConverters._
 import scala.io.Source
 
 // <test name="Test1" junit="true">
@@ -71,6 +71,6 @@ object PeriodDurationTest {
 
   // NOTE: Must return collection of Array[AnyRef] (NOT Array[Any]).
   @Parameters(name = "{index}: {0}")
-  def linesJUnit: java.lang.Iterable[Array[Object]] = _lines.toSeq
+  def linesJUnit: java.lang.Iterable[Array[Object]] = _lines.toIterable.asJava
 
 }

@@ -26,19 +26,18 @@ import org.testng.Assert._
 import org.testng.Reporter
 import org.testng.annotations._
 
-@Test(timeOut=1000)
 class DateRuleParsersTestNG extends DateRuleParsers {
 
-  def Date(y:Int,m:Int,d:Int) = LocalDate.of(y,m,d)
+  def Date(y:Int,m:Int,d:Int): LocalDate = LocalDate.of(y,m,d)
 
   @Test
   def weekDayTest() : Unit = {
     val isMonday  = parseAll(attribute, "monday").get
-    assertEquals(isMonday.toString(), "Predicate(temporalAccessor=MONDAY)")
+    assertEquals(isMonday.toString, "Predicate(temporalAccessor=MONDAY)")
     assertTrue( isMonday.test(Date(2015,5,18)) )
 
     val isFriday  = parseAll(attribute, "friday").get
-    assertEquals(isFriday.toString(), "Predicate(temporalAccessor=FRIDAY)")
+    assertEquals(isFriday.toString, "Predicate(temporalAccessor=FRIDAY)")
     assertTrue( isFriday.test(Date(2015,5,22)) )
   }
 
@@ -57,11 +56,11 @@ class DateRuleParsersTestNG extends DateRuleParsers {
   }
 
   case class IsDayOfWeek(dayOfWeek:DayOfWeek) extends TemporalQuery[Boolean] {
-    def isDayOfWeek(t: TemporalAccessor) = {
+    def isDayOfWeek(t: TemporalAccessor): Boolean = {
       t.ensuring(_.isSupported(ChronoField.DAY_OF_WEEK))
       DayOfWeek.from(t) equals dayOfWeek
     }
-    override def queryFrom(temporal: TemporalAccessor) = isDayOfWeek(temporal)
+    override def queryFrom(temporal: TemporalAccessor): Boolean = isDayOfWeek(temporal)
     def apply(temporal: TemporalAccessor) : Boolean = isDayOfWeek(temporal)
   }
 

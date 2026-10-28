@@ -52,8 +52,10 @@ public final class ScheduleEvaluator {
         for (Object shift : expr.getShift()) {
             if (shift instanceof APlusShift plus) {
                 date = date.plus(period(plus.getPeriod()));
+            } else if (shift instanceof AMinusShift minus) {
+                date = date.minus(period(minus.getPeriod()));
             } else {
-                date = date.minus(period(((AMinusShift) shift).getPeriod()));
+                date = ScheduleSemantics.nextImm(date);
             }
         }
         return date;

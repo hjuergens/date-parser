@@ -6,6 +6,8 @@
 # Periods are applied left to right with java.time semantics: months (M, Q = 3M, Y = 12M)
 # are added first and the day is clamped to the end of the month, then days (D, W = 7D).
 # A range (start : step : end) yields start + k * step for k = 0, 1, ... while <= end.
+# "> IMM" moves to the next IMM date strictly after the date: the third Wednesday of
+# March, June, September or December.
 
 # date notations
 2015-06-09 => 2015-06-09
@@ -38,6 +40,18 @@
 (2015-06-09 : 1D : 2015-06-09) => 2015-06-09
 (2015-06-09 : 1D : 2015-06-08) => none
 
+# IMM dates
+2015-06-09 > IMM => 2015-06-17
+2015-06-17 > IMM => 2015-09-16
+2015-12-20 > IMM => 2016-03-16
+2016-12-20 > IMM => 2016-12-21
+01.01.2015 > IMM => 2015-03-18
+2015-06-09>IMM => 2015-06-17
+2015-06-09 > IMM > IMM => 2015-09-16
+2015-06-09 + 3M > IMM => 2015-09-16
+2015-06-09 > IMM + 1D => 2015-06-18
+(2015-01-01 > IMM : 1W : 2015-04-01) => 2015-03-18, 2015-03-25, 2015-04-01
+
 # invalid dates
 2015-02-29 => error
 2015-13-01 => error
@@ -53,6 +67,10 @@
 2015-06-09 2015-06-10 => error
 2015-06.09 => error
 (2015-01-01 : 1M) => error
+2015-06-09 > => error
+2015-06-09 IMM => error
+2015-06-09 > 3M => error
+2015-06-09 > IM => error
 (2015-01-01 : 1M : 2015-02-01), 2015-03-01 => error
  => error
 

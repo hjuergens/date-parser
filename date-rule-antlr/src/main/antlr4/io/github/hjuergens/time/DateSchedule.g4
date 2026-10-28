@@ -30,6 +30,7 @@ expr returns [LocalDate value]
     : date                          { $value = $date.value; }
       ( '+' period                  { $value = $value.plus($period.value); }
       | '-' period                  { $value = $value.minus($period.value); }
+      | '>' 'IMM'                   { $value = ScheduleSemantics.nextImm($value); }
       )*
     ;
 

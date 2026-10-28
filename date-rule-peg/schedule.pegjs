@@ -26,6 +26,16 @@
     return { year: clamped.getUTCFullYear(), month: clamped.getUTCMonth() + 1, day: clamped.getUTCDate() };
   }
 
+  // the third Wednesday of March, June, September or December strictly after d
+  function nextImm(d) {
+    for (let { year, month } = d; ; month === 12 ? (year++, month = 1) : month++) {
+      if (month % 3 !== 0) continue;
+      const firstDay = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
+      const imm = { year, month, day: 1 + (3 - firstDay + 7) % 7 + 14 };
+      if (compare(imm, d) > 0) return imm;
+    }
+  }
+
   function compare(a, b) {
     return a.year - b.year || a.month - b.month || a.day - b.day;
   }
@@ -53,9 +63,12 @@ Range
 
 // periods are applied from left to right
 Expr
-  = start:Date shifts:(_ @[+-] _ @Period)* {
-      return shifts.reduce((d, [sign, p]) => plus(d, p, sign === '+' ? 1 : -1), start);
-    }
+  = start:Date shifts:(_ @Shift)* { return shifts.reduce((d, shift) => shift(d), start); }
+
+Shift
+  = "+" _ p:Period { return d => plus(d, p); }
+  / "-" _ p:Period { return d => plus(d, p, -1); }
+  / ">" _ "IMM" { return nextImm; }
 
 Date
   = y:Number _ "-" _ m:Number _ "-" _ d:Number { return date(y, m, d); }  // ISO

@@ -83,8 +83,8 @@ TOOLS = [
          pitfall="Peggy provides <code>range()</code> in actions, which silently shadows a helper of the same name."),
 ]
 
-LINES = {"antlr": "35", "combinators": "39", "coco": "54", "javacc": "69", "sablecc": "31 + 61",
-         "cup": "33 + 31", "bison": "84", "peg": "60"}
+LINES = {"antlr": "36", "combinators": "46", "coco": "55", "javacc": "70", "sablecc": "34 + 63",
+         "cup": "34 + 33", "bison": "91", "peg": "70"}
 LINE_NOTES = {"sablecc": "grammar + evaluator", "cup": "parser + lexer", "bison": "incl. hand-written scanner",
               "peg": "incl. date arithmetic"}
 

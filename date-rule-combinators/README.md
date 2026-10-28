@@ -55,7 +55,7 @@ The test-only dependency `org.jquantlib:jquantlib:0.2.4` is installed from the r
 Implements the [shared schedule example](../README.md#shared-example-schedule) and is tested against [examples/schedule.txt](../examples/schedule.txt).
 
 [ScheduleParsers](src/main/scala/de/juergens/text/ScheduleParsers.scala) is plain Scala:
-the grammar is a set of `Parser` values, and `foldLeft` applies the periods from left to right.
+the grammar is a set of `Parser` values, and `foldLeft` applies the shifts (periods and `> IMM`) from left to right.
 Test: [ScheduleParsersSuite](src/test/scala/de/juergens/text/ScheduleParsersSuite.scala).
 
 ```scala
@@ -64,7 +64,7 @@ ScheduleParsers.parse("06/09/2015 + 1W - 2D")   // List(2015-06-14)
 
 ## Status
 
-- Working: 155 JUnit/TestNG tests and 54 ScalaTest tests. One TestNG test is disabled (`firstDayOfNextMonthTest`).
+- Working: 155 JUnit/TestNG tests and 68 ScalaTest tests. One TestNG test is disabled (`firstDayOfNextMonthTest`).
 - `QuarterAdjuster(n)` moves to another quarter **within the same year** (Q4 + 1 → Q1 of the same year).
 - Several rules in [high_sophisticated.txt](src/test/resources/complex/high_sophisticated.txt) are still commented out,
   for example "every friday the 13th of month" and "full moon next after the vernal equinox".

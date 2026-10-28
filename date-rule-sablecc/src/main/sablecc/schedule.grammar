@@ -13,6 +13,8 @@ Helpers
 Tokens
 	number = digit+;
 	unit = 'D' | 'W' | 'M' | 'Q' | 'Y';
+	imm = 'IMM';
+	next = '>';
 	plus = '+';
 	minus = '-';
 	dot = '.';
@@ -37,7 +39,8 @@ Productions
 
 	shift
 		= {plus} plus period
-		| {minus} minus period;
+		| {minus} minus period
+		| {imm} next imm;
 
 	date
 		= {iso} [year]:number [s1]:minus [month]:number [s2]:minus [day]:number

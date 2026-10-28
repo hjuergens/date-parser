@@ -69,6 +69,7 @@ LocalDate Expr() :
   d = Date()
   ( "+" p = Period() { d = d.plus(p); }
   | "-" p = Period() { d = d.minus(p); }
+  | ">" "IMM" { d = ScheduleSemantics.nextImm(d); }
   )*
   { return d; }
 }

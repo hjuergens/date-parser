@@ -51,6 +51,7 @@ PRODUCTIONS
   = Date<out d>
     { "+" Period<out p>                   (. d = d.plus(p); .)
     | "-" Period<out p>                   (. d = d.minus(p); .)
+    | ">" "IMM"                           (. if (errors.count == 0) d = ScheduleSemantics.nextImm(d); .)
     }.
 
   Date<out LocalDate d>                   (. int a, b, c; d = LocalDate.MIN; .)

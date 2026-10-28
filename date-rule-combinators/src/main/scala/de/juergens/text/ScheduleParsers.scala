@@ -1,6 +1,7 @@
 package de.juergens.text
 
-import java.time.{LocalDate, Period}
+import java.time.temporal.TemporalAdjusters
+import java.time.{DayOfWeek, LocalDate, Period}
 
 import scala.util.parsing.combinator.RegexParsers
 
@@ -28,12 +29,21 @@ class ScheduleParsers extends RegexParsers {
     case n ~ "Y" => Period.ofYears(n)
   }
 
-  /** periods are applied from left to right */
-  def expr: Parser[LocalDate] = date ~ rep(("+" | "-") ~ period) ^^ {
-    case start ~ shifts => shifts.foldLeft(start) {
-      case (d, "+" ~ p) => d.plus(p)
-      case (d, _ ~ p) => d.minus(p)
-    }
+  /** the third Wednesday of March, June, September or December strictly after the date */
+  def nextImm(date: LocalDate): LocalDate =
+    Iterator.iterate(date.withDayOfMonth(1))(_.plusMonths(1))
+      .filter(_.getMonthValue % 3 == 0)
+      .map(_.`with`(TemporalAdjusters.dayOfWeekInMonth(3, DayOfWeek.WEDNESDAY)))
+      .find(_.isAfter(date)).get
+
+  def shift: Parser[LocalDate => LocalDate] =
+    ("+" ~> period ^^ (p => (d: LocalDate) => d.plus(p))
+    | "-" ~> period ^^ (p => (d: LocalDate) => d.minus(p))
+    | ">" ~ "IMM" ^^^ (nextImm _))
+
+  /** shifts are applied from left to right */
+  def expr: Parser[LocalDate] = date ~ rep(shift) ^^ {
+    case start ~ shifts => shifts.foldLeft(start)((d, f) => f(d))
   }
 
   def range: Parser[List[LocalDate]] = ("(" ~> expr) ~ (":" ~> period) ~ (":" ~> expr <~ ")") ^^ {

@@ -206,7 +206,7 @@
 
   <section aria-labelledby="language">
     <h2 id="language">The language</h2>
-    <p class="lead">Small enough for every tool, rich enough to show their differences: three date notations, periods, lists and ranges.</p>
+    <p class="lead">Small enough for every tool, rich enough to show their differences: three date notations, periods, IMM dates, lists and ranges.</p>
     <div class="two">
       <table class="examples">
         <tbody>
@@ -215,11 +215,13 @@
           <tr><td>06/09/2015 + 1W - 2D</td><td>2015-06-14 (US notation, left to right)</td></tr>
           <tr><td>2015-06-09, 1.1.2000 + 1Y</td><td>2015-06-09, 2001-01-01</td></tr>
           <tr><td>(2015-01-15 : 1Q : 2015-12-31)</td><td>2015-01-15, -04-15, -07-15, -10-15</td></tr>
+          <tr><td>2015-06-09 + 3M &gt; IMM</td><td>2015-09-16 (next IMM date)</td></tr>
         </tbody>
       </table>
       <pre><code>schedule = range | expr { "," expr } .
 range    = "(" expr ":" period ":" expr ")" .
-expr     = date { ("+" | "-") period } .
+expr     = date { ("+" | "-") period
+               | "&gt;" "IMM" } .
 date     = NUM ( "-" NUM "-" NUM       <span class="c">(* ISO    *)</span>
                | "." NUM "." NUM       <span class="c">(* German *)</span>
                | "/" NUM "/" NUM ) .   <span class="c">(* US     *)</span>
@@ -230,6 +232,7 @@ period   = NUM ( "D" | "W" | "M"
       Every decision is LL(1): after the first number, the separator selects the notation; after a complete date,
       <code>+</code> or <code>-</code> starts a period. Periods follow <code>java.time</code>: months first, with the day clamped
       to the end of the month (<code>2016-01-31 + 1M</code> is <code>2016-02-29</code>), then days.
+      <code>&gt; IMM</code> moves to the next IMM date strictly after the date: the third Wednesday of March, June, September or December.
     </p>
   </section>
 
@@ -246,7 +249,7 @@ period   = NUM ( "D" | "W" | "M"
 
   <section aria-labelledby="compare">
     <h2 id="compare">Side by side</h2>
-    <p class="lead">Size counts non-blank, non-comment lines of the grammar files. The JVM modules also share a 30-line helper for periods and range expansion.</p>
+    <p class="lead">Size counts non-blank, non-comment lines of the grammar files. The JVM modules also share a 40-line helper for periods, IMM dates and range expansion.</p>
     <div class="scroll">
       <table class="compare">
         <thead>
@@ -271,7 +274,7 @@ period   = NUM ( "D" | "W" | "M"
       <li><strong>Ordered choice is not alternation.</strong>
         <p>PEG tries the alternatives in order and commits to the first match. Here this is harmless because the separators differ, but it's the main semantic difference to the generated LL and LR parsers.</p></li>
       <li><strong>The library matters as much as the parser.</strong>
-        <p>In JavaScript, about 35 lines reproduce <code>java.time</code>'s month arithmetic. The end-of-month cases in the test file exist to catch differences.</p></li>
+        <p>In JavaScript, about 35 lines (plus 8 for IMM dates) reproduce <code>java.time</code>'s month arithmetic. The end-of-month cases in the test file exist to catch differences.</p></li>
       <li><strong>A shared test file keeps everyone honest.</strong>
         <p>Every module reads <code>examples/schedule.txt</code>. Several tool-specific pitfalls, listed in the tabs above, surfaced only because the same cases had to pass everywhere.</p></li>
     </ul>

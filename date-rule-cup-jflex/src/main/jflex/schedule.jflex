@@ -28,9 +28,11 @@ private Symbol symbol(int type, Object value) {
 %%
 
 [0-9]+          { return symbol(ScheduleSym.NUM, Integer.valueOf(yytext())); }
+"IMM"           { return symbol(ScheduleSym.IMM); }
 [DWMQY]         { return symbol(ScheduleSym.UNIT, yytext()); }
 "+"             { return symbol(ScheduleSym.PLUS); }
 "-"             { return symbol(ScheduleSym.MINUS); }
+">"             { return symbol(ScheduleSym.NEXT); }
 "."             { return symbol(ScheduleSym.DOT); }
 "/"             { return symbol(ScheduleSym.SLASH); }
 ","             { return symbol(ScheduleSym.COMMA); }

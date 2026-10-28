@@ -23,6 +23,7 @@
 
 %token <Integer> NUM "number"
 %token <String> UNIT "unit"
+%token IMM "IMM"
 %type <LocalDate> expr date
 %type <Period> period
 %type <ArrayList<LocalDate>> exprs
@@ -44,6 +45,7 @@ expr:
   date                              { $$ = $1; }
 | expr '+' period                   { $$ = $1.plus ($3); }
 | expr '-' period                   { $$ = $1.minus ($3); }
+| expr '>' IMM                      { $$ = ScheduleSemantics.nextImm ($1); }
 ;
 
 date:
@@ -58,7 +60,7 @@ period:
 
 %%
 
-/** Hand-written scanner: numbers, unit letters, single-character tokens. */
+/** Hand-written scanner: numbers, IMM, unit letters, single-character tokens. */
 class ScheduleLexer implements ScheduleParser.Lexer {
 
   private final String text;
@@ -92,13 +94,18 @@ class ScheduleLexer implements ScheduleParser.Lexer {
         value = Integer.valueOf (text.substring (start, pos));
         return NUM;
       }
+    if (text.startsWith ("IMM", pos))
+      {
+        pos += 3;
+        return IMM;
+      }
     pos++;
     if ("DWMQY".indexOf (c) >= 0)
       {
         value = String.valueOf (c);
         return UNIT;
       }
-    if ("+-./,:()".indexOf (c) >= 0)
+    if ("+-./,:()>".indexOf (c) >= 0)
       return c;
     return YYUNDEF;   /* unknown character: a syntax error for the parser */
   }

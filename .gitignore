@@ -40,3 +40,7 @@ build.log
 
 #SHITTY output not in target directory
 build.log
+
+# Claude Code: personal settings and Stack Overflow watch state
+.claude/settings.local.json
+.claude/skills/stackoverflow-watch/state.json

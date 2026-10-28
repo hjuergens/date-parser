@@ -1,6 +1,12 @@
-# date-parser
+# date-parser: eight parser generators, one language
 
-A sandbox for comparing parser technologies on the JVM (and one in JavaScript), using date expressions as the common theme:
+The same date-schedule language implemented with **ANTLR 4, JavaCC, GNU Bison, JFlex + CUP, SableCC, Coco/R, Peggy (PEG)
+and Scala parser combinators**, all tested against one shared set of cases. It is a hands-on comparison of LL, LALR, PEG
+and combinator parsing in Java, Scala and JavaScript.
+
+**[See the side-by-side comparison →](https://hjuergens.github.io/date-parser/)**
+
+Beyond the shared example, the modules contain further grammars, for example
 term structures such as `[3M,4M,6M]x(4M:1M:9M)`, date shifts such as `>Q` ("first day of next quarter"), and
 natural-language rules such as "three days after next sunday".
 
@@ -24,8 +30,8 @@ can be compared on the same language.
 
 ## Shared example: schedule
 
-> A visual version of this comparison, with the rules of all eight tools side by side, is in [docs/index.html](docs/index.html)
-> (served by GitHub Pages from `/docs`; regenerate it with `python3 docs/generate.py`).
+> A visual version of this comparison, with the rules of all eight tools side by side, is at [hjuergens.github.io/date-parser](https://hjuergens.github.io/date-parser/)
+> (source: [docs/index.html](docs/index.html), served by GitHub Pages from `/docs`; regenerate it with `python3 docs/generate.py`).
 
 A small date language that every tool can handle (no left recursion is needed, and all decisions are LL(1)):
 

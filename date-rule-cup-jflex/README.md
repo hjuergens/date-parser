@@ -3,7 +3,7 @@
 A lexer built with [JFlex](https://jflex.de/) and token definitions built with [CUP](https://www2.cs.tum.edu/projects/cup/),
 the classic LALR(1) pair for Java (lex/yacc style).
 
-There is no date grammar yet: the example is a lexer for a Pascal subset.
+There are two examples: a lexer for a Pascal subset, and the shared date schedule grammar.
 
 ## What it contains
 
@@ -32,10 +32,20 @@ mvn -pl date-rule-cup-jflex verify
 
 - `com.github.vbmacher:cup-maven-plugin` (CUP 11b) generates into `target/generated-sources/cup`.
 - `de.jflex:jflex-maven-plugin` (JFlex 1.9) generates into `target/generated-sources/jflex`.
-- There are 7 TestNG tests in [PascalLexerTest](src/test/java/io/github/hjuergens/PascalLexerTest.java).
+- There are 43 TestNG tests: [PascalLexerTest](src/test/java/io/github/hjuergens/PascalLexerTest.java) and the shared example.
 
 CUP warns that the terminals are "declared but never used". That's expected while the grammar has no rules.
 
+## Shared example
+
+Implements the [shared schedule example](../README.md#shared-example-schedule) and is tested against [examples/schedule.txt](../examples/schedule.txt).
+
+- [schedule.cup](src/main/cup/schedule.cup) uses left recursion for lists and period chains, which is natural for LALR(1).
+- [schedule.jflex](src/main/jflex/schedule.jflex) is its lexer. `%cupsym ScheduleSym` must come before `%cup`, otherwise the EOF action refers to `sym`.
+- CUP runs once per grammar (two plugin executions); JFlex processes every `.jflex` file.
+- `Schedules.parse(text)` throws on the first syntax error ("Can't recover from previous error(s)").
+- Test: [SchedulesTest](src/test/java/io/github/hjuergens/schedule/SchedulesTest.java).
+
 ## Status
 
-The lexer works. The CUP grammar is a skeleton: it has no productions apart from a dummy rule.
+Working. The Pascal CUP grammar is a skeleton: it has no productions apart from a dummy rule.

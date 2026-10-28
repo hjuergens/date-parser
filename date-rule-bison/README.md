@@ -3,7 +3,7 @@
 An infix calculator built with [GNU Bison](https://www.gnu.org/software/bison/)'s Java skeleton (LALR(1)),
 including error recovery.
 
-There is no date grammar yet.
+There are two grammars: the calculator and the shared date schedule example.
 
 ## What it parses
 
@@ -41,9 +41,26 @@ mvn -pl date-rule-bison -Pbison -Dbison.executable=/path/to/bison verify   # bis
 
 With the profile active, `maven-antrun-plugin` runs bison in `generate-sources` and writes
 `target/generated-sources/bison/io/github/hjuergens/bison/Calc.java`. The tests in
-[src/bison-test/java](src/bison-test/java) are only compiled then (8 TestNG tests).
+[src/bison-test/java](src/bison-test/java) are only compiled then (44 TestNG tests).
 
 The Windows binaries in [tools/win_flex_bison-latest](tools/win_flex_bison-latest) are an old bundled copy and aren't used by the build.
+
+## Shared example
+
+Implements the [shared schedule example](../README.md#shared-example-schedule) and is tested against [examples/schedule.txt](../examples/schedule.txt).
+
+- [schedule.y](src/main/resources/schedule.y) generates `ScheduleParser`.
+- It has no `error` rules, so `parse()` returns `false` on the first syntax error.
+- The scanner is hand-written in the epilogue: unknown characters return `YYUNDEF`.
+- In Bison's Java skeleton `$$` is a plain `Object`, while `$1`…`$n` are typed, so the list is built in a local variable.
+- The build runs bison with `-Werror=conflicts-sr -Werror=conflicts-rr`.
+- Test: [ScheduleParserTest](src/bison-test/java/io/github/hjuergens/bison/ScheduleParserTest.java).
+
+```java
+ScheduleLexer lexer = new ScheduleLexer("2015-06-09, 01.01.2000 + 1Y");
+ScheduleParser parser = new ScheduleParser(lexer);
+if (parser.parse()) parser.dates;   // [2015-06-09, 2001-01-01]
+```
 
 ## Status
 

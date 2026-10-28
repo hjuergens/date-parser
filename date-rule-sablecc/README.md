@@ -3,7 +3,7 @@
 Arithmetic expressions parsed with [SableCC](https://sablecc.org/) 2, an LALR(1) parser generator
 that builds a strictly typed syntax tree and tree walkers (visitor pattern).
 
-There is no date grammar yet: this module shows how SableCC works, as a basis for comparison.
+The arithmetic grammars show how SableCC works; the shared example below is a date grammar.
 
 ## What it parses
 
@@ -34,8 +34,17 @@ mvn -pl date-rule-sablecc verify
 ```
 
 `sablecc-maven-plugin` 2.2 (the latest release, from 2008) generates the sources into `target/generated-sources/sablecc`.
-There are 11 TestNG tests.
+There are 47 TestNG tests.
+
+## Shared example
+
+Implements the [shared schedule example](../README.md#shared-example-schedule) and is tested against [examples/schedule.txt](../examples/schedule.txt).
+
+[schedule.grammar](src/main/sablecc/schedule.grammar) contains no code at all: SableCC builds the typed syntax tree, and
+[ScheduleEvaluator](src/main/java/de/juergens/schedule/ScheduleEvaluator.java) computes the dates from it.
+Elements that occur twice in an alternative need names (`[year]:number`, `[s1]:minus`).
+Test: [ScheduleEvaluatorTest](src/test/java/de/juergens/schedule/ScheduleEvaluatorTest.java).
 
 ## Status
 
-Working, but only arithmetic examples. The SableCC Maven plugin is no longer maintained.
+Working. The SableCC Maven plugin is no longer maintained.

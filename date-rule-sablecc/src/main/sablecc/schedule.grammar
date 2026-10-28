@@ -1,0 +1,47 @@
+/*
+	filename   : schedule.grammar
+	description: shared "schedule" example (see examples/schedule.txt in the project root)
+	             2015-06-09 + 3M, 09.06.2015, (2015-01-15 : 1Q : 2015-12-31)
+	             SableCC only builds the syntax tree, ScheduleEvaluator computes the dates.
+*/
+
+Package de.juergens.schedule;
+
+Helpers
+	digit = ['0' .. '9'];
+
+Tokens
+	number = digit+;
+	unit = 'D' | 'W' | 'M' | 'Q' | 'Y';
+	plus = '+';
+	minus = '-';
+	dot = '.';
+	slash = '/';
+	comma = ',';
+	colon = ':';
+	l_par = '(';
+	r_par = ')';
+	blank = (' ' | 9 | 10 | 13)+;
+
+Ignored Tokens
+	blank;
+
+Productions
+	schedule
+		= {range} l_par [first]:expr [c1]:colon period [c2]:colon [last]:expr r_par
+		| {list} expr more_expr*;
+
+	more_expr = comma expr;
+
+	expr = date shift*;
+
+	shift
+		= {plus} plus period
+		| {minus} minus period;
+
+	date
+		= {iso} [year]:number [s1]:minus [month]:number [s2]:minus [day]:number
+		| {german} [day]:number [s1]:dot [month]:number [s2]:dot [year]:number
+		| {us} [month]:number [s1]:slash [day]:number [s2]:slash [year]:number;
+
+	period = number unit;

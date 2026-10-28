@@ -1,0 +1,60 @@
+# Shared test cases for the "schedule" grammar, implemented in every date-rule-* module.
+#
+#   <input> => <expected>
+#
+# <expected> is a comma-separated list of ISO dates, "none" for an empty list, or "error".
+# Periods are applied left to right with java.time semantics: months (M, Q = 3M, Y = 12M)
+# are added first and the day is clamped to the end of the month, then days (D, W = 7D).
+# A range (start : step : end) yields start + k * step for k = 0, 1, ... while <= end.
+
+# date notations
+2015-06-09 => 2015-06-09
+09.06.2015 => 2015-06-09
+06/09/2015 => 2015-06-09
+1.1.2000 => 2000-01-01
+
+# date plus / minus periods
+09.06.2015 + 3M => 2015-09-09
+06/09/2015 + 1W - 2D => 2015-06-14
+2015-06-09 - 3M => 2015-03-09
+2015-06-09 + 2Q => 2015-12-09
+2015-06-09+10D => 2015-06-19
+2015-06-09 - 1Y + 1D => 2014-06-10
+2015-06-09 + 0D => 2015-06-09
+
+# end of month
+2016-02-29 + 1Y => 2017-02-28
+2016-01-31 + 1M => 2016-02-29
+2016-01-31 + 1M - 1M => 2016-01-29
+
+# lists
+2015-06-09, 01.01.2000 + 1Y => 2015-06-09, 2001-01-01
+2015-06-09,2015-06-09 => 2015-06-09, 2015-06-09
+
+# ranges
+(2015-01-15 : 1Q : 2015-12-31) => 2015-01-15, 2015-04-15, 2015-07-15, 2015-10-15
+(2016-01-31 : 1M : 2016-04-30) => 2016-01-31, 2016-02-29, 2016-03-31, 2016-04-30
+(2015-06-09 : 1W : 2015-06-09 + 2W) => 2015-06-09, 2015-06-16, 2015-06-23
+(2015-06-09 : 1D : 2015-06-09) => 2015-06-09
+(2015-06-09 : 1D : 2015-06-08) => none
+
+# invalid dates
+2015-02-29 => error
+2015-13-01 => error
+31.04.2015 => error
+
+# syntax errors
+2015-06 => error
++ 3M => error
+2015-06-09 + 3 => error
+2015-06-09 + M => error
+2015-06-09 + 3X => error
+2015-06-09 , => error
+2015-06-09 2015-06-10 => error
+2015-06.09 => error
+(2015-01-01 : 1M) => error
+(2015-01-01 : 1M : 2015-02-01), 2015-03-01 => error
+ => error
+
+# step of a range must be positive
+(2015-01-01 : 0D : 2015-02-01) => error

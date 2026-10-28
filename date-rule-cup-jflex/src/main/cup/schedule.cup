@@ -1,0 +1,48 @@
+/*
+ * Shared "schedule" example (see examples/schedule.txt in the project root):
+ *   2015-06-09 + 3M, 09.06.2015, (2015-01-15 : 1Q : 2015-12-31)
+ * LALR(1): lists and period chains are written left recursive.
+ */
+package io.github.hjuergens.schedule;
+
+import java.time.LocalDate;
+import java.time.Period;
+import java.util.ArrayList;
+import java.util.List;
+
+terminal            PLUS, MINUS, DOT, SLASH, COMMA, COLON, LPAREN, RPAREN;
+terminal Integer    NUM;
+terminal String     UNIT;
+
+non terminal List<LocalDate>        schedule;
+non terminal ArrayList<LocalDate>   exprs;
+non terminal LocalDate              expr, date;
+non terminal Period                 period;
+
+start with schedule;
+
+schedule ::= LPAREN expr:first COLON period:step COLON expr:last RPAREN
+                {: RESULT = ScheduleSemantics.range(first, step, last); :}
+           | exprs:list
+                {: RESULT = list; :}
+           ;
+
+exprs ::= expr:e
+                {: RESULT = new ArrayList<>(); RESULT.add(e); :}
+        | exprs:list COMMA expr:e
+                {: list.add(e); RESULT = list; :}
+        ;
+
+/* periods are applied from left to right */
+expr ::= date:d                     {: RESULT = d; :}
+       | expr:e PLUS period:p       {: RESULT = e.plus(p); :}
+       | expr:e MINUS period:p      {: RESULT = e.minus(p); :}
+       ;
+
+date ::= NUM:y MINUS NUM:m MINUS NUM:d      {: RESULT = LocalDate.of(y, m, d); :}   /* ISO */
+       | NUM:d DOT NUM:m DOT NUM:y          {: RESULT = LocalDate.of(y, m, d); :}   /* German */
+       | NUM:m SLASH NUM:d SLASH NUM:y      {: RESULT = LocalDate.of(y, m, d); :}   /* US */
+       ;
+
+period ::= NUM:n UNIT:u                     {: RESULT = ScheduleSemantics.period(n, u); :}
+         ;

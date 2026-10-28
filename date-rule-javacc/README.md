@@ -4,7 +4,7 @@ A brace-matching grammar built with JavaCC-style tooling: `ph-javacc-maven-plugi
 [ParserGeneratorCC](https://github.com/phax/ParserGeneratorCC), a maintained fork of [JavaCC](https://javacc.github.io/javacc/).
 It generates an LL(k) recursive-descent parser.
 
-There is no date grammar yet. The module also collects JUnit 4 experiments (Theories, parameterized and dynamic suites).
+The module also collects JUnit 4 experiments (Theories, parameterized and dynamic suites).
 
 ## What it parses
 
@@ -36,6 +36,14 @@ Sources are generated into `target/generated-sources/javacc1`. Tests are JUnit 4
 [Simple1AcceptanceTest](src/test/java/io/github/hjuergens/parser/Simple1AcceptanceTest.java) and `Simple1Test` cover the parser.
 The classes in `de.juergens.util` are JUnit runner experiments; several are `@Ignore`d (7 skipped).
 
+## Shared example
+
+Implements the [shared schedule example](../README.md#shared-example-schedule) and is tested against [examples/schedule.txt](../examples/schedule.txt).
+
+[Schedule.jj](src/main/javacc/Schedule.jj) is LL(1): each production declares its locals and returns its value.
+`Schedule.parse(text)` throws `ParseException` (syntax), `TokenMgrException` (unknown character), or `DateTimeException`.
+Test: [ScheduleTest](src/test/java/io/github/hjuergens/parser/ScheduleTest.java).
+
 ## Status
 
-Working. It's a demonstration grammar, not a date grammar.
+Working.

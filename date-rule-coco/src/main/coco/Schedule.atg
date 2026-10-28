@@ -1,0 +1,76 @@
+/*
+ * Shared "schedule" example (see examples/schedule.txt in the project root):
+ *   2015-06-09 + 3M, 09.06.2015, (2015-01-15 : 1Q : 2015-12-31)
+ * The grammar is LL(1): after the first number the separator selects the date notation,
+ * after a complete date '+' or '-' starts a period.
+ */
+import java.time.LocalDate;
+import java.time.Period;
+import java.util.ArrayList;
+import java.util.List;
+
+COMPILER Schedule
+
+  /** the dates of the schedule; only meaningful when errors.count == 0 */
+  public final List<LocalDate> dates = new ArrayList<>();
+
+  // error recovery may still run semantic actions, so they must not fail on garbage
+  private LocalDate date(int year, int month, int day) {
+    try {
+      return LocalDate.of(year, month, day);
+    } catch (java.time.DateTimeException e) {
+      SemErr(e.getMessage());
+      return LocalDate.MIN;
+    }
+  }
+
+CHARACTERS
+  digit = "0123456789".
+
+TOKENS
+  number = digit {digit}.
+
+IGNORE '\t' + '\r' + '\n'
+
+PRODUCTIONS
+
+  Schedule                                (. LocalDate d; .)
+  = Range
+  | Expr<out d>                           (. dates.add(d); .)
+    { "," Expr<out d>                     (. dates.add(d); .)
+    }.
+
+  Range                                   (. LocalDate first, last; Period step; .)
+  = "(" Expr<out first> ":" Period<out step> ":" Expr<out last> ")"
+                                          (. if (errors.count > 0) return;
+                                             if (step.isZero() || step.isNegative()) SemErr("step must be positive: " + step);
+                                             else dates.addAll(ScheduleSemantics.range(first, step, last)); .)
+  .
+
+  Expr<out LocalDate d>                   (. Period p; .)
+  = Date<out d>
+    { "+" Period<out p>                   (. d = d.plus(p); .)
+    | "-" Period<out p>                   (. d = d.minus(p); .)
+    }.
+
+  Date<out LocalDate d>                   (. int a, b, c; d = LocalDate.MIN; .)
+  = Number<out a>
+    ( "-" Number<out b> "-" Number<out c> (. d = date(a, b, c); .)
+    | "." Number<out b> "." Number<out c> (. d = date(c, b, a); .)
+    | "/" Number<out b> "/" Number<out c> (. d = date(c, a, b); .)
+    ).
+
+  Period<out Period p>                    (. int n; p = Period.ZERO; .)
+  = Number<out n>
+    ( "D"                                 (. p = Period.ofDays(n); .)
+    | "W"                                 (. p = Period.ofWeeks(n); .)
+    | "M"                                 (. p = Period.ofMonths(n); .)
+    | "Q"                                 (. p = Period.ofMonths(3 * n); .)
+    | "Y"                                 (. p = Period.ofYears(n); .)
+    ).
+
+  Number<out int n>                       (. n = 0; .)
+  = number                                (. try { n = Integer.parseInt(t.val); } catch (NumberFormatException e) { SemErr("number too large"); } .)
+  .
+
+END Schedule.

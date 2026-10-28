@@ -34,7 +34,17 @@ mvn -pl date-rule-peg verify     # Maven downloads Node 24 into target/ and runs
 npm ci && npm test               # or directly, with Node 20 or later
 ```
 
-There are 5 tests (`node:test`) in [test/list.test.mjs](test/list.test.mjs).
+There are 41 tests (`node:test`) in [test/list.test.mjs](test/list.test.mjs) and [test/schedule.test.mjs](test/schedule.test.mjs).
+
+## Shared example
+
+Implements the [shared schedule example](../README.md#shared-example-schedule) and is tested against [examples/schedule.txt](../examples/schedule.txt).
+
+- [schedule.pegjs](schedule.pegjs) uses ordered choice (`/`) for the three date notations.
+- PEG has no separate lexer, so whitespace (`_`) is explicit in the rules.
+- There is no `LocalDate` in JavaScript, so the grammar's initializer reproduces `java.time`'s month arithmetic
+  (day clamped to the end of the month) in about 35 lines.
+- Don't name a helper `range`: Peggy provides `range()` (the location of the match) in actions.
 
 ## Status
 

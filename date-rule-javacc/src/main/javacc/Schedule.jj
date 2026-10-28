@@ -1,0 +1,97 @@
+/*
+ * Shared "schedule" example (see examples/schedule.txt in the project root):
+ *   2015-06-09 + 3M, 09.06.2015, (2015-01-15 : 1Q : 2015-12-31)
+ * LL(1): no lookahead beyond the next token is needed.
+ */
+options {
+  LOOKAHEAD = 1;
+}
+
+PARSER_BEGIN(Schedule)
+
+package io.github.hjuergens.parser;
+
+import java.io.StringReader;
+import java.time.LocalDate;
+import java.time.Period;
+import java.util.ArrayList;
+import java.util.List;
+
+/** Parser of the shared "schedule" example. */
+public class Schedule {
+
+  /**
+   * @throws ParseException on a syntax error
+   * @throws TokenMgrException on an unknown character
+   * @throws java.time.DateTimeException on an invalid date
+   */
+  public static List<LocalDate> parse(String text) throws ParseException {
+    return new Schedule(new StringReader(text)).Input();
+  }
+}
+
+PARSER_END(Schedule)
+
+SKIP : { " " | "\t" | "\r" | "\n" }
+
+TOKEN : {
+  < NUM : (["0"-"9"])+ >
+| < UNIT : ["D", "W", "M", "Q", "Y"] >
+}
+
+/** Root production. */
+List<LocalDate> Input() :
+{ List<LocalDate> dates; }
+{
+  ( dates = Range() | dates = Exprs() ) <EOF>
+  { return dates; }
+}
+
+List<LocalDate> Exprs() :
+{ List<LocalDate> dates = new ArrayList<LocalDate>(); LocalDate d; }
+{
+  d = Expr() { dates.add(d); }
+  ( "," d = Expr() { dates.add(d); } )*
+  { return dates; }
+}
+
+List<LocalDate> Range() :
+{ LocalDate first, last; Period step; }
+{
+  "(" first = Expr() ":" step = Period() ":" last = Expr() ")"
+  { return ScheduleSemantics.range(first, step, last); }
+}
+
+/** periods are applied from left to right */
+LocalDate Expr() :
+{ LocalDate d; Period p; }
+{
+  d = Date()
+  ( "+" p = Period() { d = d.plus(p); }
+  | "-" p = Period() { d = d.minus(p); }
+  )*
+  { return d; }
+}
+
+LocalDate Date() :
+{ int a, b, c; }
+{
+  a = Number()
+  ( "-" b = Number() "-" c = Number() { return LocalDate.of(a, b, c); }   // ISO
+  | "." b = Number() "." c = Number() { return LocalDate.of(c, b, a); }   // German
+  | "/" b = Number() "/" c = Number() { return LocalDate.of(c, a, b); }   // US
+  )
+}
+
+Period Period() :
+{ int n; Token unit; }
+{
+  n = Number() unit = <UNIT>
+  { return ScheduleSemantics.period(n, unit.image); }
+}
+
+int Number() :
+{ Token t; }
+{
+  t = <NUM> { return Integer.parseInt(t.image); }
+}

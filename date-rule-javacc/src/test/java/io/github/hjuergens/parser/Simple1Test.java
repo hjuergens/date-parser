@@ -22,7 +22,10 @@ import org.junit.runners.Parameterized;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
@@ -49,9 +52,10 @@ public class Simple1Test {
 
     @Test
     public void viaInputStream() {
-        InputStream inputStream = new ByteArrayInputStream(line.getBytes());
-        Simple1 parser = new Simple1(inputStream);
-        parser.ReInit(inputStream);
+        InputStream inputStream = new ByteArrayInputStream(line.getBytes(StandardCharsets.UTF_8));
+        Reader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+        Simple1 parser = new Simple1(reader);
+        parser.ReInit(reader);
         assertNotNull(parser.jj_input_stream);
         try {
             parser.Input();

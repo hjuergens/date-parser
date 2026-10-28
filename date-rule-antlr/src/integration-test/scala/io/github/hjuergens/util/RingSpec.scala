@@ -1,9 +1,11 @@
 package io.github.hjuergens.util
 
 
-import org.specs2.mutable._
+import org.junit.runner.RunWith
+import org.specs2.runner.JUnitRunner
 
-class RingSpec extends Specification { override def is = s2"""
+@RunWith(classOf[JUnitRunner])
+class RingSpec extends org.specs2.Specification { def is = s2"""
 
   This is a specification for the 'Hello world' string
 
@@ -15,20 +17,6 @@ class RingSpec extends Specification { override def is = s2"""
         def e1 = "Hello world" must haveSize(11)
         def e2 = "Hello world" must startWith("Hello")
         def e3 = "Hello world" must endWith("world")
-
-        "This is a specification for the 'Hello world' string".txt
-
-        "The 'Hello world' string should" >> {
-                "contain 11 characters" >> {
-                        "Hello world" must haveSize(11)
-                }
-                "start with 'Hello'" >> {
-                        "Hello world" must startWith("Hello")
-                }
-                "end with 'world'" >> {
-                        "Hello world" must endWith("world")
-                }
-        }
 }
 
 /*

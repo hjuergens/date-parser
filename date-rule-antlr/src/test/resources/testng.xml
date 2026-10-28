@@ -32,7 +32,7 @@
     <test name="utilities">
         <classes>
             <class name="io.github.hjuergens.util.RingTest"/>
-            <!--class name="io.github.hjuergens.util.RingCheck"/-->
+            <class name="io.github.hjuergens.util.RingCheck"/>
         </classes>
     </test>
     <test name="date-parser">
@@ -44,6 +44,10 @@
             <class name="io.github.hjuergens.time.SelectorTest"/>
             <class name="io.github.hjuergens.time.ShifterTest"/>
             <class name="io.github.hjuergens.time.TermStructureTest"/>
+            <class name="io.github.hjuergens.time.GrammarTest"/>
+            <class name="io.github.hjuergens.time.PairTest"/>
+            <class name="io.github.hjuergens.time.QuarterlyTest"/>
+            <class name="io.github.hjuergens.time.dateparser.ICalendarExprTest"/>
         </classes>
     </test> <!-- date-parser -->
 </suite>

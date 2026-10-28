@@ -16,12 +16,9 @@
     <inceptionYear>2015</inceptionYear>
 
     <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
         <encoding>UTF-8</encoding>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <scala.version>2.11.12</scala.version>
-        <scala.compat.version>2.11</scala.compat.version>
+        <antlr.version>4.13.2</antlr.version>
     </properties>
 
     <dependencies>
@@ -29,37 +26,37 @@
         <dependency>
             <groupId>org.antlr</groupId>
             <artifactId>antlr4-runtime</artifactId>
-            <version>4.5.1-1</version>
+            <version>${antlr.version}</version>
         </dependency>
         <dependency>
             <groupId>org.antlr</groupId>
-            <artifactId>stringtemplate</artifactId>
-            <version>4.0.2</version>
+            <artifactId>ST4</artifactId>
+            <version>4.3.4</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.antlr</groupId>
             <artifactId>antlr4</artifactId>
-            <version>4.5.1-1</version>
+            <version>${antlr.version}</version>
         </dependency>
         <!-- logging -->
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.3.0-alpha4</version>
+            <version>1.6.6</version>
         </dependency>
 
         <!-- @deprecated -->
         <dependency>
             <groupId>joda-time</groupId>
             <artifactId>joda-time</artifactId>
-            <version>2.9.4</version>
+            <version>2.15.0</version>
         </dependency>
 
         <dependency>
             <groupId>org.threeten</groupId>
             <artifactId>threeten-extra</artifactId>
-            <version>1.7.1</version>
+            <version>1.11.0</version>
         </dependency>
 
         <!-- Test -->
@@ -72,19 +69,37 @@
         <dependency>
             <groupId>org.scalatest</groupId>
             <artifactId>scalatest_${scala.compat.version}</artifactId>
-            <version>3.0.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.scalatestplus</groupId>
+            <artifactId>testng-7-10_${scala.compat.version}</artifactId>
+            <version>3.2.19.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.scalatestplus</groupId>
+            <artifactId>scalacheck-1-18_${scala.compat.version}</artifactId>
+            <version>3.2.19.0</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.specs2</groupId>
             <artifactId>specs2-core_${scala.compat.version}</artifactId>
-            <version>4.2.0-6fc1280b6-20180430142205</version>
+            <version>${specs2.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.specs2</groupId>
             <artifactId>specs2-scalacheck_${scala.compat.version}</artifactId>
-            <version>4.2.0-6fc1280b6-20180430142205</version>
+            <version>${specs2.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.specs2</groupId>
+            <artifactId>specs2-junit_${scala.compat.version}</artifactId>
+            <version>${specs2.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -112,11 +127,6 @@
                     </args>
                     <!-- enable incremental compilation mode for faster compiling -->
                     <recompileMode>incremental</recompileMode>
-                    <includes>
-                        <include>
-                            ${project.build.directory}/generated-sources/antlr4
-                        </include>
-                    </includes>
                 </configuration>
                 <executions>
                     <execution>
@@ -169,7 +179,7 @@
             <plugin>
                 <groupId>org.antlr</groupId>
                 <artifactId>antlr4-maven-plugin</artifactId>
-                <version>4.5.3</version>
+                <version>${antlr.version}</version>
                 <configuration>
                     <libDirectory>${project.basedir}/src/main/antlr4/io/github/hjuergens/time</libDirectory>
                 </configuration>
@@ -193,7 +203,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.18.1</version>
+                <version>${maven-surefire-plugin.version}</version>
                 <configuration>
                     <parallel>methods</parallel>
                     <threadCount>10</threadCount>
@@ -208,6 +218,14 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
+                <dependencies>
+                    <!-- the specs2 *Spec classes run with JUnitRunner, not with TestNG -->
+                    <dependency>
+                        <groupId>org.apache.maven.surefire</groupId>
+                        <artifactId>surefire-junit4</artifactId>
+                        <version>${maven-surefire-plugin.version}</version>
+                    </dependency>
+                </dependencies>
                 <configuration>
                     <parallel>methods</parallel>
                     <threadCount>10</threadCount>
@@ -246,7 +264,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <version>1.5.0</version>
+                <version>3.6.4</version>
                 <executions>
                     <execution>
                         <id>antlr.test</id>
@@ -291,7 +309,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>2.17</version>
                 <executions>
                     <execution>
                         <id>validate</id>
@@ -309,22 +326,6 @@
                 </executions>
             </plugin>
 
-            <!-- cobertura - code coverage -->
-            <!-- problem wiht antlr.test -->
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>cobertura-maven-plugin</artifactId>
-                <version>${cobertura-maven-plugin.version}</version>
-                <configuration>
-                    <skip>true</skip>
-                    <check>true</check>
-                    <instrumentation>
-                        <excludes>
-                            <exclude>io/github/hjuergens/time/*.class</exclude>
-                        </excludes>
-                    </instrumentation>
-                </configuration>
-            </plugin>
 
             <!--plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -392,7 +393,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-project-info-reports-plugin</artifactId>
-                <version>2.9</version>
                 <configuration>
                     <dependencyLocationsEnabled>false</dependencyLocationsEnabled>
                 </configuration>
@@ -406,7 +406,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <configuration>
-                    <additionalparam>-Xdoclint:none</additionalparam>
+                    <additionalOptions>-Xdoclint:none</additionalOptions>
                     <links>
                         <link>http://www.antlr.org/api/Java/</link>
                     </links>
@@ -419,7 +419,7 @@
                 <!-- code coverage -->
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.7.8</version>
+                <version>${jacoco-maven-plugin.version}</version>
                 <reportSets>
                     <reportSet>
                         <reports>
@@ -499,7 +499,7 @@
                 <dependency>
                     <groupId>org.mnode.ical4j</groupId>
                     <artifactId>ical4j</artifactId>
-                    <version>2.2.0</version>
+                    <version>4.4.0</version>
                 </dependency>
             </dependencies>
         </profile>

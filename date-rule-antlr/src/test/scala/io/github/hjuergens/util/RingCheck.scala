@@ -3,8 +3,8 @@ package io.github.hjuergens.util
 import org.scalacheck.Arbitrary._
 import org.scalacheck.Prop._
 import org.scalacheck.Properties
-import org.scalatest.prop.Checkers
-import org.scalatest.testng.TestNGSuite
+import org.scalatestplus.scalacheck.Checkers
+import org.scalatestplus.testng.TestNGSuite
 import org.testng.annotations.Test
 
 /**
@@ -12,7 +12,7 @@ import org.testng.annotations.Test
   */
 class RingCheck extends TestNGSuite with Checkers {
   @Test
-  def testConcat() {
+  def testConcat(): Unit = {
     check((a: List[Int], b: List[Int]) => a.size + b.size == (a ::: b).size)
   }
 
@@ -23,7 +23,7 @@ class RingCheck extends TestNGSuite with Checkers {
   }
 
   @Test
-  def testPropReverseList() { check(propReverseList) }
+  def testPropReverseList(): Unit = { check(propReverseList) }
 
 }
 

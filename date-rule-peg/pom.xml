@@ -15,67 +15,49 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <skipTests>false</skipTests>
     </properties>
 
     <build>
         <plugins>
+            <!-- installs Node into target/, then runs `npm install` and `npm test` (test/*.test.mjs) -->
             <plugin>
                 <groupId>com.github.eirslett</groupId>
                 <artifactId>frontend-maven-plugin</artifactId>
-                <!-- Use the latest released version:
-                https://repo1.maven.org/maven2/com/github/eirslett/frontend-maven-plugin/ -->
-                <version>1.4</version>
-                <executions>
-                <execution>
-                    <!-- optional: you don't really need execution ids, but it looks nice in your build log. -->
-                    <id>install node and npm</id>
-                    <goals>
-                        <goal>install-node-and-npm</goal>
-                    </goals>
-                    <!-- optional: default phase is "generate-resources" -->
-                    <phase>generate-resources</phase>
-                </execution>
-                <execution>
-                    <id>npm install</id>
-                    <goals>
-                        <goal>npm</goal>
-                    </goals>
-                </execution>
-                </executions>
+                <version>2.0.2</version>
                 <configuration>
-                    <nodeVersion>v4.6.0</nodeVersion>
-
-                    <!-- optional: with node version greater than 4.0.0 will use npm provided by node distribution -->
-                    <npmVersion>2.15.9</npmVersion>
-
-                    <!--<workingDirectory>${project.build.directory}</workingDirectory>-->
+                    <nodeVersion>v24.22.1</nodeVersion>
+                    <installDirectory>${project.build.directory}</installDirectory>
                 </configuration>
-            </plugin>
-
-            <plugin>
-                <artifactId>exec-maven-plugin</artifactId>
-                <groupId>org.codehaus.mojo</groupId>
-                <version>1.6.0</version>
                 <executions>
                     <execution>
-                        <id>pegjs</id>
-                        <phase>none<!--generate-sources--></phase>
+                        <id>install node and npm</id>
                         <goals>
-                            <goal>exec</goal>
+                            <goal>install-node-and-npm</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>npm install</id>
+                        <goals>
+                            <goal>npm</goal>
                         </goals>
                         <configuration>
-                            <arguments>
-                                <argument>list.pegjs</argument>
-                            </arguments>
-                            <!--<environmentVariables>-->
-                                <!--PATH=$PATH:./node-->
-                            <!--</environmentVariables>-->
-                            <executable>node_modules/pegjs/bin/pegjs</executable>
+                            <arguments>ci --no-audit --no-fund</arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>npm test</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>test</arguments>
+                            <skip>${skipTests}</skip>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
-
         </plugins>
     </build>
 </project>

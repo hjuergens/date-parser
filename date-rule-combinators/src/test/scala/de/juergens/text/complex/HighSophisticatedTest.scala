@@ -15,12 +15,10 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
 import org.testng.Reporter
-import org.testng.annotations.{DataProvider => DataProviderNG, Parameters => ParametersNG, Test => TestNG}
 
 import scala.jdk.CollectionConverters._
 import scala.io.Source
 
-@TestNG
 @RunWith(value = classOf[Parameterized])
 class HighSophisticatedTest(line: String) {
 
@@ -40,11 +38,6 @@ class HighSophisticatedTest(line: String) {
     test(line)
   }
 
-  @DataProviderNG(name = "lines in text file", parallel = true)
-  def lines = HighSophisticatedTest.linesNG
-
-  @ParametersNG( Array("line") )
-  @TestNG(dataProvider = "lines in text file", timeOut = 1000)
   def test(_line:String) : Unit =  {
     val parsResult = parser.parseAll(parser.adjuster, _line.toLowerCase)
     assertTrue(parsResult.toString, parsResult.successful)
@@ -69,7 +62,8 @@ class HighSophisticatedTest(line: String) {
 // constructor TestCase(String name) or TestCase()
 object HighSophisticatedTest {
 
-  val inputStream = {
+  // a fresh stream per call: the lines are read more than once
+  def inputStream = {
     getClass.getResourceAsStream("/complex/high_sophisticated.txt")
   }
 
@@ -94,8 +88,6 @@ object HighSophisticatedTest {
   // NOTE: Must return collection of Array[AnyRef] (NOT Array[Any]).
   @Parameters(name = "{index}: {0}")
   def linesJUnit: java.lang.Iterable[Array[Object]] = _lines.toIterable.asJava
-
-  val linesNG: java.util.Iterator[Array[Object]] = _lines.asJava
 
 //  @Factory
 //  def factoryMethod(): Array[Object] = {

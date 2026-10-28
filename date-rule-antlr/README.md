@@ -1,29 +1,57 @@
-##Summary
+# date-rule-antlr
 
-Grammar to describe term structures. Producing date-time-adjusters according to a term structure.
+Date expressions and term structures parsed with [ANTLR 4](https://www.antlr.org/) (4.13).
+The grammars produce [Joda-Time](https://www.joda.org/joda-time/) periods and `DateTimeAdjuster`s,
+which shift a `DateTime` (for example "first day of the next quarter").
 
-##Using
+This is the most complete module of the project.
 
-Expressions:
+## What it parses
+
+| Grammar (`src/main/antlr4/io/github/hjuergens/time/`) | Input | Result |
+|---|---|---|
+| `Period.g4` | `28D`, `7W`, `14M7W9D`, `1M2D.1Y2M7W` | `org.joda.time.Period` |
+| `PeriodTerm.g4` | `+3M1W`, `+2Y3D-7W`, `>Q`, `>=Q`, `^>Q`, `>>>wednesday`, `<<D` | `DateTimeAdjuster` (shift or select) |
+| `TermStructure.g4` | `[3M,5M,7M]`, `(3M:1M:9M)`, `[3M,4M,6M]x(4M:1M:9M)` | lists of periods, futures, forward pairs |
+| `List.g4` | `(3:5:14)` → 3, 8, 13 | `List<Integer>` |
+| `Dates.g4` | `09/06/2015` | parse tree |
+| `ISO8601dates.g4` | `2015-06-09` | parse tree (syntax only, no calendar check) |
+| `AmbiguousDates.g4` | `32 May 1980 12h` | day and time parts as strings |
+| `ICalendar.g4` | iCalendar (RFC 5545) `VEVENT` | parse tree |
+| `Cardinal.g4`, `Unit.g4`, `SimpleCalc.g4`, `DateRule.g4`, `Schedule.g4`, `NewDate.g4` | small building blocks and experiments | |
+
+In `PeriodTerm`, `>` means "next", `<` means "previous", and a trailing `=` means "or this one".
+`Q`, `M`, and `D` select the quarter, month, or day; a weekday name selects that day.
+
+## Usage
+
+```java
+// shift a date: the first day of the next quarter
+DateTimeAdjuster adjuster = SchedulerFactory.parseSchedule(">Q").next();
+DateTime next = adjuster.adjustInto(new DateTime(2016, 12, 5, 15, 18));   // 2017-01-01T00:00
+
+// forward periods: pairs of (begin, end) adjusters
+TermStructureLexer lexer = new TermStructureLexer(CharStreams.fromString("[3M,4M,6M]x(4M:1M:9M)"));
+TermStructureParser parser = new TermStructureParser(new CommonTokenStream(lexer));
+List<Pair<DateTimeAdjuster, DateTimeAdjuster>> forwards = parser.forwards().listOut;
 ```
-(SP:3M:5Y) = [SP,3M,6M,...,57M,5Y]
-[IMM_01,IMM_02,IMM_03]+3M
+
+## Build and test
+
+```
+mvn -pl date-rule-antlr verify
 ```
 
-Java code example:
-```
-ANTLRInputStream inputStream = new ANTLRInputStream("[3M,4M,6M]x(4M:1M:9M)");
-TermStructureLexer lexer = new TermStructureLexer(inputStream);
-CommonTokenStream tokenStream = new CommonTokenStream(lexer);
-TermStructureParser parser = new TermStructureParser(tokenStream);
-List<Pair<DateTimeAdjuster, DateTimeAdjuster>> list = parser.forwards().listOut;
-```
+- The `antlr4-maven-plugin` generates lexers, parsers, listeners, and visitors into `target/generated-sources/antlr4`.
+- Unit tests use TestNG and run from the suite in [src/test/resources/testng.xml](src/test/resources/testng.xml).
+  **Register new test classes there**, or surefire won't run them.
+- [RingCheck](src/test/scala/io/github/hjuergens/util/RingCheck.scala) is a ScalaCheck property test that runs through ScalaTest's `TestNGSuite`.
+- [RingSpec](src/integration-test/scala/io/github/hjuergens/util/RingSpec.scala) is a specs2 example run by failsafe in `verify`.
+- The `test` phase also runs ANTLR's `TestRig` on [dates.expr](src/test/resources/dates.expr) (exec-maven-plugin).
 
-##Implementation & Testing
+## Status and limitations
 
-* [TestNG](http://testng.org/doc/index.html).
-* [Joda-Time](http://www.joda.org/joda-time/).
-
-##License
-[Apache License, Version 2.0, January 2004](http://www.apache.org/licenses/).
-
+- Working: all grammars compile with ANTLR 4.13. There are 78 unit tests and 3 integration tests.
+- `ISO8601dates` only accepts dates with hyphens: `20150609` is lexed as two `FOUR_DIGIT` tokens and rejected.
+- `Unit.g4` defines lexer tokens (`nanos`, `forever`, …) that rule `unit` doesn't accept.
+- Uses Joda-Time, which is in maintenance mode; the combinators module uses `java.time` instead.

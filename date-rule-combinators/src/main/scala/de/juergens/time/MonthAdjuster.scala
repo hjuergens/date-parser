@@ -55,8 +55,9 @@ case class QuarterAdjuster(steps:Int)
     require(temporal.isSupported(ChronoField.MONTH_OF_YEAR), s"$temporal has to support month-of-year")
     temporal.ensuring(_.isSupported(ChronoField.MONTH_OF_YEAR))
 
-    val quarterOfYear = (Quarter.from(temporal).getValue + steps) % 4
-    assert(0<= quarterOfYear && quarterOfYear <=4)
+    // quarters 1..4, wrapping around within the year
+    val quarterOfYear = Math.floorMod(Quarter.from(temporal).getValue - 1 + steps, 4) + 1
+    assert(1 <= quarterOfYear && quarterOfYear <= 4)
     temporal.`with`(Quarter.of(quarterOfYear))
   }
 }

@@ -1,6 +1,6 @@
 package io.github.hjuergens.time;
 
-import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -42,7 +42,7 @@ public class SchedulerFactory {
     private SchedulerFactory(){}
 
     public static Iterator<DateTimeAdjuster> parseSchedule(String exprStr) {
-        PeriodTermLexer lex = new PeriodTermLexer(new ANTLRInputStream(exprStr));
+        PeriodTermLexer lex = new PeriodTermLexer(CharStreams.fromString(exprStr));
         CommonTokenStream tokens = new CommonTokenStream(lex);
 
         PeriodTermParser parser = new PeriodTermParser(tokens);
@@ -121,7 +121,7 @@ public class SchedulerFactory {
         });
         */
 
-        DateTimeAdjuster adjuster = parser.adjust().adjusterOut;
+        DateTimeAdjuster adjuster = parser.schedule().adjusterOut;
 
         ArrayList<DateTimeAdjuster> arrayList = new ArrayList<>();
         arrayList.add(adjuster);

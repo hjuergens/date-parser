@@ -12,10 +12,6 @@
         <src>http://maven.apache.org/images/maven-logo-2.gif</src>
     </bannerRight>
 
-    <googleAdSenseClient/>
-    <googleAdSenseSlot/>
-    <googleAnalyticsAccountId/>
-
     <publishDate position="right"/>
     <version position="right"/>
 
@@ -24,11 +20,21 @@
               img="http://maven.apache.org/images/logos/maven-feather.png"/>
     </poweredBy>
 
+
     <skin>
+
+
         <groupId>org.apache.maven.skins</groupId>
-        <artifactId>maven-classic-skin</artifactId>
-        <version>1.0</version>
+
+
+        <artifactId>maven-fluido-skin</artifactId>
+
+
+        <version>2.1.0</version>
+
+
     </skin>
+
 
 
     <body>
@@ -46,7 +52,7 @@
         <menu ref="reports"/>
 
         <links>
-            <item name="Scala Combinators" href="http://www.scala-lang.org/api/2.10.2/index.html#scala.util.parsing.combinator.Parsers"></item>
+            <item name="Scala Combinators" href="https://javadoc.io/doc/org.scala-lang.modules/scala-parser-combinators_2.13/latest/scala/util/parsing/combinator/Parsers.html"></item>
             <item name="Apache" href="http://www.apache.org"/>
             <item name="Maven" href="http://maven.apache.org"/>
         </links>

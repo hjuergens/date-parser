@@ -55,7 +55,7 @@ public class Simple1 {
 
   /** Main entry point. */
   public static void main(String args[]) throws ParseException {
-    Simple1 parser = new Simple1(System.in);
+    Simple1 parser = new Simple1(new java.io.InputStreamReader(System.in, java.nio.charset.StandardCharsets.UTF_8));
     parser.Input();
   }
 

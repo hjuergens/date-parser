@@ -16,12 +16,12 @@ date            : date_complete
 
 date_complete   returns [String str]
                 : date_day date_time 
-                    {$str = String.format("\\%s \\%s", $date_day.str, $date_time.str);}
+                    {$str = String.format("%s %s", $date_day.str, $date_time.str);}
                 ;
 
 date_day        returns [String str]
                 : day=INT ID year=INT 
-                    {$str = String.format("\\%s \\%s \\%s", $day.text, $ID.text, $year.text);}
+                    {$str = String.format("%s %s %s", $day.text, $ID.text, $year.text);}
                 ;
 
 date_time       returns [String str]

@@ -15,7 +15,19 @@
 
     <inceptionYear>2016</inceptionYear>
 
+    <dependencies>
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
     <profiles>
+        <!--
+          Active when /usr/bin/bison exists. With bison elsewhere:
+          mvn -Pbison -Dbison.executable=/path/to/bison test
+        -->
         <profile>
             <id>bison</id>
             <activation>
@@ -31,18 +43,19 @@
                 <plugins>
                     <plugin>
                         <artifactId>maven-antrun-plugin</artifactId>
+                        <version>3.2.0</version>
                         <executions>
                             <execution>
                                 <id>generate-sources</id>
                                 <phase>generate-sources</phase>
                                 <configuration>
-                                    <tasks>
-                                        <mkdir dir="${bison.target}"/>
-                                        <exec executable="${bison.executable}">
+                                    <target>
+                                        <mkdir dir="${bison.target}/io/github/hjuergens/bison"/>
+                                        <exec executable="${bison.executable}" failonerror="true">
                                             <arg value="${project.basedir}/src/main/resources/calc.y"/>
-                                            <arg value="--output=${bison.target}/Calc.java"/>
+                                            <arg value="--output=${bison.target}/io/github/hjuergens/bison/Calc.java"/>
                                         </exec>
-                                    </tasks>
+                                    </target>
                                 </configuration>
                                 <goals>
                                     <goal>run</goal>
@@ -50,31 +63,12 @@
                             </execution>
                         </executions>
                     </plugin>
-                    <!--plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>exec-maven-plugin</artifactId>
-                        <version>1.2.1</version>
-                        <executions>
-                            <execution>
-                                <phase>generate-sources</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                        <configuration>
-                            <executable>${bison.executable}</executable>
-                            <arguments>
-                                <argument>${project.basedir}/src/main/resources/calc.y</argument>
-                                <argument>-o=${bison.target}/Calc.java</argument>
-                            </arguments>
-                        </configuration>
-                    </plugin-->
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>build-helper-maven-plugin</artifactId>
                         <executions>
                             <execution>
+                                <id>add-bison-source</id>
                                 <phase>generate-sources</phase>
                                 <goals>
                                     <goal>add-source</goal>
@@ -82,6 +76,19 @@
                                 <configuration>
                                     <sources>
                                         <source>${bison.target}</source>
+                                    </sources>
+                                </configuration>
+                            </execution>
+                            <!-- tests need the generated parser, so they only compile in this profile -->
+                            <execution>
+                                <id>add-bison-test-source</id>
+                                <phase>generate-test-sources</phase>
+                                <goals>
+                                    <goal>add-test-source</goal>
+                                </goals>
+                                <configuration>
+                                    <sources>
+                                        <source>${project.basedir}/src/bison-test/java</source>
                                     </sources>
                                 </configuration>
                             </execution>

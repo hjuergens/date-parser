@@ -1,17 +1,21 @@
 /* Infix notation calculator--calc */
 %language "Java"
-%name-prefix "Calc"
-%define parser_class_name {Calc}
-%define public
+%define api.package {io.github.hjuergens.bison}
+%define api.parser.class {Calc}
+%define api.parser.public
 
 
 %code {
+
+  /** values of the expressions parsed so far, one per input line */
+  public final java.util.List<Integer> results = new java.util.ArrayList<>();
 
   public static void main (String args[]) throws IOException
   {
     CalcLexer l = new CalcLexer (System.in);
     Calc p = new Calc (l);
     p.parse ();
+    p.results.forEach (System.out::println);
   }
 
 }
@@ -43,7 +47,7 @@ input:
 
 line:
   '\n'
-| exp '\n'
+| exp '\n'           { results.add ($1);                                    }
 | error '\n'
 ;
 
@@ -54,18 +58,18 @@ exp:
     if ($1.intValue () != $3.intValue ())
       yyerror ( "calc: error: " + $1 + " != " + $3);
   }
-| exp '+' exp        { $$ = new Integer ($1.intValue () + $3.intValue ());  }
-| exp '-' exp        { $$ = new Integer ($1.intValue () - $3.intValue ());  }
-| exp '*' exp        { $$ = new Integer ($1.intValue () * $3.intValue ());  }
-| exp '/' exp        { $$ = new Integer ($1.intValue () / $3.intValue ());  }
-| '-' exp  %prec NEG { $$ = new Integer (-$2.intValue ());                  }
-| exp '^' exp        { $$ = new Integer ((int)
+| exp '+' exp        { $$ = Integer.valueOf ($1.intValue () + $3.intValue ());  }
+| exp '-' exp        { $$ = Integer.valueOf ($1.intValue () - $3.intValue ());  }
+| exp '*' exp        { $$ = Integer.valueOf ($1.intValue () * $3.intValue ());  }
+| exp '/' exp        { $$ = Integer.valueOf ($1.intValue () / $3.intValue ());  }
+| '-' exp  %prec NEG { $$ = Integer.valueOf (-$2.intValue ());                  }
+| exp '^' exp        { $$ = Integer.valueOf ((int)
                                          Math.pow ($1.intValue (),
                                                    $3.intValue ()));        }
 | '(' exp ')'        { $$ = $2;                                             }
-| '(' error ')'      { $$ = new Integer (1111);                             }
-| '!'                { $$ = new Integer (0); return YYERROR;                }
-| '-' error          { $$ = new Integer (0); return YYERROR;                }
+| '(' error ')'      { $$ = Integer.valueOf (1111);                             }
+| '!'                { $$ = Integer.valueOf (0); return YYERROR;            }
+| '-' error          { $$ = Integer.valueOf (0); return YYERROR;            }
 ;
 
 
@@ -85,8 +89,12 @@ class CalcLexer implements Calc.Lexer {
   }
 
 
+  /** number of syntax errors reported so far */
+  int errors;
+
   public void yyerror (String s)
   {
+    errors++;
     System.err.println (s);
   }
 
@@ -101,7 +109,7 @@ class CalcLexer implements Calc.Lexer {
     int ttype = st.nextToken ();
 
     if (ttype == st.TT_EOF)
-      return -1;//Calc.EOF;
+      return EOF;
 
     else if (ttype == st.TT_EOL)
       {
@@ -111,8 +119,8 @@ class CalcLexer implements Calc.Lexer {
 
     else if (ttype == st.TT_WORD)
       {
-        yylval = new Integer (st.sval);
-        return -3;//Calc.NUM;
+        yylval = Integer.valueOf (st.sval);
+        return NUM;
       }
 
     else

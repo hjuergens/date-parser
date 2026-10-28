@@ -20,141 +20,31 @@
 
 
     <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
         <encoding>UTF-8</encoding>
         <project.build.sourceEncoding>${encoding}</project.build.sourceEncoding>
         <project.reporting.outputEncoding>${encoding}</project.reporting.outputEncoding>
         <project.resources.sourceEncoding>${encoding}</project.resources.sourceEncoding>
-        <github.global.server>github</github.global.server>
         <cup.packageName>io.github.hjuergens</cup.packageName>
+        <cup.version>11b-20160615-3</cup.version>
+        <jflex.version>1.9.1</jflex.version>
     </properties>
-
-    <repositories>
-        <repository>
-            <id>oss-sonatype</id>
-            <name>oss-sonatype</name>
-            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>Codehaus Snapshots</id>
-            <url>http://snapshots.repository.codehaus.org/</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-        </repository>
-        <repository>
-            <id>apache.snapshots</id>
-            <name>Apache Snapshot Repository</name>
-            <url>
-                http://people.apache.org/repo/m2-snapshot-repository
-            </url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>sonatype-nexus-snapshots</id>
-            <name>Sonatype Nexus Snapshots</name>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-
-    <pluginRepositories>
-        <pluginRepository>
-            <id>sonatype-nexus-snapshots</id>
-            <name>Sonatype Nexus Snapshots</name>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </pluginRepository>
-        <!--pluginRepository>
-            <id>emustudio-repository</id>
-            <name>emuStudio Repository</name>
-            <url>http://emustudio.sf.net/repository/</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </pluginRepository-->
-        <!--pluginRepository>
-            <id>cdh.thirdparty.repo</id>
-            <url>https://repository.cloudera.com/content/repositories/third-party</url>
-            <name>CDH Third Party Repository</name>
-        </pluginRepository-->
-        <pluginRepository>
-            <id>cdh.snapshots.repo</id>
-            <url>https://repository.cloudera.com/content/repositories/snapshots</url>
-            <name>CDH Snapshots Repository</name>
-        </pluginRepository>
-    </pluginRepositories>
 
     <dependencies>
         <dependency>
-            <groupId>net.sourceforge.czt.dev</groupId>
-            <artifactId>java-cup-runtime</artifactId>
-            <version>0.11-a-czt01-SNAPSHOT</version>
-        </dependency>
-        <!-- dependency>
             <groupId>com.github.vbmacher</groupId>
             <artifactId>java-cup-runtime</artifactId>
-            <version>11b-20160615</version>
-        </dependency-->
+            <version>${cup.version}</version>
+        </dependency>
+
         <dependency>
-            <groupId>de.jflex</groupId>
-            <artifactId>jflex</artifactId>
-            <version>1.6.1</version>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
+
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target> <!-- override parent -->
-                </configuration>
-            </plugin>
-
-            <!--plugin>
-                <groupId>com.github.vbmacher</groupId>
-                <artifactId>cup-maven-plugin</artifactId>
-                <version>11b-20160615</version>
-                <configuration>
-                    <packageName>${cup.packageName}</packageName>
-                    <debug>true</debug>
-                    <dumpGrammar>true</dumpGrammar>
-                    <dumpStates>true</dumpStates>
-                    <dumpTables>true</dumpTables>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin-->
-
             <!-- checkstyle -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -167,7 +57,6 @@
                             <encoding>UTF-8</encoding>
                             <consoleOutput>false</consoleOutput>
                             <failsOnError>false</failsOnError>
-                            <!--configLocation>${project.parent.basedir}/checkstyle.xml</configLocation-->
                         </configuration>
                         <goals>
                             <goal>check</goal>
@@ -175,19 +64,17 @@
                     </execution>
                 </executions>
             </plugin>
-
+            <!-- CUP: src/main/cup/pascal.cup -> Sym.java (token constants) and PascalParser.java -->
             <plugin>
-                <groupId>net.sourceforge.czt.dev</groupId>
+                <groupId>com.github.vbmacher</groupId>
                 <artifactId>cup-maven-plugin</artifactId>
-                <version>1.6-SNAPSHOT</version>
+                <version>${cup.version}</version>
                 <configuration>
+                    <cupDefinition>src/main/cup/pascal.cup</cupDefinition>
                     <packageName>${cup.packageName}</packageName>
-                    <!--
-                    <debug>true</debug>
-                    <dumpGrammar>true</dumpGrammar>
-                    <dumpStates>true</dumpStates>
-                    <dumpTables>true</dumpTables>
-                    -->
+                    <className>PascalParser</className>
+                    <symbolsName>Sym</symbolsName>
+                    <symbolsInterface>false</symbolsInterface>
                 </configuration>
                 <executions>
                     <execution>
@@ -197,11 +84,11 @@
                     </execution>
                 </executions>
             </plugin>
-
+            <!-- JFlex: src/main/jflex/pascal.jflex -> PascalLexer.java -->
             <plugin>
                 <groupId>de.jflex</groupId>
-                <artifactId>maven-jflex-plugin</artifactId>
-                <version>1.4.3</version>
+                <artifactId>jflex-maven-plugin</artifactId>
+                <version>${jflex.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -215,26 +102,20 @@
 
     <reporting>
         <plugins>
-        <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-javadoc-plugin</artifactId>
-            <version>2.10.4</version>
-            <configuration>
-                <!--<excludePackageNames>*.internal:org.acme.exclude1.*:org.acme.exclude2</excludePackageNames>-->
-                <sourceFileExcludes>
-                    <exclude>pascal.*</exclude>
-                    <exclude>**pascal*.java</exclude>
-                    <sourceFileExclude>**pascal*.*</sourceFileExclude>
-                </sourceFileExcludes>
-                <sourcepath>${project.build.directory}/generated-sources/cup</sourcepath>
-            </configuration>
-        </plugin>
-
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <sourceFileExcludes>
+                        <sourceFileExclude>**/Pascal*.java</sourceFileExclude>
+                        <sourceFileExclude>**/Sym.java</sourceFileExclude>
+                    </sourceFileExcludes>
+                </configuration>
+            </plugin>
             <!-- checkstyle -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>2.17</version>
                 <configuration>
                     <headerLocation>LICENSE.txt</headerLocation>
                 </configuration>

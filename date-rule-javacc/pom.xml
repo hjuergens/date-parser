@@ -16,25 +16,23 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <java.version>7</java.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>net.java.dev.javacc</groupId>
             <artifactId>javacc</artifactId>
-            <version>7.0.0</version>
+            <version>7.0.13</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.13.1</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.hamcrest</groupId>
-            <artifactId>hamcrest-junit</artifactId>
-            <version>2.0.0.0</version>
+            <artifactId>hamcrest</artifactId>
+            <version>3.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -45,7 +43,7 @@
                 <!-- http://javacc.org/ -->
                 <groupId>com.helger.maven</groupId>
                 <artifactId>ph-javacc-maven-plugin</artifactId>
-                <version>4.0.3</version>
+                <version>5.0.3</version>
                 <executions>
                     <execution>
                         <id>jjc1</id>
@@ -54,7 +52,7 @@
                             <goal>javacc</goal>
                         </goals>
                         <configuration>
-                            <jdkVersion>1.8</jdkVersion>
+                            <jdkVersion>17</jdkVersion>
                             <!--<packageName>io.github.hjuergens.parser</packageName>-->
                             <!--sourceDirectory>src/main/java/org/javacc/parser</sourceDirectory-->
                             <outputDirectory>${project.build.directory}/generated-sources/javacc1</outputDirectory>
@@ -67,7 +65,7 @@
                             <goal>javacc</goal>
                         </goals>
                         <configuration>
-                            <jdkVersion>1.8</jdkVersion>
+                            <jdkVersion>17</jdkVersion>
                             <javadocFriendlyComments>true</javadocFriendlyComments>
                             <packageName>io.github.hjuergens.parser</packageName>
                             <outputDirectory>${project.build.directory}/generated-sources/javacc2</outputDirectory>
@@ -80,7 +78,7 @@
                             <goal>jjtree-javacc</goal>
                         </goals>
                         <configuration>
-                            <jdkVersion>1.8</jdkVersion>
+                            <jdkVersion>17</jdkVersion>
                             <!--sourceDirectorysrc/main/java/org/javacc/jjtree</sourceDirectory-->
                             <excludes>
                                 <exclude>**/parser/**</exclude>
@@ -91,15 +89,6 @@
                 </executions>
             </plugin>
 
-            <!-- compiiler -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target> <!-- override parent -->
-                </configuration>
-            </plugin>
 
             <!-- skip default JaCoCo check -->
             <plugin>
@@ -154,12 +143,10 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-project-info-reports-plugin</artifactId>
-                <version>2.9</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.0.0</version>
                 <reportSets>
                     <reportSet><!-- by default, id = "default" -->
                         <reports><!-- select non-aggregate reports -->

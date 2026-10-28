@@ -24,6 +24,9 @@ can be compared on the same language.
 
 ## Shared example: schedule
 
+> A visual version of this comparison, with the rules of all eight tools side by side, is in [docs/index.html](docs/index.html)
+> (served by GitHub Pages from `/docs`; regenerate it with `python3 docs/generate.py`).
+
 A small date language that every tool can handle (no left recursion is needed, and all decisions are LL(1)):
 
 ```

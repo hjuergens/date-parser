@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Eight Parsers, One Language</title>
+<meta name="description" content="The same small date language implemented with ANTLR, Scala parser combinators, Coco/R, JavaCC, SableCC, JFlex + CUP, GNU Bison and Peggy, tested against one shared set of cases.">
+<style>
+  :root {
+    --bg: #fbfaf7;
+    --surface: #ffffff;
+    --surface-2: #f3f1ec;
+    --text: #1f2328;
+    --muted: #5d636b;
+    --border: #e2dfd8;
+    --accent: #2f5fd0;
+    --accent-soft: #e8eefc;
+    --code-bg: #f6f5f1;
+    --comment: #7a7f87;
+    --ok: #1d7a4c;
+    --err: #b3352d;
+    --radius: 10px;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14161a;
+      --surface: #1b1e23;
+      --surface-2: #22262c;
+      --text: #e6e8eb;
+      --muted: #a0a6ae;
+      --border: #30353d;
+      --accent: #7ea2ff;
+      --accent-soft: #232c42;
+      --code-bg: #181b20;
+      --comment: #8a919b;
+      --ok: #5cc48f;
+      --err: #f08a80;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14161a;
+    --surface: #1b1e23;
+    --surface-2: #22262c;
+    --text: #e6e8eb;
+    --muted: #a0a6ae;
+    --border: #30353d;
+    --accent: #7ea2ff;
+    --accent-soft: #232c42;
+    --code-bg: #181b20;
+    --comment: #8a919b;
+    --ok: #5cc48f;
+    --err: #f08a80;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 var(--sans);
+  }
+  main { max-width: 980px; margin: 0 auto; padding: 0 16px 64px; }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  code { font-family: var(--mono); font-size: 0.88em; }
+  p code, td code, li code { background: var(--surface-2); padding: 0.1em 0.35em; border-radius: 4px; }
+  h1, h2, h3 { line-height: 1.2; letter-spacing: -0.01em; }
+  h2 { font-size: 1.5rem; margin: 64px 0 8px; }
+  h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 28px 0 8px; }
+  .lead { color: var(--muted); max-width: 46em; margin-top: 0; }
+
+  /* header */
+  header { padding: 56px 0 8px; }
+  .eyebrow { font: 600 0.8rem/1 var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin: 0 0 16px; }
+  h1 { font-size: clamp(2rem, 6vw, 3.2rem); margin: 0 0 16px; }
+  header .lead { font-size: 1.12rem; }
+  .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 32px 0 0; padding: 0; list-style: none; }
+  .stats li { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  .stats strong { display: block; font-size: 1.7rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .stats span { color: var(--muted); font-size: 0.9rem; }
+
+  /* code */
+  pre {
+    margin: 0;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    overflow-x: auto;
+    font: 0.86rem/1.55 var(--mono);
+    tab-size: 4;
+  }
+  pre code { font-size: inherit; }
+  .c { color: var(--comment); font-style: italic; }
+
+  /* language */
+  .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; margin-top: 24px; }
+  .examples { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .examples td { padding: 10px 14px; border-top: 1px solid var(--border); vertical-align: top; }
+  .examples tr:first-child td { border-top: 0; }
+  .examples td:first-child { font-family: var(--mono); font-size: 0.86rem; white-space: nowrap; }
+  .examples td:last-child { color: var(--muted); font-size: 0.92rem; }
+  .note { color: var(--muted); font-size: 0.95rem; margin: 16px 0 0; }
+
+  /* tabs */
+  .tabs { margin-top: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+  [role="tablist"] { display: flex; gap: 4px; padding: 8px; border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: thin; }
+  [role="tab"] {
+    flex: none;
+    font: 500 0.92rem/1 var(--sans);
+    color: var(--muted);
+    background: transparent;
+    border: 0;
+    border-radius: 7px;
+    padding: 10px 12px;
+    cursor: pointer;
+  }
+  [role="tab"]:hover { color: var(--text); background: var(--surface-2); }
+  [role="tab"][aria-selected="true"] { color: var(--accent); background: var(--accent-soft); }
+  [role="tab"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  [role="tabpanel"] { padding: 16px; }
+  .panel-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; font-size: 0.9rem; }
+  .kind { font-weight: 600; }
+  .lang { color: var(--muted); }
+  .panel-head a { margin-left: auto; }
+  .pitfall { margin: 14px 0 0; font-size: 0.95rem; }
+
+  /* comparison */
+  .scroll { overflow-x: auto; margin-top: 24px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+  .compare { width: 100%; border-collapse: collapse; min-width: 760px; font-size: 0.92rem; }
+  .compare th, .compare td { text-align: left; padding: 11px 14px; border-top: 1px solid var(--border); vertical-align: top; }
+  .compare thead th { border-top: 0; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 600; background: var(--surface-2); }
+  .compare tbody th { white-space: nowrap; }
+  .compare .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .compare small { display: block; color: var(--muted); font-size: 0.8rem; }
+
+  /* lessons */
+  .lessons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 24px; padding: 0; list-style: none; }
+  .lessons li { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
+  .lessons strong { display: block; margin-bottom: 4px; }
+  .lessons p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+
+  /* cases */
+  .case-groups { columns: 2 420px; column-gap: 24px; margin-top: 8px; }
+  .case-groups section { break-inside: avoid; }
+  .cases { width: 100%; border-collapse: collapse; font-size: 0.88rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .cases td { padding: 7px 12px; border-top: 1px solid var(--border); vertical-align: top; }
+  .cases tr:first-child td { border-top: 0; }
+  .cases td:first-child { width: 55%; }
+  .cases td:first-child code { background: none; padding: 0; white-space: pre-wrap; word-break: break-word; }
+  .date { font-family: var(--mono); font-size: 0.86em; color: var(--ok); white-space: nowrap; }
+  .err { font-family: var(--mono); font-size: 0.86em; color: var(--err); }
+  .none { color: var(--muted); font-style: italic; }
+
+  footer { max-width: 980px; margin: 0 auto; padding: 24px 16px 48px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.9rem; }
+
+  @media (max-width: 720px) {
+    .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .two, .lessons { grid-template-columns: minmax(0, 1fr); }
+    .examples td:first-child { white-space: normal; }
+    .panel-head a { margin-left: 0; }
+    h2 { margin-top: 48px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <p class="eyebrow">date-parser · parser technology comparison</p>
+    <h1>Eight parsers, one date language</h1>
+    <p class="lead">
+      The same small language for dates, periods and ranges, implemented with eight parser generators and
+      parser libraries, from LL(1) to LALR(1) to PEG. Every implementation passes the same 36 test cases.
+    </p>
+    <ul class="stats">
+      <li><strong>8</strong><span>tools, 2 languages</span></li>
+      <li><strong>36</strong><span>shared test cases</span></li>
+      <li><strong>0</strong><span>grammar conflicts</span></li>
+      <li><strong>1</strong><span>specification file</span></li>
+    </ul>
+  </header>
+
+  <section aria-labelledby="language">
+    <h2 id="language">The language</h2>
+    <p class="lead">Small enough for every tool, rich enough to show their differences: three date notations, periods, lists and ranges.</p>
+    <div class="two">
+      <table class="examples">
+        <tbody>
+          <tr><td>2015-06-09</td><td>one date (ISO)</td></tr>
+          <tr><td>09.06.2015 + 3M</td><td>2015-09-09 (German notation)</td></tr>
+          <tr><td>06/09/2015 + 1W - 2D</td><td>2015-06-14 (US notation, left to right)</td></tr>
+          <tr><td>2015-06-09, 1.1.2000 + 1Y</td><td>2015-06-09, 2001-01-01</td></tr>
+          <tr><td>(2015-01-15 : 1Q : 2015-12-31)</td><td>2015-01-15, -04-15, -07-15, -10-15</td></tr>
+        </tbody>
+      </table>
+      <pre><code>schedule = range | expr { "," expr } .
+range    = "(" expr ":" period ":" expr ")" .
+expr     = date { ("+" | "-") period } .
+date     = NUM ( "-" NUM "-" NUM       <span class="c">(* ISO    *)</span>
+               | "." NUM "." NUM       <span class="c">(* German *)</span>
+               | "/" NUM "/" NUM ) .   <span class="c">(* US     *)</span>
+period   = NUM ( "D" | "W" | "M"
+               | "Q" | "Y" ) .</code></pre>
+    </div>
+    <p class="note">
+      Every decision is LL(1): after the first number, the separator selects the notation; after a complete date,
+      <code>+</code> or <code>-</code> starts a period. Periods follow <code>java.time</code>: months first, with the day clamped
+      to the end of the month (<code>2016-01-31 + 1M</code> is <code>2016-02-29</code>), then days.
+    </p>
+  </section>
+
+  <section aria-labelledby="tools">
+    <h2 id="tools">The same rules in every tool</h2>
+    <p class="lead">Rules <code>expr</code> and <code>date</code>, copied from the grammar files. Pick a tool:</p>
+    <div class="tabs">
+      <div role="tablist" aria-label="Parser technology">
+      <button role="tab" id="tab-antlr" aria-controls="panel-antlr" aria-selected="true" tabindex="0">ANTLR 4</button>
+      <button role="tab" id="tab-combinators" aria-controls="panel-combinators" aria-selected="false" tabindex="-1">Scala combinators</button>
+      <button role="tab" id="tab-coco" aria-controls="panel-coco" aria-selected="false" tabindex="-1">Coco/R</button>
+      <button role="tab" id="tab-javacc" aria-controls="panel-javacc" aria-selected="false" tabindex="-1">JavaCC</button>
+      <button role="tab" id="tab-sablecc" aria-controls="panel-sablecc" aria-selected="false" tabindex="-1">SableCC</button>
+      <button role="tab" id="tab-cup" aria-controls="panel-cup" aria-selected="false" tabindex="-1">JFlex + CUP</button>
+      <button role="tab" id="tab-bison" aria-controls="panel-bison" aria-selected="false" tabindex="-1">GNU Bison</button>
+      <button role="tab" id="tab-peg" aria-controls="panel-peg" aria-selected="false" tabindex="-1">Peggy</button>
+      </div>
+    <div role="tabpanel" id="panel-antlr" aria-labelledby="tab-antlr">
+      <div class="panel-head">
+        <span class="kind">ALL(*) · adaptive LL</span><span class="lang">Java</span>
+        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-antlr/src/main/antlr4/io/github/hjuergens/time/DateSchedule.g4">DateSchedule.g4 ↗</a>
+      </div>
+      <pre><code><span class="c">// periods are applied from left to right</span>
+expr returns [LocalDate value]
+    : date                          { $value = $date.value; }
+      ( &#x27;+&#x27; period                  { $value = $value.plus($period.value); }
+      | &#x27;-&#x27; period                  { $value = $value.minus($period.value); }
+      )*
+    ;
+
+date returns [LocalDate value]
+    : y=NUM &#x27;-&#x27; m=NUM &#x27;-&#x27; d=NUM     { $value = LocalDate.of($y.int, $m.int, $d.int); }  <span class="c">// ISO</span>
+    | d=NUM &#x27;.&#x27; m=NUM &#x27;.&#x27; y=NUM     { $value = LocalDate.of($y.int, $m.int, $d.int); }  <span class="c">// German</span>
+    | m=NUM &#x27;/&#x27; d=NUM &#x27;/&#x27; y=NUM     { $value = LocalDate.of($y.int, $m.int, $d.int); }  <span class="c">// US</span>
+    ;</code></pre>
+      <p class="pitfall"><strong>Pitfall.</strong> <code>$start</code> is reserved (the rule's first token), so the range labels are <code>first</code>/<code>last</code>.</p>
+    </div>
+    <div role="tabpanel" id="panel-combinators" aria-labelledby="tab-combinators" hidden>
+      <div class="panel-head">
+        <span class="kind">Recursive descent with backtracking</span><span class="lang">Scala 2.13</span>
+        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-combinators/src/main/scala/de/juergens/text/ScheduleParsers.scala">ScheduleParsers.scala ↗</a>
+      </div>
+      <pre><code>def date: Parser[LocalDate] = number ~ (
+    (&quot;-&quot; ~&gt; number) ~ (&quot;-&quot; ~&gt; number) ^^ { case m ~ d =&gt; (y: Int) =&gt; LocalDate.of(y, m, d) }  <span class="c">// ISO</span>
+  | (&quot;.&quot; ~&gt; number) ~ (&quot;.&quot; ~&gt; number) ^^ { case m ~ y =&gt; (d: Int) =&gt; LocalDate.of(y, m, d) }  <span class="c">// German</span>
+  | (&quot;/&quot; ~&gt; number) ~ (&quot;/&quot; ~&gt; number) ^^ { case d ~ y =&gt; (m: Int) =&gt; LocalDate.of(y, m, d) }  <span class="c">// US</span>
+  ) ^^ { case first ~ toDate =&gt; toDate(first) }
+
+def expr: Parser[LocalDate] = date ~ rep((&quot;+&quot; | &quot;-&quot;) ~ period) ^^ {
+  case start ~ shifts =&gt; shifts.foldLeft(start) {
+    case (d, &quot;+&quot; ~ p) =&gt; d.plus(p)
+    case (d, _ ~ p) =&gt; d.minus(p)
+  }
+}</code></pre>
+      <p class="pitfall"><strong>Pitfall.</strong> None: the grammar is ordinary Scala code, there is no generator step.</p>
+    </div>
+    <div role="tabpanel" id="panel-coco" aria-labelledby="tab-coco" hidden>
+      <div class="panel-head">
+        <span class="kind">LL(1)</span><span class="lang">Java</span>
+        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-coco/src/main/coco/Schedule.atg">Schedule.atg ↗</a>
+      </div>
+      <pre><code>Expr&lt;out LocalDate d&gt;                   (. Period p; .)
+= Date&lt;out d&gt;
+  { &quot;+&quot; Period&lt;out p&gt;                   (. d = d.plus(p); .)
+  | &quot;-&quot; Period&lt;out p&gt;                   (. d = d.minus(p); .)
+  }.
+
+Date&lt;out LocalDate d&gt;                   (. int a, b, c; d = LocalDate.MIN; .)
+= Number&lt;out a&gt;
+  ( &quot;-&quot; Number&lt;out b&gt; &quot;-&quot; Number&lt;out c&gt; (. d = date(a, b, c); .)
+  | &quot;.&quot; Number&lt;out b&gt; &quot;.&quot; Number&lt;out c&gt; (. d = date(c, b, a); .)
+  | &quot;/&quot; Number&lt;out b&gt; &quot;/&quot; Number&lt;out c&gt; (. d = date(c, a, b); .)
+  ).</code></pre>
+      <p class="pitfall"><strong>Pitfall.</strong> Error recovery keeps running semantic actions on incomplete input, so they must not throw.</p>
+    </div>
+    <div role="tabpanel" id="panel-javacc" aria-labelledby="tab-javacc" hidden>
+      <div class="panel-head">
+        <span class="kind">LL(k), here LL(1)</span><span class="lang">Java</span>
+        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-javacc/src/main/javacc/Schedule.jj">Schedule.jj ↗</a>
+      </div>
+      <pre><code>LocalDate Expr() :
+{ LocalDate d; Period p; }
+{
+  d = Date()
+  ( &quot;+&quot; p = Period() { d = d.plus(p); }
+  | &quot;-&quot; p = Period() { d = d.minus(p); }
+  )*
+  { return d; }
+}
+
+LocalDate Date() :
+{ int a, b, c; }
+{
+  a = Number()
+  ( &quot;-&quot; b = Number() &quot;-&quot; c = Number() { return LocalDate.of(a, b, c); }   <span class="c">// ISO</span>
+  | &quot;.&quot; b = Number() &quot;.&quot; c = Number() { return LocalDate.of(c, b, a); }   <span class="c">// German</span>
+  | &quot;/&quot; b = Number() &quot;/&quot; c = Number() { return LocalDate.of(c, a, b); }   <span class="c">// US</span>
+  )
+}</code></pre>
+      <p class="pitfall"><strong>Pitfall.</strong> ParserGeneratorCC (used by the Maven plugin) rejects the classic <code>STATIC</code> option.</p>
+    </div>
+    <div role="tabpanel" id="panel-sablecc" aria-labelledby="tab-sablecc" hidden>
+      <div class="panel-head">
+        <span class="kind">LALR(1) with typed AST</span><span class="lang">Java</span>
+        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-sablecc/src/main/sablecc/schedule.grammar">schedule.grammar ↗</a>
+      </div>
+      <pre><code>expr = date shift*;
+
+shift
+    = {plus} plus period
+    | {minus} minus period;
+
+date
+    = {iso} [year]:number [s1]:minus [month]:number [s2]:minus [day]:number
+    | {german} [day]:number [s1]:dot [month]:number [s2]:dot [year]:number
+    | {us} [month]:number [s1]:slash [day]:number [s2]:slash [year]:number;
+
+period = number unit;</code></pre>
+      <p class="pitfall"><strong>Pitfall.</strong> Elements that occur twice in one alternative need names: <code>[year]:number</code>, <code>[s1]:minus</code>.</p>
+    </div>
+    <div role="tabpanel" id="panel-cup" aria-labelledby="tab-cup" hidden>
+      <div class="panel-head">
+        <span class="kind">LALR(1)</span><span class="lang">Java</span>
+        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-cup-jflex/src/main/cup/schedule.cup">schedule.cup ↗</a>
+      </div>
+      <pre><code><span class="c">/* periods are applied from left to right */</span>
+expr ::= date:d                     {: RESULT = d; :}
+       | expr:e PLUS period:p       {: RESULT = e.plus(p); :}
+       | expr:e MINUS period:p      {: RESULT = e.minus(p); :}
+       ;
+
+date ::= NUM:y MINUS NUM:m MINUS NUM:d      {: RESULT = LocalDate.of(y, m, d); :}   <span class="c">/* ISO */</span>
+       | NUM:d DOT NUM:m DOT NUM:y          {: RESULT = LocalDate.of(y, m, d); :}   <span class="c">/* German */</span>
+       | NUM:m SLASH NUM:d SLASH NUM:y      {: RESULT = LocalDate.of(y, m, d); :}   <span class="c">/* US */</span>
+       ;</code></pre>
+      <p class="pitfall"><strong>Pitfall.</strong> In the JFlex spec, <code>%cupsym</code> must come before <code>%cup</code>, or the EOF action refers to <code>sym</code>.</p>
+    </div>
+    <div role="tabpanel" id="panel-bison" aria-labelledby="tab-bison" hidden>
+      <div class="panel-head">
+        <span class="kind">LALR(1)</span><span class="lang">Java skeleton</span>
+        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-bison/src/main/resources/schedule.y">schedule.y ↗</a>
+      </div>
+      <pre><code><span class="c">/* periods are applied from left to right */</span>
+expr:
+  date                              { $$ = $1; }
+| expr &#x27;+&#x27; period                   { $$ = $1.plus ($3); }
+| expr &#x27;-&#x27; period                   { $$ = $1.minus ($3); }
+;
+
+date:
+  NUM &#x27;-&#x27; NUM &#x27;-&#x27; NUM               { $$ = LocalDate.of ($1, $3, $5); }   <span class="c">/* ISO */</span>
+| NUM &#x27;.&#x27; NUM &#x27;.&#x27; NUM               { $$ = LocalDate.of ($5, $3, $1); }   <span class="c">/* German */</span>
+| NUM &#x27;/&#x27; NUM &#x27;/&#x27; NUM               { $$ = LocalDate.of ($5, $1, $3); }   <span class="c">/* US */</span>
+;</code></pre>
+      <p class="pitfall"><strong>Pitfall.</strong> In Bison's Java skeleton <code>$$</code> is a plain <code>Object</code>; only <code>$1</code>…<code>$n</code> are typed.</p>
+    </div>
+    <div role="tabpanel" id="panel-peg" aria-labelledby="tab-peg" hidden>
+      <div class="panel-head">
+        <span class="kind">PEG · ordered choice</span><span class="lang">JavaScript</span>
+        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-peg/schedule.pegjs">schedule.pegjs ↗</a>
+      </div>
+      <pre><code><span class="c">// periods are applied from left to right</span>
+Expr
+  = start:Date shifts:(_ @[+-] _ @Period)* {
+      return shifts.reduce((d, [sign, p]) =&gt; plus(d, p, sign === &#x27;+&#x27; ? 1 : -1), start);
+    }
+
+Date
+  = y:Number _ &quot;-&quot; _ m:Number _ &quot;-&quot; _ d:Number { return date(y, m, d); }  <span class="c">// ISO</span>
+  / d:Number _ &quot;.&quot; _ m:Number _ &quot;.&quot; _ y:Number { return date(y, m, d); }  <span class="c">// German</span>
+  / m:Number _ &quot;/&quot; _ d:Number _ &quot;/&quot; _ y:Number { return date(y, m, d); }  <span class="c">// US</span></code></pre>
+      <p class="pitfall"><strong>Pitfall.</strong> Peggy provides <code>range()</code> in actions, which silently shadows a helper of the same name.</p>
+    </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="compare">
+    <h2 id="compare">Side by side</h2>
+    <p class="lead">Size counts non-blank, non-comment lines of the grammar files. The JVM modules also share a 30-line helper for periods and range expansion.</p>
+    <div class="scroll">
+      <table class="compare">
+        <thead>
+          <tr><th scope="col">Tool</th><th scope="col">Parsing</th><th scope="col">Lines</th><th scope="col">Values computed by</th><th scope="col">Errors surface as</th></tr>
+        </thead>
+        <tbody>
+        <tr>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-antlr/src/main/antlr4/io/github/hjuergens/time/DateSchedule.g4">ANTLR 4</a></th>
+          <td>ALL(*) · adaptive LL</td>
+          <td class="num">35</td>
+          <td>Actions with <code>returns […]</code> attributes</td>
+          <td>Throwing error listener plus <code>BailErrorStrategy</code></td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-combinators/src/main/scala/de/juergens/text/ScheduleParsers.scala">Scala combinators</a></th>
+          <td>Recursive descent with backtracking</td>
+          <td class="num">39</td>
+          <td><code>^^</code> functions, <code>foldLeft</code> over the shifts</td>
+          <td><code>NoSuccess</code> result, turned into an exception</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-coco/src/main/coco/Schedule.atg">Coco/R</a></th>
+          <td>LL(1)</td>
+          <td class="num">54</td>
+          <td><code>(. … .)</code> actions with <code>out</code> parameters</td>
+          <td><code>errors.count</code>, messages written to a stream</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-javacc/src/main/javacc/Schedule.jj">JavaCC</a></th>
+          <td>LL(k), here LL(1)</td>
+          <td class="num">69</td>
+          <td>Java code inside the productions; each declares its locals</td>
+          <td><code>ParseException</code>, <code>TokenMgrException</code></td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-sablecc/src/main/sablecc/schedule.grammar">SableCC</a></th>
+          <td>LALR(1) with typed AST</td>
+          <td class="num">31 + 61<small>grammar + evaluator</small></td>
+          <td>Separate evaluator walking the generated typed tree</td>
+          <td><code>ParserException</code>, <code>LexerException</code></td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-cup-jflex/src/main/cup/schedule.cup">JFlex + CUP</a></th>
+          <td>LALR(1)</td>
+          <td class="num">33 + 31<small>parser + lexer</small></td>
+          <td><code>{: … :}</code> actions, left-recursive rules</td>
+          <td><code>parse()</code> throws on the first syntax error</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-bison/src/main/resources/schedule.y">GNU Bison</a></th>
+          <td>LALR(1)</td>
+          <td class="num">84<small>incl. hand-written scanner</small></td>
+          <td><code>{ … }</code> actions, left-recursive rules</td>
+          <td><code>parse()</code> returns <code>false</code></td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-peg/schedule.pegjs">Peggy</a></th>
+          <td>PEG · ordered choice</td>
+          <td class="num">60<small>incl. date arithmetic</small></td>
+          <td>Action blocks; date arithmetic written by hand</td>
+          <td><code>SyntaxError</code> with expected tokens</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="lessons">
+    <h2 id="lessons">What the comparison shows</h2>
+    <ul class="lessons">
+      <li><strong>Top-down needs right recursion, bottom-up likes left recursion.</strong>
+        <p>The LL tools and Peggy write <code>date { ("+" | "-") period }</code> as a loop. CUP and Bison write <code>expr '+' period</code>, which is natural for LALR(1).</p></li>
+      <li><strong>Separating syntax from semantics is a choice.</strong>
+        <p>SableCC's grammar contains no code at all; a separate tree walker computes the dates. Every other tool interleaves actions with the rules.</p></li>
+      <li><strong>Error recovery has consequences.</strong>
+        <p>Coco/R recovers and keeps executing actions on incomplete input, so the actions must tolerate it. ANTLR needs a bail strategy to stop at the first error.</p></li>
+      <li><strong>Ordered choice is not alternation.</strong>
+        <p>PEG tries the alternatives in order and commits to the first match. Here this is harmless because the separators differ, but it's the main semantic difference to the generated LL and LR parsers.</p></li>
+      <li><strong>The library matters as much as the parser.</strong>
+        <p>In JavaScript, about 35 lines reproduce <code>java.time</code>'s month arithmetic. The end-of-month cases in the test file exist to catch differences.</p></li>
+      <li><strong>A shared test file keeps everyone honest.</strong>
+        <p>Every module reads <code>examples/schedule.txt</code>. Several tool-specific pitfalls, listed in the tabs above, surfaced only because the same cases had to pass everywhere.</p></li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="cases">
+    <h2 id="cases">The shared test cases</h2>
+    <p class="lead">
+      From <a href="https://github.com/hjuergens/date-parser/blob/master/examples/schedule.txt">examples/schedule.txt</a>. Each module has a test that reads this file,
+      so adding a line here tests all eight implementations.
+    </p>
+    <div class="case-groups">
+      <section>
+      <h3>date notations</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code>2015-06-09</code></td><td><span class="date">2015-06-09</span></td></tr>
+          <tr><td><code>09.06.2015</code></td><td><span class="date">2015-06-09</span></td></tr>
+          <tr><td><code>06/09/2015</code></td><td><span class="date">2015-06-09</span></td></tr>
+          <tr><td><code>1.1.2000</code></td><td><span class="date">2000-01-01</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>date plus / minus periods</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code>09.06.2015 + 3M</code></td><td><span class="date">2015-09-09</span></td></tr>
+          <tr><td><code>06/09/2015 + 1W - 2D</code></td><td><span class="date">2015-06-14</span></td></tr>
+          <tr><td><code>2015-06-09 - 3M</code></td><td><span class="date">2015-03-09</span></td></tr>
+          <tr><td><code>2015-06-09 + 2Q</code></td><td><span class="date">2015-12-09</span></td></tr>
+          <tr><td><code>2015-06-09+10D</code></td><td><span class="date">2015-06-19</span></td></tr>
+          <tr><td><code>2015-06-09 - 1Y + 1D</code></td><td><span class="date">2014-06-10</span></td></tr>
+          <tr><td><code>2015-06-09 + 0D</code></td><td><span class="date">2015-06-09</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>end of month</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code>2016-02-29 + 1Y</code></td><td><span class="date">2017-02-28</span></td></tr>
+          <tr><td><code>2016-01-31 + 1M</code></td><td><span class="date">2016-02-29</span></td></tr>
+          <tr><td><code>2016-01-31 + 1M - 1M</code></td><td><span class="date">2016-01-29</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>lists</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code>2015-06-09, 01.01.2000 + 1Y</code></td><td><span class="date">2015-06-09</span>, <span class="date">2001-01-01</span></td></tr>
+          <tr><td><code>2015-06-09,2015-06-09</code></td><td><span class="date">2015-06-09</span>, <span class="date">2015-06-09</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>ranges</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code>(2015-01-15 : 1Q : 2015-12-31)</code></td><td><span class="date">2015-01-15</span>, <span class="date">2015-04-15</span>, <span class="date">2015-07-15</span>, <span class="date">2015-10-15</span></td></tr>
+          <tr><td><code>(2016-01-31 : 1M : 2016-04-30)</code></td><td><span class="date">2016-01-31</span>, <span class="date">2016-02-29</span>, <span class="date">2016-03-31</span>, <span class="date">2016-04-30</span></td></tr>
+          <tr><td><code>(2015-06-09 : 1W : 2015-06-09 + 2W)</code></td><td><span class="date">2015-06-09</span>, <span class="date">2015-06-16</span>, <span class="date">2015-06-23</span></td></tr>
+          <tr><td><code>(2015-06-09 : 1D : 2015-06-09)</code></td><td><span class="date">2015-06-09</span></td></tr>
+          <tr><td><code>(2015-06-09 : 1D : 2015-06-08)</code></td><td><span class="none">empty list</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>invalid dates</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code>2015-02-29</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>2015-13-01</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>31.04.2015</code></td><td><span class="err">error</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>syntax errors</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code>2015-06</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>+ 3M</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>2015-06-09 + 3</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>2015-06-09 + M</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>2015-06-09 + 3X</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>2015-06-09 ,</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>2015-06-09 2015-06-10</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>2015-06.09</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>(2015-01-01 : 1M)</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>(2015-01-01 : 1M : 2015-02-01), 2015-03-01</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><em>(empty input)</em></code></td><td><span class="err">error</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>step of a range must be positive</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code>(2015-01-01 : 0D : 2015-02-01)</code></td><td><span class="err">error</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+    </div>
+  </section>
+
+  <section aria-labelledby="run">
+    <h2 id="run">Run it yourself</h2>
+    <p class="lead">You need JDK 17 and Maven 3.9. Bison is optional: without it the Bison module builds empty. The Peggy module downloads its own Node.js.</p>
+    <pre><code>git clone https://github.com/hjuergens/date-parser.git
+cd date-parser
+mvn clean verify                      <span class="c"># all modules</span>
+mvn -pl date-rule-coco test           <span class="c"># one module</span></code></pre>
+  </section>
+</main>
+
+<footer>
+  Source and per-module documentation: <a href="https://github.com/hjuergens/date-parser">github.com/hjuergens/date-parser</a>.
+  This page is generated from the grammar files and the shared test cases.
+</footer>
+
+<script>
+  (function () {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+    function select(tab, focus) {
+      tabs.forEach(function (t) {
+        var selected = t === tab;
+        t.setAttribute('aria-selected', selected ? 'true' : 'false');
+        t.tabIndex = selected ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !selected;
+      });
+      if (focus) tab.focus();
+      if (history.replaceState) history.replaceState(null, '', '#' + tab.id.replace('tab-', ''));
+    }
+    tabs.forEach(function (tab, i) {
+      tab.addEventListener('click', function () { select(tab, false); });
+      tab.addEventListener('keydown', function (e) {
+        var next = null;
+        if (e.key === 'ArrowRight') next = tabs[(i + 1) % tabs.length];
+        if (e.key === 'ArrowLeft') next = tabs[(i - 1 + tabs.length) % tabs.length];
+        if (e.key === 'Home') next = tabs[0];
+        if (e.key === 'End') next = tabs[tabs.length - 1];
+        if (next) { e.preventDefault(); select(next, true); }
+      });
+    });
+    var initial = document.getElementById('tab-' + location.hash.slice(1));
+    if (initial) select(initial, false);
+  })();
+</script>
+</body>
+</html>

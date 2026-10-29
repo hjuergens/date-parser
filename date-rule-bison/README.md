@@ -51,7 +51,9 @@ Implements the [shared schedule example](../README.md#shared-example-schedule) a
 
 - [schedule.y](src/main/resources/schedule.y) generates `ScheduleParser`.
 - It has no `error` rules, so `parse()` returns `false` on the first syntax error.
-- The scanner is hand-written in the epilogue: unknown characters return `YYUNDEF`.
+- The scanner is hand-written in the epilogue. It reads words of capital letters as a whole and classifies them:
+  `IMM`, `SPOT`, a six-letter currency pair, or a unit letter (`D W M Q Y B`). Anything else returns `YYUNDEF`.
+- `> SPOT [PAIR]` is two rules (`expr '>' SPOT` and `expr '>' SPOT PAIR`); the LALR(1) table decides on the next token without conflict.
 - In Bison's Java skeleton `$$` is a plain `Object`, while `$1`…`$n` are typed, so the list is built in a local variable.
 - The build runs bison with `-Werror=conflicts-sr -Werror=conflicts-rr`.
 - Test: [ScheduleParserTest](src/bison-test/java/io/github/hjuergens/bison/ScheduleParserTest.java).

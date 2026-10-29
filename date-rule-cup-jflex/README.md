@@ -34,14 +34,15 @@ mvn -pl date-rule-cup-jflex verify
 - `de.jflex:jflex-maven-plugin` (JFlex 1.9) generates into `target/generated-sources/jflex`.
 - There are 93 TestNG tests: [PascalLexerTest](src/test/java/io/github/hjuergens/PascalLexerTest.java) and the shared example.
 
-CUP warns that the terminals are "declared but never used". That's expected while the grammar has no rules.
+For `pascal.cup`, CUP warns that the terminals are "declared but never used". That's expected while that grammar has no rules.
 
 ## Shared example
 
 Implements the [shared schedule example](../README.md#shared-example-schedule) and is tested against [examples/schedule.txt](../examples/schedule.txt).
 
 - [schedule.cup](src/main/cup/schedule.cup) uses left recursion for lists and period chains, which is natural for LALR(1).
-- [schedule.jflex](src/main/jflex/schedule.jflex) is its lexer. `%cupsym ScheduleSym` must come before `%cup`, otherwise the EOF action refers to `sym`.
+- CUP has no optional elements, so `> SPOT [PAIR]` is written as two alternatives.
+- [schedule.jflex](src/main/jflex/schedule.jflex) is its lexer: longest match separates `IMM`, `SPOT`, currency pairs (`[A-Z]{6}`) and unit letters. `%cupsym ScheduleSym` must come before `%cup`, otherwise the EOF action refers to `sym`.
 - CUP runs once per grammar (two plugin executions); JFlex processes every `.jflex` file.
 - `Schedules.parse(text)` throws on the first syntax error ("Can't recover from previous error(s)").
 - Test: [SchedulesTest](src/test/java/io/github/hjuergens/schedule/SchedulesTest.java).

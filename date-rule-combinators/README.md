@@ -56,6 +56,8 @@ Implements the [shared schedule example](../README.md#shared-example-schedule) a
 
 [ScheduleParsers](src/main/scala/de/juergens/text/ScheduleParsers.scala) is plain Scala:
 the grammar is a set of `Parser` values, and `foldLeft` applies the shifts (periods, `> IMM` and `> SPOT`) from left to right.
+Business days (`B`) are a small case class `BusinessDays` that implements `java.time.temporal.TemporalAmount`.
+Without a separate lexer, `>SPOTUSDCAD` without a space parses as well (as in the PEG module); the tools with a lexer reject it.
 Test: [ScheduleParsersSuite](src/test/scala/de/juergens/text/ScheduleParsersSuite.scala).
 
 ```scala

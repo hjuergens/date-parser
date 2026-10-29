@@ -47,6 +47,8 @@ Implements the [shared schedule example](../README.md#shared-example-schedule) a
 
 - [Schedule.atg](src/main/coco/Schedule.atg) generates into package `io.github.hjuergens.coco.schedule`.
 - [Schedules.parse](src/main/java/io/github/hjuergens/coco/schedule/Schedules.java) collects Coco/R's error messages and throws if `errors.count > 0`.
+- After `">"`, the grammar branches on `"IMM"` or `"SPOT"` with an optional `pair` token (six capital letters),
+  which keeps it LL(1). Coco/R's LL(1) check runs on every build and reports no warnings.
 - The semantic actions avoid exceptions (invalid dates become `SemErr`), because error recovery may run them on incomplete input.
 - Test: [SchedulesTest](src/test/java/io/github/hjuergens/coco/schedule/SchedulesTest.java).
 

@@ -43,6 +43,8 @@ Implements the [shared schedule example](../README.md#shared-example-schedule) a
 [schedule.grammar](src/main/sablecc/schedule.grammar) contains no code at all: SableCC builds the typed syntax tree, and
 [ScheduleEvaluator](src/main/java/de/juergens/schedule/ScheduleEvaluator.java) computes the dates from it.
 Elements that occur twice in an alternative need names (`[year]:number`, `[s1]:minus`).
+Each kind of shift (`+`, `-`, `> IMM`, `> SPOT [PAIR]`) is an alternative of `shift` and becomes its own node class
+(`APlusShift`, …, `ASpotShift`); the optional `pair?` is `null` in the tree when it is missing.
 Test: [ScheduleEvaluatorTest](src/test/java/de/juergens/schedule/ScheduleEvaluatorTest.java).
 
 ## Status

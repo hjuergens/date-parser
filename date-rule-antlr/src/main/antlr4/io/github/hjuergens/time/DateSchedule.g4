@@ -31,7 +31,14 @@ expr returns [LocalDate value]
       ( '+' period                  { $value = $value.plus($period.value); }
       | '-' period                  { $value = $value.minus($period.value); }
       | '>' 'IMM'                   { $value = ScheduleSemantics.nextImm($value); }
+      | '>' spot                    { $value = ScheduleSemantics.spot($value, $spot.pair); }
       )*
+    ;
+
+// a rule of its own: a PAIR label in the loop above would keep the pair of an earlier iteration
+spot returns [String pair]
+    : 'SPOT' (PAIR                  { $pair = $PAIR.text; }
+             )?
     ;
 
 date returns [LocalDate value]
@@ -46,4 +53,5 @@ period returns [java.time.Period value]
 
 NUM  : [0-9]+ ;
 UNIT : [DWMQY] ;
+PAIR : [A-Z] [A-Z] [A-Z] [A-Z] [A-Z] [A-Z] ;   // currency pair such as EURUSD
 WS   : [ \t\r\n]+ -> skip ;

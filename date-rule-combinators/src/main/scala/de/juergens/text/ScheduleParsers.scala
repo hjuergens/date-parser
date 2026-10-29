@@ -36,10 +36,19 @@ class ScheduleParsers extends RegexParsers {
       .map(_.`with`(TemporalAdjusters.dayOfWeekInMonth(3, DayOfWeek.WEDNESDAY)))
       .find(_.isAfter(date)).get
 
+  /** FX spot: T+1 for USD against CAD, TRY, PHP or RUB, otherwise T+2; only weekends are skipped */
+  def spot(date: LocalDate, pair: Option[String]): LocalDate = {
+    val lag = if (pair.exists(_.matches("USD(CAD|TRY|PHP|RUB)|(CAD|TRY|PHP|RUB)USD"))) 1 else 2
+    Iterator.iterate(date.plusDays(1))(_.plusDays(1)).filter(_.getDayOfWeek.getValue < 6).drop(lag - 1).next()
+  }
+
+  def pair: Parser[String] = "[A-Z]{6}".r
+
   def shift: Parser[LocalDate => LocalDate] =
     ("+" ~> period ^^ (p => (d: LocalDate) => d.plus(p))
     | "-" ~> period ^^ (p => (d: LocalDate) => d.minus(p))
-    | ">" ~ "IMM" ^^^ (nextImm _))
+    | ">" ~ "IMM" ^^^ (nextImm _)
+    | ">" ~ "SPOT" ~> opt(pair) ^^ (p => (d: LocalDate) => spot(d, p)))
 
   /** shifts are applied from left to right */
   def expr: Parser[LocalDate] = date ~ rep(shift) ^^ {

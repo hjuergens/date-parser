@@ -8,6 +8,9 @@
 # A range (start : step : end) yields start + k * step for k = 0, 1, ... while <= end.
 # "> IMM" moves to the next IMM date strictly after the date: the third Wednesday of
 # March, June, September or December.
+# "> SPOT [PAIR]" moves to the FX spot date: T+1 business day for USD against CAD, TRY, PHP
+# or RUB, otherwise T+2 (also without pair). Only Saturdays and Sundays are skipped, there
+# are no holiday calendars yet (so 2015-12-31 > SPOT is 2016-01-04, although Jan 1 is a holiday).
 
 # date notations
 2015-06-09 => 2015-06-09
@@ -52,6 +55,23 @@
 2015-06-09 > IMM + 1D => 2015-06-18
 (2015-01-01 > IMM : 1W : 2015-04-01) => 2015-03-18, 2015-03-25, 2015-04-01
 
+# FX spot dates
+2015-06-09 > SPOT => 2015-06-11
+2015-06-11 > SPOT => 2015-06-15
+2015-06-12 > SPOT => 2015-06-16
+2015-06-13 > SPOT => 2015-06-16
+2015-12-31 > SPOT => 2016-01-04
+2015-06-09 > SPOT EURUSD => 2015-06-11
+2015-06-09 > SPOT EURCAD => 2015-06-11
+2015-06-09 > SPOT USDCAD => 2015-06-10
+2015-06-09 > SPOT CADUSD => 2015-06-10
+2015-06-12 > SPOT USDCAD => 2015-06-15
+2015-06-09>SPOT USDTRY => 2015-06-10
+2015-06-12 > SPOT USDCAD > SPOT => 2015-06-17
+2015-06-09 > SPOT + 1W => 2015-06-18
+2015-06-09 > SPOT > IMM => 2015-06-17
+(2015-06-09 > SPOT : 1W : 2015-06-30) => 2015-06-11, 2015-06-18, 2015-06-25
+
 # invalid dates
 2015-02-29 => error
 2015-13-01 => error
@@ -71,6 +91,12 @@
 2015-06-09 IMM => error
 2015-06-09 > 3M => error
 2015-06-09 > IM => error
+2015-06-09 SPOT => error
+2015-06-09 > USDCAD => error
+2015-06-09 > SPOT EUR => error
+2015-06-09 > SPOT EURUSDX => error
+2015-06-09 > SPOT usdcad => error
+2015-06-09 > SPOT USDCAD USDCAD => error
 (2015-01-01 : 1M : 2015-02-01), 2015-03-01 => error
  => error
 

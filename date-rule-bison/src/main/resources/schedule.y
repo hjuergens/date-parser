@@ -24,6 +24,8 @@
 %token <Integer> NUM "number"
 %token <String> UNIT "unit"
 %token IMM "IMM"
+%token SPOT "SPOT"
+%token <String> PAIR "currency pair"
 %type <LocalDate> expr date
 %type <Period> period
 %type <ArrayList<LocalDate>> exprs
@@ -46,6 +48,8 @@ expr:
 | expr '+' period                   { $$ = $1.plus ($3); }
 | expr '-' period                   { $$ = $1.minus ($3); }
 | expr '>' IMM                      { $$ = ScheduleSemantics.nextImm ($1); }
+| expr '>' SPOT                     { $$ = ScheduleSemantics.spot ($1, null); }
+| expr '>' SPOT PAIR                { $$ = ScheduleSemantics.spot ($1, $4); }
 ;
 
 date:
@@ -60,7 +64,7 @@ period:
 
 %%
 
-/** Hand-written scanner: numbers, IMM, unit letters, single-character tokens. */
+/** Hand-written scanner: numbers, words of capital letters, single-character tokens. */
 class ScheduleLexer implements ScheduleParser.Lexer {
 
   private final String text;
@@ -94,17 +98,24 @@ class ScheduleLexer implements ScheduleParser.Lexer {
         value = Integer.valueOf (text.substring (start, pos));
         return NUM;
       }
-    if (text.startsWith ("IMM", pos))
+    if (c >= 'A' && c <= 'Z')
       {
-        pos += 3;
-        return IMM;
+        int start = pos;
+        while (pos < text.length () && text.charAt (pos) >= 'A' && text.charAt (pos) <= 'Z')
+          pos++;
+        String word = text.substring (start, pos);
+        value = word;
+        if (word.equals ("IMM"))
+          return IMM;
+        if (word.equals ("SPOT"))
+          return SPOT;
+        if (word.length () == 6)
+          return PAIR;   /* currency pair such as EURUSD */
+        if (word.length () == 1 && "DWMQY".contains (word))
+          return UNIT;
+        return YYUNDEF;
       }
     pos++;
-    if ("DWMQY".indexOf (c) >= 0)
-      {
-        value = String.valueOf (c);
-        return UNIT;
-      }
     if ("+-./,:()>".indexOf (c) >= 0)
       return c;
     return YYUNDEF;   /* unknown character: a syntax error for the parser */

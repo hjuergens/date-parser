@@ -9,11 +9,14 @@ Package de.juergens.schedule;
 
 Helpers
 	digit = ['0' .. '9'];
+	upper = ['A' .. 'Z'];
 
 Tokens
 	number = digit+;
 	unit = 'D' | 'W' | 'M' | 'Q' | 'Y';
 	imm = 'IMM';
+	spot = 'SPOT';
+	pair = upper upper upper upper upper upper;
 	next = '>';
 	plus = '+';
 	minus = '-';
@@ -40,7 +43,8 @@ Productions
 	shift
 		= {plus} plus period
 		| {minus} minus period
-		| {imm} next imm;
+		| {imm} next imm
+		| {spot} next spot pair?;
 
 	date
 		= {iso} [year]:number [s1]:minus [month]:number [s2]:minus [day]:number

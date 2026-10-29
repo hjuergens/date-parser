@@ -32,7 +32,7 @@ mvn -pl date-rule-cup-jflex verify
 
 - `com.github.vbmacher:cup-maven-plugin` (CUP 11b) generates into `target/generated-sources/cup`.
 - `de.jflex:jflex-maven-plugin` (JFlex 1.9) generates into `target/generated-sources/jflex`.
-- There are 57 TestNG tests: [PascalLexerTest](src/test/java/io/github/hjuergens/PascalLexerTest.java) and the shared example.
+- There are 78 TestNG tests: [PascalLexerTest](src/test/java/io/github/hjuergens/PascalLexerTest.java) and the shared example.
 
 CUP warns that the terminals are "declared but never used". That's expected while the grammar has no rules.
 

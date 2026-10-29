@@ -36,6 +36,17 @@
     }
   }
 
+  // FX spot: T+1 for USD against CAD, TRY, PHP or RUB, otherwise T+2; only weekends are skipped
+  function spot(d, pair) {
+    const lag = /^(USD(CAD|TRY|PHP|RUB)|(CAD|TRY|PHP|RUB)USD)$/.test(pair) ? 1 : 2;
+    const t = new Date(Date.UTC(d.year, d.month - 1, d.day));
+    for (let days = 0; days < lag; ) {
+      t.setUTCDate(t.getUTCDate() + 1);
+      if (t.getUTCDay() % 6 !== 0) days++;
+    }
+    return { year: t.getUTCFullYear(), month: t.getUTCMonth() + 1, day: t.getUTCDate() };
+  }
+
   function compare(a, b) {
     return a.year - b.year || a.month - b.month || a.day - b.day;
   }
@@ -69,6 +80,7 @@ Shift
   = "+" _ p:Period { return d => plus(d, p); }
   / "-" _ p:Period { return d => plus(d, p, -1); }
   / ">" _ "IMM" { return nextImm; }
+  / ">" _ "SPOT" pair:(_ @$[A-Z]|6|)? { return d => spot(d, pair); }
 
 Date
   = y:Number _ "-" _ m:Number _ "-" _ d:Number { return date(y, m, d); }  // ISO

@@ -26,9 +26,11 @@ COMPILER Schedule
 
 CHARACTERS
   digit = "0123456789".
+  upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".
 
 TOKENS
   number = digit {digit}.
+  pair = upper upper upper upper upper upper.   /* currency pair such as EURUSD */
 
 IGNORE '\t' + '\r' + '\n'
 
@@ -47,11 +49,16 @@ PRODUCTIONS
                                              else dates.addAll(ScheduleSemantics.range(first, step, last)); .)
   .
 
-  Expr<out LocalDate d>                   (. Period p; .)
+  Expr<out LocalDate d>                   (. Period p; String code; .)
   = Date<out d>
     { "+" Period<out p>                   (. d = d.plus(p); .)
     | "-" Period<out p>                   (. d = d.minus(p); .)
-    | ">" "IMM"                           (. if (errors.count == 0) d = ScheduleSemantics.nextImm(d); .)
+    | ">"
+      ( "IMM"                             (. if (errors.count == 0) d = ScheduleSemantics.nextImm(d); .)
+      | "SPOT"                            (. code = null; .)
+        [ pair                            (. code = t.val; .)
+        ]                                 (. if (errors.count == 0) d = ScheduleSemantics.spot(d, code); .)
+      )
     }.
 
   Date<out LocalDate d>                   (. int a, b, c; d = LocalDate.MIN; .)

@@ -41,7 +41,7 @@ mvn -pl date-rule-bison -Pbison -Dbison.executable=/path/to/bison verify   # bis
 
 With the profile active, `maven-antrun-plugin` runs bison in `generate-sources` and writes
 `target/generated-sources/bison/io/github/hjuergens/bison/Calc.java`. The tests in
-[src/bison-test/java](src/bison-test/java) are only compiled then (58 TestNG tests).
+[src/bison-test/java](src/bison-test/java) are only compiled then (79 TestNG tests).
 
 The Windows binaries in [tools/win_flex_bison-latest](tools/win_flex_bison-latest) are an old bundled copy and aren't used by the build.
 

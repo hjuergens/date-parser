@@ -37,6 +37,7 @@ SKIP : { " " | "\t" | "\r" | "\n" }
 TOKEN : {
   < NUM : (["0"-"9"])+ >
 | < UNIT : ["D", "W", "M", "Q", "Y"] >
+| < PAIR : (["A"-"Z"]){6} >   // currency pair such as EURUSD
 }
 
 /** Root production. */
@@ -64,12 +65,15 @@ List<LocalDate> Range() :
 
 /** periods are applied from left to right */
 LocalDate Expr() :
-{ LocalDate d; Period p; }
+{ LocalDate d; Period p; Token pair; }
 {
   d = Date()
   ( "+" p = Period() { d = d.plus(p); }
   | "-" p = Period() { d = d.minus(p); }
-  | ">" "IMM" { d = ScheduleSemantics.nextImm(d); }
+  | ">"
+    ( "IMM" { d = ScheduleSemantics.nextImm(d); }
+    | "SPOT" { pair = null; } ( pair = <PAIR> )? { d = ScheduleSemantics.spot(d, pair == null ? null : pair.image); }
+    )
   )*
   { return d; }
 }

@@ -10,9 +10,9 @@ import java.time.Period;
 import java.util.ArrayList;
 import java.util.List;
 
-terminal            PLUS, MINUS, NEXT, IMM, DOT, SLASH, COMMA, COLON, LPAREN, RPAREN;
+terminal            PLUS, MINUS, NEXT, IMM, SPOT, DOT, SLASH, COMMA, COLON, LPAREN, RPAREN;
 terminal Integer    NUM;
-terminal String     UNIT;
+terminal String     UNIT, PAIR;
 
 non terminal List<LocalDate>        schedule;
 non terminal ArrayList<LocalDate>   exprs;
@@ -38,6 +38,8 @@ expr ::= date:d                     {: RESULT = d; :}
        | expr:e PLUS period:p       {: RESULT = e.plus(p); :}
        | expr:e MINUS period:p      {: RESULT = e.minus(p); :}
        | expr:e NEXT IMM            {: RESULT = ScheduleSemantics.nextImm(e); :}
+       | expr:e NEXT SPOT           {: RESULT = ScheduleSemantics.spot(e, null); :}
+       | expr:e NEXT SPOT PAIR:p    {: RESULT = ScheduleSemantics.spot(e, p); :}
        ;
 
 date ::= NUM:y MINUS NUM:m MINUS NUM:d      {: RESULT = LocalDate.of(y, m, d); :}   /* ISO */

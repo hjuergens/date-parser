@@ -29,6 +29,8 @@ private Symbol symbol(int type, Object value) {
 
 [0-9]+          { return symbol(ScheduleSym.NUM, Integer.valueOf(yytext())); }
 "IMM"           { return symbol(ScheduleSym.IMM); }
+"SPOT"          { return symbol(ScheduleSym.SPOT); }
+[A-Z]{6}        { return symbol(ScheduleSym.PAIR, yytext()); }
 [DWMQY]         { return symbol(ScheduleSym.UNIT, yytext()); }
 "+"             { return symbol(ScheduleSym.PLUS); }
 "-"             { return symbol(ScheduleSym.MINUS); }

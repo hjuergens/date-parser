@@ -54,6 +54,8 @@ public final class ScheduleEvaluator {
                 date = date.plus(period(plus.getPeriod()));
             } else if (shift instanceof AMinusShift minus) {
                 date = date.minus(period(minus.getPeriod()));
+            } else if (shift instanceof ASpotShift spot) {
+                date = ScheduleSemantics.spot(date, spot.getPair() == null ? null : spot.getPair().getText());
             } else {
                 date = ScheduleSemantics.nextImm(date);
             }

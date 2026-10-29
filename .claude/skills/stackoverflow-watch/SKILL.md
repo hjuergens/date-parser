@@ -1,6 +1,6 @@
 ---
 name: stackoverflow-watch
-description: Triage new Stack Overflow questions about ANTLR, JavaCC, Bison/yacc, JFlex/CUP, SableCC, Coco/R, PEG/Peggy, parser combinators and LL/LALR grammars where the date-parser comparison (https://hjuergens.github.io/date-parser/) genuinely helps, and prepare notes so the user can write and post an answer. Use when the session-start watch reports questions, or when the user asks to check, react to, or answer Stack Overflow questions for this project.
+description: Triage new Stack Overflow questions about ANTLR, JavaCC, Bison/yacc, JFlex/CUP, SableCC, Coco/R, PEG/Peggy, Lark, parser combinators and LL/LALR grammars where the date-parser comparison (https://hjuergens.github.io/date-parser/) genuinely helps, and prepare notes so the user can write and post an answer. Use when the session-start watch reports questions, or when the user asks to check, react to, or answer Stack Overflow questions for this project.
 ---
 
 # Stack Overflow watch

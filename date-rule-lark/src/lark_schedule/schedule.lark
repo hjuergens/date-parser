@@ -1,0 +1,29 @@
+// Shared "schedule" example (see examples/schedule.txt in the project root):
+//   2015-06-09 + 3M, 09.06.2015, (2015-01-15 : 1Q : 2015-12-31)
+// The same grammar runs with parser="lalr" and parser="earley".
+
+?start: range | exprs
+
+exprs: expr ("," expr)*
+
+range: "(" expr ":" period ":" expr ")"
+
+// shifts are applied from left to right
+expr: date shift*
+
+shift: "+" period           -> plus
+     | "-" period           -> minus
+     | ">" "IMM"            -> imm
+     | ">" "SPOT" [PAIR]    -> spot
+
+date: NUM "-" NUM "-" NUM   -> iso
+    | NUM "." NUM "." NUM   -> german
+    | NUM "/" NUM "/" NUM   -> us
+
+period: NUM UNIT
+
+NUM: /[0-9]+/
+UNIT: /[DWMQYB]/
+PAIR: /[A-Z]{6}/            // currency pair such as EURUSD
+
+%ignore /[ \t\r\n]+/

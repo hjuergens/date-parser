@@ -3,24 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Eight Parsers, One Language</title>
-<meta name="description" content="The same small date language implemented with ANTLR, Scala parser combinators, Coco/R, JavaCC, SableCC, JFlex + CUP, GNU Bison and Peggy, tested against one shared set of cases.">
+<title>Ten Parsers, One Language</title>
+<meta name="description" content="The same small date language implemented with ANTLR (Java and Python), Scala parser combinators, Coco/R, JavaCC, SableCC, JFlex + CUP, GNU Bison, Peggy and Lark, tested against one shared set of cases.">
 <link rel="canonical" href="https://hjuergens.github.io/date-parser/">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Eight Parsers, One Language">
-<meta property="og:description" content="ANTLR, JavaCC, Bison, JFlex + CUP, SableCC, Coco/R, Peggy and Scala parser combinators implement the same date language, side by side.">
+<meta property="og:title" content="Ten Parsers, One Language">
+<meta property="og:description" content="ANTLR, JavaCC, Bison, JFlex + CUP, SableCC, Coco/R, Peggy, Lark and Scala parser combinators implement the same date language, side by side.">
 <meta property="og:url" content="https://hjuergens.github.io/date-parser/">
 <meta name="twitter:card" content="summary">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "SoftwareSourceCode",
-  "name": "date-parser: eight parsers, one language",
-  "description": "One date-schedule language implemented with ANTLR, JavaCC, GNU Bison, JFlex + CUP, SableCC, Coco/R, Peggy and Scala parser combinators, tested against one shared set of cases.",
+  "name": "date-parser: ten parsers, one language",
+  "description": "One date-schedule language implemented with ANTLR (Java and Python), JavaCC, GNU Bison, JFlex + CUP, SableCC, Coco/R, Peggy, Lark and Scala parser combinators, tested against one shared set of cases.",
   "url": "https://hjuergens.github.io/date-parser/",
   "codeRepository": "https://github.com/hjuergens/date-parser",
-  "programmingLanguage": ["Java", "Scala", "JavaScript"],
-  "keywords": "parser generator, ANTLR, JavaCC, Bison, JFlex, CUP, SableCC, Coco/R, PEG, Peggy, parser combinators, grammar, LL, LALR",
+  "programmingLanguage": ["Java", "Scala", "JavaScript", "Python"],
+  "keywords": "parser generator, ANTLR, JavaCC, Bison, JFlex, CUP, SableCC, Coco/R, PEG, Peggy, Lark, Earley, parser combinators, grammar, LL, LALR",
   "license": "https://www.apache.org/licenses/LICENSE-2.0"
 }
 </script>
@@ -191,13 +191,13 @@
 <main>
   <header>
     <p class="eyebrow">date-parser · parser technology comparison</p>
-    <h1>Eight parsers, one date language</h1>
+    <h1>Ten parsers, one date language</h1>
     <p class="lead">
-      The same small language for dates, periods and ranges, implemented with eight parser generators and
-      parser libraries, from LL(1) to LALR(1) to PEG. Every implementation passes the same 86 test cases.
+      The same small language for dates, periods and ranges, implemented with ten parser generators and
+      parser libraries, from LL(1) to LALR(1), Earley and PEG. Every implementation passes the same 86 test cases.
     </p>
     <ul class="stats">
-      <li><strong>8</strong><span>tools, 2 languages</span></li>
+      <li><strong>10</strong><span>implementations, 4 languages</span></li>
       <li><strong>86</strong><span>shared test cases</span></li>
       <li><strong>0</strong><span>grammar conflicts</span></li>
       <li><strong>1</strong><span>specification file</span></li>
@@ -248,6 +248,7 @@ period   = NUM ( "D" | "W" | "M"
     <div class="tabs">
       <div role="tablist" aria-label="Parser technology">
       <button role="tab" id="tab-antlr" aria-controls="panel-antlr" aria-selected="true" tabindex="0">ANTLR 4</button>
+      <button role="tab" id="tab-antlr-python" aria-controls="panel-antlr-python" aria-selected="false" tabindex="-1">ANTLR 4 · Python</button>
       <button role="tab" id="tab-combinators" aria-controls="panel-combinators" aria-selected="false" tabindex="-1">Scala combinators</button>
       <button role="tab" id="tab-coco" aria-controls="panel-coco" aria-selected="false" tabindex="-1">Coco/R</button>
       <button role="tab" id="tab-javacc" aria-controls="panel-javacc" aria-selected="false" tabindex="-1">JavaCC</button>
@@ -255,6 +256,7 @@ period   = NUM ( "D" | "W" | "M"
       <button role="tab" id="tab-cup" aria-controls="panel-cup" aria-selected="false" tabindex="-1">JFlex + CUP</button>
       <button role="tab" id="tab-bison" aria-controls="panel-bison" aria-selected="false" tabindex="-1">GNU Bison</button>
       <button role="tab" id="tab-peg" aria-controls="panel-peg" aria-selected="false" tabindex="-1">Peggy</button>
+      <button role="tab" id="tab-lark" aria-controls="panel-lark" aria-selected="false" tabindex="-1">Lark</button>
       </div>
     <div role="tabpanel" id="panel-antlr" aria-labelledby="tab-antlr">
       <div class="panel-head">
@@ -283,6 +285,36 @@ date returns [LocalDate value]
     | m=NUM &#x27;/&#x27; d=NUM &#x27;/&#x27; y=NUM     { $value = LocalDate.of($y.int, $m.int, $d.int); }  <span class="c">// US</span>
     ;</code></pre>
       <p class="pitfall"><strong>Pitfall.</strong> <code>$start</code> is reserved (the rule's first token), so the range labels are <code>first</code>/<code>last</code>.</p>
+    </div>
+    <div role="tabpanel" id="panel-antlr-python" aria-labelledby="tab-antlr-python" hidden>
+      <div class="panel-head">
+        <span class="kind">ALL(*) · adaptive LL</span><span class="lang">Python</span>
+        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-antlr-python/src/antlr_schedule/__init__.py">__init__.py ↗</a>
+      </div>
+      <pre><code># shifts are applied from left to right
+def visitExpr(self, ctx):
+    d = self.visit(ctx.date())
+    for shift in ctx.shift():
+        d = self.visit(shift)(d)
+    return d
+
+def visitPlus(self, ctx):
+    return lambda d: semantics.plus(d, self.visit(ctx.period()))
+
+def visitMinus(self, ctx):
+    return lambda d: semantics.plus(d, self.visit(ctx.period()), -1)
+
+def visitImm(self, ctx):
+    return semantics.next_imm
+
+def visitSpot(self, ctx):
+    return lambda d: semantics.spot(d, ctx.PAIR() and ctx.PAIR().getText())
+
+def visitIso(self, ctx):
+    return date(int(ctx.y.text), int(ctx.m.text), int(ctx.d.text))
+
+visitGerman = visitUs = visitIso</code></pre>
+      <p class="pitfall"><strong>Pitfall.</strong> Java actions can't be generated into Python, so the grammar is copied without them. The Python target also renames the rule <code>range</code> to <code>range_()</code>.</p>
     </div>
     <div role="tabpanel" id="panel-combinators" aria-labelledby="tab-combinators" hidden>
       <div class="panel-head">
@@ -439,12 +471,32 @@ Date
   / m:Number _ &quot;/&quot; _ d:Number _ &quot;/&quot; _ y:Number { return date(y, m, d); }  <span class="c">// US</span></code></pre>
       <p class="pitfall"><strong>Pitfall.</strong> Peggy provides <code>range()</code> in actions, which silently shadows a helper of the same name.</p>
     </div>
+    <div role="tabpanel" id="panel-lark" aria-labelledby="tab-lark" hidden>
+      <div class="panel-head">
+        <span class="kind">Earley and LALR(1), one grammar</span><span class="lang">Python</span>
+        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-lark/src/lark_schedule/schedule.lark">schedule.lark ↗</a>
+      </div>
+      <pre><code><span class="c">// shifts are applied from left to right</span>
+expr: date shift*
+
+shift: &quot;+&quot; period           -&gt; plus
+     | &quot;-&quot; period           -&gt; minus
+     | &quot;&gt;&quot; &quot;IMM&quot;            -&gt; imm
+     | &quot;&gt;&quot; &quot;SPOT&quot; [PAIR]    -&gt; spot
+
+date: NUM &quot;-&quot; NUM &quot;-&quot; NUM   -&gt; iso
+    | NUM &quot;.&quot; NUM &quot;.&quot; NUM   -&gt; german
+    | NUM &quot;/&quot; NUM &quot;/&quot; NUM   -&gt; us
+
+period: NUM UNIT</code></pre>
+      <p class="pitfall"><strong>Pitfall.</strong> In LALR mode the contextual lexer only tries tokens the parser can accept next, so <code>&gt;SPOTUSDCAD</code> parses; ANTLR's lexer reads <code>SPOTUS</code> as a pair and rejects it.</p>
+    </div>
     </div>
   </section>
 
   <section aria-labelledby="compare">
     <h2 id="compare">Side by side</h2>
-    <p class="lead">Size counts non-blank, non-comment lines of the grammar files. The JVM modules also share an 88-line helper for periods, business days, IMM and spot dates, and range expansion.</p>
+    <p class="lead">Size counts non-blank, non-comment lines of the grammar files. The JVM modules also share an 88-line helper for periods, business days, IMM and spot dates, and range expansion; the Python modules a 50-line one.</p>
     <div class="scroll">
       <table class="compare">
         <thead>
@@ -457,6 +509,13 @@ Date
           <td class="num">42</td>
           <td>Actions with <code>returns […]</code> attributes</td>
           <td>Throwing error listener plus <code>BailErrorStrategy</code></td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-antlr-python/src/antlr_schedule/__init__.py">ANTLR 4 · Python</a></th>
+          <td>ALL(*) · adaptive LL</td>
+          <td class="num">29 + 43<small>grammar + visitor</small></td>
+          <td>Visitor over the parse tree; the grammar has no actions</td>
+          <td>Error listener on lexer and parser that raises</td>
         </tr>
         <tr>
           <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-combinators/src/main/scala/de/juergens/text/ScheduleParsers.scala">Scala combinators</a></th>
@@ -507,6 +566,13 @@ Date
           <td>Action blocks; date arithmetic written by hand</td>
           <td><code>SyntaxError</code> with expected tokens</td>
         </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-lark/src/lark_schedule/schedule.lark">Lark</a></th>
+          <td>Earley and LALR(1), one grammar</td>
+          <td class="num">16 + 37<small>grammar + transformer</small></td>
+          <td><code>Transformer</code>, one method per rule alias</td>
+          <td><code>UnexpectedInput</code>; <code>VisitError</code> wraps exceptions of the transformer</td>
+        </tr>
         </tbody>
       </table>
     </div>
@@ -526,6 +592,15 @@ Date
       <li><strong>The library matters as much as the parser.</strong>
         <p>In JavaScript, about 35 lines (plus 20 for business days, IMM and spot dates) reproduce <code>java.time</code>'s month arithmetic.
           On the JVM, <code>Period</code> can't express business days, so <code>B</code> needs a <code>TemporalAmount</code> of its own. The end-of-month cases in the test file exist to catch differences.</p></li>
+      <li><strong>One grammar, two algorithms.</strong>
+        <p>Lark builds an Earley parser or an LALR(1) parser from the same grammar file; every shared case runs with both.
+          Earley accepts any context-free grammar, including ambiguous ones, but this language doesn't need that.</p></li>
+      <li><strong>Actions tie a grammar to one language.</strong>
+        <p>ANTLR's Java grammar computes the dates in Java actions, so it can't be generated into Python. The Python module
+          uses the same rules without actions and a visitor, which would work for every ANTLR target.</p></li>
+      <li><strong>A lexer may or may not know the parser's state.</strong>
+        <p><code>&gt;SPOTUSDCAD</code> without a space: ANTLR, Coco/R, JavaCC, JFlex and SableCC read <code>SPOTUS</code> as a currency pair and fail.
+          Peggy and the Scala combinators have no lexer, and Lark's contextual lexer only tries the tokens the parser expects; all three accept it.</p></li>
       <li><strong>A shared test file keeps everyone honest.</strong>
         <p>Every module reads <code>examples/schedule.txt</code>. Several tool-specific pitfalls, listed in the tabs above, surfaced only because the same cases had to pass everywhere.</p></li>
     </ul>
@@ -535,7 +610,7 @@ Date
     <h2 id="cases">The shared test cases</h2>
     <p class="lead">
       From <a href="https://github.com/hjuergens/date-parser/blob/master/examples/schedule.txt">examples/schedule.txt</a>. Each module has a test that reads this file,
-      so adding a line here tests all eight implementations.
+      so adding a line here tests all ten implementations.
     </p>
     <div class="case-groups">
       <section>

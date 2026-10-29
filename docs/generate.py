@@ -39,6 +39,12 @@ TOOLS = [
          values="Actions with <code>returns […]</code> attributes",
          errors="Throwing error listener plus <code>BailErrorStrategy</code>",
          pitfall="<code>$start</code> is reserved (the rule's first token), so the range labels are <code>first</code>/<code>last</code>."),
+    dict(id="antlr-python", name="ANTLR 4 · Python", kind="ALL(*) · adaptive LL", lang="Python",
+         file="date-rule-antlr-python/src/antlr_schedule/__init__.py",
+         snippet=lambda f: between(f, r"# shifts are applied", r"def visitPeriod"),
+         values="Visitor over the parse tree; the grammar has no actions",
+         errors="Error listener on lexer and parser that raises",
+         pitfall="Java actions can't be generated into Python, so the grammar is copied without them. The Python target also renames the rule <code>range</code> to <code>range_()</code>."),
     dict(id="combinators", name="Scala combinators", kind="Recursive descent with backtracking", lang="Scala 2.13",
          file="date-rule-combinators/src/main/scala/de/juergens/text/ScheduleParsers.scala",
          snippet=lambda f: between(f, r"def date:", r"business days, Monday") + "\n\n" + between(f, r"def expr:", r"^  }$", True),
@@ -81,12 +87,18 @@ TOOLS = [
          values="Action blocks; date arithmetic written by hand",
          errors="<code>SyntaxError</code> with expected tokens",
          pitfall="Peggy provides <code>range()</code> in actions, which silently shadows a helper of the same name."),
+    dict(id="lark", name="Lark", kind="Earley and LALR(1), one grammar", lang="Python",
+         file="date-rule-lark/src/lark_schedule/schedule.lark",
+         snippet=lambda f: between(f, r"^// shifts are applied", r"^NUM:"),
+         values="<code>Transformer</code>, one method per rule alias",
+         errors="<code>UnexpectedInput</code>; <code>VisitError</code> wraps exceptions of the transformer",
+         pitfall="In LALR mode the contextual lexer only tries tokens the parser can accept next, so <code>&gt;SPOTUSDCAD</code> parses; ANTLR's lexer reads <code>SPOTUS</code> as a pair and rejects it."),
 ]
 
 LINES = {"antlr": "42", "combinators": "71", "coco": "64", "javacc": "74", "sablecc": "38 + 65",
-         "cup": "36 + 35", "bison": "102", "peg": "84"}
+         "cup": "36 + 35", "bison": "102", "peg": "84", "lark": "16 + 37", "antlr-python": "29 + 43"}
 LINE_NOTES = {"sablecc": "grammar + evaluator", "cup": "parser + lexer", "bison": "incl. hand-written scanner",
-              "peg": "incl. date arithmetic"}
+              "peg": "incl. date arithmetic", "lark": "grammar + transformer", "antlr-python": "grammar + visitor"}
 
 # shared test cases, grouped by the comment headers of schedule.txt
 groups = []
@@ -139,7 +151,8 @@ cases = "\n".join(
 
 page = (Path(__file__).parent / "page_template.html").read_text(encoding="utf-8")
 page = (page.replace("{{TABS}}", tabs).replace("{{PANELS}}", panels).replace("{{ROWS}}", rows)
-        .replace("{{CASES}}", cases).replace("{{CASE_COUNT}}", str(case_count)).replace("{{REPO}}", REPO))
+        .replace("{{CASES}}", cases).replace("{{CASE_COUNT}}", str(case_count))
+        .replace("{{TOOL_COUNT}}", str(len(TOOLS))).replace("{{LANG_COUNT}}", str(len({t["lang"].split()[0] for t in TOOLS}))).replace("{{REPO}}", REPO))
 (ROOT / "docs").mkdir(exist_ok=True)
 (ROOT / "docs/index.html").write_text(page, encoding="utf-8")
 print("cases:", case_count, "groups:", [t for t, _ in groups])

@@ -8,6 +8,12 @@ syntax: glob
 *.old
 node_modules
 
+# Python
+.venv
+__pycache__
+.pytest_cache
+date-rule-antlr-python/src/antlr_schedule/generated
+
 # eclipse conf file
 .settings
 .classpath

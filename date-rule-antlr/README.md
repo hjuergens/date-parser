@@ -18,7 +18,7 @@ This is the most complete module of the project.
 | `ISO8601dates.g4` | `2015-06-09` | parse tree (syntax only, no calendar check) |
 | `AmbiguousDates.g4` | `32 May 1980 12h` | day and time parts as strings |
 | `ICalendar.g4` | iCalendar (RFC 5545) `VEVENT` | parse tree |
-| `DateSchedule.g4` | `2015-06-09 + 3M, 09.06.2015`, `(2015-01-15 : 1Q : 2015-12-31)` | `List<java.time.LocalDate>` |
+| `DateSchedule.g4` | `2015-06-09 + 3M, 09.06.2015`, `(2015-01-15 : 1Q : 2015-12-31)`, `2015-06-09 > IMM`, `2015-06-12 > SPOT USDCAD + 2B` | `List<java.time.LocalDate>` |
 | `Cardinal.g4`, `Unit.g4`, `SimpleCalc.g4`, `DateRule.g4`, `Schedule.g4`, `NewDate.g4` | small building blocks and experiments | |
 
 In `PeriodTerm`, `>` means "next", `<` means "previous", and a trailing `=` means "or this one".
@@ -55,8 +55,13 @@ mvn -pl date-rule-antlr verify
 Implements the [shared schedule example](../README.md#shared-example-schedule) and is tested against [examples/schedule.txt](../examples/schedule.txt).
 
 - [DateSchedule.g4](src/main/antlr4/io/github/hjuergens/time/DateSchedule.g4) computes the values in actions (`returns [LocalDate value]`).
+- `> SPOT [PAIR]` has a rule of its own (`spot returns [String pair]`). A `PAIR?` label inside the `( … )*` loop of `expr`
+  would be a field of the rule context, so a later `> SPOT` without pair would still see the pair of an earlier one.
+- Periods, business days (`B`), IMM and spot dates come from the shared `ScheduleSemantics`; `B` is a `TemporalAmount`
+  of its own, because `java.time.Period` can't express business days.
 - [DateSchedules.parse](src/main/java/io/github/hjuergens/time/DateSchedules.java) installs a throwing error listener and `BailErrorStrategy`, so the first error ends the parse.
 - Test: [DateSchedulesTest](src/test/java/io/github/hjuergens/time/DateSchedulesTest.java).
+- The same rules without actions run on ANTLR's Python target in [date-rule-antlr-python](../date-rule-antlr-python/README.md).
 
 ```java
 DateSchedules.parse("(2015-01-15 : 1Q : 2015-12-31)");   // [2015-01-15, 2015-04-15, 2015-07-15, 2015-10-15]

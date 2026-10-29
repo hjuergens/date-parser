@@ -17,7 +17,7 @@ from pathlib import Path
 STATE = Path(__file__).resolve().parent / "state.json"
 API = "https://api.stackexchange.com/2.3/search/advanced"
 TAGS = ["antlr4", "antlr", "javacc", "bison", "yacc", "jflex", "cup", "sablecc", "cocor", "peg", "pegjs",
-        "parser-combinators", "parser-generator", "lalr", "ll-grammar", "left-recursion"]
+        "parser-combinators", "parser-generator", "lalr", "ll-grammar", "left-recursion", "lark-parser"]
 MIN_INTERVAL = 3 * 3600          # between network scans
 FIRST_LOOKBACK = 30 * 86400      # on the very first scan
 PENDING_MAX_AGE = 30 * 86400     # drop candidates nobody looked at

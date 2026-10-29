@@ -15,8 +15,6 @@
         <module>date-rule-cup-jflex</module>
 	    <!-- https://www.gnu.org/software/bison -->
         <module>date-rule-bison</module>
-        <!-- https://pegjs.org/ -->
-        <module>date-rule-peg</module>
     </modules>
     <name>${project.artifactId}</name>
     <description>Date Parser - evaluating various technologies</description>

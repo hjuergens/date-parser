@@ -1,8 +1,8 @@
-# date-parser: eight parser generators, one language
+# date-parser: ten parsers, one language
 
-The same date-schedule language implemented with **ANTLR 4, JavaCC, GNU Bison, JFlex + CUP, SableCC, Coco/R, Peggy (PEG)
-and Scala parser combinators**, all tested against one shared set of cases. It is a hands-on comparison of LL, LALR, PEG
-and combinator parsing in Java, Scala and JavaScript.
+The same date-schedule language implemented with **ANTLR 4 (Java and Python targets), JavaCC, GNU Bison, JFlex + CUP, SableCC,
+Coco/R, Peggy (PEG), Lark (Earley and LALR) and Scala parser combinators**, all tested against one shared set of cases.
+It is a hands-on comparison of LL, LALR, Earley, PEG and combinator parsing in Java, Scala, JavaScript and Python.
 
 **[See the side-by-side comparison →](https://hjuergens.github.io/date-parser/)**
 
@@ -11,6 +11,7 @@ term structures such as `[3M,4M,6M]x(4M:1M:9M)`, date shifts such as `>Q` ("firs
 natural-language rules such as "three days after next sunday".
 
 Each `date-rule-*` module implements a grammar with a different technology. The modules are independent of each other.
+Planned additions are in [TODO.md](TODO.md).
 
 ## Modules
 
@@ -21,16 +22,18 @@ Each `date-rule-*` module implements a grammar with a different technology. The 
 | [date-rule-coco](date-rule-coco/README.md) | Coco/R | LL(1) | Java | Date lists in ISO, German, and US notation → `LocalDate` | 92 TestNG |
 | [date-rule-javacc](date-rule-javacc/README.md) | JavaCC (ParserGeneratorCC) | LL(k) | Java | Brace-matching demo grammar, JUnit 4 experiments | 97 JUnit (+7 ignored) |
 | [date-rule-sablecc](date-rule-sablecc/README.md) | SableCC 2 | LALR(1) with typed AST | Java | Arithmetic expressions, AST walker and evaluator | 97 TestNG |
-| [date-rule-cup-jflex](date-rule-cup-jflex/README.md) | JFlex 1.9 + CUP 11b | LALR(1) (lexer only so far) | Java | Pascal-subset lexer; the CUP grammar is a skeleton | 93 TestNG |
+| [date-rule-cup-jflex](date-rule-cup-jflex/README.md) | JFlex 1.9 + CUP 11b | LALR(1) | Java | Pascal-subset lexer (its CUP grammar is a skeleton); complete CUP parser for the shared example | 93 TestNG |
 | [date-rule-bison](date-rule-bison/README.md) | GNU Bison 3 (Java skeleton) | LALR(1) | Java | Infix calculator with error recovery. **Requires `bison`**; the module is empty without it | 94 TestNG |
 | [date-rule-peg](date-rule-peg/README.md) | Peggy (PEG.js successor) | PEG (packrat) | JavaScript | `(start:step:end)` range lists | 91 `node:test` |
+| [date-rule-lark](date-rule-lark/README.md) | Lark 1.3 | Earley and LALR(1), one grammar | Python | The shared example, every case with both algorithms | 172 pytest |
+| [date-rule-antlr-python](date-rule-antlr-python/README.md) | ANTLR 4.13, Python target | ALL(*) (adaptive LL) | Python | The shared example; grammar without actions, plus a visitor | 86 pytest |
 
-Each module also implements the [shared schedule example](#shared-example-schedule), so all eight tools
-can be compared on the same language.
+Each module also implements the [shared schedule example](#shared-example-schedule), so all ten implementations
+can be compared on the same language. Each module README has a section on how its tool handles it.
 
 ## Shared example: schedule
 
-> A visual version of this comparison, with the rules of all eight tools side by side, is at [hjuergens.github.io/date-parser](https://hjuergens.github.io/date-parser/)
+> A visual version of this comparison, with the rules of all ten implementations side by side, is at [hjuergens.github.io/date-parser](https://hjuergens.github.io/date-parser/)
 > (source: [docs/index.html](docs/index.html), served by GitHub Pages from `/docs`; regenerate it with `python3 docs/generate.py`).
 
 A small date language that every tool can handle (no left recursion is needed, and all decisions are LL(1)):
@@ -74,9 +77,12 @@ including invalid dates and syntax errors. Each module has a test that reads thi
 | cup-jflex | [schedule.cup](date-rule-cup-jflex/src/main/cup/schedule.cup) + [schedule.jflex](date-rule-cup-jflex/src/main/jflex/schedule.jflex) | 36 + 35 | `{: … :}` actions, left recursion | `Exception` from `parse()` | `%cupsym` must precede `%cup` |
 | bison | [schedule.y](date-rule-bison/src/main/resources/schedule.y) | 102² | `{ … }` actions, left recursion | `parse()` returns `false` | `$$` is untyped in Java; hand-written lexer |
 | peg | [schedule.pegjs](date-rule-peg/schedule.pegjs) | 84³ | action blocks, ordered choice | `SyntaxError` | `range()` is built into Peggy actions; date arithmetic hand-written |
+| lark | [schedule.lark](date-rule-lark/src/lark_schedule/schedule.lark) + [Transformer](date-rule-lark/src/lark_schedule/__init__.py) | 16 + 37 | `Transformer`, one method per rule alias | `UnexpectedInput`; `VisitError` unwrapped | the same grammar runs as Earley and as LALR(1); the contextual lexer accepts `>SPOTUSDCAD` |
+| antlr-python | [DateSchedule.g4](date-rule-antlr-python/DateSchedule.g4) + [visitor](date-rule-antlr-python/src/antlr_schedule/__init__.py) | 29 + 43 | visitor over the parse tree | raising error listener | Java actions can't be generated into Python; `range` becomes `range_()` |
 
 ¹ Non-blank, non-comment lines. The JVM modules also share an 88-line `ScheduleSemantics` (periods, business days, IMM and spot dates, range expansion);
   `java.time.Period` can't express business days, so `B` is a small `TemporalAmount` of its own.
+  The Python modules share a 50-line `semantics.py` (copied, like the Java helper).
 ² Including the hand-written scanner (about 55 lines).
 ³ Including JavaScript date arithmetic that reproduces `java.time` (about 50 lines, business days, IMM and spot dates included).
 
@@ -85,9 +91,11 @@ Coco/R's LL(1) check also passes without warnings.
 
 ## How it fits together
 
-- The parent [pom.xml](pom.xml) manages versions for all modules (Java 17 release, Scala 2.13, TestNG, JUnit Platform, SLF4J, plugins).
-- Each module generates its parser in `generate-sources` into `target/generated-sources/<tool>`, then compiles and tests it.
-  Generated code is never checked in.
+- [mise.toml](mise.toml) pins the toolchains (JDK, Maven, Node, Python, uv) and defines one task per module.
+  Every module builds with its native tool: Maven for Java and Scala, npm for Peggy, uv for Python.
+- The parent [pom.xml](pom.xml) manages versions for the Java and Scala modules (Java 17 release, Scala 2.13, TestNG, JUnit Platform, SLF4J, plugins).
+- Each JVM module generates its parser in `generate-sources` into `target/generated-sources/<tool>`, then compiles and tests it.
+  Generated code is never checked in; the ANTLR Python parser is generated by the task `generate:antlr-python`.
 - Tests run with surefire (`mvn test`). Integration tests (`*Spec`, antlr only) run with failsafe in `mvn verify`.
 - Surefire is pinned to 3.5.x because 3.6 no longer reads TestNG suite files, and the antlr module selects its tests in `testng.xml`.
 - [repo/](repo) contains `jquantlib-0.2.4`, a test dependency of the combinators module. The parent build installs it into the local Maven repository during `validate`.
@@ -96,20 +104,22 @@ Coco/R's LL(1) check also passes without warnings.
 
 | Tool | Needed for |
 |---|---|
-| JDK 17 or later | everything |
-| Maven 3.9 or later | everything |
+| [mise](https://mise.jdx.dev/) | everything: `mise install` installs the pinned JDK 17, Maven, Node, Python and uv |
 | `bison` 3.x on `/usr/bin/bison` (`sudo apt install bison`) | optional; activates [date-rule-bison](date-rule-bison/README.md) |
-| Node.js | not needed: the peg module downloads Node 24 into its `target/` |
+
+Without mise, install the tools from [mise.toml](mise.toml) yourself and run the commands of its tasks.
 
 ## Build and test
 
 ```
-mvn clean verify                       # all modules, unit and integration tests
-mvn -pl date-rule-antlr test           # a single module
+mise install                           # toolchains, as pinned in mise.toml
+mise run test                          # all modules; the module tasks run in parallel
+mise tasks                             # list the tasks, e.g. test:lark, test:peg, docs
+mvn -pl date-rule-antlr test           # a single JVM module, directly with Maven
 mvn -pl date-rule-bison -Pbison -Dbison.executable=/opt/bison/bin/bison verify   # bison outside /usr/bin
 ```
 
-The first build downloads all dependencies and Node.js; a full build then takes about 3 minutes.
+The first build downloads all dependencies; the JVM build then takes several minutes, mostly in the antlr and combinators modules.
 Code coverage (JaCoCo) is written to `<module>/target/site/jacoco/`.
 
 ## License

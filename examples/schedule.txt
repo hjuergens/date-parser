@@ -14,6 +14,12 @@
 # "> SPOT [PAIR]" moves to the FX spot date: + 1B for USD against CAD, TRY, PHP or RUB,
 # otherwise + 2B (also without pair). So 2015-12-31 > SPOT is 2016-01-04, although Jan 1 is
 # a holiday.
+#
+# A schedule is a rule: a function of the base date and the market, both supplied when it is evaluated.
+# "T" is the base date. A market only says which days are business days (B, SPOT); without one, only
+# Saturdays and Sundays are skipped. The test cases name base date and market in a prefix that is not part
+# of the language:  [<base>] <input> => ...  or  [<base> <market>] <input> => ...
+# Markets for the tests are declared as  market <name> = <holiday>, <holiday>, ...  (plus Saturdays and Sundays).
 
 # date notations
 2015-06-09 => 2015-06-09
@@ -89,6 +95,27 @@
 2015-06-09 > SPOT > IMM => 2015-06-17
 (2015-06-09 > SPOT : 1W : 2015-06-30) => 2015-06-11, 2015-06-18, 2015-06-25
 
+# base date and market
+market XTEST = 2015-06-10, 2015-07-03, 2015-12-25
+[2015-06-09] T => 2015-06-09
+[2015-06-09] T + 1M => 2015-07-09
+[2015-06-09] T > IMM => 2015-06-17
+[2015-06-09] T, 2015-01-01 => 2015-06-09, 2015-01-01
+[2015-06-09] (T : 1W : T + 2W) => 2015-06-09, 2015-06-16, 2015-06-23
+[2015-06-09] T + 2B => 2015-06-11
+[2015-06-09 XTEST] T + 2B => 2015-06-12
+[2015-06-09 XTEST] T + 1B => 2015-06-11
+[2015-06-11 XTEST] T - 1B => 2015-06-09
+[2015-07-02 XTEST] T + 1B => 2015-07-06
+[2015-06-09 XTEST] 2015-06-09 + 2B => 2015-06-12
+[2015-06-09 XTEST] T > SPOT => 2015-06-12
+[2015-06-09 XTEST] T > SPOT USDCAD => 2015-06-11
+[2015-12-24 XTEST] T > SPOT => 2015-12-29
+[2015-06-09 XTEST] (T : 1B : T + 3B) => 2015-06-09, 2015-06-11, 2015-06-12, 2015-06-15
+[2015-06-09 XTEST] T + 1M => 2015-07-09
+T => error
+T + 1D => error
+
 # invalid dates
 2015-02-29 => error
 2015-13-01 => error
@@ -114,6 +141,8 @@
 2015-06-09 > SPOT EURUSDX => error
 2015-06-09 > SPOT usdcad => error
 2015-06-09 > SPOT USDCAD USDCAD => error
+[2015-06-09] 2015-06-09 + T => error
+[2015-06-09] T T => error
 2015-06-09 + 2b => error
 2015-06-09 > 2B => error
 (2015-01-01 : 1M : 2015-02-01), 2015-03-01 => error

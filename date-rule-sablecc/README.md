@@ -34,7 +34,7 @@ mvn -pl date-rule-sablecc verify
 ```
 
 `sablecc-maven-plugin` 2.2 (the latest release, from 2008) generates the sources into `target/generated-sources/sablecc`.
-There are 97 TestNG tests.
+There are 117 TestNG tests.
 
 ## Shared example
 
@@ -42,6 +42,8 @@ Implements the [shared schedule example](../README.md#shared-example-schedule) a
 
 [schedule.grammar](src/main/sablecc/schedule.grammar) contains no code at all: SableCC builds the typed syntax tree, and
 [ScheduleEvaluator](src/main/java/de/juergens/schedule/ScheduleEvaluator.java) computes the dates from it.
+The tree already is the rule: `ScheduleEvaluator.parse` returns a function that walks it with the context
+(base date and market), so invalid dates in SableCC only surface when the rule is evaluated.
 Elements that occur twice in an alternative need names (`[year]:number`, `[s1]:minus`).
 Each kind of shift (`+`, `-`, `> IMM`, `> SPOT [PAIR]`) is an alternative of `shift` and becomes its own node class
 (`APlusShift`, …, `ASpotShift`); the optional `pair?` is `null` in the tree when it is missing.

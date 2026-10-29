@@ -56,17 +56,18 @@ Implements the [shared schedule example](../README.md#shared-example-schedule) a
 
 [ScheduleParsers](src/main/scala/de/juergens/text/ScheduleParsers.scala) is plain Scala:
 the grammar is a set of `Parser` values, and `foldLeft` applies the shifts (periods, `> IMM` and `> SPOT`) from left to right.
+The parsers return functions of a `Context` (base date `T` and `Market`), applied when the rule is evaluated.
 Business days (`B`) are a small case class `BusinessDays` that implements `java.time.temporal.TemporalAmount`.
 Without a separate lexer, `>SPOTUSDCAD` without a space parses as well (as in the PEG module); the tools with a lexer reject it.
 Test: [ScheduleParsersSuite](src/test/scala/de/juergens/text/ScheduleParsersSuite.scala).
 
 ```scala
-ScheduleParsers.parse("06/09/2015 + 1W - 2D")   // List(2015-06-14)
+ScheduleParsers.parse("T + 1W - 2D")(Context(Some(LocalDate.of(2015, 6, 9))))   // List(2015-06-14)
 ```
 
 ## Status
 
-- Working: 155 JUnit/TestNG tests and 104 ScalaTest tests. One TestNG test is disabled (`firstDayOfNextMonthTest`).
+- Working: 155 JUnit/TestNG tests and 124 ScalaTest tests. One TestNG test is disabled (`firstDayOfNextMonthTest`).
 - `QuarterAdjuster(n)` moves to another quarter **within the same year** (Q4 + 1 → Q1 of the same year).
 - Several rules in [high_sophisticated.txt](src/test/resources/complex/high_sophisticated.txt) are still commented out,
   for example "every friday the 13th of month" and "full moon next after the vernal equinox".

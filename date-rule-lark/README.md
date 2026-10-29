@@ -18,10 +18,13 @@ or an **LALR(1)** parser from it. This module runs every shared test case with b
 ## Usage
 
 ```python
+from datetime import date
 from lark_schedule import parse
+from lark_schedule.semantics import Context, Market
 
-parse("2015-06-09 + 3M > IMM")              # [datetime.date(2015, 9, 16)]
-parse("2015-06-09 + 3M > IMM", "earley")    # same result, other algorithm
+parse("2015-06-09 + 3M > IMM")(Context())               # [datetime.date(2015, 9, 16)]
+parse("2015-06-09 + 3M > IMM", "earley")(Context())     # same result, other algorithm
+parse("T + 1B")(Context(date(2015, 6, 9), Market([date(2015, 6, 10)])))   # [datetime.date(2015, 6, 11)]
 ```
 
 ## Build and test
@@ -31,11 +34,11 @@ mise run test:lark        # or, inside this directory:
 uv run pytest             # uv installs Lark and pytest into .venv (versions in uv.lock)
 ```
 
-There are 172 tests (pytest): the 86 cases of [examples/schedule.txt](../examples/schedule.txt), each with `lalr` and `earley`.
+There are 212 tests (pytest): the 106 cases of [examples/schedule.txt](../examples/schedule.txt), each with `lalr` and `earley`.
 
 ## Shared example
 
-- A `Transformer` ([`__init__.py`](src/lark_schedule/__init__.py)) computes the dates bottom-up; each rule alias
+- A `Transformer` ([`__init__.py`](src/lark_schedule/__init__.py)) builds the rule bottom-up as closures over the context; each rule alias
   (`-> plus`, `-> spot`, `-> iso`, …) becomes one method. Exceptions raised in it arrive wrapped in `VisitError`,
   so `parse` unwraps them.
 - [semantics.py](src/lark_schedule/semantics.py) ports `ScheduleSemantics.java` with the standard library only:

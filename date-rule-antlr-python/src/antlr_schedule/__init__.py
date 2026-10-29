@@ -1,4 +1,7 @@
-"""The shared "schedule" example parsed with ANTLR 4's Python target; a visitor computes the dates."""
+"""The shared "schedule" example parsed with ANTLR 4's Python target.
+
+A visitor builds the rule: a function of semantics.Context (base date and market) that is evaluated later.
+"""
 from datetime import date
 
 from antlr4 import CommonTokenStream, InputStream
@@ -21,39 +24,54 @@ class _Raise(ErrorListener):
         raise ScheduleSyntaxError(f"column {column}: {msg}")
 
 
-class Dates(DateScheduleVisitor):
-    """computes the dates top-down: each visit returns the value of its node"""
+class Rules(DateScheduleVisitor):
+    """builds the rule top-down: each visit returns a function of the context (shifts: of date and market)"""
 
     def visitSchedule(self, ctx):
         # Python target: the rule "range" becomes range_(), it would shadow the builtin
         if ctx.range_():
             return self.visit(ctx.range_())
-        return [self.visit(expr) for expr in ctx.expr()]
+        exprs = [self.visit(expr) for expr in ctx.expr()]
+        return lambda context: [expr(context) for expr in exprs]
 
     def visitRange(self, ctx):
-        return semantics.expand(self.visit(ctx.first), self.visit(ctx.step), self.visit(ctx.last))
+        first, step, last = self.visit(ctx.first), self.visit(ctx.step), self.visit(ctx.last)
+        if not step.is_positive():
+            raise ValueError(f"step must be positive: {step}")
+        return lambda context: semantics.expand(first(context), step, last(context), context.market)
 
     # shifts are applied from left to right
     def visitExpr(self, ctx):
-        d = self.visit(ctx.date())
-        for shift in ctx.shift():
-            d = self.visit(shift)(d)
-        return d
+        start, shifts = self.visit(ctx.date()), [self.visit(shift) for shift in ctx.shift()]
+
+        def at(context):
+            d = start(context)
+            for shift in shifts:
+                d = shift(d, context.market)
+            return d
+        return at
 
     def visitPlus(self, ctx):
-        return lambda d: semantics.plus(d, self.visit(ctx.period()))
+        period = self.visit(ctx.period())
+        return lambda d, market: semantics.plus(d, period, 1, market)
 
     def visitMinus(self, ctx):
-        return lambda d: semantics.plus(d, self.visit(ctx.period()), -1)
+        period = self.visit(ctx.period())
+        return lambda d, market: semantics.plus(d, period, -1, market)
 
     def visitImm(self, ctx):
-        return semantics.next_imm
+        return lambda d, market: semantics.next_imm(d)
 
     def visitSpot(self, ctx):
-        return lambda d: semantics.spot(d, ctx.PAIR() and ctx.PAIR().getText())
+        pair = ctx.PAIR() and ctx.PAIR().getText()
+        return lambda d, market: market.spot(d, pair)
+
+    def visitBase(self, ctx):
+        return semantics.base
 
     def visitIso(self, ctx):
-        return date(int(ctx.y.text), int(ctx.m.text), int(ctx.d.text))
+        value = date(int(ctx.y.text), int(ctx.m.text), int(ctx.d.text))
+        return lambda context: value
 
     visitGerman = visitUs = visitIso
 
@@ -62,7 +80,7 @@ class Dates(DateScheduleVisitor):
 
 
 def parse(text):
-    """the dates of a schedule
+    """the rule of a schedule; evaluate it with rule(semantics.Context(base, market))
 
     :raises ScheduleSyntaxError: on a syntax error or an unknown character
     :raises ValueError: on an invalid date or a range without positive step
@@ -72,4 +90,4 @@ def parse(text):
     for recognizer in (lexer, parser):
         recognizer.removeErrorListeners()
         recognizer.addErrorListener(_Raise())
-    return Dates().visit(parser.schedule())
+    return Rules().visit(parser.schedule())

@@ -2,6 +2,7 @@
  * Shared "schedule" example (see examples/schedule.txt in the project root):
  *   2015-06-09 + 3M, 09.06.2015, (2015-01-15 : 1Q : 2015-12-31)
  * LALR(1): lists and period chains are written left recursive.
+ * The actions build a ScheduleSemantics.Rule, a function of base date and market that is evaluated later.
  * No 'error' rules: the first syntax error ends the parse (parse() returns false).
  */
 %language "Java"
@@ -14,48 +15,52 @@
   import java.time.temporal.TemporalAmount;
   import java.util.ArrayList;
   import java.util.List;
+  import io.github.hjuergens.bison.ScheduleSemantics.Expr;
+  import io.github.hjuergens.bison.ScheduleSemantics.Rule;
 }
 
 %code {
-  /** the dates of the schedule, set by a successful parse() */
-  public List<LocalDate> dates;
+  /** the rule of the schedule, set by a successful parse() */
+  public Rule rule;
 }
 
 %token <Integer> NUM "number"
 %token <String> UNIT "unit"
 %token IMM "IMM"
 %token SPOT "SPOT"
+%token BASE "T"
 %token <String> PAIR "currency pair"
-%type <LocalDate> expr date
+%type <Expr> expr date
 %type <TemporalAmount> period
-%type <ArrayList<LocalDate>> exprs
+%type <ArrayList<Expr>> exprs
 
 %%
 
 schedule:
-  '(' expr ':' period ':' expr ')'  { dates = ScheduleSemantics.range ($2, $4, $6); }
-| exprs                             { dates = $1; }
+  '(' expr ':' period ':' expr ')'  { rule = ScheduleSemantics.range ($2, $4, $6); }
+| exprs                             { rule = ScheduleSemantics.list ($1); }
 ;
 
 exprs:
-  expr                              { ArrayList<LocalDate> list = new ArrayList<> (); list.add ($1); $$ = list; }
+  expr                              { ArrayList<Expr> list = new ArrayList<> (); list.add ($1); $$ = list; }
 | exprs ',' expr                    { $1.add ($3); $$ = $1; }   /* $$ is untyped in Java, $1 is not */
 ;
 
 /* periods are applied from left to right */
 expr:
   date                              { $$ = $1; }
-| expr '+' period                   { $$ = $1.plus ($3); }
-| expr '-' period                   { $$ = $1.minus ($3); }
+| expr '+' period                   { $$ = ScheduleSemantics.plus ($1, $3); }
+| expr '-' period                   { $$ = ScheduleSemantics.minus ($1, $3); }
 | expr '>' IMM                      { $$ = ScheduleSemantics.nextImm ($1); }
 | expr '>' SPOT                     { $$ = ScheduleSemantics.spot ($1, null); }
 | expr '>' SPOT PAIR                { $$ = ScheduleSemantics.spot ($1, $4); }
 ;
 
 date:
-  NUM '-' NUM '-' NUM               { $$ = LocalDate.of ($1, $3, $5); }   /* ISO */
-| NUM '.' NUM '.' NUM               { $$ = LocalDate.of ($5, $3, $1); }   /* German */
-| NUM '/' NUM '/' NUM               { $$ = LocalDate.of ($5, $1, $3); }   /* US */
+  BASE                              { $$ = ScheduleSemantics.BASE; }   /* T */
+| NUM '-' NUM '-' NUM               { $$ = ScheduleSemantics.literal (LocalDate.of ($1, $3, $5)); }   /* ISO */
+| NUM '.' NUM '.' NUM               { $$ = ScheduleSemantics.literal (LocalDate.of ($5, $3, $1)); }   /* German */
+| NUM '/' NUM '/' NUM               { $$ = ScheduleSemantics.literal (LocalDate.of ($5, $1, $3)); }   /* US */
 ;
 
 period:
@@ -109,6 +114,8 @@ class ScheduleLexer implements ScheduleParser.Lexer {
           return IMM;
         if (word.equals ("SPOT"))
           return SPOT;
+        if (word.equals ("T"))
+          return BASE;
         if (word.length () == 6)
           return PAIR;   /* currency pair such as EURUSD */
         if (word.length () == 1 && "DWMQYB".contains (word))

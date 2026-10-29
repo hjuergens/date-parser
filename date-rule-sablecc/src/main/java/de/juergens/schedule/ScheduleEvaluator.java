@@ -1,5 +1,7 @@
 package de.juergens.schedule;
 
+import de.juergens.schedule.ScheduleSemantics.Context;
+import de.juergens.schedule.ScheduleSemantics.Rule;
 import de.juergens.schedule.lexer.Lexer;
 import de.juergens.schedule.lexer.LexerException;
 import de.juergens.schedule.node.*;
@@ -16,6 +18,7 @@ import java.util.List;
 
 /**
  * Computes the dates of the shared "schedule" example from the syntax tree built by SableCC.
+ * The tree already is the rule: evaluating it later only needs the context (base date and market).
  */
 public final class ScheduleEvaluator {
 
@@ -23,37 +26,44 @@ public final class ScheduleEvaluator {
     }
 
     /**
+     * The rule of a schedule; evaluate it with {@code rule.evaluate(new ScheduleSemantics.Context(base, market))}.
+     * Invalid dates and ranges without positive step surface only then.
+     *
      * @throws ParserException on a syntax error
      * @throws LexerException on an unknown character
-     * @throws java.time.DateTimeException on an invalid date
      */
-    public static List<LocalDate> parse(String text) throws ParserException, LexerException, IOException {
+    public static Rule parse(String text) throws ParserException, LexerException, IOException {
         Start start = new Parser(new Lexer(new PushbackReader(new StringReader(text), 1024))).parse();
-        return schedule(start.getPSchedule());
+        return context -> schedule(start.getPSchedule(), context);
     }
 
-    static List<LocalDate> schedule(PSchedule node) {
+    /**
+     * @throws java.time.DateTimeException on an invalid date
+     * @throws IllegalArgumentException on a range without positive step
+     */
+    static List<LocalDate> schedule(PSchedule node, Context context) {
         if (node instanceof ARangeSchedule range) {
-            return ScheduleSemantics.range(expr(range.getFirst()), period(range.getPeriod()), expr(range.getLast()));
+            return ScheduleSemantics.range(expr(range.getFirst()), period(range.getPeriod()), expr(range.getLast()))
+                    .evaluate(context);
         }
         AListSchedule list = (AListSchedule) node;
         List<LocalDate> dates = new ArrayList<>();
-        dates.add(expr(list.getExpr()));
+        dates.add(expr(list.getExpr()).at(context));
         for (Object more : list.getMoreExpr()) {
-            dates.add(expr(((AMoreExpr) more).getExpr()));
+            dates.add(expr(((AMoreExpr) more).getExpr()).at(context));
         }
         return dates;
     }
 
     /** periods are applied from left to right */
-    static LocalDate expr(PExpr node) {
+    static ScheduleSemantics.Expr expr(PExpr node) {
         AExpr expr = (AExpr) node;
-        LocalDate date = date(expr.getDate());
+        ScheduleSemantics.Expr date = date(expr.getDate());
         for (Object shift : expr.getShift()) {
             if (shift instanceof APlusShift plus) {
-                date = date.plus(period(plus.getPeriod()));
+                date = ScheduleSemantics.plus(date, period(plus.getPeriod()));
             } else if (shift instanceof AMinusShift minus) {
-                date = date.minus(period(minus.getPeriod()));
+                date = ScheduleSemantics.minus(date, period(minus.getPeriod()));
             } else if (shift instanceof ASpotShift spot) {
                 date = ScheduleSemantics.spot(date, spot.getPair() == null ? null : spot.getPair().getText());
             } else {
@@ -63,14 +73,16 @@ public final class ScheduleEvaluator {
         return date;
     }
 
-    static LocalDate date(PDate node) {
-        if (node instanceof AIsoDate iso) {
-            return LocalDate.of(number(iso.getYear()), number(iso.getMonth()), number(iso.getDay()));
+    static ScheduleSemantics.Expr date(PDate node) {
+        if (node instanceof ABaseDate) {
+            return ScheduleSemantics.BASE;
+        } else if (node instanceof AIsoDate iso) {
+            return ScheduleSemantics.literal(LocalDate.of(number(iso.getYear()), number(iso.getMonth()), number(iso.getDay())));
         } else if (node instanceof AGermanDate german) {
-            return LocalDate.of(number(german.getYear()), number(german.getMonth()), number(german.getDay()));
+            return ScheduleSemantics.literal(LocalDate.of(number(german.getYear()), number(german.getMonth()), number(german.getDay())));
         }
         AUsDate us = (AUsDate) node;
-        return LocalDate.of(number(us.getYear()), number(us.getMonth()), number(us.getDay()));
+        return ScheduleSemantics.literal(LocalDate.of(number(us.getYear()), number(us.getMonth()), number(us.getDay())));
     }
 
     static TemporalAmount period(PPeriod node) {

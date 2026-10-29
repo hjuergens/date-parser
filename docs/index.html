@@ -175,6 +175,8 @@
   .date { font-family: var(--mono); font-size: 0.86em; color: var(--ok); white-space: nowrap; }
   .err { font-family: var(--mono); font-size: 0.86em; color: var(--err); }
   .none { color: var(--muted); font-style: italic; }
+  .ctx { color: var(--muted); }
+  .market { margin: 0 0 8px; font-size: 0.86rem; color: var(--muted); }
 
   footer { max-width: 980px; margin: 0 auto; padding: 24px 16px 48px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.9rem; }
 
@@ -194,11 +196,11 @@
     <h1>Ten parsers, one date language</h1>
     <p class="lead">
       The same small language for dates, periods and ranges, implemented with ten parser generators and
-      parser libraries, from LL(1) to LALR(1), Earley and PEG. Every implementation passes the same 86 test cases.
+      parser libraries, from LL(1) to LALR(1), Earley and PEG. Every implementation passes the same 106 test cases.
     </p>
     <ul class="stats">
       <li><strong>10</strong><span>implementations, 4 languages</span></li>
-      <li><strong>86</strong><span>shared test cases</span></li>
+      <li><strong>106</strong><span>shared test cases</span></li>
       <li><strong>0</strong><span>grammar conflicts</span></li>
       <li><strong>1</strong><span>specification file</span></li>
     </ul>
@@ -206,7 +208,7 @@
 
   <section aria-labelledby="language">
     <h2 id="language">The language</h2>
-    <p class="lead">Small enough for every tool, rich enough to show their differences: three date notations, periods, business days, IMM and FX spot dates, lists and ranges.</p>
+    <p class="lead">Small enough for every tool, rich enough to show their differences: three date notations, periods, business days, IMM and FX spot dates, lists and ranges. A schedule is a rule: a function of the base date <code>T</code> and the market.</p>
     <div class="two">
       <table class="examples">
         <tbody>
@@ -218,6 +220,7 @@
           <tr><td>2015-06-12 + 1B</td><td>2015-06-15 (business days)</td></tr>
           <tr><td>2015-06-09 + 3M &gt; IMM</td><td>2015-09-16 (next IMM date)</td></tr>
           <tr><td>2015-06-12 &gt; SPOT USDCAD</td><td>2015-06-15 (FX spot, T+1)</td></tr>
+          <tr><td>T + 2B</td><td>two business days after the base date, in the market of the evaluation</td></tr>
         </tbody>
       </table>
       <pre><code>schedule = range | expr { "," expr } .
@@ -225,7 +228,8 @@ range    = "(" expr ":" period ":" expr ")" .
 expr     = date { ("+" | "-") period
                | "&gt;" ( "IMM"
                        | "SPOT" [ PAIR ] ) } .
-date     = NUM ( "-" NUM "-" NUM       <span class="c">(* ISO    *)</span>
+date     = "T"                         <span class="c">(* base   *)</span>
+         | NUM ( "-" NUM "-" NUM       <span class="c">(* ISO    *)</span>
                | "." NUM "." NUM       <span class="c">(* German *)</span>
                | "/" NUM "/" NUM ) .   <span class="c">(* US     *)</span>
 period   = NUM ( "D" | "W" | "M"
@@ -238,7 +242,12 @@ period   = NUM ( "D" | "W" | "M"
       <code>B</code> counts business days, Monday to Friday.
       <code>&gt; IMM</code> moves to the next IMM date strictly after the date: the third Wednesday of March, June, September or December.
       <code>&gt; SPOT</code> moves to the FX spot date: <code>+ 1B</code> for USD against CAD, TRY, PHP or RUB, <code>+ 2B</code> for every other pair
-      (<code>PAIR</code> is six capital letters such as <code>EURUSD</code>). Only weekends are skipped, there are no holiday calendars yet.
+      (<code>PAIR</code> is six capital letters such as <code>EURUSD</code>).
+    </p>
+    <p class="note">
+      Parsing a schedule yields a rule, not dates: a function that gets the base date <code>T</code> and a market only when it is evaluated.
+      The grammar never names a market. A market only answers questions about days (which days are business days, and so which day is spot);
+      the meaning of a rule doesn't depend on it, so <code>IMM</code> is the third Wednesday everywhere. Without a market, only Saturdays and Sundays are skipped.
     </p>
   </section>
 
@@ -264,10 +273,10 @@ period   = NUM ( "D" | "W" | "M"
         <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-antlr/src/main/antlr4/io/github/hjuergens/time/DateSchedule.g4">DateSchedule.g4 ↗</a>
       </div>
       <pre><code><span class="c">// periods are applied from left to right</span>
-expr returns [LocalDate value]
+expr returns [Expr value]
     : date                          { $value = $date.value; }
-      ( &#x27;+&#x27; period                  { $value = $value.plus($period.value); }
-      | &#x27;-&#x27; period                  { $value = $value.minus($period.value); }
+      ( &#x27;+&#x27; period                  { $value = ScheduleSemantics.plus($value, $period.value); }
+      | &#x27;-&#x27; period                  { $value = ScheduleSemantics.minus($value, $period.value); }
       | &#x27;&gt;&#x27; &#x27;IMM&#x27;                   { $value = ScheduleSemantics.nextImm($value); }
       | &#x27;&gt;&#x27; spot                    { $value = ScheduleSemantics.spot($value, $spot.pair); }
       )*
@@ -279,10 +288,11 @@ spot returns [String pair]
              )?
     ;
 
-date returns [LocalDate value]
-    : y=NUM &#x27;-&#x27; m=NUM &#x27;-&#x27; d=NUM     { $value = LocalDate.of($y.int, $m.int, $d.int); }  <span class="c">// ISO</span>
-    | d=NUM &#x27;.&#x27; m=NUM &#x27;.&#x27; y=NUM     { $value = LocalDate.of($y.int, $m.int, $d.int); }  <span class="c">// German</span>
-    | m=NUM &#x27;/&#x27; d=NUM &#x27;/&#x27; y=NUM     { $value = LocalDate.of($y.int, $m.int, $d.int); }  <span class="c">// US</span>
+date returns [Expr value]
+    : &#x27;T&#x27;                           { $value = ScheduleSemantics.BASE; }                                       <span class="c">// base date</span>
+    | y=NUM &#x27;-&#x27; m=NUM &#x27;-&#x27; d=NUM     { $value = ScheduleSemantics.literal(LocalDate.of($y.int, $m.int, $d.int)); }  <span class="c">// ISO</span>
+    | d=NUM &#x27;.&#x27; m=NUM &#x27;.&#x27; y=NUM     { $value = ScheduleSemantics.literal(LocalDate.of($y.int, $m.int, $d.int)); }  <span class="c">// German</span>
+    | m=NUM &#x27;/&#x27; d=NUM &#x27;/&#x27; y=NUM     { $value = ScheduleSemantics.literal(LocalDate.of($y.int, $m.int, $d.int)); }  <span class="c">// US</span>
     ;</code></pre>
       <p class="pitfall"><strong>Pitfall.</strong> <code>$start</code> is reserved (the rule's first token), so the range labels are <code>first</code>/<code>last</code>.</p>
     </div>
@@ -293,25 +303,36 @@ date returns [LocalDate value]
       </div>
       <pre><code># shifts are applied from left to right
 def visitExpr(self, ctx):
-    d = self.visit(ctx.date())
-    for shift in ctx.shift():
-        d = self.visit(shift)(d)
-    return d
+    start, shifts = self.visit(ctx.date()), [self.visit(shift) for shift in ctx.shift()]
+
+    def at(context):
+        d = start(context)
+        for shift in shifts:
+            d = shift(d, context.market)
+        return d
+    return at
 
 def visitPlus(self, ctx):
-    return lambda d: semantics.plus(d, self.visit(ctx.period()))
+    period = self.visit(ctx.period())
+    return lambda d, market: semantics.plus(d, period, 1, market)
 
 def visitMinus(self, ctx):
-    return lambda d: semantics.plus(d, self.visit(ctx.period()), -1)
+    period = self.visit(ctx.period())
+    return lambda d, market: semantics.plus(d, period, -1, market)
 
 def visitImm(self, ctx):
-    return semantics.next_imm
+    return lambda d, market: semantics.next_imm(d)
 
 def visitSpot(self, ctx):
-    return lambda d: semantics.spot(d, ctx.PAIR() and ctx.PAIR().getText())
+    pair = ctx.PAIR() and ctx.PAIR().getText()
+    return lambda d, market: market.spot(d, pair)
+
+def visitBase(self, ctx):
+    return semantics.base
 
 def visitIso(self, ctx):
-    return date(int(ctx.y.text), int(ctx.m.text), int(ctx.d.text))
+    value = date(int(ctx.y.text), int(ctx.m.text), int(ctx.d.text))
+    return lambda context: value
 
 visitGerman = visitUs = visitIso</code></pre>
       <p class="pitfall"><strong>Pitfall.</strong> Java actions can't be generated into Python, so the grammar is copied without them. The Python target also renames the rule <code>range</code> to <code>range_()</code>.</p>
@@ -321,14 +342,14 @@ visitGerman = visitUs = visitIso</code></pre>
         <span class="kind">Recursive descent with backtracking</span><span class="lang">Scala 2.13</span>
         <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-combinators/src/main/scala/de/juergens/text/ScheduleParsers.scala">ScheduleParsers.scala ↗</a>
       </div>
-      <pre><code>def date: Parser[LocalDate] = number ~ (
+      <pre><code>def date: Parser[Context =&gt; LocalDate] = &quot;T&quot; ^^^ base | number ~ (
     (&quot;-&quot; ~&gt; number) ~ (&quot;-&quot; ~&gt; number) ^^ { case m ~ d =&gt; (y: Int) =&gt; LocalDate.of(y, m, d) }  <span class="c">// ISO</span>
   | (&quot;.&quot; ~&gt; number) ~ (&quot;.&quot; ~&gt; number) ^^ { case m ~ y =&gt; (d: Int) =&gt; LocalDate.of(y, m, d) }  <span class="c">// German</span>
   | (&quot;/&quot; ~&gt; number) ~ (&quot;/&quot; ~&gt; number) ^^ { case d ~ y =&gt; (m: Int) =&gt; LocalDate.of(y, m, d) }  <span class="c">// US</span>
-  ) ^^ { case first ~ toDate =&gt; toDate(first) }
+  ) ^^ { case first ~ toDate =&gt; val date = toDate(first); (_: Context) =&gt; date }
 
-def expr: Parser[LocalDate] = date ~ rep(shift) ^^ {
-  case start ~ shifts =&gt; shifts.foldLeft(start)((d, f) =&gt; f(d))
+def expr: Parser[Context =&gt; LocalDate] = date ~ rep(shift) ^^ {
+  case start ~ shifts =&gt; (c: Context) =&gt; shifts.foldLeft(start(c))((d, f) =&gt; f(d, c.market))
 }</code></pre>
       <p class="pitfall"><strong>Pitfall.</strong> None: the grammar is ordinary Scala code, there is no generator step.</p>
     </div>
@@ -337,20 +358,21 @@ def expr: Parser[LocalDate] = date ~ rep(shift) ^^ {
         <span class="kind">LL(1)</span><span class="lang">Java</span>
         <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-coco/src/main/coco/Schedule.atg">Schedule.atg ↗</a>
       </div>
-      <pre><code>Expr&lt;out LocalDate d&gt;                   (. TemporalAmount p; String code; .)
+      <pre><code>Expr&lt;out ScheduleSemantics.Expr d&gt;      (. TemporalAmount p; String code; .)
 = Date&lt;out d&gt;
-  { &quot;+&quot; Period&lt;out p&gt;                   (. d = d.plus(p); .)
-  | &quot;-&quot; Period&lt;out p&gt;                   (. d = d.minus(p); .)
+  { &quot;+&quot; Period&lt;out p&gt;                   (. d = ScheduleSemantics.plus(d, p); .)
+  | &quot;-&quot; Period&lt;out p&gt;                   (. d = ScheduleSemantics.minus(d, p); .)
   | &quot;&gt;&quot;
-    ( &quot;IMM&quot;                             (. if (errors.count == 0) d = ScheduleSemantics.nextImm(d); .)
+    ( &quot;IMM&quot;                             (. d = ScheduleSemantics.nextImm(d); .)
     | &quot;SPOT&quot;                            (. code = null; .)
       [ pair                            (. code = t.val; .)
-      ]                                 (. if (errors.count == 0) d = ScheduleSemantics.spot(d, code); .)
+      ]                                 (. d = ScheduleSemantics.spot(d, code); .)
     )
   }.
 
-Date&lt;out LocalDate d&gt;                   (. int a, b, c; d = LocalDate.MIN; .)
-= Number&lt;out a&gt;
+Date&lt;out ScheduleSemantics.Expr d&gt;      (. int a, b, c; d = ScheduleSemantics.BASE; .)
+= &quot;T&quot;                                   <span class="c">/* the base date */</span>
+| Number&lt;out a&gt;
   ( &quot;-&quot; Number&lt;out b&gt; &quot;-&quot; Number&lt;out c&gt; (. d = date(a, b, c); .)
   | &quot;.&quot; Number&lt;out b&gt; &quot;.&quot; Number&lt;out c&gt; (. d = date(c, b, a); .)
   | &quot;/&quot; Number&lt;out b&gt; &quot;/&quot; Number&lt;out c&gt; (. d = date(c, a, b); .)
@@ -362,12 +384,12 @@ Date&lt;out LocalDate d&gt;                   (. int a, b, c; d = LocalDate.MIN;
         <span class="kind">LL(k), here LL(1)</span><span class="lang">Java</span>
         <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-javacc/src/main/javacc/Schedule.jj">Schedule.jj ↗</a>
       </div>
-      <pre><code>LocalDate Expr() :
-{ LocalDate d; TemporalAmount p; Token pair; }
+      <pre><code>ScheduleSemantics.Expr Expr() :
+{ ScheduleSemantics.Expr d; TemporalAmount p; Token pair; }
 {
   d = Date()
-  ( &quot;+&quot; p = Period() { d = d.plus(p); }
-  | &quot;-&quot; p = Period() { d = d.minus(p); }
+  ( &quot;+&quot; p = Period() { d = ScheduleSemantics.plus(d, p); }
+  | &quot;-&quot; p = Period() { d = ScheduleSemantics.minus(d, p); }
   | &quot;&gt;&quot;
     ( &quot;IMM&quot; { d = ScheduleSemantics.nextImm(d); }
     | &quot;SPOT&quot; { pair = null; } ( pair = &lt;PAIR&gt; )? { d = ScheduleSemantics.spot(d, pair == null ? null : pair.image); }
@@ -376,13 +398,14 @@ Date&lt;out LocalDate d&gt;                   (. int a, b, c; d = LocalDate.MIN;
   { return d; }
 }
 
-LocalDate Date() :
+ScheduleSemantics.Expr Date() :
 { int a, b, c; }
 {
-  a = Number()
-  ( &quot;-&quot; b = Number() &quot;-&quot; c = Number() { return LocalDate.of(a, b, c); }   <span class="c">// ISO</span>
-  | &quot;.&quot; b = Number() &quot;.&quot; c = Number() { return LocalDate.of(c, b, a); }   <span class="c">// German</span>
-  | &quot;/&quot; b = Number() &quot;/&quot; c = Number() { return LocalDate.of(c, a, b); }   <span class="c">// US</span>
+  &quot;T&quot; { return ScheduleSemantics.BASE; }   <span class="c">// the base date</span>
+| a = Number()
+  ( &quot;-&quot; b = Number() &quot;-&quot; c = Number() { return ScheduleSemantics.literal(LocalDate.of(a, b, c)); }   <span class="c">// ISO</span>
+  | &quot;.&quot; b = Number() &quot;.&quot; c = Number() { return ScheduleSemantics.literal(LocalDate.of(c, b, a)); }   <span class="c">// German</span>
+  | &quot;/&quot; b = Number() &quot;/&quot; c = Number() { return ScheduleSemantics.literal(LocalDate.of(c, a, b)); }   <span class="c">// US</span>
   )
 }</code></pre>
       <p class="pitfall"><strong>Pitfall.</strong> ParserGeneratorCC (used by the Maven plugin) rejects the classic <code>STATIC</code> option.</p>
@@ -401,7 +424,8 @@ shift
     | {spot} next spot pair?;
 
 date
-    = {iso} [year]:number [s1]:minus [month]:number [s2]:minus [day]:number
+    = {base} base
+    | {iso} [year]:number [s1]:minus [month]:number [s2]:minus [day]:number
     | {german} [day]:number [s1]:dot [month]:number [s2]:dot [year]:number
     | {us} [month]:number [s1]:slash [day]:number [s2]:slash [year]:number;
 
@@ -415,16 +439,17 @@ period = number unit;</code></pre>
       </div>
       <pre><code><span class="c">/* periods are applied from left to right */</span>
 expr ::= date:d                     {: RESULT = d; :}
-       | expr:e PLUS period:p       {: RESULT = e.plus(p); :}
-       | expr:e MINUS period:p      {: RESULT = e.minus(p); :}
+       | expr:e PLUS period:p       {: RESULT = ScheduleSemantics.plus(e, p); :}
+       | expr:e MINUS period:p      {: RESULT = ScheduleSemantics.minus(e, p); :}
        | expr:e NEXT IMM            {: RESULT = ScheduleSemantics.nextImm(e); :}
        | expr:e NEXT SPOT           {: RESULT = ScheduleSemantics.spot(e, null); :}
        | expr:e NEXT SPOT PAIR:p    {: RESULT = ScheduleSemantics.spot(e, p); :}
        ;
 
-date ::= NUM:y MINUS NUM:m MINUS NUM:d      {: RESULT = LocalDate.of(y, m, d); :}   <span class="c">/* ISO */</span>
-       | NUM:d DOT NUM:m DOT NUM:y          {: RESULT = LocalDate.of(y, m, d); :}   <span class="c">/* German */</span>
-       | NUM:m SLASH NUM:d SLASH NUM:y      {: RESULT = LocalDate.of(y, m, d); :}   <span class="c">/* US */</span>
+date ::= BASE                             {: RESULT = ScheduleSemantics.BASE; :}                         <span class="c">/* T */</span>
+       | NUM:y MINUS NUM:m MINUS NUM:d      {: RESULT = ScheduleSemantics.literal(LocalDate.of(y, m, d)); :}   <span class="c">/* ISO */</span>
+       | NUM:d DOT NUM:m DOT NUM:y          {: RESULT = ScheduleSemantics.literal(LocalDate.of(y, m, d)); :}   <span class="c">/* German */</span>
+       | NUM:m SLASH NUM:d SLASH NUM:y      {: RESULT = ScheduleSemantics.literal(LocalDate.of(y, m, d)); :}   <span class="c">/* US */</span>
        ;</code></pre>
       <p class="pitfall"><strong>Pitfall.</strong> In the JFlex spec, <code>%cupsym</code> must come before <code>%cup</code>, or the EOF action refers to <code>sym</code>.</p>
     </div>
@@ -436,17 +461,18 @@ date ::= NUM:y MINUS NUM:m MINUS NUM:d      {: RESULT = LocalDate.of(y, m, d); :
       <pre><code><span class="c">/* periods are applied from left to right */</span>
 expr:
   date                              { $$ = $1; }
-| expr &#x27;+&#x27; period                   { $$ = $1.plus ($3); }
-| expr &#x27;-&#x27; period                   { $$ = $1.minus ($3); }
+| expr &#x27;+&#x27; period                   { $$ = ScheduleSemantics.plus ($1, $3); }
+| expr &#x27;-&#x27; period                   { $$ = ScheduleSemantics.minus ($1, $3); }
 | expr &#x27;&gt;&#x27; IMM                      { $$ = ScheduleSemantics.nextImm ($1); }
 | expr &#x27;&gt;&#x27; SPOT                     { $$ = ScheduleSemantics.spot ($1, null); }
 | expr &#x27;&gt;&#x27; SPOT PAIR                { $$ = ScheduleSemantics.spot ($1, $4); }
 ;
 
 date:
-  NUM &#x27;-&#x27; NUM &#x27;-&#x27; NUM               { $$ = LocalDate.of ($1, $3, $5); }   <span class="c">/* ISO */</span>
-| NUM &#x27;.&#x27; NUM &#x27;.&#x27; NUM               { $$ = LocalDate.of ($5, $3, $1); }   <span class="c">/* German */</span>
-| NUM &#x27;/&#x27; NUM &#x27;/&#x27; NUM               { $$ = LocalDate.of ($5, $1, $3); }   <span class="c">/* US */</span>
+  BASE                              { $$ = ScheduleSemantics.BASE; }   <span class="c">/* T */</span>
+| NUM &#x27;-&#x27; NUM &#x27;-&#x27; NUM               { $$ = ScheduleSemantics.literal (LocalDate.of ($1, $3, $5)); }   <span class="c">/* ISO */</span>
+| NUM &#x27;.&#x27; NUM &#x27;.&#x27; NUM               { $$ = ScheduleSemantics.literal (LocalDate.of ($5, $3, $1)); }   <span class="c">/* German */</span>
+| NUM &#x27;/&#x27; NUM &#x27;/&#x27; NUM               { $$ = ScheduleSemantics.literal (LocalDate.of ($5, $1, $3)); }   <span class="c">/* US */</span>
 ;</code></pre>
       <p class="pitfall"><strong>Pitfall.</strong> In Bison's Java skeleton <code>$$</code> is a plain <code>Object</code>; only <code>$1</code>…<code>$n</code> are typed.</p>
     </div>
@@ -457,18 +483,19 @@ date:
       </div>
       <pre><code><span class="c">// periods are applied from left to right</span>
 Expr
-  = start:Date shifts:(_ @Shift)* { return shifts.reduce((d, shift) =&gt; shift(d), start); }
+  = start:Date shifts:(_ @Shift)* { return (c) =&gt; shifts.reduce((d, shift) =&gt; shift(d, c.market), start(c)); }
 
 Shift
-  = &quot;+&quot; _ p:Period { return d =&gt; plus(d, p); }
-  / &quot;-&quot; _ p:Period { return d =&gt; plus(d, p, -1); }
+  = &quot;+&quot; _ p:Period { return (d, market) =&gt; plus(d, p, 1, market); }
+  / &quot;-&quot; _ p:Period { return (d, market) =&gt; plus(d, p, -1, market); }
   / &quot;&gt;&quot; _ &quot;IMM&quot; { return nextImm; }
-  / &quot;&gt;&quot; _ &quot;SPOT&quot; pair:(_ @$[A-Z]|6|)? { return d =&gt; spot(d, pair); }
+  / &quot;&gt;&quot; _ &quot;SPOT&quot; pair:(_ @$[A-Z]|6|)? { return (d, market) =&gt; spot(d, pair, market); }
 
 Date
-  = y:Number _ &quot;-&quot; _ m:Number _ &quot;-&quot; _ d:Number { return date(y, m, d); }  <span class="c">// ISO</span>
-  / d:Number _ &quot;.&quot; _ m:Number _ &quot;.&quot; _ y:Number { return date(y, m, d); }  <span class="c">// German</span>
-  / m:Number _ &quot;/&quot; _ d:Number _ &quot;/&quot; _ y:Number { return date(y, m, d); }  <span class="c">// US</span></code></pre>
+  = &quot;T&quot; { return base; }  <span class="c">// the base date</span>
+  / y:Number _ &quot;-&quot; _ m:Number _ &quot;-&quot; _ d:Number { const value = date(y, m, d); return () =&gt; value; }  <span class="c">// ISO</span>
+  / d:Number _ &quot;.&quot; _ m:Number _ &quot;.&quot; _ y:Number { const value = date(y, m, d); return () =&gt; value; }  <span class="c">// German</span>
+  / m:Number _ &quot;/&quot; _ d:Number _ &quot;/&quot; _ y:Number { const value = date(y, m, d); return () =&gt; value; }  <span class="c">// US</span></code></pre>
       <p class="pitfall"><strong>Pitfall.</strong> Peggy provides <code>range()</code> in actions, which silently shadows a helper of the same name.</p>
     </div>
     <div role="tabpanel" id="panel-lark" aria-labelledby="tab-lark" hidden>
@@ -484,7 +511,8 @@ shift: &quot;+&quot; period           -&gt; plus
      | &quot;&gt;&quot; &quot;IMM&quot;            -&gt; imm
      | &quot;&gt;&quot; &quot;SPOT&quot; [PAIR]    -&gt; spot
 
-date: NUM &quot;-&quot; NUM &quot;-&quot; NUM   -&gt; iso
+date: &quot;T&quot;                   -&gt; base
+    | NUM &quot;-&quot; NUM &quot;-&quot; NUM   -&gt; iso
     | NUM &quot;.&quot; NUM &quot;.&quot; NUM   -&gt; german
     | NUM &quot;/&quot; NUM &quot;/&quot; NUM   -&gt; us
 
@@ -496,7 +524,7 @@ period: NUM UNIT</code></pre>
 
   <section aria-labelledby="compare">
     <h2 id="compare">Side by side</h2>
-    <p class="lead">Size counts non-blank, non-comment lines of the grammar files. The JVM modules also share an 88-line helper for periods, business days, IMM and spot dates, and range expansion; the Python modules a 50-line one.</p>
+    <p class="lead">Size counts non-blank, non-comment lines of the grammar files. The JVM modules also share a 141-line helper (market, context, rule builders, periods, business days, IMM and spot dates, ranges); the Python modules a 64-line one.</p>
     <div class="scroll">
       <table class="compare">
         <thead>
@@ -506,70 +534,70 @@ period: NUM UNIT</code></pre>
         <tr>
           <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-antlr/src/main/antlr4/io/github/hjuergens/time/DateSchedule.g4">ANTLR 4</a></th>
           <td>ALL(*) · adaptive LL</td>
-          <td class="num">42</td>
+          <td class="num">46</td>
           <td>Actions with <code>returns […]</code> attributes</td>
           <td>Throwing error listener plus <code>BailErrorStrategy</code></td>
         </tr>
         <tr>
           <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-antlr-python/src/antlr_schedule/__init__.py">ANTLR 4 · Python</a></th>
           <td>ALL(*) · adaptive LL</td>
-          <td class="num">29 + 43<small>grammar + visitor</small></td>
+          <td class="num">30 + 56<small>grammar + visitor</small></td>
           <td>Visitor over the parse tree; the grammar has no actions</td>
           <td>Error listener on lexer and parser that raises</td>
         </tr>
         <tr>
           <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-combinators/src/main/scala/de/juergens/text/ScheduleParsers.scala">Scala combinators</a></th>
           <td>Recursive descent with backtracking</td>
-          <td class="num">71</td>
+          <td class="num">89</td>
           <td><code>^^</code> functions, <code>foldLeft</code> over the shifts</td>
           <td><code>NoSuccess</code> result, turned into an exception</td>
         </tr>
         <tr>
           <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-coco/src/main/coco/Schedule.atg">Coco/R</a></th>
           <td>LL(1)</td>
-          <td class="num">64</td>
+          <td class="num">67</td>
           <td><code>(. … .)</code> actions with <code>out</code> parameters</td>
           <td><code>errors.count</code>, messages written to a stream</td>
         </tr>
         <tr>
           <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-javacc/src/main/javacc/Schedule.jj">JavaCC</a></th>
           <td>LL(k), here LL(1)</td>
-          <td class="num">74</td>
+          <td class="num">76</td>
           <td>Java code inside the productions; each declares its locals</td>
           <td><code>ParseException</code>, <code>TokenMgrException</code></td>
         </tr>
         <tr>
           <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-sablecc/src/main/sablecc/schedule.grammar">SableCC</a></th>
           <td>LALR(1) with typed AST</td>
-          <td class="num">38 + 65<small>grammar + evaluator</small></td>
+          <td class="num">40 + 70<small>grammar + evaluator</small></td>
           <td>Separate evaluator walking the generated typed tree</td>
           <td><code>ParserException</code>, <code>LexerException</code></td>
         </tr>
         <tr>
           <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-cup-jflex/src/main/cup/schedule.cup">JFlex + CUP</a></th>
           <td>LALR(1)</td>
-          <td class="num">36 + 35<small>parser + lexer</small></td>
+          <td class="num">37 + 36<small>parser + lexer</small></td>
           <td><code>{: … :}</code> actions, left-recursive rules</td>
           <td><code>parse()</code> throws on the first syntax error</td>
         </tr>
         <tr>
           <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-bison/src/main/resources/schedule.y">GNU Bison</a></th>
           <td>LALR(1)</td>
-          <td class="num">102<small>incl. hand-written scanner</small></td>
+          <td class="num">108<small>incl. hand-written scanner</small></td>
           <td><code>{ … }</code> actions, left-recursive rules</td>
           <td><code>parse()</code> returns <code>false</code></td>
         </tr>
         <tr>
           <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-peg/schedule.pegjs">Peggy</a></th>
           <td>PEG · ordered choice</td>
-          <td class="num">84<small>incl. date arithmetic</small></td>
+          <td class="num">94<small>incl. date arithmetic</small></td>
           <td>Action blocks; date arithmetic written by hand</td>
           <td><code>SyntaxError</code> with expected tokens</td>
         </tr>
         <tr>
           <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-lark/src/lark_schedule/schedule.lark">Lark</a></th>
           <td>Earley and LALR(1), one grammar</td>
-          <td class="num">16 + 37<small>grammar + transformer</small></td>
+          <td class="num">17 + 45<small>grammar + transformer</small></td>
           <td><code>Transformer</code>, one method per rule alias</td>
           <td><code>UnexpectedInput</code>; <code>VisitError</code> wraps exceptions of the transformer</td>
         </tr>
@@ -585,12 +613,16 @@ period: NUM UNIT</code></pre>
         <p>The LL tools and Peggy write <code>date { ("+" | "-") period }</code> as a loop. CUP and Bison write <code>expr '+' period</code>, which is natural for LALR(1).</p></li>
       <li><strong>Separating syntax from semantics is a choice.</strong>
         <p>SableCC's grammar contains no code at all; a separate tree walker computes the dates. Every other tool interleaves actions with the rules.</p></li>
+      <li><strong>Compute while parsing, or build a rule first.</strong>
+        <p>Because the market only arrives at evaluation, no tool can compute the dates while parsing. The action-based tools (ANTLR, Coco/R, JavaCC, CUP, Bison, Peggy)
+          now build functions in their actions; in SableCC the syntax tree already is the rule, and the visitor, transformer and combinator versions only gained a parameter.
+          A side effect: Coco/R's actions no longer compute anything during error recovery.</p></li>
       <li><strong>Error recovery has consequences.</strong>
         <p>Coco/R recovers and keeps executing actions on incomplete input, so the actions must tolerate it. ANTLR needs a bail strategy to stop at the first error.</p></li>
       <li><strong>Ordered choice is not alternation.</strong>
         <p>PEG tries the alternatives in order and commits to the first match. Here this is harmless because the separators differ, but it's the main semantic difference to the generated LL and LR parsers.</p></li>
       <li><strong>The library matters as much as the parser.</strong>
-        <p>In JavaScript, about 35 lines (plus 20 for business days, IMM and spot dates) reproduce <code>java.time</code>'s month arithmetic.
+        <p>In JavaScript, about 35 lines (plus 25 for markets, business days, IMM and spot dates) reproduce <code>java.time</code>'s month arithmetic.
           On the JVM, <code>Period</code> can't express business days, so <code>B</code> needs a <code>TemporalAmount</code> of its own. The end-of-month cases in the test file exist to catch differences.</p></li>
       <li><strong>One grammar, two algorithms.</strong>
         <p>Lark builds an Earley parser or an LALR(1) parser from the same grammar file; every shared case runs with both.
@@ -728,6 +760,32 @@ period: NUM UNIT</code></pre>
       </table>
       </section>
       <section>
+      <h3>base date and market</h3>
+      <p class="market"><code>market XTEST = 2015-06-10, 2015-07-03, 2015-12-25</code></p>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2015-06-09]</span> T</code></td><td><span class="date">2015-06-09</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09]</span> T + 1M</code></td><td><span class="date">2015-07-09</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09]</span> T &gt; IMM</code></td><td><span class="date">2015-06-17</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09]</span> T, 2015-01-01</code></td><td><span class="date">2015-06-09</span>, <span class="date">2015-01-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09]</span> (T : 1W : T + 2W)</code></td><td><span class="date">2015-06-09</span>, <span class="date">2015-06-16</span>, <span class="date">2015-06-23</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09]</span> T + 2B</code></td><td><span class="date">2015-06-11</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09 XTEST]</span> T + 2B</code></td><td><span class="date">2015-06-12</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09 XTEST]</span> T + 1B</code></td><td><span class="date">2015-06-11</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-11 XTEST]</span> T - 1B</code></td><td><span class="date">2015-06-09</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-07-02 XTEST]</span> T + 1B</code></td><td><span class="date">2015-07-06</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09 XTEST]</span> 2015-06-09 + 2B</code></td><td><span class="date">2015-06-12</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09 XTEST]</span> T &gt; SPOT</code></td><td><span class="date">2015-06-12</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09 XTEST]</span> T &gt; SPOT USDCAD</code></td><td><span class="date">2015-06-11</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-12-24 XTEST]</span> T &gt; SPOT</code></td><td><span class="date">2015-12-29</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09 XTEST]</span> (T : 1B : T + 3B)</code></td><td><span class="date">2015-06-09</span>, <span class="date">2015-06-11</span>, <span class="date">2015-06-12</span>, <span class="date">2015-06-15</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09 XTEST]</span> T + 1M</code></td><td><span class="date">2015-07-09</span></td></tr>
+          <tr><td><code>T</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>T + 1D</code></td><td><span class="err">error</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
       <h3>invalid dates</h3>
       <table class="cases">
         <tbody>
@@ -760,6 +818,8 @@ period: NUM UNIT</code></pre>
           <tr><td><code>2015-06-09 &gt; SPOT EURUSDX</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code>2015-06-09 &gt; SPOT usdcad</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code>2015-06-09 &gt; SPOT USDCAD USDCAD</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09]</span> 2015-06-09 + T</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09]</span> T T</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code>2015-06-09 + 2b</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code>2015-06-09 &gt; 2B</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code>(2015-01-01 : 1M : 2015-02-01), 2015-03-01</code></td><td><span class="err">error</span></td></tr>

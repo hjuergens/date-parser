@@ -1,4 +1,7 @@
-"""The shared "schedule" example parsed with Lark; the same grammar runs as Earley and as LALR(1) parser."""
+"""The shared "schedule" example parsed with Lark; the same grammar runs as Earley and as LALR(1) parser.
+
+parse() returns the rule: a function of semantics.Context (base date and market) that is evaluated later.
+"""
 from datetime import date
 
 from lark import Lark, Transformer, v_args
@@ -10,53 +13,62 @@ PARSERS = {name: Lark.open("schedule.lark", rel_to=__file__, parser=name) for na
 
 
 @v_args(inline=True)
-class Dates(Transformer):
-    """computes the dates bottom-up from the parse tree"""
+class Rules(Transformer):
+    """builds the rule bottom-up from the parse tree: every node becomes a function of the context"""
 
-    def exprs(self, *dates):
-        return list(dates)
+    def exprs(self, *exprs):
+        return lambda context: [expr(context) for expr in exprs]
 
     def range(self, first, step, last):
-        return semantics.expand(first, step, last)
+        if not step.is_positive():
+            raise ValueError(f"step must be positive: {step}")
+        return lambda context: semantics.expand(first(context), step, last(context), context.market)
 
     def expr(self, start, *shifts):
-        for shift in shifts:
-            start = shift(start)
-        return start
+        def at(context):
+            d = start(context)
+            for shift in shifts:
+                d = shift(d, context.market)
+            return d
+        return at
 
     def plus(self, period):
-        return lambda d: semantics.plus(d, period)
+        return lambda d, market: semantics.plus(d, period, 1, market)
 
     def minus(self, period):
-        return lambda d: semantics.plus(d, period, -1)
+        return lambda d, market: semantics.plus(d, period, -1, market)
 
     def imm(self):
-        return semantics.next_imm
+        return lambda d, market: semantics.next_imm(d)
 
     def spot(self, pair):
-        return lambda d: semantics.spot(d, pair and str(pair))
+        return lambda d, market: market.spot(d, pair and str(pair))
+
+    def base(self):
+        return semantics.base
 
     def iso(self, y, m, d):
-        return date(int(y), int(m), int(d))
+        value = date(int(y), int(m), int(d))
+        return lambda context: value
 
     def german(self, d, m, y):
-        return date(int(y), int(m), int(d))
+        return self.iso(y, m, d)
 
     def us(self, m, d, y):
-        return date(int(y), int(m), int(d))
+        return self.iso(y, m, d)
 
     def period(self, n, unit):
         return semantics.period(int(n), str(unit))
 
 
 def parse(text, parser="lalr"):
-    """the dates of a schedule
+    """the rule of a schedule; evaluate it with rule(semantics.Context(base, market))
 
     :raises lark.exceptions.UnexpectedInput: on a syntax error
     :raises ValueError: on an invalid date or a range without positive step
     """
     tree = PARSERS[parser].parse(text)
     try:
-        return Dates().transform(tree)
+        return Rules().transform(tree)
     except VisitError as e:
         raise e.orig_exc from None

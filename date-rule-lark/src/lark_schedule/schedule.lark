@@ -16,7 +16,8 @@ shift: "+" period           -> plus
      | ">" "IMM"            -> imm
      | ">" "SPOT" [PAIR]    -> spot
 
-date: NUM "-" NUM "-" NUM   -> iso
+date: "T"                   -> base
+    | NUM "-" NUM "-" NUM   -> iso
     | NUM "." NUM "." NUM   -> german
     | NUM "/" NUM "/" NUM   -> us
 

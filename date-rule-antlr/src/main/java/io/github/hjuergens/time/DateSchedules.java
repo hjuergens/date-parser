@@ -8,8 +8,6 @@ import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 
-import java.time.LocalDate;
-import java.util.List;
 
 /**
  * Entry point of the shared "schedule" example, see {@code DateSchedule.g4}.
@@ -28,11 +26,13 @@ public final class DateSchedules {
     }
 
     /**
+     * The rule of a schedule; evaluate it with {@code rule.evaluate(new ScheduleSemantics.Context(base, market))}.
+     *
      * @throws ParseCancellationException on a syntax error
      * @throws java.time.DateTimeException on an invalid date
      * @throws IllegalArgumentException on a range without positive step
      */
-    public static List<LocalDate> parse(String text) {
+    public static ScheduleSemantics.Rule parse(String text) {
         DateScheduleLexer lexer = new DateScheduleLexer(CharStreams.fromString(text));
         lexer.removeErrorListeners();
         lexer.addErrorListener(FAIL);
@@ -40,6 +40,6 @@ public final class DateSchedules {
         parser.removeErrorListeners();
         parser.addErrorListener(FAIL);
         parser.setErrorHandler(new BailErrorStrategy());
-        return parser.schedule().dates;
+        return parser.schedule().result;
     }
 }

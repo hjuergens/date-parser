@@ -3,6 +3,8 @@
  *   2015-06-09 + 3M, 09.06.2015, (2015-01-15 : 1Q : 2015-12-31)
  * Dates are {year, month, day} objects, periods {months, days, business}; the arithmetic
  * follows java.time: months first (day clamped to the end of the month), then days.
+ * parse() returns the rule, a function of the context { base, market } that is evaluated later;
+ * a market is an object with isBusinessDay(date), the default skips Saturdays and Sundays only.
  */
 
 {{
@@ -17,8 +19,22 @@
     return { year, month, day };
   }
 
-  function plus(d, period, sign = 1) {
-    if (period.business) return plusBusinessDays(d, sign * period.business);
+  // the default market: Monday to Friday, no holidays
+  const WEEKENDS = { isBusinessDay: (d) => new Date(Date.UTC(d.year, d.month - 1, d.day)).getUTCDay() % 6 !== 0 };
+
+  // the rule of a schedule; base date and market only come with the evaluation
+  function rule(dates) {
+    return (context = {}) => dates({ base: context.base, market: context.market ?? WEEKENDS });
+  }
+
+  // T: the base date of the evaluation
+  function base(context) {
+    if (!context.base) throw new Error('no base date');
+    return context.base;
+  }
+
+  function plus(d, period, sign, market) {
+    if (period.business) return plusBusinessDays(d, sign * period.business, market);
     const total = d.year * 12 + (d.month - 1) + sign * period.months;
     const year = Math.floor(total / 12);
     const month = total - year * 12 + 1;
@@ -37,19 +53,20 @@
     }
   }
 
-  // count business days later (earlier if negative); only Saturdays and Sundays are skipped
-  function plusBusinessDays(d, count) {
+  // count business days of the market later (earlier if negative)
+  function plusBusinessDays(d, count, market) {
     const t = new Date(Date.UTC(d.year, d.month - 1, d.day));
     for (let days = 0; days !== count; ) {
       t.setUTCDate(t.getUTCDate() + Math.sign(count));
-      if (t.getUTCDay() % 6 !== 0) days += Math.sign(count);
+      const next = { year: t.getUTCFullYear(), month: t.getUTCMonth() + 1, day: t.getUTCDate() };
+      if (market.isBusinessDay(next)) days += Math.sign(count);
     }
     return { year: t.getUTCFullYear(), month: t.getUTCMonth() + 1, day: t.getUTCDate() };
   }
 
   // FX spot: T+1 for USD against CAD, TRY, PHP or RUB, otherwise T+2
-  function spot(d, pair) {
-    return plusBusinessDays(d, /^(USD(CAD|TRY|PHP|RUB)|(CAD|TRY|PHP|RUB)USD)$/.test(pair) ? 1 : 2);
+  function spot(d, pair, market) {
+    return plusBusinessDays(d, /^(USD(CAD|TRY|PHP|RUB)|(CAD|TRY|PHP|RUB)USD)$/.test(pair) ? 1 : 2, market);
   }
 
   function compare(a, b) {
@@ -57,13 +74,10 @@
   }
 
   // not "range": Peggy provides range() (the location of the match) in actions
-  function expand(first, step, last) {
-    if (step.months <= 0 && step.days <= 0 && step.business <= 0) {
-      throw new RangeError('step must be positive');
-    }
+  function expand(first, step, last, market) {
     const dates = [];
     for (let k = 0; ; k++) {
-      const d = plus(first, { months: k * step.months, days: k * step.days, business: k * step.business });
+      const d = plus(first, { months: k * step.months, days: k * step.days, business: k * step.business }, 1, market);
       if (compare(d, last) > 0) return dates;
       dates.push(d);
     }
@@ -71,26 +85,30 @@
 }}
 
 Schedule
-  = _ r:Range _ { return r; }
-  / _ head:Expr tail:(_ "," _ @Expr)* _ { return [head, ...tail]; }
+  = _ r:Range _ { return rule(r); }
+  / _ head:Expr tail:(_ "," _ @Expr)* _ { return rule((c) => [head, ...tail].map((expr) => expr(c))); }
 
 Range
-  = "(" _ first:Expr _ ":" _ step:Period _ ":" _ last:Expr _ ")" { return expand(first, step, last); }
+  = "(" _ first:Expr _ ":" _ step:Period _ ":" _ last:Expr _ ")" {
+      if (step.months <= 0 && step.days <= 0 && step.business <= 0) throw new RangeError('step must be positive');
+      return (c) => expand(first(c), step, last(c), c.market);
+    }
 
 // periods are applied from left to right
 Expr
-  = start:Date shifts:(_ @Shift)* { return shifts.reduce((d, shift) => shift(d), start); }
+  = start:Date shifts:(_ @Shift)* { return (c) => shifts.reduce((d, shift) => shift(d, c.market), start(c)); }
 
 Shift
-  = "+" _ p:Period { return d => plus(d, p); }
-  / "-" _ p:Period { return d => plus(d, p, -1); }
+  = "+" _ p:Period { return (d, market) => plus(d, p, 1, market); }
+  / "-" _ p:Period { return (d, market) => plus(d, p, -1, market); }
   / ">" _ "IMM" { return nextImm; }
-  / ">" _ "SPOT" pair:(_ @$[A-Z]|6|)? { return d => spot(d, pair); }
+  / ">" _ "SPOT" pair:(_ @$[A-Z]|6|)? { return (d, market) => spot(d, pair, market); }
 
 Date
-  = y:Number _ "-" _ m:Number _ "-" _ d:Number { return date(y, m, d); }  // ISO
-  / d:Number _ "." _ m:Number _ "." _ y:Number { return date(y, m, d); }  // German
-  / m:Number _ "/" _ d:Number _ "/" _ y:Number { return date(y, m, d); }  // US
+  = "T" { return base; }  // the base date
+  / y:Number _ "-" _ m:Number _ "-" _ d:Number { const value = date(y, m, d); return () => value; }  // ISO
+  / d:Number _ "." _ m:Number _ "." _ y:Number { const value = date(y, m, d); return () => value; }  // German
+  / m:Number _ "/" _ d:Number _ "/" _ y:Number { const value = date(y, m, d); return () => value; }  // US
 
 Period
   = n:Number _ unit:[DWMQYB] {

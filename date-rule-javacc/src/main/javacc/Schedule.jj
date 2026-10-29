@@ -2,6 +2,7 @@
  * Shared "schedule" example (see examples/schedule.txt in the project root):
  *   2015-06-09 + 3M, 09.06.2015, (2015-01-15 : 1Q : 2015-12-31)
  * LL(1): no lookahead beyond the next token is needed.
+ * The productions build a ScheduleSemantics.Rule, a function of base date and market that is evaluated later.
  */
 options {
   LOOKAHEAD = 1;
@@ -16,16 +17,19 @@ import java.time.LocalDate;
 import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
 import java.util.List;
+import io.github.hjuergens.parser.ScheduleSemantics.Rule;
 
 /** Parser of the shared "schedule" example. */
 public class Schedule {
 
   /**
+   * The rule of a schedule; evaluate it with {@code rule.evaluate(new ScheduleSemantics.Context(base, market))}.
+   *
    * @throws ParseException on a syntax error
    * @throws TokenMgrException on an unknown character
    * @throws java.time.DateTimeException on an invalid date
    */
-  public static List<LocalDate> parse(String text) throws ParseException {
+  public static Rule parse(String text) throws ParseException {
     return new Schedule(new StringReader(text)).Input();
   }
 }
@@ -41,35 +45,35 @@ TOKEN : {
 }
 
 /** Root production. */
-List<LocalDate> Input() :
-{ List<LocalDate> dates; }
+Rule Input() :
+{ Rule rule; }
 {
-  ( dates = Range() | dates = Exprs() ) <EOF>
-  { return dates; }
+  ( rule = Range() | rule = Exprs() ) <EOF>
+  { return rule; }
 }
 
-List<LocalDate> Exprs() :
-{ List<LocalDate> dates = new ArrayList<LocalDate>(); LocalDate d; }
+Rule Exprs() :
+{ List<ScheduleSemantics.Expr> exprs = new ArrayList<ScheduleSemantics.Expr>(); ScheduleSemantics.Expr d; }
 {
-  d = Expr() { dates.add(d); }
-  ( "," d = Expr() { dates.add(d); } )*
-  { return dates; }
+  d = Expr() { exprs.add(d); }
+  ( "," d = Expr() { exprs.add(d); } )*
+  { return ScheduleSemantics.list(exprs); }
 }
 
-List<LocalDate> Range() :
-{ LocalDate first, last; TemporalAmount step; }
+Rule Range() :
+{ ScheduleSemantics.Expr first, last; TemporalAmount step; }
 {
   "(" first = Expr() ":" step = Period() ":" last = Expr() ")"
   { return ScheduleSemantics.range(first, step, last); }
 }
 
 /** periods are applied from left to right */
-LocalDate Expr() :
-{ LocalDate d; TemporalAmount p; Token pair; }
+ScheduleSemantics.Expr Expr() :
+{ ScheduleSemantics.Expr d; TemporalAmount p; Token pair; }
 {
   d = Date()
-  ( "+" p = Period() { d = d.plus(p); }
-  | "-" p = Period() { d = d.minus(p); }
+  ( "+" p = Period() { d = ScheduleSemantics.plus(d, p); }
+  | "-" p = Period() { d = ScheduleSemantics.minus(d, p); }
   | ">"
     ( "IMM" { d = ScheduleSemantics.nextImm(d); }
     | "SPOT" { pair = null; } ( pair = <PAIR> )? { d = ScheduleSemantics.spot(d, pair == null ? null : pair.image); }
@@ -78,13 +82,14 @@ LocalDate Expr() :
   { return d; }
 }
 
-LocalDate Date() :
+ScheduleSemantics.Expr Date() :
 { int a, b, c; }
 {
-  a = Number()
-  ( "-" b = Number() "-" c = Number() { return LocalDate.of(a, b, c); }   // ISO
-  | "." b = Number() "." c = Number() { return LocalDate.of(c, b, a); }   // German
-  | "/" b = Number() "/" c = Number() { return LocalDate.of(c, a, b); }   // US
+  "T" { return ScheduleSemantics.BASE; }   // the base date
+| a = Number()
+  ( "-" b = Number() "-" c = Number() { return ScheduleSemantics.literal(LocalDate.of(a, b, c)); }   // ISO
+  | "." b = Number() "." c = Number() { return ScheduleSemantics.literal(LocalDate.of(c, b, a)); }   // German
+  | "/" b = Number() "/" c = Number() { return ScheduleSemantics.literal(LocalDate.of(c, a, b)); }   // US
   )
 }
 

@@ -16,6 +16,7 @@ Tokens
 	unit = 'D' | 'W' | 'M' | 'Q' | 'Y' | 'B';
 	imm = 'IMM';
 	spot = 'SPOT';
+	base = 'T';
 	pair = upper upper upper upper upper upper;
 	next = '>';
 	plus = '+';
@@ -47,7 +48,8 @@ Productions
 		| {spot} next spot pair?;
 
 	date
-		= {iso} [year]:number [s1]:minus [month]:number [s2]:minus [day]:number
+		= {base} base
+		| {iso} [year]:number [s1]:minus [month]:number [s2]:minus [day]:number
 		| {german} [day]:number [s1]:dot [month]:number [s2]:dot [year]:number
 		| {us} [month]:number [s1]:slash [day]:number [s2]:slash [year]:number;
 

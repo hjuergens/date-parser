@@ -17,9 +17,11 @@ Java code in a grammar can't be generated into Python. A visitor computes the da
 ## Usage
 
 ```python
+from datetime import date
 from antlr_schedule import parse
+from antlr_schedule.semantics import Context
 
-parse("(2015-06-11 : 1B : 2015-06-16)")   # [2015-06-11, 2015-06-12, 2015-06-15, 2015-06-16]
+parse("(T : 1B : T + 3B)")(Context(date(2015, 6, 11)))   # [2015-06-11, 2015-06-12, 2015-06-15, 2015-06-16]
 ```
 
 ## Build and test
@@ -39,11 +41,11 @@ uv run pytest
   so generating a Python parser still needs a JDK (mise provides one). Without `java` on the `PATH` it asks to install a JRE.
 - The runtime `antlr4-python3-runtime` must have exactly the tool's version (4.13.2).
 - The generated sources in `src/antlr_schedule/generated` are not checked in.
-- There are 86 tests (pytest), one per case of [examples/schedule.txt](../examples/schedule.txt).
+- There are 106 tests (pytest), one per case of [examples/schedule.txt](../examples/schedule.txt).
 
 ## Shared example
 
-- [`__init__.py`](src/antlr_schedule/__init__.py): `Dates(DateScheduleVisitor)` returns a value from every visit;
+- [`__init__.py`](src/antlr_schedule/__init__.py): `Rules(DateScheduleVisitor)` returns a function of the context from every visit;
   labeled alternatives (`# plus`, `# spot`, `# iso`, …) give one `visit…` method each.
 - An error listener on lexer and parser raises `ScheduleSyntaxError`; the default one only prints and recovers.
 - The Python target renames the rule `range` to `range_()`, because it would shadow the builtin.

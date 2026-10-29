@@ -43,7 +43,8 @@ Implements the [shared schedule example](../README.md#shared-example-schedule) a
 [Schedule.jj](src/main/javacc/Schedule.jj) is LL(1): each production declares its locals and returns its value.
 After `">"` the production branches on `"IMM"` or `"SPOT"` followed by an optional `<PAIR>`; `Period()` returns a
 `TemporalAmount`, because business days (`B`) aren't a `java.time.Period`.
-`Schedule.parse(text)` throws `ParseException` (syntax), `TokenMgrException` (unknown character), or `DateTimeException`.
+`Schedule.parse(text)` returns a `ScheduleSemantics.Rule` (evaluate it with base date and market), or throws `ParseException` (syntax),
+`TokenMgrException` (unknown character), or `DateTimeException`.
 Test: [ScheduleTest](src/test/java/io/github/hjuergens/parser/ScheduleTest.java).
 
 ## Status

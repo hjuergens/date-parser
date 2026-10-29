@@ -47,19 +47,19 @@ TOOLS = [
          pitfall="Java actions can't be generated into Python, so the grammar is copied without them. The Python target also renames the rule <code>range</code> to <code>range_()</code>."),
     dict(id="combinators", name="Scala combinators", kind="Recursive descent with backtracking", lang="Scala 2.13",
          file="date-rule-combinators/src/main/scala/de/juergens/text/ScheduleParsers.scala",
-         snippet=lambda f: between(f, r"def date:", r"business days, Monday") + "\n\n" + between(f, r"def expr:", r"^  }$", True),
+         snippet=lambda f: between(f, r"def date:", r"def period:") + "\n\n" + between(f, r"def expr:", r"^  }$", True),
          values="<code>^^</code> functions, <code>foldLeft</code> over the shifts",
          errors="<code>NoSuccess</code> result, turned into an exception",
          pitfall="None: the grammar is ordinary Scala code, there is no generator step."),
     dict(id="coco", name="Coco/R", kind="LL(1)", lang="Java",
          file="date-rule-coco/src/main/coco/Schedule.atg",
-         snippet=lambda f: between(f, r"Expr<out LocalDate d>", r"Period<out TemporalAmount p>"),
+         snippet=lambda f: between(f, r"Expr<out ScheduleSemantics.Expr d>", r"Period<out TemporalAmount p>"),
          values="<code>(. … .)</code> actions with <code>out</code> parameters",
          errors="<code>errors.count</code>, messages written to a stream",
          pitfall="Error recovery keeps running semantic actions on incomplete input, so they must not throw."),
     dict(id="javacc", name="JavaCC", kind="LL(k), here LL(1)", lang="Java",
          file="date-rule-javacc/src/main/javacc/Schedule.jj",
-         snippet=lambda f: between(f, r"^LocalDate Expr", r"^TemporalAmount Period"),
+         snippet=lambda f: between(f, r"^ScheduleSemantics.Expr Expr", r"^TemporalAmount Period"),
          values="Java code inside the productions; each declares its locals",
          errors="<code>ParseException</code>, <code>TokenMgrException</code>",
          pitfall="ParserGeneratorCC (used by the Maven plugin) rejects the classic <code>STATIC</code> option."),
@@ -95,23 +95,36 @@ TOOLS = [
          pitfall="In LALR mode the contextual lexer only tries tokens the parser can accept next, so <code>&gt;SPOTUSDCAD</code> parses; ANTLR's lexer reads <code>SPOTUS</code> as a pair and rejects it."),
 ]
 
-LINES = {"antlr": "42", "combinators": "71", "coco": "64", "javacc": "74", "sablecc": "38 + 65",
-         "cup": "36 + 35", "bison": "102", "peg": "84", "lark": "16 + 37", "antlr-python": "29 + 43"}
+LINES = {"antlr": "46", "combinators": "89", "coco": "67", "javacc": "76", "sablecc": "40 + 70",
+         "cup": "37 + 36", "bison": "108", "peg": "94", "lark": "17 + 45", "antlr-python": "30 + 56"}
 LINE_NOTES = {"sablecc": "grammar + evaluator", "cup": "parser + lexer", "bison": "incl. hand-written scanner",
               "peg": "incl. date arithmetic", "lark": "grammar + transformer", "antlr-python": "grammar + visitor"}
 
 # shared test cases, grouped by the comment headers of schedule.txt
-groups = []
+groups = []   # (title, market declarations, cases)
 previous = ""
 for line in (ROOT / "examples/schedule.txt").read_text(encoding="utf-8").splitlines():
     if line.strip() and not line.startswith("#"):
         if previous.startswith("#"):
-            groups.append((previous[1:].strip(), []))
-        arrow = line.rindex("=>")
-        groups[-1][1].append((line[:arrow].strip(), line[arrow + 2:].strip()))
+            groups.append((previous[1:].strip(), [], []))
+        if line.startswith("market "):
+            groups[-1][1].append(line)
+        else:
+            arrow = line.rindex("=>")
+            groups[-1][2].append((line[:arrow].strip(), line[arrow + 2:].strip()))
     previous = line
-groups = [(t, c) for t, c in groups if c]
-case_count = sum(len(c) for _, c in groups)
+groups = [g for g in groups if g[2]]
+case_count = sum(len(c) for _, _, c in groups)
+
+
+def case_input(text):
+    """the input, with the test context prefix [base market] set apart"""
+    if not text:
+        return "<em>(empty input)</em>"
+    match = re.fullmatch(r"(\[[^]]*\]) (.*)", text)
+    if match:
+        return f'<span class="ctx">{html.escape(match[1])}</span> {html.escape(match[2])}'
+    return html.escape(text)
 
 
 def result(expected):
@@ -144,10 +157,12 @@ rows = "\n".join(f'''        <tr>
         </tr>''' for t in TOOLS)
 
 cases = "\n".join(
-    f'      <section>\n      <h3>{html.escape(title)}</h3>\n      <table class="cases">\n        <tbody>\n' + "\n".join(
-        f'          <tr><td><code>{html.escape(i) if i else "<em>(empty input)</em>"}</code></td><td>{result(e)}</td></tr>'
+    f'      <section>\n      <h3>{html.escape(title)}</h3>\n'
+    + "".join(f'      <p class="market"><code>{html.escape(m)}</code></p>\n' for m in markets)
+    + '      <table class="cases">\n        <tbody>\n' + "\n".join(
+        f'          <tr><td><code>{case_input(i)}</code></td><td>{result(e)}</td></tr>'
         for i, e in items) + "\n        </tbody>\n      </table>\n      </section>"
-    for title, items in groups)
+    for title, markets, items in groups)
 
 page = (Path(__file__).parent / "page_template.html").read_text(encoding="utf-8")
 page = (page.replace("{{TABS}}", tabs).replace("{{PANELS}}", panels).replace("{{ROWS}}", rows)
@@ -155,4 +170,4 @@ page = (page.replace("{{TABS}}", tabs).replace("{{PANELS}}", panels).replace("{{
         .replace("{{TOOL_COUNT}}", str(len(TOOLS))).replace("{{LANG_COUNT}}", str(len({t["lang"].split()[0] for t in TOOLS}))).replace("{{REPO}}", REPO))
 (ROOT / "docs").mkdir(exist_ok=True)
 (ROOT / "docs/index.html").write_text(page, encoding="utf-8")
-print("cases:", case_count, "groups:", [t for t, _ in groups])
+print("cases:", case_count, "groups:", [t for t, _, _ in groups])

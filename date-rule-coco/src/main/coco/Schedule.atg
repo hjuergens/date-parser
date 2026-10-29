@@ -3,6 +3,7 @@
  *   2015-06-09 + 3M, 09.06.2015, (2015-01-15 : 1Q : 2015-12-31)
  * The grammar is LL(1): after the first number the separator selects the date notation,
  * after a complete date '+' or '-' starts a period.
+ * The actions build a ScheduleSemantics.Rule, a function of base date and market that is evaluated later.
  */
 import java.time.LocalDate;
 import java.time.Period;
@@ -12,16 +13,18 @@ import java.util.List;
 
 COMPILER Schedule
 
-  /** the dates of the schedule; only meaningful when errors.count == 0 */
-  public final List<LocalDate> dates = new ArrayList<>();
+  /** the rule of the schedule; only meaningful when errors.count == 0 */
+  public ScheduleSemantics.Rule rule;
+
+  private final List<ScheduleSemantics.Expr> exprs = new ArrayList<>();
 
   // error recovery may still run semantic actions, so they must not fail on garbage
-  private LocalDate date(int year, int month, int day) {
+  private ScheduleSemantics.Expr date(int year, int month, int day) {
     try {
-      return LocalDate.of(year, month, day);
+      return ScheduleSemantics.literal(LocalDate.of(year, month, day));
     } catch (java.time.DateTimeException e) {
       SemErr(e.getMessage());
-      return LocalDate.MIN;
+      return ScheduleSemantics.BASE;
     }
   }
 
@@ -37,33 +40,35 @@ IGNORE '\t' + '\r' + '\n'
 
 PRODUCTIONS
 
-  Schedule                                (. LocalDate d; .)
+  Schedule                                (. ScheduleSemantics.Expr d; .)
   = Range
-  | Expr<out d>                           (. dates.add(d); .)
-    { "," Expr<out d>                     (. dates.add(d); .)
-    }.
+  | Expr<out d>                           (. exprs.add(d); .)
+    { "," Expr<out d>                     (. exprs.add(d); .)
+    }                                     (. rule = ScheduleSemantics.list(exprs); .)
+  .
 
-  Range                                   (. LocalDate first, last; TemporalAmount step; .)
+  Range                                   (. ScheduleSemantics.Expr first, last; TemporalAmount step; .)
   = "(" Expr<out first> ":" Period<out step> ":" Expr<out last> ")"
                                           (. if (errors.count > 0) return;
                                              if (!ScheduleSemantics.isPositive(step)) SemErr("step must be positive: " + step);
-                                             else dates.addAll(ScheduleSemantics.range(first, step, last)); .)
+                                             else rule = ScheduleSemantics.range(first, step, last); .)
   .
 
-  Expr<out LocalDate d>                   (. TemporalAmount p; String code; .)
+  Expr<out ScheduleSemantics.Expr d>      (. TemporalAmount p; String code; .)
   = Date<out d>
-    { "+" Period<out p>                   (. d = d.plus(p); .)
-    | "-" Period<out p>                   (. d = d.minus(p); .)
+    { "+" Period<out p>                   (. d = ScheduleSemantics.plus(d, p); .)
+    | "-" Period<out p>                   (. d = ScheduleSemantics.minus(d, p); .)
     | ">"
-      ( "IMM"                             (. if (errors.count == 0) d = ScheduleSemantics.nextImm(d); .)
+      ( "IMM"                             (. d = ScheduleSemantics.nextImm(d); .)
       | "SPOT"                            (. code = null; .)
         [ pair                            (. code = t.val; .)
-        ]                                 (. if (errors.count == 0) d = ScheduleSemantics.spot(d, code); .)
+        ]                                 (. d = ScheduleSemantics.spot(d, code); .)
       )
     }.
 
-  Date<out LocalDate d>                   (. int a, b, c; d = LocalDate.MIN; .)
-  = Number<out a>
+  Date<out ScheduleSemantics.Expr d>      (. int a, b, c; d = ScheduleSemantics.BASE; .)
+  = "T"                                   /* the base date */
+  | Number<out a>
     ( "-" Number<out b> "-" Number<out c> (. d = date(a, b, c); .)
     | "." Number<out b> "." Number<out c> (. d = date(c, b, a); .)
     | "/" Number<out b> "/" Number<out c> (. d = date(c, a, b); .)

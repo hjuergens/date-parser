@@ -41,7 +41,7 @@ mvn -pl date-rule-bison -Pbison -Dbison.executable=/path/to/bison verify   # bis
 
 With the profile active, `maven-antrun-plugin` runs bison in `generate-sources` and writes
 `target/generated-sources/bison/io/github/hjuergens/bison/Calc.java`. The tests in
-[src/bison-test/java](src/bison-test/java) are only compiled then (94 TestNG tests).
+[src/bison-test/java](src/bison-test/java) are only compiled then (114 TestNG tests).
 
 The Windows binaries in [tools/win_flex_bison-latest](tools/win_flex_bison-latest) are an old bundled copy and aren't used by the build.
 
@@ -61,7 +61,7 @@ Implements the [shared schedule example](../README.md#shared-example-schedule) a
 ```java
 ScheduleLexer lexer = new ScheduleLexer("2015-06-09, 01.01.2000 + 1Y");
 ScheduleParser parser = new ScheduleParser(lexer);
-if (parser.parse()) parser.dates;   // [2015-06-09, 2001-01-01]
+if (parser.parse()) parser.rule.evaluate(new ScheduleSemantics.Context(null, null));   // [2015-06-09, 2001-01-01]
 ```
 
 ## Status

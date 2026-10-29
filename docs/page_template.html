@@ -175,6 +175,8 @@
   .date { font-family: var(--mono); font-size: 0.86em; color: var(--ok); white-space: nowrap; }
   .err { font-family: var(--mono); font-size: 0.86em; color: var(--err); }
   .none { color: var(--muted); font-style: italic; }
+  .ctx { color: var(--muted); }
+  .market { margin: 0 0 8px; font-size: 0.86rem; color: var(--muted); }
 
   footer { max-width: 980px; margin: 0 auto; padding: 24px 16px 48px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.9rem; }
 
@@ -206,7 +208,7 @@
 
   <section aria-labelledby="language">
     <h2 id="language">The language</h2>
-    <p class="lead">Small enough for every tool, rich enough to show their differences: three date notations, periods, business days, IMM and FX spot dates, lists and ranges.</p>
+    <p class="lead">Small enough for every tool, rich enough to show their differences: three date notations, periods, business days, IMM and FX spot dates, lists and ranges. A schedule is a rule: a function of the base date <code>T</code> and the market.</p>
     <div class="two">
       <table class="examples">
         <tbody>
@@ -218,6 +220,7 @@
           <tr><td>2015-06-12 + 1B</td><td>2015-06-15 (business days)</td></tr>
           <tr><td>2015-06-09 + 3M &gt; IMM</td><td>2015-09-16 (next IMM date)</td></tr>
           <tr><td>2015-06-12 &gt; SPOT USDCAD</td><td>2015-06-15 (FX spot, T+1)</td></tr>
+          <tr><td>T + 2B</td><td>two business days after the base date, in the market of the evaluation</td></tr>
         </tbody>
       </table>
       <pre><code>schedule = range | expr { "," expr } .
@@ -225,7 +228,8 @@ range    = "(" expr ":" period ":" expr ")" .
 expr     = date { ("+" | "-") period
                | "&gt;" ( "IMM"
                        | "SPOT" [ PAIR ] ) } .
-date     = NUM ( "-" NUM "-" NUM       <span class="c">(* ISO    *)</span>
+date     = "T"                         <span class="c">(* base   *)</span>
+         | NUM ( "-" NUM "-" NUM       <span class="c">(* ISO    *)</span>
                | "." NUM "." NUM       <span class="c">(* German *)</span>
                | "/" NUM "/" NUM ) .   <span class="c">(* US     *)</span>
 period   = NUM ( "D" | "W" | "M"
@@ -238,7 +242,12 @@ period   = NUM ( "D" | "W" | "M"
       <code>B</code> counts business days, Monday to Friday.
       <code>&gt; IMM</code> moves to the next IMM date strictly after the date: the third Wednesday of March, June, September or December.
       <code>&gt; SPOT</code> moves to the FX spot date: <code>+ 1B</code> for USD against CAD, TRY, PHP or RUB, <code>+ 2B</code> for every other pair
-      (<code>PAIR</code> is six capital letters such as <code>EURUSD</code>). Only weekends are skipped, there are no holiday calendars yet.
+      (<code>PAIR</code> is six capital letters such as <code>EURUSD</code>).
+    </p>
+    <p class="note">
+      Parsing a schedule yields a rule, not dates: a function that gets the base date <code>T</code> and a market only when it is evaluated.
+      The grammar never names a market. A market only answers questions about days (which days are business days, and so which day is spot);
+      the meaning of a rule doesn't depend on it, so <code>IMM</code> is the third Wednesday everywhere. Without a market, only Saturdays and Sundays are skipped.
     </p>
   </section>
 
@@ -255,7 +264,7 @@ period   = NUM ( "D" | "W" | "M"
 
   <section aria-labelledby="compare">
     <h2 id="compare">Side by side</h2>
-    <p class="lead">Size counts non-blank, non-comment lines of the grammar files. The JVM modules also share an 88-line helper for periods, business days, IMM and spot dates, and range expansion; the Python modules a 50-line one.</p>
+    <p class="lead">Size counts non-blank, non-comment lines of the grammar files. The JVM modules also share a 141-line helper (market, context, rule builders, periods, business days, IMM and spot dates, ranges); the Python modules a 64-line one.</p>
     <div class="scroll">
       <table class="compare">
         <thead>
@@ -275,12 +284,16 @@ period   = NUM ( "D" | "W" | "M"
         <p>The LL tools and Peggy write <code>date { ("+" | "-") period }</code> as a loop. CUP and Bison write <code>expr '+' period</code>, which is natural for LALR(1).</p></li>
       <li><strong>Separating syntax from semantics is a choice.</strong>
         <p>SableCC's grammar contains no code at all; a separate tree walker computes the dates. Every other tool interleaves actions with the rules.</p></li>
+      <li><strong>Compute while parsing, or build a rule first.</strong>
+        <p>Because the market only arrives at evaluation, no tool can compute the dates while parsing. The action-based tools (ANTLR, Coco/R, JavaCC, CUP, Bison, Peggy)
+          now build functions in their actions; in SableCC the syntax tree already is the rule, and the visitor, transformer and combinator versions only gained a parameter.
+          A side effect: Coco/R's actions no longer compute anything during error recovery.</p></li>
       <li><strong>Error recovery has consequences.</strong>
         <p>Coco/R recovers and keeps executing actions on incomplete input, so the actions must tolerate it. ANTLR needs a bail strategy to stop at the first error.</p></li>
       <li><strong>Ordered choice is not alternation.</strong>
         <p>PEG tries the alternatives in order and commits to the first match. Here this is harmless because the separators differ, but it's the main semantic difference to the generated LL and LR parsers.</p></li>
       <li><strong>The library matters as much as the parser.</strong>
-        <p>In JavaScript, about 35 lines (plus 20 for business days, IMM and spot dates) reproduce <code>java.time</code>'s month arithmetic.
+        <p>In JavaScript, about 35 lines (plus 25 for markets, business days, IMM and spot dates) reproduce <code>java.time</code>'s month arithmetic.
           On the JVM, <code>Period</code> can't express business days, so <code>B</code> needs a <code>TemporalAmount</code> of its own. The end-of-month cases in the test file exist to catch differences.</p></li>
       <li><strong>One grammar, two algorithms.</strong>
         <p>Lark builds an Earley parser or an LALR(1) parser from the same grammar file; every shared case runs with both.

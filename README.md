@@ -17,16 +17,16 @@ Planned additions are in [TODO.md](TODO.md).
 
 | Module | Technology | Parser type | Language | What works | Tests |
 |---|---|---|---|---|---|
-| [date-rule-antlr](date-rule-antlr/README.md) | ANTLR 4.13 | ALL(*) (adaptive LL) | Java grammars, Joda-Time | **Most complete.** Periods (`14M7W9D`), shifts and selectors (`+3M1W`, `>>>wednesday`, `>Q`), term structures, lists, ISO and other date formats, iCalendar | 164 TestNG + 3 specs2 IT |
-| [date-rule-combinators](date-rule-combinators/README.md) | Scala parser combinators 2.x | Recursive descent with backtracking | Scala 2.13, `java.time` | **Natural language:** "next thursday", "three weeks ago", "last monday in month", "2 London business days prior to the 3rd Wednesday …", seasons, business days | 155 JUnit/TestNG + 104 ScalaTest |
-| [date-rule-coco](date-rule-coco/README.md) | Coco/R | LL(1) | Java | Date lists in ISO, German, and US notation → `LocalDate` | 92 TestNG |
-| [date-rule-javacc](date-rule-javacc/README.md) | JavaCC (ParserGeneratorCC) | LL(k) | Java | Brace-matching demo grammar, JUnit 4 experiments | 97 JUnit (+7 ignored) |
-| [date-rule-sablecc](date-rule-sablecc/README.md) | SableCC 2 | LALR(1) with typed AST | Java | Arithmetic expressions, AST walker and evaluator | 97 TestNG |
-| [date-rule-cup-jflex](date-rule-cup-jflex/README.md) | JFlex 1.9 + CUP 11b | LALR(1) | Java | Pascal-subset lexer (its CUP grammar is a skeleton); complete CUP parser for the shared example | 93 TestNG |
-| [date-rule-bison](date-rule-bison/README.md) | GNU Bison 3 (Java skeleton) | LALR(1) | Java | Infix calculator with error recovery. **Requires `bison`**; the module is empty without it | 94 TestNG |
-| [date-rule-peg](date-rule-peg/README.md) | Peggy (PEG.js successor) | PEG (packrat) | JavaScript | `(start:step:end)` range lists | 91 `node:test` |
-| [date-rule-lark](date-rule-lark/README.md) | Lark 1.3 | Earley and LALR(1), one grammar | Python | The shared example, every case with both algorithms | 172 pytest |
-| [date-rule-antlr-python](date-rule-antlr-python/README.md) | ANTLR 4.13, Python target | ALL(*) (adaptive LL) | Python | The shared example; grammar without actions, plus a visitor | 86 pytest |
+| [date-rule-antlr](date-rule-antlr/README.md) | ANTLR 4.13 | ALL(*) (adaptive LL) | Java grammars, Joda-Time | **Most complete.** Periods (`14M7W9D`), shifts and selectors (`+3M1W`, `>>>wednesday`, `>Q`), term structures, lists, ISO and other date formats, iCalendar | 184 TestNG + 3 specs2 IT |
+| [date-rule-combinators](date-rule-combinators/README.md) | Scala parser combinators 2.x | Recursive descent with backtracking | Scala 2.13, `java.time` | **Natural language:** "next thursday", "three weeks ago", "last monday in month", "2 London business days prior to the 3rd Wednesday …", seasons, business days | 155 JUnit/TestNG + 124 ScalaTest |
+| [date-rule-coco](date-rule-coco/README.md) | Coco/R | LL(1) | Java | Date lists in ISO, German, and US notation → `LocalDate` | 112 TestNG |
+| [date-rule-javacc](date-rule-javacc/README.md) | JavaCC (ParserGeneratorCC) | LL(k) | Java | Brace-matching demo grammar, JUnit 4 experiments | 116 JUnit (+7 ignored) |
+| [date-rule-sablecc](date-rule-sablecc/README.md) | SableCC 2 | LALR(1) with typed AST | Java | Arithmetic expressions, AST walker and evaluator | 117 TestNG |
+| [date-rule-cup-jflex](date-rule-cup-jflex/README.md) | JFlex 1.9 + CUP 11b | LALR(1) | Java | Pascal-subset lexer (its CUP grammar is a skeleton); complete CUP parser for the shared example | 113 TestNG |
+| [date-rule-bison](date-rule-bison/README.md) | GNU Bison 3 (Java skeleton) | LALR(1) | Java | Infix calculator with error recovery. **Requires `bison`**; the module is empty without it | 114 TestNG |
+| [date-rule-peg](date-rule-peg/README.md) | Peggy (PEG.js successor) | PEG (packrat) | JavaScript | `(start:step:end)` range lists | 111 `node:test` |
+| [date-rule-lark](date-rule-lark/README.md) | Lark 1.3 | Earley and LALR(1), one grammar | Python | The shared example, every case with both algorithms | 212 pytest |
+| [date-rule-antlr-python](date-rule-antlr-python/README.md) | ANTLR 4.13, Python target | ALL(*) (adaptive LL) | Python | The shared example; grammar without actions, plus a visitor | 106 pytest |
 
 Each module also implements the [shared schedule example](#shared-example-schedule), so all ten implementations
 can be compared on the same language. Each module README has a section on how its tool handles it.
@@ -47,13 +47,14 @@ A small date language that every tool can handle (no left recursion is needed, a
 (2015-01-15 : 1Q : 2015-12-31)      range: start, step, end
 2015-06-09 + 3M > IMM               next IMM date (third Wednesday of Mar/Jun/Sep/Dec)
 2015-06-12 > SPOT USDCAD            FX spot date (T+1 for USD/CAD, otherwise T+2)
+T + 2B                              two business days after the base date, in the market of the evaluation
 ```
 
 ```
 schedule = range | expr { "," expr } .
 range    = "(" expr ":" period ":" expr ")" .
 expr     = date { ("+" | "-") period | ">" ( "IMM" | "SPOT" [ PAIR ] ) } .   (* PAIR: six capital letters, e.g. EURUSD *)
-date     = NUM ( "-" NUM "-" NUM | "." NUM "." NUM | "/" NUM "/" NUM ) .   (* ISO, German, US *)
+date     = "T" | NUM ( "-" NUM "-" NUM | "." NUM "." NUM | "/" NUM "/" NUM ) .   (* base date; ISO, German, US *)
 period   = NUM ( "D" | "W" | "M" | "Q" | "Y" | "B" ) .                         (* B: business days *)
 ```
 
@@ -62,29 +63,44 @@ Periods follow `java.time`: months first (with the day clamped to the end of the
 A range yields `start + k * step` while the date isn't after the end.
 `> IMM` moves to the next IMM date strictly after the date (QuantLib's `IMM::nextDate` convention), so `2015-06-17 > IMM` is `2015-09-16`.
 `> SPOT` moves to the FX spot date: `+ 1B` for USD against CAD, TRY, PHP or RUB, `+ 2B` for every other pair
-or without a pair. Only weekends are skipped so far, there are no holiday calendars (`2015-12-31 > SPOT` is `2016-01-04`).
+or without a pair.
 
-All implementations are tested against the same 86 cases in [examples/schedule.txt](examples/schedule.txt),
-including invalid dates and syntax errors. Each module has a test that reads this file.
+**A schedule is a rule, not a list of dates.** `parse(text)` returns a function of a *context*: the base date `T` and a *market*.
+Both are only supplied when the rule is evaluated, and the grammar never names a market.
+A market only answers questions about days: which days are business days, and so which day is spot.
+The meaning of a rule doesn't depend on it (`IMM` is the third Wednesday everywhere).
+Without a market only Saturdays and Sundays are skipped, so `2015-12-31 > SPOT` is `2016-01-04`, although 1 January is a holiday.
+In Java, for example:
 
-| Module | Grammar | Lines¹ | How values are computed | How errors surface | Notable |
+```java
+Rule rule = DateSchedules.parse("T > SPOT USDCAD");
+rule.evaluate(new Context(LocalDate.of(2015, 6, 9), ScheduleSemantics.withHolidays(Set.of(LocalDate.of(2015, 6, 10)))));
+// [2015-06-11]: June 10 is a holiday in this market
+```
+
+All implementations are tested against the same 106 cases in [examples/schedule.txt](examples/schedule.txt),
+including invalid dates and syntax errors. Each module has a test that reads this file. Cases that need a base date or a
+market name them in a prefix, `[2015-06-09 XTEST] T + 2B => 2015-06-12`, and test markets are declared as data
+(`market XTEST = 2015-06-10, …`: Saturdays, Sundays and these holidays).
+
+| Module | Grammar | Lines¹ | How the rule is built | How errors surface | Notable |
 |---|---|---|---|---|---|
-| antlr | [DateSchedule.g4](date-rule-antlr/src/main/antlr4/io/github/hjuergens/time/DateSchedule.g4) | 42 | actions with `returns […]` | listener throws; `BailErrorStrategy` | `$start` is reserved, so range labels are `first`/`last`; an optional token in a loop needs its own rule |
-| combinators | [ScheduleParsers.scala](date-rule-combinators/src/main/scala/de/juergens/text/ScheduleParsers.scala) | 71 | `^^` functions, `foldLeft` over the shifts | `NoSuccess` → exception | grammar is plain Scala; no generator |
-| coco | [Schedule.atg](date-rule-coco/src/main/coco/Schedule.atg) | 64 | `(. … .)` actions, `out` parameters | `errors.count`, messages on a stream | recovery keeps running actions, so they must tolerate garbage |
-| javacc | [Schedule.jj](date-rule-javacc/src/main/javacc/Schedule.jj) | 74 | Java code in productions | `ParseException`, `TokenMgrException` | locals declared per production; LL(1) without lookahead hints |
-| sablecc | [schedule.grammar](date-rule-sablecc/src/main/sablecc/schedule.grammar) + [ScheduleEvaluator](date-rule-sablecc/src/main/java/de/juergens/schedule/ScheduleEvaluator.java) | 38 + 65 | separate evaluator over the typed AST | `ParserException`, `LexerException` | grammar without code; repeated elements need names |
-| cup-jflex | [schedule.cup](date-rule-cup-jflex/src/main/cup/schedule.cup) + [schedule.jflex](date-rule-cup-jflex/src/main/jflex/schedule.jflex) | 36 + 35 | `{: … :}` actions, left recursion | `Exception` from `parse()` | `%cupsym` must precede `%cup` |
-| bison | [schedule.y](date-rule-bison/src/main/resources/schedule.y) | 102² | `{ … }` actions, left recursion | `parse()` returns `false` | `$$` is untyped in Java; hand-written lexer |
-| peg | [schedule.pegjs](date-rule-peg/schedule.pegjs) | 84³ | action blocks, ordered choice | `SyntaxError` | `range()` is built into Peggy actions; date arithmetic hand-written |
-| lark | [schedule.lark](date-rule-lark/src/lark_schedule/schedule.lark) + [Transformer](date-rule-lark/src/lark_schedule/__init__.py) | 16 + 37 | `Transformer`, one method per rule alias | `UnexpectedInput`; `VisitError` unwrapped | the same grammar runs as Earley and as LALR(1); the contextual lexer accepts `>SPOTUSDCAD` |
-| antlr-python | [DateSchedule.g4](date-rule-antlr-python/DateSchedule.g4) + [visitor](date-rule-antlr-python/src/antlr_schedule/__init__.py) | 29 + 43 | visitor over the parse tree | raising error listener | Java actions can't be generated into Python; `range` becomes `range_()` |
+| antlr | [DateSchedule.g4](date-rule-antlr/src/main/antlr4/io/github/hjuergens/time/DateSchedule.g4) | 46 | actions with `returns […]` build functions | listener throws; `BailErrorStrategy` | `$start` is reserved, so range labels are `first`/`last`; an attribute `rule` becomes `rule_`; an optional token in a loop needs its own rule |
+| combinators | [ScheduleParsers.scala](date-rule-combinators/src/main/scala/de/juergens/text/ScheduleParsers.scala) | 89 | `^^` functions of the context, `foldLeft` over the shifts | `NoSuccess` → exception | grammar is plain Scala; no generator |
+| coco | [Schedule.atg](date-rule-coco/src/main/coco/Schedule.atg) | 67 | `(. … .)` actions build functions, `out` parameters | `errors.count`, messages on a stream | recovery keeps running actions, so they must tolerate garbage (now they only build functions) |
+| javacc | [Schedule.jj](date-rule-javacc/src/main/javacc/Schedule.jj) | 76 | productions return functions | `ParseException`, `TokenMgrException` | locals declared per production; LL(1) without lookahead hints |
+| sablecc | [schedule.grammar](date-rule-sablecc/src/main/sablecc/schedule.grammar) + [ScheduleEvaluator](date-rule-sablecc/src/main/java/de/juergens/schedule/ScheduleEvaluator.java) | 40 + 70 | the typed AST is the rule; an evaluator walks it with the context | `ParserException`, `LexerException` | grammar without code; repeated elements need names |
+| cup-jflex | [schedule.cup](date-rule-cup-jflex/src/main/cup/schedule.cup) + [schedule.jflex](date-rule-cup-jflex/src/main/jflex/schedule.jflex) | 37 + 36 | `{: … :}` actions build functions, left recursion | `Exception` from `parse()` | `%cupsym` must precede `%cup` |
+| bison | [schedule.y](date-rule-bison/src/main/resources/schedule.y) | 108² | `{ … }` actions build functions, left recursion | `parse()` returns `false` | `$$` is untyped in Java; hand-written lexer |
+| peg | [schedule.pegjs](date-rule-peg/schedule.pegjs) | 94³ | action blocks return functions, ordered choice | `SyntaxError` | `range()` is built into Peggy actions; date arithmetic hand-written |
+| lark | [schedule.lark](date-rule-lark/src/lark_schedule/schedule.lark) + [Transformer](date-rule-lark/src/lark_schedule/__init__.py) | 17 + 45 | `Transformer` returns closures, one method per rule alias | `UnexpectedInput`; `VisitError` unwrapped | the same grammar runs as Earley and as LALR(1); the contextual lexer accepts `>SPOTUSDCAD` |
+| antlr-python | [DateSchedule.g4](date-rule-antlr-python/DateSchedule.g4) + [visitor](date-rule-antlr-python/src/antlr_schedule/__init__.py) | 30 + 56 | visitor over the parse tree returns closures | raising error listener | Java actions can't be generated into Python; `range` becomes `range_()` |
 
-¹ Non-blank, non-comment lines. The JVM modules also share an 88-line `ScheduleSemantics` (periods, business days, IMM and spot dates, range expansion);
-  `java.time.Period` can't express business days, so `B` is a small `TemporalAmount` of its own.
-  The Python modules share a 50-line `semantics.py` (copied, like the Java helper).
+¹ Non-blank, non-comment lines. The JVM modules also share a 141-line `ScheduleSemantics` (market, context, rule builders, periods,
+  business days, IMM and spot dates, ranges); `java.time.Period` can't express business days, so `B` is a small `TemporalAmount` of its own.
+  The Python modules share a 64-line `semantics.py` (copied, like the Java helper).
 ² Including the hand-written scanner (about 55 lines).
-³ Including JavaScript date arithmetic that reproduces `java.time` (about 50 lines, business days, IMM and spot dates included).
+³ Including JavaScript date arithmetic that reproduces `java.time` (about 60 lines, markets, business days, IMM and spot dates included).
 
 LALR tools (bison, CUP, SableCC) build the generators with conflict checking, and none of the three grammars has conflicts.
 Coco/R's LL(1) check also passes without warnings.

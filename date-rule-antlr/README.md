@@ -59,17 +59,20 @@ Implements the [shared schedule example](../README.md#shared-example-schedule) a
   would be a field of the rule context, so a later `> SPOT` without pair would still see the pair of an earlier one.
 - Periods, business days (`B`), IMM and spot dates come from the shared `ScheduleSemantics`; `B` is a `TemporalAmount`
   of its own, because `java.time.Period` can't express business days.
+- The actions build functions (`ScheduleSemantics.plus($value, $period.value)`), not dates. The attribute of `schedule` is
+  called `result`: ANTLR renames an attribute `rule` to `rule_`.
 - [DateSchedules.parse](src/main/java/io/github/hjuergens/time/DateSchedules.java) installs a throwing error listener and `BailErrorStrategy`, so the first error ends the parse.
 - Test: [DateSchedulesTest](src/test/java/io/github/hjuergens/time/DateSchedulesTest.java).
 - The same rules without actions run on ANTLR's Python target in [date-rule-antlr-python](../date-rule-antlr-python/README.md).
 
 ```java
-DateSchedules.parse("(2015-01-15 : 1Q : 2015-12-31)");   // [2015-01-15, 2015-04-15, 2015-07-15, 2015-10-15]
+Rule rule = DateSchedules.parse("(T : 1Q : T + 11M)");    // a function of base date and market
+rule.evaluate(new Context(LocalDate.of(2015, 1, 15), null));  // [2015-01-15, 2015-04-15, 2015-07-15, 2015-10-15]
 ```
 
 ## Status and limitations
 
-- Working: all grammars compile with ANTLR 4.13. There are 164 unit tests and 3 integration tests.
+- Working: all grammars compile with ANTLR 4.13. There are 184 unit tests and 3 integration tests.
 - `ISO8601dates` only accepts dates with hyphens: `20150609` is lexed as two `FOUR_DIGIT` tokens and rejected.
 - `Unit.g4` defines lexer tokens (`nanos`, `forever`, …) that rule `unit` doesn't accept.
 - Uses Joda-Time, which is in maintenance mode; the combinators module uses `java.time` instead.

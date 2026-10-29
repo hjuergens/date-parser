@@ -5,12 +5,15 @@
 # <expected> is a comma-separated list of ISO dates, "none" for an empty list, or "error".
 # Periods are applied left to right with java.time semantics: months (M, Q = 3M, Y = 12M)
 # are added first and the day is clamped to the end of the month, then days (D, W = 7D).
-# A range (start : step : end) yields start + k * step for k = 0, 1, ... while <= end.
+# B counts business days, Monday to Friday: only Saturdays and Sundays are skipped, there are
+# no holiday calendars yet. "- 1B" counts backwards, "+ 0B" leaves the date as it is.
+# A range (start : step : end) yields start + k * step for k = 0, 1, ... while <= end
+# (with a step of nB: start + k * n business days).
 # "> IMM" moves to the next IMM date strictly after the date: the third Wednesday of
 # March, June, September or December.
-# "> SPOT [PAIR]" moves to the FX spot date: T+1 business day for USD against CAD, TRY, PHP
-# or RUB, otherwise T+2 (also without pair). Only Saturdays and Sundays are skipped, there
-# are no holiday calendars yet (so 2015-12-31 > SPOT is 2016-01-04, although Jan 1 is a holiday).
+# "> SPOT [PAIR]" moves to the FX spot date: + 1B for USD against CAD, TRY, PHP or RUB,
+# otherwise + 2B (also without pair). So 2015-12-31 > SPOT is 2016-01-04, although Jan 1 is
+# a holiday.
 
 # date notations
 2015-06-09 => 2015-06-09
@@ -42,6 +45,20 @@
 (2015-06-09 : 1W : 2015-06-09 + 2W) => 2015-06-09, 2015-06-16, 2015-06-23
 (2015-06-09 : 1D : 2015-06-09) => 2015-06-09
 (2015-06-09 : 1D : 2015-06-08) => none
+
+# business days
+2015-06-09 + 2B => 2015-06-11
+2015-06-12 + 1B => 2015-06-15
+2015-06-12 + 2B => 2015-06-16
+2015-06-13 + 1B => 2015-06-15
+2015-06-09 + 10B => 2015-06-23
+2015-06-15 - 1B => 2015-06-12
+2015-06-14 - 1B => 2015-06-12
+2015-06-13 + 0B => 2015-06-13
+2015-06-11 + 1M + 1B => 2015-07-13
+2015-06-09 > SPOT + 3B => 2015-06-16
+(2015-06-11 : 1B : 2015-06-16) => 2015-06-11, 2015-06-12, 2015-06-15, 2015-06-16
+(2015-06-13 : 2B : 2015-06-19) => 2015-06-13, 2015-06-16, 2015-06-18
 
 # IMM dates
 2015-06-09 > IMM => 2015-06-17
@@ -97,8 +114,11 @@
 2015-06-09 > SPOT EURUSDX => error
 2015-06-09 > SPOT usdcad => error
 2015-06-09 > SPOT USDCAD USDCAD => error
+2015-06-09 + 2b => error
+2015-06-09 > 2B => error
 (2015-01-01 : 1M : 2015-02-01), 2015-03-01 => error
  => error
 
 # step of a range must be positive
 (2015-01-01 : 0D : 2015-02-01) => error
+(2015-06-01 : 0B : 2015-06-05) => error

@@ -1,7 +1,7 @@
 /*
  * Shared "schedule" example (see examples/schedule.txt in the project root):
  *   2015-06-09 + 3M, 09.06.2015, (2015-01-15 : 1Q : 2015-12-31)
- * Dates are {year, month, day} objects, periods {months, days}; the arithmetic
+ * Dates are {year, month, day} objects, periods {months, days, business}; the arithmetic
  * follows java.time: months first (day clamped to the end of the month), then days.
  */
 
@@ -18,6 +18,7 @@
   }
 
   function plus(d, period, sign = 1) {
+    if (period.business) return plusBusinessDays(d, sign * period.business);
     const total = d.year * 12 + (d.month - 1) + sign * period.months;
     const year = Math.floor(total / 12);
     const month = total - year * 12 + 1;
@@ -36,15 +37,19 @@
     }
   }
 
-  // FX spot: T+1 for USD against CAD, TRY, PHP or RUB, otherwise T+2; only weekends are skipped
-  function spot(d, pair) {
-    const lag = /^(USD(CAD|TRY|PHP|RUB)|(CAD|TRY|PHP|RUB)USD)$/.test(pair) ? 1 : 2;
+  // count business days later (earlier if negative); only Saturdays and Sundays are skipped
+  function plusBusinessDays(d, count) {
     const t = new Date(Date.UTC(d.year, d.month - 1, d.day));
-    for (let days = 0; days < lag; ) {
-      t.setUTCDate(t.getUTCDate() + 1);
-      if (t.getUTCDay() % 6 !== 0) days++;
+    for (let days = 0; days !== count; ) {
+      t.setUTCDate(t.getUTCDate() + Math.sign(count));
+      if (t.getUTCDay() % 6 !== 0) days += Math.sign(count);
     }
     return { year: t.getUTCFullYear(), month: t.getUTCMonth() + 1, day: t.getUTCDate() };
+  }
+
+  // FX spot: T+1 for USD against CAD, TRY, PHP or RUB, otherwise T+2
+  function spot(d, pair) {
+    return plusBusinessDays(d, /^(USD(CAD|TRY|PHP|RUB)|(CAD|TRY|PHP|RUB)USD)$/.test(pair) ? 1 : 2);
   }
 
   function compare(a, b) {
@@ -53,12 +58,12 @@
 
   // not "range": Peggy provides range() (the location of the match) in actions
   function expand(first, step, last) {
-    if (step.months <= 0 && step.days <= 0) {
+    if (step.months <= 0 && step.days <= 0 && step.business <= 0) {
       throw new RangeError('step must be positive');
     }
     const dates = [];
     for (let k = 0; ; k++) {
-      const d = plus(first, { months: k * step.months, days: k * step.days });
+      const d = plus(first, { months: k * step.months, days: k * step.days, business: k * step.business });
       if (compare(d, last) > 0) return dates;
       dates.push(d);
     }
@@ -88,13 +93,14 @@ Date
   / m:Number _ "/" _ d:Number _ "/" _ y:Number { return date(y, m, d); }  // US
 
 Period
-  = n:Number _ unit:[DWMQY] {
+  = n:Number _ unit:[DWMQYB] {
       switch (unit) {
-        case 'D': return { months: 0, days: n };
-        case 'W': return { months: 0, days: 7 * n };
-        case 'M': return { months: n, days: 0 };
-        case 'Q': return { months: 3 * n, days: 0 };
-        case 'Y': return { months: 12 * n, days: 0 };
+        case 'D': return { months: 0, days: n, business: 0 };
+        case 'W': return { months: 0, days: 7 * n, business: 0 };
+        case 'M': return { months: n, days: 0, business: 0 };
+        case 'Q': return { months: 3 * n, days: 0, business: 0 };
+        case 'Y': return { months: 12 * n, days: 0, business: 0 };
+        case 'B': return { months: 0, days: 0, business: n };
       }
     }
 

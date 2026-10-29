@@ -64,7 +64,7 @@ ScheduleParsers.parse("06/09/2015 + 1W - 2D")   // List(2015-06-14)
 
 ## Status
 
-- Working: 155 JUnit/TestNG tests and 89 ScalaTest tests. One TestNG test is disabled (`firstDayOfNextMonthTest`).
+- Working: 155 JUnit/TestNG tests and 104 ScalaTest tests. One TestNG test is disabled (`firstDayOfNextMonthTest`).
 - `QuarterAdjuster(n)` moves to another quarter **within the same year** (Q4 + 1 → Q1 of the same year).
 - Several rules in [high_sophisticated.txt](src/test/resources/complex/high_sophisticated.txt) are still commented out,
   for example "every friday the 13th of month" and "full moon next after the vernal equinox".

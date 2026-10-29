@@ -41,19 +41,19 @@ TOOLS = [
          pitfall="<code>$start</code> is reserved (the rule's first token), so the range labels are <code>first</code>/<code>last</code>."),
     dict(id="combinators", name="Scala combinators", kind="Recursive descent with backtracking", lang="Scala 2.13",
          file="date-rule-combinators/src/main/scala/de/juergens/text/ScheduleParsers.scala",
-         snippet=lambda f: between(f, r"def date:", r"def period:") + "\n\n" + between(f, r"def expr:", r"^  }$", True),
+         snippet=lambda f: between(f, r"def date:", r"business days, Monday") + "\n\n" + between(f, r"def expr:", r"^  }$", True),
          values="<code>^^</code> functions, <code>foldLeft</code> over the shifts",
          errors="<code>NoSuccess</code> result, turned into an exception",
          pitfall="None: the grammar is ordinary Scala code, there is no generator step."),
     dict(id="coco", name="Coco/R", kind="LL(1)", lang="Java",
          file="date-rule-coco/src/main/coco/Schedule.atg",
-         snippet=lambda f: between(f, r"Expr<out LocalDate d>", r"Period<out Period p>"),
+         snippet=lambda f: between(f, r"Expr<out LocalDate d>", r"Period<out TemporalAmount p>"),
          values="<code>(. … .)</code> actions with <code>out</code> parameters",
          errors="<code>errors.count</code>, messages written to a stream",
          pitfall="Error recovery keeps running semantic actions on incomplete input, so they must not throw."),
     dict(id="javacc", name="JavaCC", kind="LL(k), here LL(1)", lang="Java",
          file="date-rule-javacc/src/main/javacc/Schedule.jj",
-         snippet=lambda f: between(f, r"^LocalDate Expr", r"^Period Period"),
+         snippet=lambda f: between(f, r"^LocalDate Expr", r"^TemporalAmount Period"),
          values="Java code inside the productions; each declares its locals",
          errors="<code>ParseException</code>, <code>TokenMgrException</code>",
          pitfall="ParserGeneratorCC (used by the Maven plugin) rejects the classic <code>STATIC</code> option."),
@@ -83,8 +83,8 @@ TOOLS = [
          pitfall="Peggy provides <code>range()</code> in actions, which silently shadows a helper of the same name."),
 ]
 
-LINES = {"antlr": "42", "combinators": "52", "coco": "62", "javacc": "74", "sablecc": "38 + 65",
-         "cup": "36 + 35", "bison": "102", "peg": "80"}
+LINES = {"antlr": "42", "combinators": "71", "coco": "64", "javacc": "74", "sablecc": "38 + 65",
+         "cup": "36 + 35", "bison": "102", "peg": "84"}
 LINE_NOTES = {"sablecc": "grammar + evaluator", "cup": "parser + lexer", "bison": "incl. hand-written scanner",
               "peg": "incl. date arithmetic"}
 

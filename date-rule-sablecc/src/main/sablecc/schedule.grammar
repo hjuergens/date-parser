@@ -13,7 +13,7 @@ Helpers
 
 Tokens
 	number = digit+;
-	unit = 'D' | 'W' | 'M' | 'Q' | 'Y';
+	unit = 'D' | 'W' | 'M' | 'Q' | 'Y' | 'B';
 	imm = 'IMM';
 	spot = 'SPOT';
 	pair = upper upper upper upper upper upper;

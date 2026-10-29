@@ -47,11 +47,11 @@ date returns [LocalDate value]
     | m=NUM '/' d=NUM '/' y=NUM     { $value = LocalDate.of($y.int, $m.int, $d.int); }  // US
     ;
 
-period returns [java.time.Period value]
+period returns [java.time.temporal.TemporalAmount value]
     : NUM UNIT                      { $value = ScheduleSemantics.period($NUM.int, $UNIT.text); }
     ;
 
 NUM  : [0-9]+ ;
-UNIT : [DWMQY] ;
+UNIT : [DWMQYB] ;
 PAIR : [A-Z] [A-Z] [A-Z] [A-Z] [A-Z] [A-Z] ;   // currency pair such as EURUSD
 WS   : [ \t\r\n]+ -> skip ;

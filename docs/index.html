@@ -194,11 +194,11 @@
     <h1>Eight parsers, one date language</h1>
     <p class="lead">
       The same small language for dates, periods and ranges, implemented with eight parser generators and
-      parser libraries, from LL(1) to LALR(1) to PEG. Every implementation passes the same 71 test cases.
+      parser libraries, from LL(1) to LALR(1) to PEG. Every implementation passes the same 86 test cases.
     </p>
     <ul class="stats">
       <li><strong>8</strong><span>tools, 2 languages</span></li>
-      <li><strong>71</strong><span>shared test cases</span></li>
+      <li><strong>86</strong><span>shared test cases</span></li>
       <li><strong>0</strong><span>grammar conflicts</span></li>
       <li><strong>1</strong><span>specification file</span></li>
     </ul>
@@ -206,7 +206,7 @@
 
   <section aria-labelledby="language">
     <h2 id="language">The language</h2>
-    <p class="lead">Small enough for every tool, rich enough to show their differences: three date notations, periods, IMM and FX spot dates, lists and ranges.</p>
+    <p class="lead">Small enough for every tool, rich enough to show their differences: three date notations, periods, business days, IMM and FX spot dates, lists and ranges.</p>
     <div class="two">
       <table class="examples">
         <tbody>
@@ -215,6 +215,7 @@
           <tr><td>06/09/2015 + 1W - 2D</td><td>2015-06-14 (US notation, left to right)</td></tr>
           <tr><td>2015-06-09, 1.1.2000 + 1Y</td><td>2015-06-09, 2001-01-01</td></tr>
           <tr><td>(2015-01-15 : 1Q : 2015-12-31)</td><td>2015-01-15, -04-15, -07-15, -10-15</td></tr>
+          <tr><td>2015-06-12 + 1B</td><td>2015-06-15 (business days)</td></tr>
           <tr><td>2015-06-09 + 3M &gt; IMM</td><td>2015-09-16 (next IMM date)</td></tr>
           <tr><td>2015-06-12 &gt; SPOT USDCAD</td><td>2015-06-15 (FX spot, T+1)</td></tr>
         </tbody>
@@ -228,14 +229,15 @@ date     = NUM ( "-" NUM "-" NUM       <span class="c">(* ISO    *)</span>
                | "." NUM "." NUM       <span class="c">(* German *)</span>
                | "/" NUM "/" NUM ) .   <span class="c">(* US     *)</span>
 period   = NUM ( "D" | "W" | "M"
-               | "Q" | "Y" ) .</code></pre>
+               | "Q" | "Y" | "B" ) .</code></pre>
     </div>
     <p class="note">
       Every decision is LL(1): after the first number, the separator selects the notation; after a complete date,
       <code>+</code> or <code>-</code> starts a period. Periods follow <code>java.time</code>: months first, with the day clamped
       to the end of the month (<code>2016-01-31 + 1M</code> is <code>2016-02-29</code>), then days.
+      <code>B</code> counts business days, Monday to Friday.
       <code>&gt; IMM</code> moves to the next IMM date strictly after the date: the third Wednesday of March, June, September or December.
-      <code>&gt; SPOT</code> moves to the FX spot date: T+1 for USD against CAD, TRY, PHP or RUB, T+2 for every other pair
+      <code>&gt; SPOT</code> moves to the FX spot date: <code>+ 1B</code> for USD against CAD, TRY, PHP or RUB, <code>+ 2B</code> for every other pair
       (<code>PAIR</code> is six capital letters such as <code>EURUSD</code>). Only weekends are skipped, there are no holiday calendars yet.
     </p>
   </section>
@@ -303,7 +305,7 @@ def expr: Parser[LocalDate] = date ~ rep(shift) ^^ {
         <span class="kind">LL(1)</span><span class="lang">Java</span>
         <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-coco/src/main/coco/Schedule.atg">Schedule.atg ↗</a>
       </div>
-      <pre><code>Expr&lt;out LocalDate d&gt;                   (. Period p; String code; .)
+      <pre><code>Expr&lt;out LocalDate d&gt;                   (. TemporalAmount p; String code; .)
 = Date&lt;out d&gt;
   { &quot;+&quot; Period&lt;out p&gt;                   (. d = d.plus(p); .)
   | &quot;-&quot; Period&lt;out p&gt;                   (. d = d.minus(p); .)
@@ -329,7 +331,7 @@ Date&lt;out LocalDate d&gt;                   (. int a, b, c; d = LocalDate.MIN;
         <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-javacc/src/main/javacc/Schedule.jj">Schedule.jj ↗</a>
       </div>
       <pre><code>LocalDate Expr() :
-{ LocalDate d; Period p; Token pair; }
+{ LocalDate d; TemporalAmount p; Token pair; }
 {
   d = Date()
   ( &quot;+&quot; p = Period() { d = d.plus(p); }
@@ -442,7 +444,7 @@ Date
 
   <section aria-labelledby="compare">
     <h2 id="compare">Side by side</h2>
-    <p class="lead">Size counts non-blank, non-comment lines of the grammar files. The JVM modules also share a 50-line helper for periods, IMM and spot dates, and range expansion.</p>
+    <p class="lead">Size counts non-blank, non-comment lines of the grammar files. The JVM modules also share an 88-line helper for periods, business days, IMM and spot dates, and range expansion.</p>
     <div class="scroll">
       <table class="compare">
         <thead>
@@ -459,14 +461,14 @@ Date
         <tr>
           <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-combinators/src/main/scala/de/juergens/text/ScheduleParsers.scala">Scala combinators</a></th>
           <td>Recursive descent with backtracking</td>
-          <td class="num">52</td>
+          <td class="num">71</td>
           <td><code>^^</code> functions, <code>foldLeft</code> over the shifts</td>
           <td><code>NoSuccess</code> result, turned into an exception</td>
         </tr>
         <tr>
           <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-coco/src/main/coco/Schedule.atg">Coco/R</a></th>
           <td>LL(1)</td>
-          <td class="num">62</td>
+          <td class="num">64</td>
           <td><code>(. … .)</code> actions with <code>out</code> parameters</td>
           <td><code>errors.count</code>, messages written to a stream</td>
         </tr>
@@ -501,7 +503,7 @@ Date
         <tr>
           <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-peg/schedule.pegjs">Peggy</a></th>
           <td>PEG · ordered choice</td>
-          <td class="num">80<small>incl. date arithmetic</small></td>
+          <td class="num">84<small>incl. date arithmetic</small></td>
           <td>Action blocks; date arithmetic written by hand</td>
           <td><code>SyntaxError</code> with expected tokens</td>
         </tr>
@@ -522,7 +524,8 @@ Date
       <li><strong>Ordered choice is not alternation.</strong>
         <p>PEG tries the alternatives in order and commits to the first match. Here this is harmless because the separators differ, but it's the main semantic difference to the generated LL and LR parsers.</p></li>
       <li><strong>The library matters as much as the parser.</strong>
-        <p>In JavaScript, about 35 lines (plus 8 for IMM and 9 for spot dates) reproduce <code>java.time</code>'s month arithmetic. The end-of-month cases in the test file exist to catch differences.</p></li>
+        <p>In JavaScript, about 35 lines (plus 20 for business days, IMM and spot dates) reproduce <code>java.time</code>'s month arithmetic.
+          On the JVM, <code>Period</code> can't express business days, so <code>B</code> needs a <code>TemporalAmount</code> of its own. The end-of-month cases in the test file exist to catch differences.</p></li>
       <li><strong>A shared test file keeps everyone honest.</strong>
         <p>Every module reads <code>examples/schedule.txt</code>. Several tool-specific pitfalls, listed in the tabs above, surfaced only because the same cases had to pass everywhere.</p></li>
     </ul>
@@ -588,6 +591,25 @@ Date
           <tr><td><code>(2015-06-09 : 1W : 2015-06-09 + 2W)</code></td><td><span class="date">2015-06-09</span>, <span class="date">2015-06-16</span>, <span class="date">2015-06-23</span></td></tr>
           <tr><td><code>(2015-06-09 : 1D : 2015-06-09)</code></td><td><span class="date">2015-06-09</span></td></tr>
           <tr><td><code>(2015-06-09 : 1D : 2015-06-08)</code></td><td><span class="none">empty list</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>business days</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code>2015-06-09 + 2B</code></td><td><span class="date">2015-06-11</span></td></tr>
+          <tr><td><code>2015-06-12 + 1B</code></td><td><span class="date">2015-06-15</span></td></tr>
+          <tr><td><code>2015-06-12 + 2B</code></td><td><span class="date">2015-06-16</span></td></tr>
+          <tr><td><code>2015-06-13 + 1B</code></td><td><span class="date">2015-06-15</span></td></tr>
+          <tr><td><code>2015-06-09 + 10B</code></td><td><span class="date">2015-06-23</span></td></tr>
+          <tr><td><code>2015-06-15 - 1B</code></td><td><span class="date">2015-06-12</span></td></tr>
+          <tr><td><code>2015-06-14 - 1B</code></td><td><span class="date">2015-06-12</span></td></tr>
+          <tr><td><code>2015-06-13 + 0B</code></td><td><span class="date">2015-06-13</span></td></tr>
+          <tr><td><code>2015-06-11 + 1M + 1B</code></td><td><span class="date">2015-07-13</span></td></tr>
+          <tr><td><code>2015-06-09 &gt; SPOT + 3B</code></td><td><span class="date">2015-06-16</span></td></tr>
+          <tr><td><code>(2015-06-11 : 1B : 2015-06-16)</code></td><td><span class="date">2015-06-11</span>, <span class="date">2015-06-12</span>, <span class="date">2015-06-15</span>, <span class="date">2015-06-16</span></td></tr>
+          <tr><td><code>(2015-06-13 : 2B : 2015-06-19)</code></td><td><span class="date">2015-06-13</span>, <span class="date">2015-06-16</span>, <span class="date">2015-06-18</span></td></tr>
         </tbody>
       </table>
       </section>
@@ -663,6 +685,8 @@ Date
           <tr><td><code>2015-06-09 &gt; SPOT EURUSDX</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code>2015-06-09 &gt; SPOT usdcad</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code>2015-06-09 &gt; SPOT USDCAD USDCAD</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>2015-06-09 + 2b</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>2015-06-09 &gt; 2B</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code>(2015-01-01 : 1M : 2015-02-01), 2015-03-01</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code><em>(empty input)</em></code></td><td><span class="err">error</span></td></tr>
         </tbody>
@@ -673,6 +697,7 @@ Date
       <table class="cases">
         <tbody>
           <tr><td><code>(2015-01-01 : 0D : 2015-02-01)</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>(2015-06-01 : 0B : 2015-06-05)</code></td><td><span class="err">error</span></td></tr>
         </tbody>
       </table>
       </section>

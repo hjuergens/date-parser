@@ -31,7 +31,7 @@ private Symbol symbol(int type, Object value) {
 "IMM"           { return symbol(ScheduleSym.IMM); }
 "SPOT"          { return symbol(ScheduleSym.SPOT); }
 [A-Z]{6}        { return symbol(ScheduleSym.PAIR, yytext()); }
-[DWMQY]         { return symbol(ScheduleSym.UNIT, yytext()); }
+[DWMQYB]        { return symbol(ScheduleSym.UNIT, yytext()); }
 "+"             { return symbol(ScheduleSym.PLUS); }
 "-"             { return symbol(ScheduleSym.MINUS); }
 ">"             { return symbol(ScheduleSym.NEXT); }

@@ -43,7 +43,7 @@ Implements the [shared schedule example](../README.md#shared-example-schedule) a
 - [schedule.pegjs](schedule.pegjs) uses ordered choice (`/`) for the three date notations.
 - PEG has no separate lexer, so whitespace (`_`) is explicit in the rules.
 - There is no `LocalDate` in JavaScript, so the grammar's initializer reproduces `java.time`'s month arithmetic
-  (day clamped to the end of the month) in about 35 lines, plus 8 lines for IMM dates and 9 for spot dates.
+  (day clamped to the end of the month) in about 35 lines, plus 8 lines for IMM dates and 12 for business days and spot dates.
 - Don't name a helper `range`: Peggy provides `range()` (the location of the match) in actions.
 
 ## Status

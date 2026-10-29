@@ -6,6 +6,7 @@
  */
 import java.time.LocalDate;
 import java.time.Period;
+import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,14 +43,14 @@ PRODUCTIONS
     { "," Expr<out d>                     (. dates.add(d); .)
     }.
 
-  Range                                   (. LocalDate first, last; Period step; .)
+  Range                                   (. LocalDate first, last; TemporalAmount step; .)
   = "(" Expr<out first> ":" Period<out step> ":" Expr<out last> ")"
                                           (. if (errors.count > 0) return;
-                                             if (step.isZero() || step.isNegative()) SemErr("step must be positive: " + step);
+                                             if (!ScheduleSemantics.isPositive(step)) SemErr("step must be positive: " + step);
                                              else dates.addAll(ScheduleSemantics.range(first, step, last)); .)
   .
 
-  Expr<out LocalDate d>                   (. Period p; String code; .)
+  Expr<out LocalDate d>                   (. TemporalAmount p; String code; .)
   = Date<out d>
     { "+" Period<out p>                   (. d = d.plus(p); .)
     | "-" Period<out p>                   (. d = d.minus(p); .)
@@ -68,13 +69,14 @@ PRODUCTIONS
     | "/" Number<out b> "/" Number<out c> (. d = date(c, a, b); .)
     ).
 
-  Period<out Period p>                    (. int n; p = Period.ZERO; .)
+  Period<out TemporalAmount p>            (. int n; p = Period.ZERO; .)
   = Number<out n>
     ( "D"                                 (. p = Period.ofDays(n); .)
     | "W"                                 (. p = Period.ofWeeks(n); .)
     | "M"                                 (. p = Period.ofMonths(n); .)
     | "Q"                                 (. p = Period.ofMonths(3 * n); .)
     | "Y"                                 (. p = Period.ofYears(n); .)
+    | "B"                                 (. p = new ScheduleSemantics.BusinessDays(n); .)
     ).
 
   Number<out int n>                       (. n = 0; .)

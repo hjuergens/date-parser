@@ -1,6 +1,6 @@
 package de.juergens.text
 
-import java.time.temporal.TemporalAdjusters
+import java.time.temporal.{Temporal, TemporalAdjusters, TemporalAmount, TemporalUnit, UnsupportedTemporalTypeException}
 import java.time.{DayOfWeek, LocalDate, Period}
 
 import scala.util.parsing.combinator.RegexParsers
@@ -21,12 +21,27 @@ class ScheduleParsers extends RegexParsers {
     | ("/" ~> number) ~ ("/" ~> number) ^^ { case d ~ y => (m: Int) => LocalDate.of(y, m, d) }  // US
     ) ^^ { case first ~ toDate => toDate(first) }
 
-  def period: Parser[Period] = number ~ "[DWMQY]".r ^^ {
+  /** business days, Monday to Friday: only weekends are skipped, there are no holiday calendars */
+  case class BusinessDays(count: Int) extends TemporalAmount {
+    def get(unit: TemporalUnit): Long = throw new UnsupportedTemporalTypeException(s"business days have no unit: $unit")
+    def getUnits: java.util.List[TemporalUnit] = java.util.List.of()
+    def addTo(temporal: Temporal): Temporal = plusBusinessDays(LocalDate.from(temporal), count)
+    def subtractFrom(temporal: Temporal): Temporal = plusBusinessDays(LocalDate.from(temporal), -count)
+  }
+
+  /** the date moved by count business days, backwards if count is negative */
+  def plusBusinessDays(date: LocalDate, count: Int): LocalDate =
+    if (count == 0) date
+    else Iterator.iterate(date)(_.plusDays(count.sign)).drop(1)
+      .filter(_.getDayOfWeek.getValue < 6).drop(count.abs - 1).next()
+
+  def period: Parser[TemporalAmount] = number ~ "[DWMQYB]".r ^^ {
     case n ~ "D" => Period.ofDays(n)
     case n ~ "W" => Period.ofWeeks(n)
     case n ~ "M" => Period.ofMonths(n)
     case n ~ "Q" => Period.ofMonths(3 * n)
     case n ~ "Y" => Period.ofYears(n)
+    case n ~ "B" => BusinessDays(n)
   }
 
   /** the third Wednesday of March, June, September or December strictly after the date */
@@ -36,10 +51,10 @@ class ScheduleParsers extends RegexParsers {
       .map(_.`with`(TemporalAdjusters.dayOfWeekInMonth(3, DayOfWeek.WEDNESDAY)))
       .find(_.isAfter(date)).get
 
-  /** FX spot: T+1 for USD against CAD, TRY, PHP or RUB, otherwise T+2; only weekends are skipped */
+  /** FX spot: T+1 for USD against CAD, TRY, PHP or RUB, otherwise T+2 */
   def spot(date: LocalDate, pair: Option[String]): LocalDate = {
     val lag = if (pair.exists(_.matches("USD(CAD|TRY|PHP|RUB)|(CAD|TRY|PHP|RUB)USD"))) 1 else 2
-    Iterator.iterate(date.plusDays(1))(_.plusDays(1)).filter(_.getDayOfWeek.getValue < 6).drop(lag - 1).next()
+    plusBusinessDays(date, lag)
   }
 
   def pair: Parser[String] = "[A-Z]{6}".r
@@ -57,8 +72,16 @@ class ScheduleParsers extends RegexParsers {
 
   def range: Parser[List[LocalDate]] = ("(" ~> expr) ~ (":" ~> period) ~ (":" ~> expr <~ ")") ^^ {
     case first ~ step ~ last =>
-      require(!step.isZero && !step.isNegative, s"step must be positive: $step")
-      Iterator.from(0).map(k => first.plus(step.multipliedBy(k))).takeWhile(!_.isAfter(last)).toList
+      val positive = step match {
+        case p: Period => !p.isZero && !p.isNegative
+        case BusinessDays(n) => n > 0
+      }
+      require(positive, s"step must be positive: $step")
+      def times(k: Int): TemporalAmount = step match {
+        case p: Period => p.multipliedBy(k)
+        case BusinessDays(n) => BusinessDays(k * n)
+      }
+      Iterator.from(0).map(k => first.plus(times(k))).takeWhile(!_.isAfter(last)).toList
   }
 
   def schedule: Parser[List[LocalDate]] = range | rep1sep(expr, ",")

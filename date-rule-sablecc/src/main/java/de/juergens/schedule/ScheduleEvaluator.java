@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.io.PushbackReader;
 import java.io.StringReader;
 import java.time.LocalDate;
-import java.time.Period;
+import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -73,7 +73,7 @@ public final class ScheduleEvaluator {
         return LocalDate.of(number(us.getYear()), number(us.getMonth()), number(us.getDay()));
     }
 
-    static Period period(PPeriod node) {
+    static TemporalAmount period(PPeriod node) {
         APeriod period = (APeriod) node;
         return ScheduleSemantics.period(number(period.getNumber()), period.getUnit().getText());
     }

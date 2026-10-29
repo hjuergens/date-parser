@@ -6,7 +6,7 @@
 package io.github.hjuergens.schedule;
 
 import java.time.LocalDate;
-import java.time.Period;
+import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,7 +17,7 @@ terminal String     UNIT, PAIR;
 non terminal List<LocalDate>        schedule;
 non terminal ArrayList<LocalDate>   exprs;
 non terminal LocalDate              expr, date;
-non terminal Period                 period;
+non terminal TemporalAmount         period;
 
 start with schedule;
 

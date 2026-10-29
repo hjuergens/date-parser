@@ -11,7 +11,7 @@
 
 %code imports {
   import java.time.LocalDate;
-  import java.time.Period;
+  import java.time.temporal.TemporalAmount;
   import java.util.ArrayList;
   import java.util.List;
 }
@@ -27,7 +27,7 @@
 %token SPOT "SPOT"
 %token <String> PAIR "currency pair"
 %type <LocalDate> expr date
-%type <Period> period
+%type <TemporalAmount> period
 %type <ArrayList<LocalDate>> exprs
 
 %%
@@ -111,7 +111,7 @@ class ScheduleLexer implements ScheduleParser.Lexer {
           return SPOT;
         if (word.length () == 6)
           return PAIR;   /* currency pair such as EURUSD */
-        if (word.length () == 1 && "DWMQY".contains (word))
+        if (word.length () == 1 && "DWMQYB".contains (word))
           return UNIT;
         return YYUNDEF;
       }

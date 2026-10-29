@@ -64,7 +64,7 @@ DateSchedules.parse("(2015-01-15 : 1Q : 2015-12-31)");   // [2015-01-15, 2015-04
 
 ## Status and limitations
 
-- Working: all grammars compile with ANTLR 4.13. There are 149 unit tests and 3 integration tests.
+- Working: all grammars compile with ANTLR 4.13. There are 164 unit tests and 3 integration tests.
 - `ISO8601dates` only accepts dates with hyphens: `20150609` is lexed as two `FOUR_DIGIT` tokens and rejected.
 - `Unit.g4` defines lexer tokens (`nanos`, `forever`, …) that rule `unit` doesn't accept.
 - Uses Joda-Time, which is in maintenance mode; the combinators module uses `java.time` instead.

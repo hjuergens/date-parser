@@ -13,7 +13,7 @@ package io.github.hjuergens.parser;
 
 import java.io.StringReader;
 import java.time.LocalDate;
-import java.time.Period;
+import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,7 +36,7 @@ SKIP : { " " | "\t" | "\r" | "\n" }
 
 TOKEN : {
   < NUM : (["0"-"9"])+ >
-| < UNIT : ["D", "W", "M", "Q", "Y"] >
+| < UNIT : ["D", "W", "M", "Q", "Y", "B"] >
 | < PAIR : (["A"-"Z"]){6} >   // currency pair such as EURUSD
 }
 
@@ -57,7 +57,7 @@ List<LocalDate> Exprs() :
 }
 
 List<LocalDate> Range() :
-{ LocalDate first, last; Period step; }
+{ LocalDate first, last; TemporalAmount step; }
 {
   "(" first = Expr() ":" step = Period() ":" last = Expr() ")"
   { return ScheduleSemantics.range(first, step, last); }
@@ -65,7 +65,7 @@ List<LocalDate> Range() :
 
 /** periods are applied from left to right */
 LocalDate Expr() :
-{ LocalDate d; Period p; Token pair; }
+{ LocalDate d; TemporalAmount p; Token pair; }
 {
   d = Date()
   ( "+" p = Period() { d = d.plus(p); }
@@ -88,7 +88,7 @@ LocalDate Date() :
   )
 }
 
-Period Period() :
+TemporalAmount Period() :
 { int n; Token unit; }
 {
   n = Number() unit = <UNIT>

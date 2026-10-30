@@ -5,8 +5,8 @@
 # <expected> is a comma-separated list of ISO dates, "none" for an empty list, or "error".
 # Periods are applied left to right with java.time semantics: months (M, Q = 3M, Y = 12M)
 # are added first and the day is clamped to the end of the month, then days (D, W = 7D).
-# B counts business days, Monday to Friday: only Saturdays and Sundays are skipped, there are
-# no holiday calendars yet. "- 1B" counts backwards, "+ 0B" leaves the date as it is.
+# B counts business days of the market; without one, Monday to Friday (only Saturdays and Sundays
+# are skipped). "- 1B" counts backwards, "+ 0B" leaves the date as it is.
 # A range (start : step : end) yields start + k * step for k = 0, 1, ... while <= end
 # (with a step of nB: start + k * n business days).
 # "> IMM" moves to the next IMM date strictly after the date: the third Wednesday of
@@ -19,7 +19,19 @@
 # "T" is the base date. A market only says which days are business days (B, SPOT); without one, only
 # Saturdays and Sundays are skipped. The test cases name base date and market in a prefix that is not part
 # of the language:  [<base>] <input> => ...  or  [<base> <market>] <input> => ...
-# Markets for the tests are declared as  market <name> = <holiday>, <holiday>, ...  (plus Saturdays and Sundays).
+# Markets for the tests are declared as  market <name> = <schedule>: Saturdays and Sundays plus the dates the
+# schedule yields when it is evaluated with the first of January of a year as base date (the year before and
+# after are checked too, as an observed holiday can fall into the neighbouring year).
+#
+# Holiday rules: "4 JUL" (day of month), "3 MON JAN" (n-th weekday), "LAST MON MAY" and "EASTER" (Western) are
+# dates in the year of the base date. An observance "{SAT - 1D, SUN + 1D}" shifts a date by the first item for
+# its weekday; the items don't chain. "> FOLLOWING", "> PRECEDING" and "> MODFOLLOWING" (following unless that
+# leaves the month, then preceding) move to a business day of the market.
+#
+# Rolling: "TOM" is T + 1B, "SPOT [PAIR]" is T > SPOT [PAIR]. "> NEXT x" and "> PREV x" move to the first x
+# strictly after or before the date; x is a weekday, BD (business day), IMM or an annual date such as 4 JUL.
+# "> BOM", "> EOM", "> BOY" and "> EOY" move to the first or last day of the month or year.
+# Keywords are reserved: "EASTER" is never a currency pair.
 
 # date notations
 2015-06-09 => 2015-06-09
@@ -115,6 +127,96 @@ market XTEST = 2015-06-10, 2015-07-03, 2015-12-25
 [2015-06-09 XTEST] T + 1M => 2015-07-09
 T => error
 T + 1D => error
+
+# holiday rules
+[2025-06-09] 4 JUL => 2025-07-04
+[2025-06-09] 3 MON JAN => 2025-01-20
+[2025-06-09] 1 MON SEP => 2025-09-01
+[2025-06-09] 4 THU NOV => 2025-11-27
+[2025-06-09] 4 THU NOV + 1D => 2025-11-28
+[2025-06-09] LAST MON MAY => 2025-05-26
+[2025-06-09] 5 FRI JAN => 2025-01-31
+[2025-06-09] EASTER => 2025-04-20
+[2025-06-09] EASTER - 2D => 2025-04-18
+[2024-06-09] EASTER + 1D => 2024-04-01
+[2025-06-09] 4 JUL {SAT - 1D, SUN + 1D} => 2025-07-04
+[2026-06-09] 4 JUL {SAT - 1D, SUN + 1D} => 2026-07-03
+[2027-06-09] 4 JUL {SAT - 1D, SUN + 1D} => 2027-07-05
+[2022-06-09] 1 JAN {SUN + 1D} => 2022-01-01
+[2023-06-09] 1 JAN {SUN + 1D} => 2023-01-02
+[2022-06-09] 25 DEC {SAT - 1D, SUN + 1D} => 2022-12-26
+[2024-06-09] 1 JUN {SAT + 1D, SUN + 1D} => 2024-06-02
+[2025-06-09] 4 JUL, 25 DEC => 2025-07-04, 2025-12-25
+[2025-06-09] (15 JAN : 1Q : 31 DEC) => 2025-01-15, 2025-04-15, 2025-07-15, 2025-10-15
+[2024-06-09] 29 FEB => 2024-02-29
+[2025-06-09] 29 FEB => error
+[2025-06-09] 31 APR => error
+[2025-06-09] 5 MON FEB => error
+[2025-06-09] 0 MON JAN => error
+4 JUL => error
+EASTER => error
+[2025-06-09] 4 JUL 2025 => error
+[2025-06-09] LAST JAN => error
+[2025-06-09] 4 JUL {SAT} => error
+[2025-06-09] 4 JUL {} => error
+[2025-06-09] 4 JUL {SAT - 1D SUN + 1D} => error
+[2025-06-09] T > SPOT EASTER => error
+
+# markets declared from holiday rules
+market XNYS = 1 JAN {SUN + 1D}, 3 MON JAN, 3 MON FEB, EASTER - 2D, LAST MON MAY, 19 JUN {SAT - 1D, SUN + 1D}, 4 JUL {SAT - 1D, SUN + 1D}, 1 MON SEP, 4 THU NOV, 25 DEC {SAT - 1D, SUN + 1D}
+market XEVE = 1 JAN {SAT - 1D, SUN + 1D}
+[2025-07-03 XNYS] T + 1B => 2025-07-07
+[2026-07-02 XNYS] T + 1B => 2026-07-06
+[2025-04-17 XNYS] T + 1B => 2025-04-21
+[2022-12-23 XNYS] T + 1B => 2022-12-27
+[2021-12-30 XNYS] T + 1B => 2021-12-31
+[2021-12-30 XEVE] T + 1B => 2022-01-03
+[2025-11-26 XNYS] T > SPOT => 2025-12-01
+[2025-01-01 XNYS] 3 FRI APR > PRECEDING => 2025-04-17
+[2025-01-01 XNYS] 3 FRI MAR > PRECEDING => 2025-03-21
+[2025-01-01 XNYS] 1 MAR - 1B => 2025-02-28
+[2025-01-01 XNYS] 20 JAN > FOLLOWING => 2025-01-21
+[2025-01-01] 20 JAN > FOLLOWING => 2025-01-20
+
+# rolling
+[2025-06-09] TOM => 2025-06-10
+[2025-06-13] TOM => 2025-06-16
+[2025-11-26 XNYS] TOM => 2025-11-28
+[2025-06-09] SPOT => 2025-06-11
+[2025-06-09] SPOT USDCAD => 2025-06-10
+[2025-06-09] SPOT + 1M => 2025-07-11
+[2025-06-09] T > NEXT FRI => 2025-06-13
+[2025-06-13] T > NEXT FRI => 2025-06-20
+[2025-06-13] T > PREV FRI => 2025-06-06
+[2025-06-13] T > NEXT BD => 2025-06-16
+[2025-06-16] T > PREV BD => 2025-06-13
+[2025-06-09] T > NEXT IMM => 2025-06-18
+[2025-06-09] T > PREV IMM => 2025-03-19
+[2025-06-09] T > NEXT 4 JUL => 2025-07-04
+[2025-07-04] T > NEXT 4 JUL => 2026-07-04
+[2025-12-01] T > NEXT 3 MON JAN => 2026-01-19
+[2025-06-09] T > NEXT LAST MON MAY => 2026-05-25
+[2025-06-09] T > PREV EASTER => 2025-04-20
+[2025-04-20] T > PREV EASTER => 2024-03-31
+[2026-06-09] T > NEXT 4 JUL {SAT - 1D, SUN + 1D} => 2026-07-03
+[2025-06-09] T > BOM => 2025-06-01
+[2025-06-09] T > EOM => 2025-06-30
+[2024-02-10] T > EOM => 2024-02-29
+[2025-06-09] T > BOY => 2025-01-01
+[2025-06-09] T > EOY => 2025-12-31
+2016-01-31 + 1M > EOM => 2016-02-29
+[2025-05-09] T > EOM > PRECEDING => 2025-05-30
+[2025-06-09] T > BOM > FOLLOWING => 2025-06-02
+[2025-05-09] T > EOM > MODFOLLOWING => 2025-05-30
+[2025-05-30 XNYS] T + 1M > MODFOLLOWING => 2025-06-30
+[2025-05-30 XNYS] T > MODFOLLOWING => 2025-05-30
+[2025-06-09] T > NEXT => error
+[2025-06-09] T > NEXT 3M => error
+[2025-06-09] T > NEXT T => error
+[2025-06-09] T > NEXT MONDAY => error
+[2025-06-09] TOM TOM => error
+[2025-06-09] T > EOM EOM => error
+TOM => error
 
 # invalid dates
 2015-02-29 => error

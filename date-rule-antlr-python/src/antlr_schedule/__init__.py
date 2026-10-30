@@ -66,8 +66,61 @@ class Rules(DateScheduleVisitor):
         pair = ctx.PAIR() and ctx.PAIR().getText()
         return lambda d, market: market.spot(d, pair)
 
+    def visitRoll(self, ctx):
+        convention = ctx.ROLL().getText()
+        return lambda d, market: semantics.roll(d, convention, market)
+
+    def visitNext(self, ctx):
+        anchor = self.visit(ctx.anchor())
+        return lambda d, market: anchor(d, 1, market)
+
+    def visitPrev(self, ctx):
+        anchor = self.visit(ctx.anchor())
+        return lambda d, market: anchor(d, -1, market)
+
+    def visitObservance(self, ctx):
+        shifts = [self.visit(observe) for observe in ctx.observe()]
+        return lambda d, market: semantics.observe(d, shifts, market)
+
+    def visitObserve(self, ctx):
+        return ctx.WEEKDAY().getText(), self.visit(ctx.period()), 1 if ctx.sign.text == "+" else -1
+
+    def visitWeekdayAnchor(self, ctx):
+        return semantics.weekday_anchor(ctx.WEEKDAY().getText())
+
+    def visitBusinessDayAnchor(self, ctx):
+        return semantics.business_day_anchor
+
+    def visitImmAnchor(self, ctx):
+        return semantics.imm_anchor
+
+    def visitAnnualAnchor(self, ctx):
+        return semantics.annual_anchor(self.visit(ctx.annual()))
+
     def visitBase(self, ctx):
         return semantics.base
+
+    def visitTom(self, ctx):
+        return lambda context: semantics.plus_business_days(semantics.base(context), 1, context.market)
+
+    def visitSpotDate(self, ctx):
+        pair = ctx.PAIR() and ctx.PAIR().getText()
+        return lambda context: context.market.spot(semantics.base(context), pair)
+
+    def visitInYear(self, ctx):
+        return semantics.in_year(self.visit(ctx.annual()))
+
+    def visitMonthDay(self, ctx):
+        return semantics.month_day(int(ctx.NUM().getText()), ctx.MONTH().getText())
+
+    def visitNthWeekday(self, ctx):
+        return semantics.nth_weekday(int(ctx.NUM().getText()), ctx.WEEKDAY().getText(), ctx.MONTH().getText())
+
+    def visitLastWeekday(self, ctx):
+        return semantics.last_weekday(ctx.WEEKDAY().getText(), ctx.MONTH().getText())
+
+    def visitEaster(self, ctx):
+        return semantics.easter
 
     def visitIso(self, ctx):
         value = date(int(ctx.y.text), int(ctx.m.text), int(ctx.d.text))

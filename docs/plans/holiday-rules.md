@@ -1,5 +1,7 @@
 # Plan: holiday rules in the schedule language
 
+Status: Gregorian rules and rolling are implemented in all ten modules (§1, §1b, §2–4, §6); lunar calendars (§5) are open.
+
 ## Context
 The holidays-events catalog (`../holidays-events/rules/catalog/us.yaml` and siblings) describes market closures
 as typed rules: `fixed_gregorian`, `nth_weekday`, `last_weekday`, `easter_offset`, `observance_shift`,

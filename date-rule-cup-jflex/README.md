@@ -32,7 +32,7 @@ mvn -pl date-rule-cup-jflex verify
 
 - `com.github.vbmacher:cup-maven-plugin` (CUP 11b) generates into `target/generated-sources/cup`.
 - `de.jflex:jflex-maven-plugin` (JFlex 1.9) generates into `target/generated-sources/jflex`.
-- There are 113 TestNG tests: [PascalLexerTest](src/test/java/io/github/hjuergens/PascalLexerTest.java) and the shared example.
+- There are 195 TestNG tests: [PascalLexerTest](src/test/java/io/github/hjuergens/PascalLexerTest.java) and the shared example.
 
 For `pascal.cup`, CUP warns that the terminals are "declared but never used". That's expected while that grammar has no rules.
 
@@ -46,6 +46,8 @@ Implements the [shared schedule example](../README.md#shared-example-schedule) a
 - CUP runs once per grammar (two plugin executions); JFlex processes every `.jflex` file.
 - `Schedules.parse(text)` throws on the first syntax error ("Can't recover from previous error(s)").
 - Test: [SchedulesTest](src/test/java/io/github/hjuergens/schedule/SchedulesTest.java).
+- Holiday rules and rolling: the `'>'` token is now `GT`, since `NEXT` is a keyword. In the JFlex spec, `"EASTER"` comes before
+  `[A-Z]{6}`: on a match of the same length the earlier rule wins.
 
 ## Status
 

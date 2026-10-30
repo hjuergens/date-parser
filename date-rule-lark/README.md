@@ -34,7 +34,7 @@ mise run test:lark        # or, inside this directory:
 uv run pytest             # uv installs Lark and pytest into .venv (versions in uv.lock)
 ```
 
-There are 212 tests (pytest): the 106 cases of [examples/schedule.txt](../examples/schedule.txt), each with `lalr` and `earley`.
+There are 376 tests (pytest): the 188 cases of [examples/schedule.txt](../examples/schedule.txt), each with `lalr` and `earley`.
 
 ## Shared example
 
@@ -48,6 +48,8 @@ There are 212 tests (pytest): the 106 cases of [examples/schedule.txt](../exampl
   ANTLR's lexer doesn't know the parser state, reads `SPOTUS` as a currency pair and rejects the input.
 - The schedule language is unambiguous, so Earley shows no advantage here; an ambiguous notation such as
   `01/02/2015` (US or European order) would.
+- Holiday rules and rolling: `MONTH`, `WEEKDAY` and `ROLL` are terminals. The contextual lexer would read `EASTER` after `SPOT` as
+  a currency pair, because only a pair can follow there, so the pair pattern is `/(?!EASTER)[A-Z]{6}/`.
 
 ## Status
 

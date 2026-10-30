@@ -44,8 +44,59 @@ class Rules(Transformer):
     def spot(self, pair):
         return lambda d, market: market.spot(d, pair and str(pair))
 
+    def roll(self, convention):
+        return lambda d, market: semantics.roll(d, str(convention), market)
+
+    def next(self, anchor):
+        return lambda d, market: anchor(d, 1, market)
+
+    def prev(self, anchor):
+        return lambda d, market: anchor(d, -1, market)
+
+    def observance(self, *shifts):
+        return lambda d, market: semantics.observe(d, shifts, market)
+
+    def observe_plus(self, weekday, period):
+        return str(weekday), period, 1
+
+    def observe_minus(self, weekday, period):
+        return str(weekday), period, -1
+
+    def weekday(self, weekday):
+        return semantics.weekday_anchor(str(weekday))
+
+    def business_day(self):
+        return semantics.business_day_anchor
+
+    def imm_anchor(self):
+        return semantics.imm_anchor
+
+    def annual_anchor(self, annual):
+        return semantics.annual_anchor(annual)
+
     def base(self):
         return semantics.base
+
+    def tom(self):
+        return lambda context: semantics.plus_business_days(semantics.base(context), 1, context.market)
+
+    def spot_date(self, pair):
+        return lambda context: context.market.spot(semantics.base(context), pair and str(pair))
+
+    def in_year(self, annual):
+        return semantics.in_year(annual)
+
+    def month_day(self, day, month):
+        return semantics.month_day(int(day), str(month))
+
+    def nth_weekday(self, n, weekday, month):
+        return semantics.nth_weekday(int(n), str(weekday), str(month))
+
+    def last_weekday(self, weekday, month):
+        return semantics.last_weekday(str(weekday), str(month))
+
+    def easter(self):
+        return semantics.easter
 
     def iso(self, y, m, d):
         value = date(int(y), int(m), int(d))

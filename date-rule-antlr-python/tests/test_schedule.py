@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from antlr_schedule import ScheduleSyntaxError, parse
-from antlr_schedule.semantics import WEEKENDS, Context, Market
+from antlr_schedule.semantics import WEEKENDS, Context, RuleMarket
 
 CASES = Path(__file__).resolve().parents[2] / "examples" / "schedule.txt"
 PREFIX = re.compile(r"\[(\S+)(?: (\S+))?\] (.*)")  # [base] or [base market]
@@ -17,9 +17,9 @@ def cases():
     for line in CASES.read_text(encoding="utf-8").splitlines():
         if not line.strip() or line.startswith("#"):
             continue
-        if line.startswith("market "):  # market NAME = holiday, holiday, ...
+        if line.startswith("market "):  # market NAME = schedule of the holidays
             name, holidays = line.removeprefix("market ").split("=", 1)
-            markets[name.strip()] = Market(date.fromisoformat(d.strip()) for d in holidays.split(","))
+            markets[name.strip()] = RuleMarket(parse(holidays.strip()))
             continue
         text, expected = line.rsplit("=>", 1)
         text, context = text.strip(), Context()

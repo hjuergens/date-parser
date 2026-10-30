@@ -65,9 +65,12 @@ Test: [ScheduleParsersSuite](src/test/scala/de/juergens/text/ScheduleParsersSuit
 ScheduleParsers.parse("T + 1W - 2D")(Context(Some(LocalDate.of(2015, 6, 9))))   // List(2015-06-14)
 ```
 
+Holiday rules and rolling are more parsers (`annual`, `anchor`, `observe`). Without a lexer, order matters (`"TOM"` before `"T"`),
+and the pair pattern `(?!EASTER)[A-Z]{6}` excludes the keyword, or `T > SPOT EASTER` would parse.
+
 ## Status
 
-- Working: 155 JUnit/TestNG tests and 124 ScalaTest tests. One TestNG test is disabled (`firstDayOfNextMonthTest`).
+- Working: 155 JUnit/TestNG tests and 206 ScalaTest tests. One TestNG test is disabled (`firstDayOfNextMonthTest`).
 - `QuarterAdjuster(n)` moves to another quarter **within the same year** (Q4 + 1 → Q1 of the same year).
 - Several rules in [high_sophisticated.txt](src/test/resources/complex/high_sophisticated.txt) are still commented out,
   for example "every friday the 13th of month" and "full moon next after the vernal equinox".

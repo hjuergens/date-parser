@@ -41,7 +41,7 @@ uv run pytest
   so generating a Python parser still needs a JDK (mise provides one). Without `java` on the `PATH` it asks to install a JRE.
 - The runtime `antlr4-python3-runtime` must have exactly the tool's version (4.13.2).
 - The generated sources in `src/antlr_schedule/generated` are not checked in.
-- There are 106 tests (pytest), one per case of [examples/schedule.txt](../examples/schedule.txt).
+- There are 188 tests (pytest), one per case of [examples/schedule.txt](../examples/schedule.txt).
 
 ## Shared example
 
@@ -50,6 +50,7 @@ uv run pytest
 - An error listener on lexer and parser raises `ScheduleSyntaxError`; the default one only prints and recovers.
 - The Python target renames the rule `range` to `range_()`, because it would shadow the builtin.
 - [semantics.py](src/antlr_schedule/semantics.py) is a copy of the Lark module's file (modules stay independent).
+- Holiday rules and rolling: the date alternative `annual # inYear` and the anchor `annual # annualAnchor` share one rule; `MONTH`, `WEEKDAY` and `ROLL` are lexer rules. The keyword `'EASTER'` wins over the six-letter `PAIR`, as ANTLR defines implicit literals first.
 
 ## Status
 

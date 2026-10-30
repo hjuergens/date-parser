@@ -34,7 +34,7 @@ mvn -pl date-rule-sablecc verify
 ```
 
 `sablecc-maven-plugin` 2.2 (the latest release, from 2008) generates the sources into `target/generated-sources/sablecc`.
-There are 117 TestNG tests.
+There are 199 TestNG tests.
 
 ## Shared example
 
@@ -48,6 +48,9 @@ Elements that occur twice in an alternative need names (`[year]:number`, `[s1]:m
 Each kind of shift (`+`, `-`, `> IMM`, `> SPOT [PAIR]`) is an alternative of `shift` and becomes its own node class
 (`APlusShift`, …, `ASpotShift`); the optional `pair?` is `null` in the tree when it is missing.
 Test: [ScheduleEvaluatorTest](src/test/java/de/juergens/schedule/ScheduleEvaluatorTest.java).
+
+Holiday rules and rolling add the productions `observe`, `anchor` and `annual`; the evaluator gained one method for each.
+The token `easter` is declared before `pair`: on a match of the same length the earlier token wins.
 
 ## Status
 

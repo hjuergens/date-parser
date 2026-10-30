@@ -47,6 +47,9 @@ After `">"` the production branches on `"IMM"` or `"SPOT"` followed by an option
 `TokenMgrException` (unknown character), or `DateTimeException`.
 Test: [ScheduleTest](src/test/java/io/github/hjuergens/parser/ScheduleTest.java).
 
+Holiday rules and rolling: `Date()` reads the number that starts both `2015-06-09` and `3 MON JAN`, then `AnnualTail(n)` continues.
+The tokens `MONTH`, `WEEKDAY`, `ROLL` and `EASTER` are declared before `PAIR`: on a match of the same length the earlier one wins.
+
 ## Status
 
 Working.

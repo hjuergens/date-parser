@@ -70,6 +70,10 @@ Rule rule = DateSchedules.parse("(T : 1Q : T + 11M)");    // a function of base 
 rule.evaluate(new Context(LocalDate.of(2015, 1, 15), null));  // [2015-01-15, 2015-04-15, 2015-07-15, 2015-10-15]
 ```
 
+Holiday rules and rolling (`4 JUL {SAT - 1D, SUN + 1D}`, `T > NEXT 3 MON JAN`, `> MODFOLLOWING`) are more alternatives in the
+loop of `expr`; `annual` is one rule used by `date` and by the anchor of `> NEXT`. The keyword `'EASTER'` wins over the six-letter
+`PAIR`, because ANTLR defines the implicit literal tokens before the lexer rules.
+
 ## Status and limitations
 
 - Working: all grammars compile with ANTLR 4.13. There are 184 unit tests and 3 integration tests.

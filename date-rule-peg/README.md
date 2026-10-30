@@ -34,7 +34,7 @@ mise run test:peg                # Node from mise.toml, then npm ci + npm test
 npm ci && npm test               # or directly, with Node 20 or later
 ```
 
-There are 111 tests (`node:test`) in [test/list.test.mjs](test/list.test.mjs) and [test/schedule.test.mjs](test/schedule.test.mjs).
+There are 193 tests (`node:test`) in [test/list.test.mjs](test/list.test.mjs) and [test/schedule.test.mjs](test/schedule.test.mjs).
 
 ## Shared example
 
@@ -49,6 +49,8 @@ Implements the [shared schedule example](../README.md#shared-example-schedule) a
 - A currency pair is `$[A-Z]|6|`, Peggy's repetition count. Since there is no lexer, `>SPOTUSDCAD` without a space
   also parses (as with the Scala combinators); the tools with a longest-match lexer read `SPOTUS` as a pair and reject it.
 - Don't name a helper `range`: Peggy provides `range()` (the location of the match) in actions.
+- Holiday rules and rolling: `"TOM"` must come before `"T"` in `Date`, and the pair is `!"EASTER" $[A-Z]|6|`; without a lexer
+  nothing else would reserve the keyword. About 80 more lines of JavaScript compute annual dates, Easter and the roll conventions.
 
 ## Status
 

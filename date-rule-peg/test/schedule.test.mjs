@@ -14,14 +14,23 @@ const date = (text) => {
 };
 const weekday = (d) => new Date(Date.UTC(d.year, d.month - 1, d.day)).getUTCDay() % 6 !== 0;
 
+// weekends plus the dates the rule yields for the year before, the year and the year after
+function holidayMarket(rule) {
+  const years = new Map();
+  const holidays = (year) => {
+    if (!years.has(year)) years.set(year, new Set(rule({ base: { year, month: 1, day: 1 } }).map(iso)));
+    return years.get(year);
+  };
+  return { isBusinessDay: (d) => weekday(d) && ![d.year - 1, d.year, d.year + 1].some((y) => holidays(y).has(iso(d))) };
+}
+
 const markets = new Map();
 const cases = [];
 for (const line of readFileSync(new URL('../../examples/schedule.txt', import.meta.url), 'utf8').split('\n')) {
   if (line.trim() === '' || line.trim().startsWith('#')) continue;
-  if (line.startsWith('market ')) { // market NAME = holiday, holiday, ...
+  if (line.startsWith('market ')) { // market NAME = schedule of the holidays
     const [name, holidays] = line.slice('market '.length).split('=');
-    const days = new Set(holidays.split(',').map((d) => d.trim()));
-    markets.set(name.trim(), { isBusinessDay: (d) => weekday(d) && !days.has(iso(d)) });
+    markets.set(name.trim(), holidayMarket(parser.parse(holidays.trim())));
     continue;
   }
   const arrow = line.lastIndexOf('=>');

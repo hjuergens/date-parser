@@ -15,16 +15,41 @@ shift: "+" period           -> plus
      | "-" period           -> minus
      | ">" "IMM"            -> imm
      | ">" "SPOT" [PAIR]    -> spot
+     | ">" ROLL             -> roll
+     | ">" "NEXT" anchor    -> next
+     | ">" "PREV" anchor    -> prev
+     | "{" observe ("," observe)* "}" -> observance
+
+observe: WEEKDAY "+" period -> observe_plus
+       | WEEKDAY "-" period -> observe_minus
+
+anchor: WEEKDAY             -> weekday
+      | "BD"                -> business_day
+      | "IMM"               -> imm_anchor
+      | annual              -> annual_anchor
 
 date: "T"                   -> base
+    | "TOM"                 -> tom
+    | "SPOT" [PAIR]         -> spot_date
     | NUM "-" NUM "-" NUM   -> iso
     | NUM "." NUM "." NUM   -> german
     | NUM "/" NUM "/" NUM   -> us
+    | annual                -> in_year
+
+// dates that recur every year, evaluated in the year of the base date
+annual: NUM MONTH           -> month_day
+      | NUM WEEKDAY MONTH   -> nth_weekday
+      | "LAST" WEEKDAY MONTH -> last_weekday
+      | "EASTER"            -> easter
 
 period: NUM UNIT
 
 NUM: /[0-9]+/
 UNIT: /[DWMQYB]/
-PAIR: /[A-Z]{6}/            // currency pair such as EURUSD
+MONTH: "JAN" | "FEB" | "MAR" | "APR" | "MAY" | "JUN" | "JUL" | "AUG" | "SEP" | "OCT" | "NOV" | "DEC"
+WEEKDAY: "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN"
+ROLL: "FOLLOWING" | "PRECEDING" | "MODFOLLOWING" | "BOM" | "EOM" | "BOY" | "EOY"
+// currency pair such as EURUSD; the contextual lexer would also take the keyword EASTER after SPOT
+PAIR: /(?!EASTER)[A-Z]{6}/
 
 %ignore /[ \t\r\n]+/

@@ -31,11 +31,26 @@ private Symbol symbol(int type, Object value) {
 "IMM"           { return symbol(ScheduleSym.IMM); }
 "SPOT"          { return symbol(ScheduleSym.SPOT); }
 "T"             { return symbol(ScheduleSym.BASE); }
+"TOM"           { return symbol(ScheduleSym.TOM); }
+"NEXT"          { return symbol(ScheduleSym.NEXT); }
+"PREV"          { return symbol(ScheduleSym.PREV); }
+"BD"            { return symbol(ScheduleSym.BD); }
+"LAST"          { return symbol(ScheduleSym.LAST); }
+"JAN" | "FEB" | "MAR" | "APR" | "MAY" | "JUN" | "JUL" | "AUG" | "SEP" | "OCT" | "NOV" | "DEC"
+                { return symbol(ScheduleSym.MONTH, yytext()); }
+"MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN"
+                { return symbol(ScheduleSym.WEEKDAY, yytext()); }
+"FOLLOWING" | "PRECEDING" | "MODFOLLOWING" | "BOM" | "EOM" | "BOY" | "EOY"
+                { return symbol(ScheduleSym.ROLL, yytext()); }
+/* before the pair: on a match of the same length the earlier rule wins */
+"EASTER"        { return symbol(ScheduleSym.EASTER); }
 [A-Z]{6}        { return symbol(ScheduleSym.PAIR, yytext()); }
 [DWMQYB]        { return symbol(ScheduleSym.UNIT, yytext()); }
 "+"             { return symbol(ScheduleSym.PLUS); }
 "-"             { return symbol(ScheduleSym.MINUS); }
-">"             { return symbol(ScheduleSym.NEXT); }
+">"             { return symbol(ScheduleSym.GT); }
+"{"             { return symbol(ScheduleSym.LBRACE); }
+"}"             { return symbol(ScheduleSym.RBRACE); }
 "."             { return symbol(ScheduleSym.DOT); }
 "/"             { return symbol(ScheduleSym.SLASH); }
 ","             { return symbol(ScheduleSym.COMMA); }

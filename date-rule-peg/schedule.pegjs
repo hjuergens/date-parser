@@ -69,6 +69,92 @@
     return plusBusinessDays(d, /^(USD(CAD|TRY|PHP|RUB)|(CAD|TRY|PHP|RUB)USD)$/.test(pair) ? 1 : 2, market);
   }
 
+  // the IMM date strictly before d
+  function previousImm(d) {
+    for (let { year, month } = d; ; month === 1 ? (year--, month = 12) : month--) {
+      if (month % 3 !== 0) continue;
+      const firstDay = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
+      const imm = { year, month, day: 1 + (3 - firstDay + 7) % 7 + 14 };
+      if (compare(imm, d) < 0) return imm;
+    }
+  }
+
+  const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  const WEEKDAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+
+  // 0 = Monday, as in WEEKDAYS
+  function weekday(d) {
+    return (new Date(Date.UTC(d.year, d.month - 1, d.day)).getUTCDay() + 6) % 7;
+  }
+
+  function plusDays(d, days) {
+    return plus(d, { months: 0, days, business: 0 }, 1, WEEKENDS);
+  }
+
+  // annual dates: functions of the year
+  function monthDay(day, month) {
+    return (year) => date(year, MONTHS.indexOf(month) + 1, day);
+  }
+
+  function nthWeekday(n, wd, month) {
+    return (year) => {
+      const first = date(year, MONTHS.indexOf(month) + 1, 1);
+      const d = plusDays(first, (WEEKDAYS.indexOf(wd) - weekday(first) + 7) % 7 + 7 * (n - 1));
+      if (n < 1 || d.month !== first.month) throw new RangeError(`no ${n} ${wd} ${month} in ${year}`);
+      return d;
+    };
+  }
+
+  function lastWeekday(wd, month) {
+    return (year) => {
+      const m = MONTHS.indexOf(month) + 1;
+      const last = date(year, m, daysInMonth(year, m));
+      return plusDays(last, -((weekday(last) - WEEKDAYS.indexOf(wd) + 7) % 7));
+    };
+  }
+
+  // Western Easter Sunday (anonymous Gregorian algorithm)
+  function easter(year) {
+    const a = year % 19, b = Math.floor(year / 100), c = year % 100, d = Math.floor(b / 4), e = b % 4;
+    const g = Math.floor((8 * b + 13) / 25), h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4;
+    const l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+    return date(year, Math.floor((h + l - 7 * m + 114) / 31), (h + l - 7 * m + 114) % 31 + 1);
+  }
+
+  // anchors of > NEXT and > PREV: the first match strictly after (direction 1) or before (-1) d
+  function annualAnchor(annual) {
+    return (d, direction) => {
+      const match = annual(d.year);
+      return Math.sign(compare(match, d)) === direction ? match : annual(d.year + direction);
+    };
+  }
+
+  function weekdayAnchor(wd) {
+    return (d, direction) => plusDays(d, direction * ((direction * (WEEKDAYS.indexOf(wd) - weekday(d)) % 7 + 7) % 7 || 7));
+  }
+
+  // FOLLOWING, PRECEDING, MODFOLLOWING (following unless that leaves the month); BOM, EOM, BOY, EOY
+  function roll(d, convention, market) {
+    switch (convention) {
+      case 'FOLLOWING': return market.isBusinessDay(d) ? d : plusBusinessDays(d, 1, market);
+      case 'PRECEDING': return market.isBusinessDay(d) ? d : plusBusinessDays(d, -1, market);
+      case 'MODFOLLOWING': {
+        const following = roll(d, 'FOLLOWING', market);
+        return following.month === d.month ? following : roll(d, 'PRECEDING', market);
+      }
+      case 'BOM': return { ...d, day: 1 };
+      case 'EOM': return { ...d, day: daysInMonth(d.year, d.month) };
+      case 'BOY': return { year: d.year, month: 1, day: 1 };
+      case 'EOY': return { year: d.year, month: 12, day: 31 };
+    }
+  }
+
+  // the first shift for the weekday of d applies; shifts don't chain
+  function observe(d, shifts, market) {
+    const shift = shifts.find((s) => WEEKDAYS.indexOf(s.weekday) === weekday(d));
+    return shift ? plus(d, shift.period, shift.sign, market) : d;
+  }
+
   function compare(a, b) {
     return a.year - b.year || a.month - b.month || a.day - b.day;
   }
@@ -102,13 +188,50 @@ Shift
   = "+" _ p:Period { return (d, market) => plus(d, p, 1, market); }
   / "-" _ p:Period { return (d, market) => plus(d, p, -1, market); }
   / ">" _ "IMM" { return nextImm; }
-  / ">" _ "SPOT" pair:(_ @$[A-Z]|6|)? { return (d, market) => spot(d, pair, market); }
+  / ">" _ "SPOT" pair:(_ @Pair)? { return (d, market) => spot(d, pair, market); }
+  / ">" _ convention:$("FOLLOWING" / "PRECEDING" / "MODFOLLOWING" / "BOM" / "EOM" / "BOY" / "EOY") {
+      return (d, market) => roll(d, convention, market);
+    }
+  / ">" _ "NEXT" _ anchor:Anchor { return (d, market) => anchor(d, 1, market); }
+  / ">" _ "PREV" _ anchor:Anchor { return (d, market) => anchor(d, -1, market); }
+  / "{" _ head:Observe tail:(_ "," _ @Observe)* _ "}" {
+      return (d, market) => observe(d, [head, ...tail], market);
+    }
+
+Observe
+  = weekday:Weekday _ sign:("+" / "-") _ period:Period { return { weekday, sign: sign === '+' ? 1 : -1, period }; }
+
+Anchor
+  = wd:Weekday { return weekdayAnchor(wd); }
+  / "BD" { return (d, direction, market) => plusBusinessDays(d, direction, market); }
+  / "IMM" { return (d, direction) => direction > 0 ? nextImm(d) : previousImm(d); }
+  / annual:Annual { return annualAnchor(annual); }
 
 Date
-  = "T" { return base; }  // the base date
+  = "TOM" { return (c) => plusBusinessDays(base(c), 1, c.market); }  // before "T": no lexer, so order matters
+  / "T" { return base; }  // the base date
+  / "SPOT" pair:(_ @Pair)? { return (c) => spot(base(c), pair, c.market); }
   / y:Number _ "-" _ m:Number _ "-" _ d:Number { const value = date(y, m, d); return () => value; }  // ISO
   / d:Number _ "." _ m:Number _ "." _ y:Number { const value = date(y, m, d); return () => value; }  // German
   / m:Number _ "/" _ d:Number _ "/" _ y:Number { const value = date(y, m, d); return () => value; }  // US
+  / annual:Annual { return (c) => annual(base(c).year); }
+
+// dates that recur every year, evaluated in the year of the base date
+Annual
+  = day:Number _ month:Month { return monthDay(day, month); }
+  / n:Number _ wd:Weekday _ month:Month { return nthWeekday(n, wd, month); }
+  / "LAST" _ wd:Weekday _ month:Month { return lastWeekday(wd, month); }
+  / "EASTER" { return easter; }
+
+Month
+  = $("JAN" / "FEB" / "MAR" / "APR" / "MAY" / "JUN" / "JUL" / "AUG" / "SEP" / "OCT" / "NOV" / "DEC")
+
+Weekday
+  = $("MON" / "TUE" / "WED" / "THU" / "FRI" / "SAT" / "SUN")
+
+// currency pair such as EURUSD; without a lexer nothing reserves the keyword EASTER, so it's excluded here
+Pair
+  = !"EASTER" pair:$[A-Z]|6| { return pair; }
 
 Period
   = n:Number _ unit:[DWMQYB] {

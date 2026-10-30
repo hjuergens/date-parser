@@ -10,11 +10,9 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -34,11 +32,9 @@ public class DateSchedulesTest {
         Map<String, ScheduleSemantics.Market> markets = new HashMap<>();
         for (String line : Files.readAllLines(Paths.get("..", "examples", "schedule.txt"), StandardCharsets.UTF_8)) {
             if (line.trim().isEmpty() || line.trim().startsWith("#")) continue;
-            if (line.startsWith("market ")) {   // market NAME = holiday, holiday, ...
+            if (line.startsWith("market ")) {   // market NAME = schedule of the holidays
                 String[] market = line.substring("market ".length()).split("=", 2);
-                Set<LocalDate> holidays = new HashSet<>();
-                for (String date : market[1].split(",")) holidays.add(LocalDate.parse(date.trim()));
-                markets.put(market[0].trim(), ScheduleSemantics.withHolidays(holidays));
+                markets.put(market[0].trim(), ScheduleSemantics.withHolidayRules(DateSchedules.parse(market[1].trim())));
                 continue;
             }
             int arrow = line.lastIndexOf("=>");

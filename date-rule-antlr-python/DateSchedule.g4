@@ -25,13 +25,39 @@ shift
     | '-' period                    # minus
     | '>' 'IMM'                     # imm
     | '>' 'SPOT' PAIR?              # spot
+    | '>' ROLL                      # roll
+    | '>' 'NEXT' anchor             # next
+    | '>' 'PREV' anchor             # prev
+    | '{' observe (',' observe)* '}' # observance
+    ;
+
+observe
+    : WEEKDAY sign=('+' | '-') period
+    ;
+
+anchor
+    : WEEKDAY                       # weekdayAnchor
+    | 'BD'                          # businessDayAnchor
+    | 'IMM'                         # immAnchor
+    | annual                        # annualAnchor
     ;
 
 date
     : 'T'                           # base
+    | 'TOM'                         # tom
+    | 'SPOT' PAIR?                  # spotDate
     | y=NUM '-' m=NUM '-' d=NUM     # iso
     | d=NUM '.' m=NUM '.' y=NUM     # german
     | m=NUM '/' d=NUM '/' y=NUM     # us
+    | annual                        # inYear
+    ;
+
+// dates that recur every year, evaluated in the year of the base date
+annual
+    : NUM MONTH                     # monthDay
+    | NUM WEEKDAY MONTH             # nthWeekday
+    | 'LAST' WEEKDAY MONTH          # lastWeekday
+    | 'EASTER'                      # easter
     ;
 
 period
@@ -40,5 +66,9 @@ period
 
 NUM  : [0-9]+ ;
 UNIT : [DWMQYB] ;
-PAIR : [A-Z] [A-Z] [A-Z] [A-Z] [A-Z] [A-Z] ;   // currency pair such as EURUSD
+MONTH   : 'JAN' | 'FEB' | 'MAR' | 'APR' | 'MAY' | 'JUN' | 'JUL' | 'AUG' | 'SEP' | 'OCT' | 'NOV' | 'DEC' ;
+WEEKDAY : 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN' ;
+ROLL    : 'FOLLOWING' | 'PRECEDING' | 'MODFOLLOWING' | 'BOM' | 'EOM' | 'BOY' | 'EOY' ;
+// currency pair such as EURUSD; the keyword 'EASTER' has the same length and wins, as it is defined first
+PAIR : [A-Z] [A-Z] [A-Z] [A-Z] [A-Z] [A-Z] ;
 WS   : [ \t\r\n]+ -> skip ;

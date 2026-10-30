@@ -54,25 +54,84 @@ PRODUCTIONS
                                              else rule = ScheduleSemantics.range(first, step, last); .)
   .
 
-  Expr<out ScheduleSemantics.Expr d>      (. TemporalAmount p; String code; .)
+  Expr<out ScheduleSemantics.Expr d>      (. TemporalAmount p; String code; ScheduleSemantics.Anchor a;
+                                             List<ScheduleSemantics.Shift> shifts = new ArrayList<>(); .)
   = Date<out d>
     { "+" Period<out p>                   (. d = ScheduleSemantics.plus(d, p); .)
     | "-" Period<out p>                   (. d = ScheduleSemantics.minus(d, p); .)
     | ">"
       ( "IMM"                             (. d = ScheduleSemantics.nextImm(d); .)
-      | "SPOT"                            (. code = null; .)
-        [ pair                            (. code = t.val; .)
-        ]                                 (. d = ScheduleSemantics.spot(d, code); .)
+      | Spot<out code>                    (. d = ScheduleSemantics.spot(d, code); .)
+      | Roll<out code>                    (. d = ScheduleSemantics.roll(d, code); .)
+      | "NEXT" Anchor<out a>              (. d = ScheduleSemantics.next(d, a); .)
+      | "PREV" Anchor<out a>              (. d = ScheduleSemantics.previous(d, a); .)
       )
+    | "{" Shift<shifts>                   /* {SAT - 1D, SUN + 1D} */
+      { "," Shift<shifts> }
+      "}"                                 (. d = ScheduleSemantics.observe(d, shifts); shifts = new ArrayList<>(); .)
     }.
 
-  Date<out ScheduleSemantics.Expr d>      (. int a, b, c; d = ScheduleSemantics.BASE; .)
+  Spot<out String code>                   (. code = null; .)
+  = "SPOT" [ pair                         (. code = t.val; .)
+    ].
+
+  Roll<out String code>
+  = ( "FOLLOWING" | "PRECEDING" | "MODFOLLOWING" | "BOM" | "EOM" | "BOY" | "EOY" )
+                                          (. code = t.val; .)
+  .
+
+  Shift<. List<ScheduleSemantics.Shift> shifts .>   /* <. .> because the type contains ">" */
+                                          (. String w; int sign = 1; TemporalAmount p; .)
+  = Weekday<out w>
+    ( "+"                                 (. sign = 1; .)
+    | "-"                                 (. sign = -1; .)
+    ) Period<out p>                       (. shifts.add(ScheduleSemantics.shift(w, p, sign)); .)
+  .
+
+  Anchor<out ScheduleSemantics.Anchor a>  (. String w; ScheduleSemantics.Annual an; a = ScheduleSemantics.IMM; .)
+  = Weekday<out w>                        (. a = ScheduleSemantics.weekday(w); .)
+  | "BD"                                  (. a = ScheduleSemantics.BUSINESS_DAY; .)
+  | "IMM"
+  | Annual<out an>                        (. a = ScheduleSemantics.annual(an); .)
+  .
+
+  Date<out ScheduleSemantics.Expr d>      (. int a, b, c; String code; ScheduleSemantics.Annual an; d = ScheduleSemantics.BASE; .)
   = "T"                                   /* the base date */
+  | "TOM"                                 (. d = ScheduleSemantics.plus(d, ScheduleSemantics.period(1, "B")); .)
+  | Spot<out code>                        (. d = ScheduleSemantics.spot(d, code); .)
   | Number<out a>
     ( "-" Number<out b> "-" Number<out c> (. d = date(a, b, c); .)
     | "." Number<out b> "." Number<out c> (. d = date(c, b, a); .)
     | "/" Number<out b> "/" Number<out c> (. d = date(c, a, b); .)
-    ).
+    | AnnualTail<out an, a>               (. d = ScheduleSemantics.inYear(an); .)
+    )
+  | AnnualWord<out an>                    (. d = ScheduleSemantics.inYear(an); .)
+  .
+
+  /* dates that recur every year; the number is read before, as it also starts a date such as 2015-06-09 */
+  Annual<out ScheduleSemantics.Annual an> (. int n; an = ScheduleSemantics.EASTER; .)
+  = Number<out n> AnnualTail<out an, n>
+  | AnnualWord<out an>
+  .
+
+  AnnualTail<out ScheduleSemantics.Annual an, int n> (. String w, m; an = ScheduleSemantics.EASTER; .)
+  = Month<out m>                          (. an = ScheduleSemantics.monthDay(n, m); .)
+  | Weekday<out w> Month<out m>           (. an = ScheduleSemantics.nthWeekday(n, w, m); .)
+  .
+
+  AnnualWord<out ScheduleSemantics.Annual an> (. String w, m; an = ScheduleSemantics.EASTER; .)
+  = "LAST" Weekday<out w> Month<out m>    (. an = ScheduleSemantics.lastWeekday(w, m); .)
+  | "EASTER"
+  .
+
+  Month<out String m>
+  = ( "JAN" | "FEB" | "MAR" | "APR" | "MAY" | "JUN" | "JUL" | "AUG" | "SEP" | "OCT" | "NOV" | "DEC" )
+                                          (. m = t.val; .)
+  .
+
+  Weekday<out String w>
+  = ( "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN" ) (. w = t.val; .)
+  .
 
   Period<out TemporalAmount p>            (. int n; p = Period.ZERO; .)
   = Number<out n>

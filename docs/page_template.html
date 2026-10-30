@@ -226,14 +226,23 @@
       <pre><code>schedule = range | expr { "," expr } .
 range    = "(" expr ":" period ":" expr ")" .
 expr     = date { ("+" | "-") period
-               | "&gt;" ( "IMM"
-                       | "SPOT" [ PAIR ] ) } .
-date     = "T"                         <span class="c">(* base   *)</span>
+               | "&gt;" ( "IMM" | "SPOT" [ PAIR ] | ROLL
+                       | ("NEXT" | "PREV") anchor )
+               | "{" shift { "," shift } "}" } .
+shift    = WEEKDAY ("+" | "-") period .
+anchor   = WEEKDAY | "BD" | "IMM" | annual .
+date     = "T" | "TOM" | "SPOT" [ PAIR ]
          | NUM ( "-" NUM "-" NUM       <span class="c">(* ISO    *)</span>
                | "." NUM "." NUM       <span class="c">(* German *)</span>
-               | "/" NUM "/" NUM ) .   <span class="c">(* US     *)</span>
+               | "/" NUM "/" NUM )     <span class="c">(* US     *)</span>
+         | annual .
+annual   = NUM MONTH                   <span class="c">(* 4 JUL     *)</span>
+         | NUM WEEKDAY MONTH           <span class="c">(* 3 MON JAN *)</span>
+         | "LAST" WEEKDAY MONTH | "EASTER" .
 period   = NUM ( "D" | "W" | "M"
-               | "Q" | "Y" | "B" ) .</code></pre>
+               | "Q" | "Y" | "B" ) .
+ROLL     = "FOLLOWING" | "PRECEDING" | "MODFOLLOWING"
+         | "BOM" | "EOM" | "BOY" | "EOY" .</code></pre>
     </div>
     <p class="note">
       Every decision is LL(1): after the first number, the separator selects the notation; after a complete date,
@@ -248,6 +257,14 @@ period   = NUM ( "D" | "W" | "M"
       Parsing a schedule yields a rule, not dates: a function that gets the base date <code>T</code> and a market only when it is evaluated.
       The grammar never names a market. A market only answers questions about days (which days are business days, and so which day is spot);
       the meaning of a rule doesn't depend on it, so <code>IMM</code> is the third Wednesday everywhere. Without a market, only Saturdays and Sundays are skipped.
+    </p>
+    <p class="note">
+      Holiday rules: <code>4 JUL</code>, <code>3 MON JAN</code>, <code>LAST MON MAY</code> and <code>EASTER</code> are dates in the year of <code>T</code>.
+      An observance <code>{SAT - 1D, SUN + 1D}</code> shifts a date by the first item for its weekday, so <code>4 JUL {SAT - 1D, SUN + 1D}</code>
+      is Independence Day as the NYSE observes it. A market can be declared from such rules; the test markets in the case list below are.
+      Rolling, seen from <code>T</code>: <code>TOM</code> and <code>SPOT</code> are dates; <code>&gt; NEXT FRI</code>, <code>&gt; PREV IMM</code> or
+      <code>&gt; NEXT 4 JUL</code> look strictly after or before the date; <code>&gt; EOM</code> and friends move to the edge of month or year,
+      and <code>&gt; FOLLOWING</code>, <code>&gt; PRECEDING</code> and <code>&gt; MODFOLLOWING</code> to a business day of the market.
     </p>
   </section>
 
@@ -264,7 +281,7 @@ period   = NUM ( "D" | "W" | "M"
 
   <section aria-labelledby="compare">
     <h2 id="compare">Side by side</h2>
-    <p class="lead">Size counts non-blank, non-comment lines of the grammar files. The JVM modules also share a 141-line helper (market, context, rule builders, periods, business days, IMM and spot dates, ranges); the Python modules a 64-line one.</p>
+    <p class="lead">Size counts non-blank, non-comment lines of the grammar files. The JVM modules also share a 261-line helper (market, context, rule builders, periods, business days, IMM and spot dates, ranges, annual dates, rolling); the Python modules a 166-line one.</p>
     <div class="scroll">
       <table class="compare">
         <thead>
@@ -304,6 +321,12 @@ period   = NUM ( "D" | "W" | "M"
       <li><strong>A lexer may or may not know the parser's state.</strong>
         <p><code>&gt;SPOTUSDCAD</code> without a space: ANTLR, Coco/R, JavaCC, JFlex and SableCC read <code>SPOTUS</code> as a currency pair and fail.
           Peggy and the Scala combinators have no lexer, and Lark's contextual lexer only tries the tokens the parser expects; all three accept it.</p></li>
+      <li><strong>Six capitals: keyword or currency pair?</strong>
+        <p><code>EASTER</code> has six capital letters, like <code>EURUSD</code>. The tools with a lexer decide by order:
+          ANTLR's implicit keywords come first, JFlex, JavaCC and SableCC take the rule declared first, Coco/R checks its keyword table,
+          and Bison's hand-written scanner tests the keywords before the length. Without a lexer, or with a contextual one,
+          the pattern itself must exclude the keyword (<code>!"EASTER"</code> in Peggy, <code>(?!EASTER)</code> in Scala and Lark),
+          otherwise <code>T &gt; SPOT EASTER</code> would read a pair.</p></li>
       <li><strong>A shared test file keeps everyone honest.</strong>
         <p>Every module reads <code>examples/schedule.txt</code>. Several tool-specific pitfalls, listed in the tabs above, surfaced only because the same cases had to pass everywhere.</p></li>
     </ul>

@@ -22,9 +22,9 @@ class ScheduleParsersSuite extends AnyFunSuite {
     Files.readAllLines(Paths.get("..", "examples", "schedule.txt"), StandardCharsets.UTF_8).asScala.toSeq
       .filterNot(line => line.trim.isEmpty || line.trim.startsWith("#"))
       .flatMap { line =>
-        if (line.startsWith("market ")) {   // market NAME = holiday, holiday, ...
+        if (line.startsWith("market ")) {   // market NAME = schedule of the holidays
           val Array(name, holidays) = line.stripPrefix("market ").split("=", 2)
-          markets(name.trim) = Market.withHolidays(holidays.split(",").map(d => LocalDate.parse(d.trim)).toSet)
+          markets(name.trim) = Market.withHolidayRules(ScheduleParsers.parse(holidays.trim))
           None
         } else {
           val arrow = line.lastIndexOf("=>")

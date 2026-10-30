@@ -9,7 +9,10 @@ import java.time.temporal.TemporalAmount;
 import java.time.temporal.TemporalUnit;
 import java.time.temporal.UnsupportedTemporalTypeException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -39,6 +42,26 @@ public final class ScheduleSemantics {
     /** Monday to Friday except the given holidays */
     public static Market withHolidays(Set<LocalDate> holidays) {
         return date -> WEEKENDS.isBusinessDay(date) && !holidays.contains(date);
+    }
+
+    /**
+     * Monday to Friday except the dates the rule yields; the rule is evaluated with the first of January of a year as
+     * base date, for the year before and after as well (an observed holiday can fall into the neighbouring year)
+     */
+    public static Market withHolidayRules(Rule rule) {
+        Map<Integer, List<LocalDate>> years = new HashMap<>();
+        return date -> {
+            if (!WEEKENDS.isBusinessDay(date)) {
+                return false;
+            }
+            for (int year = date.getYear() - 1; year <= date.getYear() + 1; year++) {
+                if (years.computeIfAbsent(year, y -> rule.evaluate(new Context(LocalDate.of(y, 1, 1), null)))
+                        .contains(date)) {
+                    return false;
+                }
+            }
+            return true;
+        };
     }
 
     /** what a rule is evaluated against: the base date (only needed for T) and the market (default: weekends only) */
@@ -84,6 +107,134 @@ public final class ScheduleSemantics {
 
     public static Expr spot(Expr expr, String pair) {
         return context -> context.market().spot(expr.at(context), pair);
+    }
+
+    /** a date that recurs every year, such as the third Monday of January */
+    public interface Annual {
+        LocalDate in(int year);
+    }
+
+    /** an annual date in the year of the base date */
+    public static Expr inYear(Annual annual) {
+        return context -> annual.in(BASE.at(context).getYear());
+    }
+
+    /** day of month, e.g. 4 JUL */
+    public static Annual monthDay(int day, String month) {
+        return year -> LocalDate.of(year, month(month), day);
+    }
+
+    /** the n-th weekday of the month, e.g. 3 MON JAN; there is no fifth Monday in every month */
+    public static Annual nthWeekday(int n, String weekday, String month) {
+        return year -> {
+            LocalDate date = LocalDate.of(year, month(month), 1)
+                    .with(TemporalAdjusters.nextOrSame(dayOfWeek(weekday))).plusWeeks(n - 1);
+            if (n < 1 || date.getMonthValue() != month(month)) {
+                throw new java.time.DateTimeException("no " + n + " " + weekday + " " + month + " in " + year);
+            }
+            return date;
+        };
+    }
+
+    /** the last weekday of the month, e.g. LAST MON MAY */
+    public static Annual lastWeekday(String weekday, String month) {
+        return year -> LocalDate.of(year, month(month), 1).with(TemporalAdjusters.lastInMonth(dayOfWeek(weekday)));
+    }
+
+    /** Western Easter Sunday (anonymous Gregorian algorithm) */
+    public static final Annual EASTER = year -> {
+        int a = year % 19, b = year / 100, c = year % 100, d = b / 4, e = b % 4;
+        int g = (8 * b + 13) / 25, h = (19 * a + b - d - g + 15) % 30, i = c / 4, k = c % 4;
+        int l = (32 + 2 * e + 2 * i - h - k) % 7, m = (a + 11 * h + 22 * l) / 451;
+        int month = (h + l - 7 * m + 114) / 31, day = (h + l - 7 * m + 114) % 31 + 1;
+        return LocalDate.of(year, month, day);
+    };
+
+    /** what > NEXT and > PREV look for: the first match strictly after (direction 1) or before (-1) a date */
+    public interface Anchor {
+        LocalDate from(LocalDate date, int direction, Market market);
+    }
+
+    public static Anchor annual(Annual annual) {
+        return (date, direction, market) -> {
+            LocalDate match = annual.in(date.getYear());
+            return Integer.signum(match.compareTo(date)) == direction ? match : annual.in(date.getYear() + direction);
+        };
+    }
+
+    public static Anchor weekday(String weekday) {
+        return (date, direction, market) -> date.with(direction > 0
+                ? TemporalAdjusters.next(dayOfWeek(weekday)) : TemporalAdjusters.previous(dayOfWeek(weekday)));
+    }
+
+    public static final Anchor BUSINESS_DAY = (date, direction, market) -> plusBusinessDays(date, direction, market);
+
+    public static final Anchor IMM = (date, direction, market) -> direction > 0 ? nextImm(date) : previousImm(date);
+
+    public static Expr next(Expr expr, Anchor anchor) {
+        return context -> anchor.from(expr.at(context), 1, context.market());
+    }
+
+    public static Expr previous(Expr expr, Anchor anchor) {
+        return context -> anchor.from(expr.at(context), -1, context.market());
+    }
+
+    /**
+     * FOLLOWING, PRECEDING, MODFOLLOWING (following unless that leaves the month, then preceding);
+     * BOM, EOM, BOY, EOY (first and last day of month and year)
+     */
+    public static Expr roll(Expr expr, String convention) {
+        return context -> roll(expr.at(context), convention, context.market());
+    }
+
+    public static LocalDate roll(LocalDate date, String convention, Market market) {
+        switch (convention) {
+            case "FOLLOWING": return market.isBusinessDay(date) ? date : plusBusinessDays(date, 1, market);
+            case "PRECEDING": return market.isBusinessDay(date) ? date : plusBusinessDays(date, -1, market);
+            case "MODFOLLOWING": {
+                LocalDate following = roll(date, "FOLLOWING", market);
+                return following.getMonth() == date.getMonth() ? following : roll(date, "PRECEDING", market);
+            }
+            case "BOM": return date.withDayOfMonth(1);
+            case "EOM": return date.with(TemporalAdjusters.lastDayOfMonth());
+            case "BOY": return date.withDayOfYear(1);
+            case "EOY": return date.with(TemporalAdjusters.lastDayOfYear());
+            default: throw new IllegalArgumentException("unknown convention: " + convention);
+        }
+    }
+
+    /** one item of an observance such as {SAT - 1D, SUN + 1D} */
+    public record Shift(DayOfWeek weekday, TemporalAmount amount, int sign) {
+    }
+
+    public static Shift shift(String weekday, TemporalAmount amount, int sign) {
+        return new Shift(dayOfWeek(weekday), amount, sign);
+    }
+
+    /** the first shift for the weekday of the date applies; shifts don't chain */
+    public static Expr observe(Expr expr, List<Shift> shifts) {
+        List<Shift> copy = new ArrayList<>(shifts);
+        return context -> {
+            LocalDate date = expr.at(context);
+            for (Shift shift : copy) {
+                if (shift.weekday() == date.getDayOfWeek()) {
+                    return plus(date, shift.amount(), shift.sign(), context.market());
+                }
+            }
+            return date;
+        };
+    }
+
+    private static final List<String> MONTHS =
+            List.of("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC");
+    private static final List<String> WEEKDAYS = List.of("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN");
+
+    private static int month(String name) {
+        return MONTHS.indexOf(name) + 1;
+    }
+
+    private static DayOfWeek dayOfWeek(String name) {
+        return DayOfWeek.of(WEEKDAYS.indexOf(name) + 1);
     }
 
     public static Rule list(List<Expr> exprs) {
@@ -169,6 +320,16 @@ public final class ScheduleSemantics {
         for (LocalDate month = date.withDayOfMonth(1); ; month = month.plusMonths(1)) {
             LocalDate imm = month.with(TemporalAdjusters.dayOfWeekInMonth(3, DayOfWeek.WEDNESDAY));
             if (month.getMonthValue() % 3 == 0 && imm.isAfter(date)) {
+                return imm;
+            }
+        }
+    }
+
+    /** the IMM date strictly before date */
+    public static LocalDate previousImm(LocalDate date) {
+        for (LocalDate month = date.withDayOfMonth(1); ; month = month.minusMonths(1)) {
+            LocalDate imm = month.with(TemporalAdjusters.dayOfWeekInMonth(3, DayOfWeek.WEDNESDAY));
+            if (month.getMonthValue() % 3 == 0 && imm.isBefore(date)) {
                 return imm;
             }
         }

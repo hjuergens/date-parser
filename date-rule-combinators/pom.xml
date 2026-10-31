@@ -77,6 +77,27 @@
             <version>1.11.0</version>
         </dependency>
 
+        <!-- for parsing purpose -->
+        <dependency>
+            <groupId>org.pojava</groupId>
+            <artifactId>datetime</artifactId>
+            <version>3.0.2</version>
+        </dependency>
+
+        <!-- julian date -->
+        <dependency>
+            <groupId>org.jodd</groupId>
+            <artifactId>jodd-core</artifactId>
+            <version>3.8.6</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.codehaus.plexus</groupId>
+            <artifactId>plexus-utils</artifactId>
+            <version>3.6.1</version>
+            <scope>compile</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.specs2</groupId>
             <artifactId>specs2-core_${scala.compat.version}</artifactId>

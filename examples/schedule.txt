@@ -37,6 +37,10 @@
 # base date; an error if it falls there twice or not at all. Their names are month names: "3 MON SHAWWAL" is an error.
 # Conditional dates: "24 DEC IF MON TUE WED THU" is the date on these weekdays and no date otherwise; IF closes
 # an item of a list.
+# Named events: "@FOMC" is every date of the event FOMC in the year of the base date, the shifts applied to each
+# ("@FOMC + 1B"); "> NEXT @FOMC" and "> PREV @FOMC" move to the next or previous one. Events for the tests are declared
+# as  event <name> = <schedule>, evaluated like a market with the first of January of the year as base date and kept
+# if they fall into that year. An event with several dates in that year is an error at the end of a range.
 # Keywords are reserved: "EASTER" and six-letter month names such as "TISHRI" are never a currency pair.
 # examples/catalog.txt holds more cases, generated from a holiday rule catalog (scripts/catalog_cases.py).
 
@@ -249,6 +253,30 @@ TOM => error
 [2025-01-01] 24 DEC IF WED, 25 DEC => 2025-12-24, 2025-12-25
 [2025-01-01] 24 DEC IF => error
 [2025-01-01] (24 DEC : 1D : 26 DEC) IF WED => error
+
+# named events
+event FOMC = 2025-01-29, 2025-03-19, 2025-05-07, 2025-06-18, 2025-07-30, 2025-09-17, 2025-10-29, 2025-12-10
+event THANKSGIVING = 4 THU NOV
+event NEWYEAR = 1 JAN {SAT - 1D}
+[2025-01-01] @FOMC => 2025-01-29, 2025-03-19, 2025-05-07, 2025-06-18, 2025-07-30, 2025-09-17, 2025-10-29, 2025-12-10
+[2025-06-30] @FOMC + 3W => 2025-02-19, 2025-04-09, 2025-05-28, 2025-07-09, 2025-08-20, 2025-10-08, 2025-11-19, 2025-12-31
+[2025-01-01 XNYS] @FOMC + 1B => 2025-01-30, 2025-03-20, 2025-05-08, 2025-06-20, 2025-07-31, 2025-09-18, 2025-10-30, 2025-12-11
+[2025-01-01] @THANKSGIVING + 1D, @FOMC IF FRI => 2025-11-28
+[2025-01-01] (@THANKSGIVING : 1D : @THANKSGIVING + 3D) => 2025-11-27, 2025-11-28, 2025-11-29, 2025-11-30
+[2025-02-01] T > NEXT @FOMC => 2025-03-19
+[2025-03-19] T > NEXT @FOMC => 2025-05-07
+[2025-03-19] T > PREV @FOMC => 2025-01-29
+[2025-01-01] 1 DEC > NEXT @FOMC => 2025-12-10
+[2024-01-01] @FOMC => none
+[2022-01-01] @NEWYEAR => none
+[2025-12-15] T > NEXT @FOMC => error
+[2025-01-01] (@FOMC : 1D : 31 DEC) => error
+[2025-01-01] @NOPE => error
+@FOMC => error
+[2025-01-01] @EASTER => error
+[2025-01-01] FOMC => error
+[2025-01-01] @fomc => error
+[2025-01-01] @ FOMC => error
 
 # invalid dates
 2015-02-29 => error

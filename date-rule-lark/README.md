@@ -34,7 +34,7 @@ mise run test:lark        # or, inside this directory:
 uv run pytest             # uv installs Lark and pytest into .venv (versions in uv.lock)
 ```
 
-There are 4680 tests (pytest): the 209 cases of [examples/schedule.txt](../examples/schedule.txt) and the 2131 of
+There are 4828 tests (pytest): the 228 cases of [examples/schedule.txt](../examples/schedule.txt) and the 2186 of
 [examples/catalog.txt](../examples/catalog.txt), each with `lalr` and `earley`.
 
 ## Shared example
@@ -53,6 +53,7 @@ There are 4680 tests (pytest): the 209 cases of [examples/schedule.txt](../examp
   a currency pair, because only a pair can follow there, so the pair pattern is `/(?!EASTER)[A-Z]{6}/`.
 - Lunar months and conditional dates: Lunar month names (`1 SHAWWAL`, `10 TISHRI`, `1 ZHENGYUE`) are more alternatives of `MONTH`, and the pair pattern excludes the six-letter
   ones (`TISHRI`, …) as well. `item: expr ("IF" WEEKDAY+)?` keeps a date only on these weekdays.
+- Named events: the terminal `EVENT: /@[A-Z][A-Z0-9_]*/` is one more alternative of `date` and `anchor`; shifts receive the whole context, as `> NEXT @FOMC` needs the events.
 
 ## Status
 

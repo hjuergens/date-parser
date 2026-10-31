@@ -114,6 +114,8 @@ public final class ScheduleEvaluator {
             return ScheduleSemantics.BUSINESS_DAY;
         } else if (node instanceof AImmAnchor) {
             return ScheduleSemantics.IMM;
+        } else if (node instanceof AEventAnchor event) {
+            return ScheduleSemantics.eventAnchor(event.getEvent().getText().substring(1));
         }
         return ScheduleSemantics.annual(annual(((AAnnualAnchor) node).getAnnual()));
     }
@@ -139,6 +141,8 @@ public final class ScheduleEvaluator {
             return ScheduleSemantics.spot(ScheduleSemantics.BASE, spot.getPair() == null ? null : spot.getPair().getText());
         } else if (node instanceof AAnnualDate annual) {
             return ScheduleSemantics.inYear(annual(annual.getAnnual()));
+        } else if (node instanceof AEventDate event) {
+            return ScheduleSemantics.event(event.getEvent().getText().substring(1));
         } else if (node instanceof AIsoDate iso) {
             return ScheduleSemantics.literal(LocalDate.of(number(iso.getYear()), number(iso.getMonth()), number(iso.getDay())));
         } else if (node instanceof AGermanDate german) {

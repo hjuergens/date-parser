@@ -6,8 +6,8 @@
   USD only checked on the settlement day, the Latin American exceptions (T+1 must be a USD business day).
 - **Lunar months with `> NEXT`**: `T > NEXT 1 SHAWWAL` looks in the year of the date and the next, so it fails in a year in which
   the Hijri date falls twice; it should take the first occurrence after the date. Moon sighting stays outside the language.
-- **More holiday rule types** from the catalog (see the end of [examples/catalog.txt](examples/catalog.txt)): references to other
-  named rules (with announced dates supplied by the context, like the market), weekend regimes per market (Friday and Saturday in
+- **More holiday rule types** from the catalog (see the end of [examples/catalog.txt](examples/catalog.txt)): spans that start
+  before a named event (the Fed's blackout from the second Saturday before a meeting), weekend regimes per market (Friday and Saturday in
   Saudi Arabia and the UAE), Orthodox Easter, the UAE's "Ramadan 30 if the month has 30 days", the end-of-month rule for tenors from
   spot, and a business-day convention per element of a range (`(20 JAN : 1M : 20 DEC) > FOLLOWING`).
 - **Playground on the Pages site**: an editor in the browser that parses a schedule as you type, with the Peggy parser

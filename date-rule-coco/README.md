@@ -38,7 +38,7 @@ mvn -pl date-rule-coco verify
 The bundled [Coco.jar](Coco.jar) (version of 2011-04-19) runs through `maven-antrun-plugin` in `generate-sources`.
 It uses the frame files [Parser.frame](Parser.frame) and [Scanner.frame](Scanner.frame) from the module root
 and writes `Parser`, `Scanner`, and `Errors` to `target/generated-sources/coco` (package `io.github.hjuergens.coco`).
-There are 2346 TestNG tests: [DatesParserTest](src/test/java/io/github/hjuergens/coco/DatesParserTest.java) and the shared example.
+There are 2420 TestNG tests: [DatesParserTest](src/test/java/io/github/hjuergens/coco/DatesParserTest.java) and the shared example.
 Coco/R always names the generated classes `Parser`, `Scanner`, and `Errors`, so each grammar gets its own package.
 
 ## Shared example
@@ -57,6 +57,7 @@ Implements the [shared schedule example](../README.md#shared-example-schedule) a
   `EASTER` matches the token class `pair`, so Coco/R makes it a keyword of that class.
 - Lunar months and conditional dates: Lunar month names (`1 SHAWWAL`, `10 TISHRI`, `1 ZHENGYUE`) are more alternatives of `Month`; six-letter ones such as
   `TISHRI` become keywords of `pair` like `EASTER`. `Item` adds `[ "IF" Weekday { Weekday } ]` to a list item, still LL(1).
+- Named events: the token `event = '@' upper { upper | digit | '_' }` starts with a character no other token starts with, so the grammar stays LL(1).
 
 ## Status
 

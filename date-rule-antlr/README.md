@@ -75,6 +75,7 @@ loop of `expr`; `annual` is one rule used by `date` and by the anchor of `> NEXT
 `PAIR`, because ANTLR defines the implicit literal tokens before the lexer rules.
 Lunar month names (`1 SHAWWAL`, `10 TISHRI`, `1 ZHENGYUE`) are more alternatives of `MONTH`, which comes before `PAIR`
 for the same reason; `item` adds `'IF' (w+=WEEKDAY)+` to a list item (`24 DEC IF MON TUE WED THU`).
+Named events: the lexer rule `EVENT : '@' [A-Z] [A-Z0-9_]*` is one more alternative of `date` and of `anchor`; the actions call `ScheduleSemantics.event` and `eventAnchor`, and `list` evaluates an item once per date of its event.
 
 ## Status and limitations
 

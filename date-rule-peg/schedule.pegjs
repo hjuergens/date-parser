@@ -3,8 +3,9 @@
  *   2015-06-09 + 3M, 09.06.2015, (2015-01-15 : 1Q : 2015-12-31)
  * Dates are {year, month, day} objects, periods {months, days, business}; the arithmetic
  * follows java.time: months first (day clamped to the end of the month), then days.
- * parse() returns the rule, a function of the context { base, market } that is evaluated later;
- * a market is an object with isBusinessDay(date), the default skips Saturdays and Sundays only.
+ * parse() returns the rule, a function of the context { base, market, events } that is evaluated later;
+ * a market is an object with isBusinessDay(date), the default skips Saturdays and Sundays only;
+ * events maps a name to a rule.
  */
 
 {{
@@ -22,9 +23,48 @@
   // the default market: Monday to Friday, no holidays
   const WEEKENDS = { isBusinessDay: (d) => new Date(Date.UTC(d.year, d.month - 1, d.day)).getUTCDay() % 6 !== 0 };
 
-  // the rule of a schedule; base date and market only come with the evaluation
+  // the rule of a schedule; base date, market and events only come with the evaluation
   function rule(dates) {
-    return (context = {}) => dates({ base: context.base, market: context.market ?? WEEKENDS });
+    return (context = {}) => dates({ base: context.base, market: context.market ?? WEEKENDS, events: context.events ?? {} });
+  }
+
+  // thrown by an event date that is not bound to one occurrence yet; values() catches it
+  class Unbound {
+    constructor(name) {
+      this.name = name;
+    }
+  }
+
+  // @NAME: one occurrence of the event, bound by values()
+  function event(name) {
+    return (c) => {
+      if (!c.occurrence) throw new Unbound(name);
+      return c.occurrence;
+    };
+  }
+
+  // the dates of the event in the year: its rule evaluated with the first of January as base date
+  function occurrences(name, year, c) {
+    if (!c.events[name]) throw new Error(`no event ${name}`);
+    return c.events[name]({ base: { year, month: 1, day: 1 }, market: c.market, events: c.events })
+      .filter((d) => d.year === year).sort(compare);
+  }
+
+  // the dates of an expression: one, or one per occurrence in the base year if it starts with an event
+  function values(expr, c) {
+    try {
+      return [expr(c)];
+    } catch (e) {
+      if (!(e instanceof Unbound)) throw e;
+      return occurrences(e.name, base(c).year, c).map((d) => expr({ ...c, occurrence: d }));
+    }
+  }
+
+  // the date of an expression that must have exactly one, such as the end of a range
+  function single(expr, c) {
+    const dates = values(expr, c);
+    if (dates.length !== 1) throw new Error(`${dates.length} dates where one is needed`);
+    return dates[0];
   }
 
   // T: the base date of the evaluation
@@ -168,6 +208,16 @@
     };
   }
 
+  function eventAnchor(name) {
+    return (d, direction, c) => {
+      for (const year of [d.year, d.year + direction]) {
+        const found = occurrences(name, year, c).filter((o) => Math.sign(compare(o, d)) === direction);
+        if (found.length) return direction > 0 ? found[0] : found[found.length - 1];
+      }
+      throw new Error(`no ${name} ${direction > 0 ? 'after' : 'before'} the date`);
+    };
+  }
+
   function weekdayAnchor(wd) {
     return (d, direction) => plusDays(d, direction * ((direction * (WEEKDAYS.indexOf(wd) - weekday(d)) % 7 + 7) % 7 || 7));
   }
@@ -211,7 +261,7 @@
 
 Schedule
   = _ r:Range _ { return rule(r); }
-  / _ head:Item tail:(_ "," _ @Item)* _ { return rule((c) => [head, ...tail].map((item) => item(c)).filter((d) => d !== null)); }
+  / _ head:Item tail:(_ "," _ @Item)* _ { return rule((c) => [head, ...tail].flatMap((item) => values(item, c)).filter((d) => d !== null)); }
 
 // 24 DEC IF MON TUE WED THU: the date only on these weekdays
 Item
@@ -223,25 +273,25 @@ Item
 Range
   = "(" _ first:Expr _ ":" _ step:Period _ ":" _ last:Expr _ ")" {
       if (step.months <= 0 && step.days <= 0 && step.business <= 0) throw new RangeError('step must be positive');
-      return (c) => expand(first(c), step, last(c), c.market);
+      return (c) => expand(single(first, c), step, single(last, c), c.market);
     }
 
 // periods are applied from left to right
 Expr
-  = start:Date shifts:(_ @Shift)* { return (c) => shifts.reduce((d, shift) => shift(d, c.market), start(c)); }
+  = start:Date shifts:(_ @Shift)* { return (c) => shifts.reduce((d, shift) => shift(d, c), start(c)); }
 
 Shift
-  = "+" _ p:Period { return (d, market) => plus(d, p, 1, market); }
-  / "-" _ p:Period { return (d, market) => plus(d, p, -1, market); }
+  = "+" _ p:Period { return (d, c) => plus(d, p, 1, c.market); }
+  / "-" _ p:Period { return (d, c) => plus(d, p, -1, c.market); }
   / ">" _ "IMM" { return nextImm; }
-  / ">" _ "SPOT" pair:(_ @Pair)? { return (d, market) => spot(d, pair, market); }
+  / ">" _ "SPOT" pair:(_ @Pair)? { return (d, c) => spot(d, pair, c.market); }
   / ">" _ convention:$("FOLLOWING" / "PRECEDING" / "MODFOLLOWING" / "BOM" / "EOM" / "BOY" / "EOY") {
-      return (d, market) => roll(d, convention, market);
+      return (d, c) => roll(d, convention, c.market);
     }
-  / ">" _ "NEXT" _ anchor:Anchor { return (d, market) => anchor(d, 1, market); }
-  / ">" _ "PREV" _ anchor:Anchor { return (d, market) => anchor(d, -1, market); }
+  / ">" _ "NEXT" _ anchor:Anchor { return (d, c) => anchor(d, 1, c); }
+  / ">" _ "PREV" _ anchor:Anchor { return (d, c) => anchor(d, -1, c); }
   / "{" _ head:Observe tail:(_ "," _ @Observe)* _ "}" {
-      return (d, market) => observe(d, [head, ...tail], market);
+      return (d, c) => observe(d, [head, ...tail], c.market);
     }
 
 Observe
@@ -249,9 +299,10 @@ Observe
 
 Anchor
   = wd:Weekday { return weekdayAnchor(wd); }
-  / "BD" { return (d, direction, market) => plusBusinessDays(d, direction, market); }
+  / "BD" { return (d, direction, c) => plusBusinessDays(d, direction, c.market); }
   / "IMM" { return (d, direction) => direction > 0 ? nextImm(d) : previousImm(d); }
   / annual:Annual { return annualAnchor(annual); }
+  / name:Event { return eventAnchor(name); }
 
 Date
   = "TOM" { return (c) => plusBusinessDays(base(c), 1, c.market); }  // before "T": no lexer, so order matters
@@ -261,6 +312,7 @@ Date
   / d:Number _ "." _ m:Number _ "." _ y:Number { const value = date(y, m, d); return () => value; }  // German
   / m:Number _ "/" _ d:Number _ "/" _ y:Number { const value = date(y, m, d); return () => value; }  // US
   / annual:Annual { return (c) => annual(base(c).year); }
+  / name:Event { return event(name); }
 
 // dates that recur every year, evaluated in the year of the base date
 Annual
@@ -278,6 +330,10 @@ Month
     / "ADARII" / "ADAR"
     / "ZHENGYUE" / "ERYUE" / "SANYUE" / "SIYUE" / "WUYUE" / "LIUYUE" / "QIYUE" / "BAYUE" / "JIUYUE" / "SHIYUE"
     / "DONGYUE" / "LAYUE")
+
+// a named event such as @FOMC; the sigil keeps names apart from keywords and pairs
+Event
+  = "@" name:$([A-Z] [A-Z0-9_]*) { return name; }
 
 Weekday
   = $("MON" / "TUE" / "WED" / "THU" / "FRI" / "SAT" / "SUN")

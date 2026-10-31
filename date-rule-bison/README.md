@@ -41,7 +41,7 @@ mvn -pl date-rule-bison -Pbison -Dbison.executable=/path/to/bison verify   # bis
 
 With the profile active, `maven-antrun-plugin` runs bison in `generate-sources` and writes
 `target/generated-sources/bison/io/github/hjuergens/bison/Calc.java`. The tests in
-[src/bison-test/java](src/bison-test/java) are only compiled then (2348 TestNG tests).
+[src/bison-test/java](src/bison-test/java) are only compiled then (2422 TestNG tests).
 
 The Windows binaries in [tools/win_flex_bison-latest](tools/win_flex_bison-latest) are an old bundled copy and aren't used by the build.
 
@@ -68,6 +68,7 @@ Holiday rules and rolling add `annual`, `anchor` and the observance `shifts` (le
 keywords (`EASTER` among them) before it takes a six-letter word as a currency pair.
 Lunar month names (`1 SHAWWAL`, `10 TISHRI`, `1 ZHENGYUE`) are more alternatives of `MONTH` in the scanner's
 keyword test; `item` and `weekdays` add `24 DEC IF MON TUE WED THU`, left recursive again.
+Named events: the hand-written scanner returns `EVENT` for `@` followed by capitals, digits and `_` (the value is the name without the sigil); `EVENT` is one more alternative of `date` and `anchor`, without conflicts.
 
 ## Status
 

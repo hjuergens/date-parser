@@ -32,7 +32,7 @@ mvn -pl date-rule-cup-jflex verify
 
 - `com.github.vbmacher:cup-maven-plugin` (CUP 11b) generates into `target/generated-sources/cup`.
 - `de.jflex:jflex-maven-plugin` (JFlex 1.9) generates into `target/generated-sources/jflex`.
-- There are 2347 TestNG tests: [PascalLexerTest](src/test/java/io/github/hjuergens/PascalLexerTest.java) and the shared example.
+- There are 2421 TestNG tests: [PascalLexerTest](src/test/java/io/github/hjuergens/PascalLexerTest.java) and the shared example.
 
 For `pascal.cup`, CUP warns that the terminals are "declared but never used". That's expected while that grammar has no rules.
 
@@ -50,6 +50,7 @@ Implements the [shared schedule example](../README.md#shared-example-schedule) a
   `[A-Z]{6}`: on a match of the same length the earlier rule wins.
 - Lunar months and conditional dates: Lunar month names (`1 SHAWWAL`, `10 TISHRI`, `1 ZHENGYUE`) are more alternatives of `MONTH` in the JFlex spec, before `[A-Z]{6}` too;
   `item` and `weekdays` add `24 DEC IF MON TUE WED THU`, without conflicts.
+- Named events: the JFlex rule `"@" [A-Z] [A-Z0-9_]*` returns `EVENT` with the name as value; in CUP it is one more alternative of `date` and `anchor`.
 
 ## Status
 

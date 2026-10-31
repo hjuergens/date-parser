@@ -53,6 +53,9 @@ private Symbol symbol(int type, Object value) {
 /* the months above and EASTER come before the pair: on a match of the same length the earlier rule wins */
 "EASTER"        { return symbol(ScheduleSym.EASTER); }
 [A-Z]{6}        { return symbol(ScheduleSym.PAIR, yytext()); }
+/* a named event such as @FOMC; the value is the name without the sigil */
+"@" [A-Z] [A-Z0-9_]*
+                { return symbol(ScheduleSym.EVENT, yytext().substring(1)); }
 [DWMQYB]        { return symbol(ScheduleSym.UNIT, yytext()); }
 "+"             { return symbol(ScheduleSym.PLUS); }
 "-"             { return symbol(ScheduleSym.MINUS); }

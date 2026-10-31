@@ -34,7 +34,7 @@ mise run test:peg                # Node from mise.toml, then npm ci + npm test
 npm ci && npm test               # or directly, with Node 20 or later
 ```
 
-There are 2345 tests (`node:test`) in [test/list.test.mjs](test/list.test.mjs) and [test/schedule.test.mjs](test/schedule.test.mjs).
+There are 2419 tests (`node:test`) in [test/list.test.mjs](test/list.test.mjs) and [test/schedule.test.mjs](test/schedule.test.mjs).
 
 ## Shared example
 
@@ -54,6 +54,7 @@ Implements the [shared schedule example](../README.md#shared-example-schedule) a
 - Lunar months and conditional dates: Lunar month names (`1 SHAWWAL`, `10 TISHRI`, `1 ZHENGYUE`) are more alternatives of `Month` (ordered choice: `"ADARII"`
   before `"ADAR"`). Hijri and Hebrew dates come from `Intl`; Chinese ones from lunar-javascript, which a parser generated in memory
   can't import, so `parse(text, { Solar })` passes it in as an option. `Item` adds `24 DEC IF MON TUE WED THU`.
+- Named events: `Event = "@" $([A-Z] [A-Z0-9_]*)`, an alternative of `Date` and `Anchor`; as there is no whitespace rule inside it, `@ FOMC` is an error.
 
 ## Status
 

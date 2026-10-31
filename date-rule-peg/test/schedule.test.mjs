@@ -27,6 +27,7 @@ function holidayMarket(rule) {
 }
 
 const markets = new Map();
+const events = {};
 const cases = [];
 const files = ['schedule.txt', 'catalog.txt'];
 for (const line of files.flatMap((file) => readFileSync(new URL(`../../examples/${file}`, import.meta.url), 'utf8').split('\n'))) {
@@ -36,13 +37,18 @@ for (const line of files.flatMap((file) => readFileSync(new URL(`../../examples/
     markets.set(name.trim(), holidayMarket(parser.parse(holidays.trim(), { Solar })));
     continue;
   }
+  if (line.startsWith('event ')) { // event NAME = schedule of its dates
+    const [name, dates] = line.slice('event '.length).split('=');
+    events[name.trim()] = parser.parse(dates.trim(), { Solar });
+    continue;
+  }
   const arrow = line.lastIndexOf('=>');
   const expected = line.slice(arrow + 2).trim();
   let input = line.slice(0, arrow).trim();
-  let context = {};
+  let context = { events };
   const prefix = input.match(/^\[(\S+)(?: (\S+))?\] (.*)$/); // [base] or [base market]
   if (prefix) {
-    context = { base: date(prefix[1]), market: prefix[2] && markets.get(prefix[2]) };
+    context = { base: date(prefix[1]), market: prefix[2] && markets.get(prefix[2]), events };
     input = prefix[3];
   }
   cases.push({

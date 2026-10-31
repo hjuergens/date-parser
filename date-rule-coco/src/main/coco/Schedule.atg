@@ -3,7 +3,7 @@
  *   2015-06-09 + 3M, 09.06.2015, (2015-01-15 : 1Q : 2015-12-31)
  * The grammar is LL(1): after the first number the separator selects the date notation,
  * after a complete date '+' or '-' starts a period.
- * The actions build a ScheduleSemantics.Rule, a function of base date and market that is evaluated later.
+ * The actions build a ScheduleSemantics.Rule, a function of base date, market and events that is evaluated later.
  */
 import java.time.LocalDate;
 import java.time.Period;
@@ -35,6 +35,7 @@ CHARACTERS
 TOKENS
   number = digit {digit}.
   pair = upper upper upper upper upper upper.   /* currency pair such as EURUSD */
+  event = '@' upper { upper | digit | '_' }.   /* a named event such as @FOMC; the sigil keeps it apart from keywords */
 
 IGNORE '\t' + '\r' + '\n'
 
@@ -102,6 +103,7 @@ PRODUCTIONS
   | "BD"                                  (. a = ScheduleSemantics.BUSINESS_DAY; .)
   | "IMM"
   | Annual<out an>                        (. a = ScheduleSemantics.annual(an); .)
+  | event                                 (. a = ScheduleSemantics.eventAnchor(t.val.substring(1)); .)
   .
 
   Date<out ScheduleSemantics.Expr d>      (. int a, b, c; String code; ScheduleSemantics.Annual an; d = ScheduleSemantics.BASE; .)
@@ -115,6 +117,7 @@ PRODUCTIONS
     | AnnualTail<out an, a>               (. d = ScheduleSemantics.inYear(an); .)
     )
   | AnnualWord<out an>                    (. d = ScheduleSemantics.inYear(an); .)
+  | event                                 (. d = ScheduleSemantics.event(t.val.substring(1)); .)
   .
 
   /* dates that recur every year; the number is read before, as it also starts a date such as 2015-06-09 */

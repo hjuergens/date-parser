@@ -1,6 +1,6 @@
 """The shared "schedule" example parsed with ANTLR 4's Python target.
 
-A visitor builds the rule: a function of semantics.Context (base date and market) that is evaluated later.
+A visitor builds the rule: a function of semantics.Context (base date, market and events) that is evaluated later.
 """
 from datetime import date
 
@@ -25,14 +25,14 @@ class _Raise(ErrorListener):
 
 
 class Rules(DateScheduleVisitor):
-    """builds the rule top-down: each visit returns a function of the context (shifts: of date and market)"""
+    """builds the rule top-down: each visit returns a function of the context (shifts: of date and context)"""
 
     def visitSchedule(self, ctx):
         # Python target: the rule "range" becomes range_(), it would shadow the builtin
         if ctx.range_():
             return self.visit(ctx.range_())
         items = [self.visit(item) for item in ctx.item()]
-        return lambda context: [d for item in items if (d := item(context)) is not None]
+        return lambda context: [d for item in items for d in semantics.values(item, context) if d is not None]
 
     def visitItem(self, ctx):
         expr = self.visit(ctx.expr())
@@ -45,7 +45,8 @@ class Rules(DateScheduleVisitor):
         first, step, last = self.visit(ctx.first), self.visit(ctx.step), self.visit(ctx.last)
         if not step.is_positive():
             raise ValueError(f"step must be positive: {step}")
-        return lambda context: semantics.expand(first(context), step, last(context), context.market)
+        return lambda context: semantics.expand(semantics.single(first, context), step,
+                                                semantics.single(last, context), context.market)
 
     # shifts are applied from left to right
     def visitExpr(self, ctx):
@@ -54,40 +55,40 @@ class Rules(DateScheduleVisitor):
         def at(context):
             d = start(context)
             for shift in shifts:
-                d = shift(d, context.market)
+                d = shift(d, context)
             return d
         return at
 
     def visitPlus(self, ctx):
         period = self.visit(ctx.period())
-        return lambda d, market: semantics.plus(d, period, 1, market)
+        return lambda d, context: semantics.plus(d, period, 1, context.market)
 
     def visitMinus(self, ctx):
         period = self.visit(ctx.period())
-        return lambda d, market: semantics.plus(d, period, -1, market)
+        return lambda d, context: semantics.plus(d, period, -1, context.market)
 
     def visitImm(self, ctx):
-        return lambda d, market: semantics.next_imm(d)
+        return lambda d, context: semantics.next_imm(d)
 
     def visitSpot(self, ctx):
         pair = ctx.PAIR() and ctx.PAIR().getText()
-        return lambda d, market: market.spot(d, pair)
+        return lambda d, context: context.market.spot(d, pair)
 
     def visitRoll(self, ctx):
         convention = ctx.ROLL().getText()
-        return lambda d, market: semantics.roll(d, convention, market)
+        return lambda d, context: semantics.roll(d, convention, context.market)
 
     def visitNext(self, ctx):
         anchor = self.visit(ctx.anchor())
-        return lambda d, market: anchor(d, 1, market)
+        return lambda d, context: anchor(d, 1, context)
 
     def visitPrev(self, ctx):
         anchor = self.visit(ctx.anchor())
-        return lambda d, market: anchor(d, -1, market)
+        return lambda d, context: anchor(d, -1, context)
 
     def visitObservance(self, ctx):
         shifts = [self.visit(observe) for observe in ctx.observe()]
-        return lambda d, market: semantics.observe(d, shifts, market)
+        return lambda d, context: semantics.observe(d, shifts, context.market)
 
     def visitObserve(self, ctx):
         return ctx.WEEKDAY().getText(), self.visit(ctx.period()), 1 if ctx.sign.text == "+" else -1
@@ -104,6 +105,9 @@ class Rules(DateScheduleVisitor):
     def visitAnnualAnchor(self, ctx):
         return semantics.annual_anchor(self.visit(ctx.annual()))
 
+    def visitEventAnchor(self, ctx):
+        return semantics.event_anchor(ctx.EVENT().getText()[1:])
+
     def visitBase(self, ctx):
         return semantics.base
 
@@ -116,6 +120,9 @@ class Rules(DateScheduleVisitor):
 
     def visitInYear(self, ctx):
         return semantics.in_year(self.visit(ctx.annual()))
+
+    def visitEvent(self, ctx):
+        return semantics.event(ctx.EVENT().getText()[1:])
 
     def visitMonthDay(self, ctx):
         return semantics.month_day(int(ctx.NUM().getText()), ctx.MONTH().getText())
@@ -140,7 +147,7 @@ class Rules(DateScheduleVisitor):
 
 
 def parse(text):
-    """the rule of a schedule; evaluate it with rule(semantics.Context(base, market))
+    """the rule of a schedule; evaluate it with rule(semantics.Context(base, market, events))
 
     :raises ScheduleSyntaxError: on a syntax error or an unknown character
     :raises ValueError: on an invalid date or a range without positive step

@@ -14,7 +14,7 @@ import scala.util.parsing.combinator.RegexParsers
  * {{{
  *   2015-06-09 + 3M, 09.06.2015, (2015-01-15 : 1Q : 2015-12-31)
  * }}}
- * The parsers build a rule: a function of the context (base date and market) that is evaluated later.
+ * The parsers build a rule: a function of the context (base date, market and events) that is evaluated later.
  */
 class ScheduleParsers extends RegexParsers {
 
@@ -39,7 +39,7 @@ class ScheduleParsers extends RegexParsers {
     | "EASTER" ^^^ (easter _))
 
   // "TOM" before "T": without a lexer, "T" would match the start of "TOM"
-  def date: Parser[Context => LocalDate] = "TOM" ^^^ ((c: Context) => plusBusinessDays(base(c), 1, c.market)) |
+  def date: Parser[Context => LocalDate] = eventName ^^ event | "TOM" ^^^ ((c: Context) => plusBusinessDays(base(c), 1, c.market)) |
     "T" ^^^ base |
     "SPOT" ~> opt(pair) ^^ (p => (c: Context) => c.market.spot(base(c), p)) |
     annual ^^ (a => (c: Context) => a(base(c).getYear)) | number ~ (
@@ -60,33 +60,37 @@ class ScheduleParsers extends RegexParsers {
   // without a lexer nothing reserves the six-letter keywords, so the pattern excludes them
   def pair: Parser[String] = "(?!EASTER|SHABAN|TAMMUZ|TISHRI|KISLEV|SHEVAT|ADARII|SANYUE|LIUYUE|JIUYUE|SHIYUE)[A-Z]{6}".r
 
-  def anchor: Parser[Anchor] = (weekday ^^ (w => (d: LocalDate, dir: Int, _: Market) =>
+  /** a named event such as @FOMC, without the sigil; the sigil keeps names apart from keywords and pairs */
+  def eventName: Parser[String] = "@[A-Z][A-Z0-9_]*".r ^^ (_.tail)
+
+  def anchor: Parser[Anchor] = (weekday ^^ (w => (d: LocalDate, dir: Int, _: Context) =>
         d.`with`(if (dir > 0) TemporalAdjusters.next(weekdays(w)) else TemporalAdjusters.previous(weekdays(w))))
-    | "BD" ^^^ ((d: LocalDate, dir: Int, m: Market) => plusBusinessDays(d, dir, m))
-    | "IMM" ^^^ ((d: LocalDate, dir: Int, _: Market) => if (dir > 0) nextImm(d) else previousImm(d))
-    | annual ^^ (a => (d: LocalDate, dir: Int, _: Market) => {
+    | "BD" ^^^ ((d: LocalDate, dir: Int, c: Context) => plusBusinessDays(d, dir, c.market))
+    | "IMM" ^^^ ((d: LocalDate, dir: Int, _: Context) => if (dir > 0) nextImm(d) else previousImm(d))
+    | annual ^^ (a => (d: LocalDate, dir: Int, _: Context) => {
         val matched = a(d.getYear)
         if (matched.compareTo(d).sign == dir) matched else a(d.getYear + dir)
-      }))
+      })
+    | eventName ^^ eventAnchor)
 
   def observe: Parser[(DayOfWeek, TemporalAmount, Int)] = weekday ~ ("+" ^^^ 1 | "-" ^^^ -1) ~ period ^^ {
     case w ~ sign ~ p => (weekdays(w), p, sign)
   }
 
-  def shift: Parser[(LocalDate, Market) => LocalDate] =
-    ("+" ~> period ^^ (p => (d: LocalDate, m: Market) => plus(d, p, 1, m))
-    | "-" ~> period ^^ (p => (d: LocalDate, m: Market) => plus(d, p, -1, m))
-    | ">" ~ "IMM" ^^^ ((d: LocalDate, _: Market) => nextImm(d))
-    | ">" ~ "SPOT" ~> opt(pair) ^^ (p => (d: LocalDate, m: Market) => m.spot(d, p))
-    | ">" ~> "MODFOLLOWING|FOLLOWING|PRECEDING|BOM|EOM|BOY|EOY".r ^^ (r => (d: LocalDate, m: Market) => roll(d, r, m))
-    | ">" ~ "NEXT" ~> anchor ^^ (a => (d: LocalDate, m: Market) => a(d, 1, m))
-    | ">" ~ "PREV" ~> anchor ^^ (a => (d: LocalDate, m: Market) => a(d, -1, m))
-    | "{" ~> rep1sep(observe, ",") <~ "}" ^^ (shifts => (d: LocalDate, m: Market) =>
-        shifts.find(_._1 == d.getDayOfWeek).fold(d) { case (_, p, sign) => plus(d, p, sign, m) }))
+  def shift: Parser[(LocalDate, Context) => LocalDate] =
+    ("+" ~> period ^^ (p => (d: LocalDate, c: Context) => plus(d, p, 1, c.market))
+    | "-" ~> period ^^ (p => (d: LocalDate, c: Context) => plus(d, p, -1, c.market))
+    | ">" ~ "IMM" ^^^ ((d: LocalDate, _: Context) => nextImm(d))
+    | ">" ~ "SPOT" ~> opt(pair) ^^ (p => (d: LocalDate, c: Context) => c.market.spot(d, p))
+    | ">" ~> "MODFOLLOWING|FOLLOWING|PRECEDING|BOM|EOM|BOY|EOY".r ^^ (r => (d: LocalDate, c: Context) => roll(d, r, c.market))
+    | ">" ~ "NEXT" ~> anchor ^^ (a => (d: LocalDate, c: Context) => a(d, 1, c))
+    | ">" ~ "PREV" ~> anchor ^^ (a => (d: LocalDate, c: Context) => a(d, -1, c))
+    | "{" ~> rep1sep(observe, ",") <~ "}" ^^ (shifts => (d: LocalDate, c: Context) =>
+        shifts.find(_._1 == d.getDayOfWeek).fold(d) { case (_, p, sign) => plus(d, p, sign, c.market) }))
 
   /** shifts are applied from left to right */
   def expr: Parser[Context => LocalDate] = date ~ rep(shift) ^^ {
-    case start ~ shifts => (c: Context) => shifts.foldLeft(start(c))((d, f) => f(d, c.market))
+    case start ~ shifts => (c: Context) => shifts.foldLeft(start(c))((d, f) => f(d, c))
   }
 
   def range: Parser[Context => List[LocalDate]] = ("(" ~> expr) ~ (":" ~> period) ~ (":" ~> expr <~ ")") ^^ {
@@ -101,7 +105,7 @@ class ScheduleParsers extends RegexParsers {
         case BusinessDays(n) => BusinessDays(k * n)
       }
       (c: Context) => {
-        val (start, end) = (first(c), last(c))
+        val (start, end) = (single(first, c), single(last, c))
         Iterator.from(0).map(k => plus(start, times(k), 1, c.market)).takeWhile(!_.isAfter(end)).toList
       }
   }
@@ -113,7 +117,7 @@ class ScheduleParsers extends RegexParsers {
   }
 
   def schedule: Parser[Context => List[LocalDate]] =
-    range | rep1sep(item, ",") ^^ (items => (c: Context) => items.flatMap(_(c)))
+    range | rep1sep(item, ",") ^^ (items => (c: Context) => items.flatMap(values(_, c).flatten))
 }
 
 object ScheduleParsers {
@@ -145,11 +149,46 @@ object ScheduleParsers {
     }
   }
 
-  /** what a rule is evaluated against: the base date (only needed for T) and the market */
-  case class Context(base: Option[LocalDate] = None, market: Market = Market.Weekends)
+  /** what a rule is evaluated against: the base date (only needed for T), the market and the named events;
+   *  occurrence is the date of the event an expression is being evaluated for */
+  case class Context(base: Option[LocalDate] = None, market: Market = Market.Weekends,
+                     events: Map[String, Context => List[LocalDate]] = Map.empty, occurrence: Option[LocalDate] = None)
 
   /** T: the base date of the evaluation */
   val base: Context => LocalDate = _.base.getOrElse(throw new IllegalStateException("no base date"))
+
+  /** thrown by an event date that is not bound to one occurrence yet; values() catches it */
+  private class Unbound(val name: String) extends RuntimeException(s"unbound event $name", null, false, false)
+
+  /** @NAME: one occurrence of the event, bound by values() */
+  def event(name: String): Context => LocalDate = _.occurrence.getOrElse(throw new Unbound(name))
+
+  /** the dates of the event in the year: its rule evaluated with the first of January as base date */
+  def occurrences(name: String, year: Int, c: Context): List[LocalDate] = {
+    val rule = c.events.getOrElse(name, throw new IllegalArgumentException(s"no event $name"))
+    rule(Context(Some(LocalDate.of(year, 1, 1)), c.market, c.events)).filter(_.getYear == year).sortWith(_.isBefore(_))
+  }
+
+  /** the values of an expression: one, or one per occurrence in the base year if it starts with an event */
+  def values[A](expr: Context => A, c: Context): List[A] =
+    try List(expr(c))
+    catch {
+      case unbound: Unbound =>
+        occurrences(unbound.name, base(c).getYear, c).map(d => expr(c.copy(occurrence = Some(d))))
+    }
+
+  /** the date of an expression that must have exactly one, such as the end of a range */
+  def single(expr: Context => LocalDate, c: Context): LocalDate = values(expr, c) match {
+    case List(d) => d
+    case dates => throw new IllegalArgumentException(s"${dates.size} dates where one is needed")
+  }
+
+  /** the occurrence of the event strictly after (before) the date, in its year or the next (previous) */
+  def eventAnchor(name: String): Anchor = (d: LocalDate, dir: Int, c: Context) =>
+    List(d.getYear, d.getYear + dir).iterator
+      .map(year => occurrences(name, year, c).filter(_.compareTo(d).sign == dir))
+      .collectFirst { case found if found.nonEmpty => if (dir > 0) found.head else found.last }
+      .getOrElse(throw new IllegalArgumentException(s"no $name ${if (dir > 0) "after" else "before"} $d"))
 
   /** business days; which days these are depends on the market, so they are only applied by plus(…, market) */
   case class BusinessDays(count: Int) extends TemporalAmount {
@@ -189,7 +228,7 @@ object ScheduleParsers {
   type Annual = Int => LocalDate
 
   /** what > NEXT and > PREV look for: the first match strictly after (direction 1) or before (-1) the date */
-  type Anchor = (LocalDate, Int, Market) => LocalDate
+  type Anchor = (LocalDate, Int, Context) => LocalDate
 
   val months: Map[String, Int] =
     "JAN FEB MAR APR MAY JUN JUL AUG SEP OCT NOV DEC".split(" ").zipWithIndex.map { case (m, i) => m -> (i + 1) }.toMap

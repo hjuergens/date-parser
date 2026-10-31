@@ -41,7 +41,7 @@ uv run pytest
   so generating a Python parser still needs a JDK (mise provides one). Without `java` on the `PATH` it asks to install a JRE.
 - The runtime `antlr4-python3-runtime` must have exactly the tool's version (4.13.2).
 - The generated sources in `src/antlr_schedule/generated` are not checked in.
-- There are 2340 tests (pytest), one per case of [examples/schedule.txt](../examples/schedule.txt) and [examples/catalog.txt](../examples/catalog.txt).
+- There are 2414 tests (pytest), one per case of [examples/schedule.txt](../examples/schedule.txt) and [examples/catalog.txt](../examples/catalog.txt).
 
 ## Shared example
 
@@ -52,6 +52,7 @@ uv run pytest
 - [semantics.py](src/antlr_schedule/semantics.py) is a copy of the Lark module's file (modules stay independent).
 - Holiday rules and rolling: the date alternative `annual # inYear` and the anchor `annual # annualAnchor` share one rule; `MONTH`, `WEEKDAY` and `ROLL` are lexer rules. The keyword `'EASTER'` wins over the six-letter `PAIR`, as ANTLR defines implicit literals first.
 - Lunar months and conditional dates: Lunar month names (`1 SHAWWAL`, `10 TISHRI`, `1 ZHENGYUE`) are more alternatives of `MONTH`, defined before `PAIR` like `'EASTER'`; `item : expr ('IF' WEEKDAY+)?` wraps each list item, and the visitor leaves out the items without a date.
+- Named events: the lexer rule `EVENT : '@' [A-Z] [A-Z0-9_]*` is one more alternative of `date` (`# event`) and `anchor` (`# eventAnchor`); shifts now receive the whole context, as `> NEXT @FOMC` needs the events.
 
 ## Status
 

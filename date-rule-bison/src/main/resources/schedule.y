@@ -43,6 +43,7 @@
 %token <String> MONTH "month"
 %token <String> WEEKDAY "weekday"
 %token <String> ROLL "roll convention"
+%token <String> EVENT "event"
 %type <Expr> item expr date
 %type <ArrayList<String>> weekdays
 %type <Annual> annual
@@ -104,6 +105,7 @@ anchor:
 | BD                                { $$ = ScheduleSemantics.BUSINESS_DAY; }
 | IMM                               { $$ = ScheduleSemantics.IMM; }
 | annual                            { $$ = ScheduleSemantics.annual ($1); }
+| EVENT                             { $$ = ScheduleSemantics.eventAnchor ($1); }
 ;
 
 date:
@@ -112,6 +114,7 @@ date:
 | SPOT                              { $$ = ScheduleSemantics.spot (ScheduleSemantics.BASE, null); }
 | SPOT PAIR                         { $$ = ScheduleSemantics.spot (ScheduleSemantics.BASE, $2); }
 | annual                            { $$ = ScheduleSemantics.inYear ($1); }
+| EVENT                             { $$ = ScheduleSemantics.event ($1); }   /* @FOMC */
 | NUM '-' NUM '-' NUM               { $$ = ScheduleSemantics.literal (LocalDate.of ($1, $3, $5)); }   /* ISO */
 | NUM '.' NUM '.' NUM               { $$ = ScheduleSemantics.literal (LocalDate.of ($5, $3, $1)); }   /* German */
 | NUM '/' NUM '/' NUM               { $$ = ScheduleSemantics.literal (LocalDate.of ($5, $1, $3)); }   /* US */
@@ -208,6 +211,15 @@ class ScheduleLexer implements ScheduleParser.Lexer {
         if (word.length () == 1 && "DWMQYB".contains (word))
           return UNIT;
         return YYUNDEF;
+      }
+    if (c == '@' && pos + 1 < text.length () && text.charAt (pos + 1) >= 'A' && text.charAt (pos + 1) <= 'Z')
+      {   /* a named event such as @FOMC; the value is the name without the sigil */
+        int start = ++pos;
+        while (pos < text.length () && (text.charAt (pos) >= 'A' && text.charAt (pos) <= 'Z'
+                                         || text.charAt (pos) >= '0' && text.charAt (pos) <= '9' || text.charAt (pos) == '_'))
+          pos++;
+        value = text.substring (start, pos);
+        return EVENT;
       }
     pos++;
     if ("+-./,:()>{}".indexOf (c) >= 0)

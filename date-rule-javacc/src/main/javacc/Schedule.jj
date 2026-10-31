@@ -54,6 +54,7 @@ TOKEN : {
   // MONTH and EASTER are declared before PAIR: on a match of the same length the earlier token wins
 | < EASTER : "EASTER" >
 | < PAIR : (["A"-"Z"]){6} >   // currency pair such as EURUSD
+| < EVENT : "@" ["A"-"Z"] (["A"-"Z", "0"-"9", "_"])* >   // a named event such as @FOMC
 }
 
 /** Root production. */
@@ -123,16 +124,17 @@ void Shift(List<ScheduleSemantics.Shift> shifts) :
 }
 
 ScheduleSemantics.Anchor Anchor() :
-{ Token w; ScheduleSemantics.Annual an; }
+{ Token w, e; ScheduleSemantics.Annual an; }
 {
   w = <WEEKDAY> { return ScheduleSemantics.weekday(w.image); }
 | "BD" { return ScheduleSemantics.BUSINESS_DAY; }
 | "IMM" { return ScheduleSemantics.IMM; }
 | an = Annual() { return ScheduleSemantics.annual(an); }
+| e = <EVENT> { return ScheduleSemantics.eventAnchor(e.image.substring(1)); }
 }
 
 ScheduleSemantics.Expr Date() :
-{ int a, b, c; String pair; ScheduleSemantics.Annual an; }
+{ int a, b, c; String pair; ScheduleSemantics.Annual an; Token e; }
 {
   "T" { return ScheduleSemantics.BASE; }   // the base date
 | "TOM" { return ScheduleSemantics.plus(ScheduleSemantics.BASE, ScheduleSemantics.period(1, "B")); }
@@ -144,6 +146,7 @@ ScheduleSemantics.Expr Date() :
   | an = AnnualTail(a) { return ScheduleSemantics.inYear(an); }
   )
 | an = AnnualWord() { return ScheduleSemantics.inYear(an); }
+| e = <EVENT> { return ScheduleSemantics.event(e.image.substring(1)); }
 }
 
 /** dates that recur every year; Date() reads the number itself, as it also starts a date such as 2015-06-09 */

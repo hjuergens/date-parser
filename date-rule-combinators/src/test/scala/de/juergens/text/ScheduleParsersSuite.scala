@@ -19,12 +19,17 @@ class ScheduleParsersSuite extends AnyFunSuite {
 
   private val cases: Seq[(String, Context, Option[List[LocalDate]])] = {
     val markets = mutable.Map.empty[String, Market]
+    val events = mutable.Map.empty[String, Context => List[LocalDate]]
     Seq("schedule.txt", "catalog.txt").flatMap(file => Files.readAllLines(Paths.get("..", "examples", file), StandardCharsets.UTF_8).asScala)
       .filterNot(line => line.trim.isEmpty || line.trim.startsWith("#"))
       .flatMap { line =>
         if (line.startsWith("market ")) {   // market NAME = schedule of the holidays
           val Array(name, holidays) = line.stripPrefix("market ").split("=", 2)
           markets(name.trim) = Market.withHolidayRules(ScheduleParsers.parse(holidays.trim))
+          None
+        } else if (line.startsWith("event ")) {   // event NAME = schedule of its dates
+          val Array(name, dates) = line.stripPrefix("event ").split("=", 2)
+          events(name.trim) = ScheduleParsers.parse(dates.trim)
           None
         } else {
           val arrow = line.lastIndexOf("=>")
@@ -35,8 +40,9 @@ class ScheduleParsersSuite extends AnyFunSuite {
           }
           line.substring(0, arrow).trim match {
             case Prefix(base, market, input) =>
-              Some((input, Context(Some(LocalDate.parse(base)), Option(market).map(markets).getOrElse(Market.Weekends)), expected))
-            case input => Some((input, Context(), expected))
+              Some((input, Context(Some(LocalDate.parse(base)), Option(market).map(markets).getOrElse(Market.Weekends),
+                events.toMap), expected))
+            case input => Some((input, Context(events = events.toMap), expected))
           }
         }
       }

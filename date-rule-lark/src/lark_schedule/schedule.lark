@@ -30,6 +30,7 @@ anchor: WEEKDAY             -> weekday
       | "BD"                -> business_day
       | "IMM"               -> imm_anchor
       | annual              -> annual_anchor
+      | EVENT               -> event_anchor
 
 date: "T"                   -> base
     | "TOM"                 -> tom
@@ -38,6 +39,7 @@ date: "T"                   -> base
     | NUM "." NUM "." NUM   -> german
     | NUM "/" NUM "/" NUM   -> us
     | annual                -> in_year
+    | EVENT                 -> event
 
 // dates that recur every year, evaluated in the year of the base date
 annual: NUM MONTH           -> month_day
@@ -57,6 +59,8 @@ MONTH: "JAN" | "FEB" | "MAR" | "APR" | "MAY" | "JUN" | "JUL" | "AUG" | "SEP" | "
      | "ADARII" | "ADAR"
      | "ZHENGYUE" | "ERYUE" | "SANYUE" | "SIYUE" | "WUYUE" | "LIUYUE" | "QIYUE" | "BAYUE" | "JIUYUE" | "SHIYUE"
      | "DONGYUE" | "LAYUE"
+// a named event such as @FOMC, declared with the context; the sigil keeps names apart from keywords and pairs
+EVENT: /@[A-Z][A-Z0-9_]*/
 WEEKDAY: "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN"
 ROLL: "FOLLOWING" | "PRECEDING" | "MODFOLLOWING" | "BOM" | "EOM" | "BOY" | "EOY"
 // currency pair such as EURUSD; the contextual lexer would also take a six-letter keyword after SPOT

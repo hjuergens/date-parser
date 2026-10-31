@@ -14,7 +14,7 @@ import java.util.List;
 terminal            PLUS, MINUS, GT, IMM, SPOT, BASE, TOM, NEXT, PREV, BD, LAST, EASTER, IF;
 terminal            DOT, SLASH, COMMA, COLON, LPAREN, RPAREN, LBRACE, RBRACE;
 terminal Integer    NUM;
-terminal String     UNIT, PAIR, MONTH, WEEKDAY, ROLL;
+terminal String     UNIT, PAIR, MONTH, WEEKDAY, ROLL, EVENT;
 
 non terminal ScheduleSemantics.Rule                schedule;
 non terminal ArrayList<ScheduleSemantics.Expr>     exprs;
@@ -74,6 +74,7 @@ anchor ::= WEEKDAY:w                {: RESULT = ScheduleSemantics.weekday(w); :}
          | BD                       {: RESULT = ScheduleSemantics.BUSINESS_DAY; :}
          | IMM                      {: RESULT = ScheduleSemantics.IMM; :}
          | annual:a                 {: RESULT = ScheduleSemantics.annual(a); :}
+         | EVENT:n                  {: RESULT = ScheduleSemantics.eventAnchor(n); :}
          ;
 
 date ::= BASE                             {: RESULT = ScheduleSemantics.BASE; :}                         /* T */
@@ -81,6 +82,7 @@ date ::= BASE                             {: RESULT = ScheduleSemantics.BASE; :}
        | SPOT                             {: RESULT = ScheduleSemantics.spot(ScheduleSemantics.BASE, null); :}
        | SPOT PAIR:p                      {: RESULT = ScheduleSemantics.spot(ScheduleSemantics.BASE, p); :}
        | annual:a                         {: RESULT = ScheduleSemantics.inYear(a); :}
+       | EVENT:n                          {: RESULT = ScheduleSemantics.event(n); :}             /* @FOMC */
        | NUM:y MINUS NUM:m MINUS NUM:d      {: RESULT = ScheduleSemantics.literal(LocalDate.of(y, m, d)); :}   /* ISO */
        | NUM:d DOT NUM:m DOT NUM:y          {: RESULT = ScheduleSemantics.literal(LocalDate.of(y, m, d)); :}   /* German */
        | NUM:m SLASH NUM:d SLASH NUM:y      {: RESULT = ScheduleSemantics.literal(LocalDate.of(y, m, d)); :}   /* US */

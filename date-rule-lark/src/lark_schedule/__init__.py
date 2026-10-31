@@ -1,6 +1,6 @@
 """The shared "schedule" example parsed with Lark; the same grammar runs as Earley and as LALR(1) parser.
 
-parse() returns the rule: a function of semantics.Context (base date and market) that is evaluated later.
+parse() returns the rule: a function of semantics.Context (base date, market and events) that is evaluated later.
 """
 from datetime import date
 
@@ -17,7 +17,7 @@ class Rules(Transformer):
     """builds the rule bottom-up from the parse tree: every node becomes a function of the context"""
 
     def exprs(self, *items):
-        return lambda context: [d for item in items if (d := item(context)) is not None]
+        return lambda context: [d for item in items for d in semantics.values(item, context) if d is not None]
 
     def item(self, expr, *weekdays):
         if not weekdays:
@@ -28,39 +28,40 @@ class Rules(Transformer):
     def range(self, first, step, last):
         if not step.is_positive():
             raise ValueError(f"step must be positive: {step}")
-        return lambda context: semantics.expand(first(context), step, last(context), context.market)
+        return lambda context: semantics.expand(semantics.single(first, context), step,
+                                                semantics.single(last, context), context.market)
 
     def expr(self, start, *shifts):
         def at(context):
             d = start(context)
             for shift in shifts:
-                d = shift(d, context.market)
+                d = shift(d, context)
             return d
         return at
 
     def plus(self, period):
-        return lambda d, market: semantics.plus(d, period, 1, market)
+        return lambda d, context: semantics.plus(d, period, 1, context.market)
 
     def minus(self, period):
-        return lambda d, market: semantics.plus(d, period, -1, market)
+        return lambda d, context: semantics.plus(d, period, -1, context.market)
 
     def imm(self):
-        return lambda d, market: semantics.next_imm(d)
+        return lambda d, context: semantics.next_imm(d)
 
     def spot(self, pair):
-        return lambda d, market: market.spot(d, pair and str(pair))
+        return lambda d, context: context.market.spot(d, pair and str(pair))
 
     def roll(self, convention):
-        return lambda d, market: semantics.roll(d, str(convention), market)
+        return lambda d, context: semantics.roll(d, str(convention), context.market)
 
     def next(self, anchor):
-        return lambda d, market: anchor(d, 1, market)
+        return lambda d, context: anchor(d, 1, context)
 
     def prev(self, anchor):
-        return lambda d, market: anchor(d, -1, market)
+        return lambda d, context: anchor(d, -1, context)
 
     def observance(self, *shifts):
-        return lambda d, market: semantics.observe(d, shifts, market)
+        return lambda d, context: semantics.observe(d, shifts, context.market)
 
     def observe_plus(self, weekday, period):
         return str(weekday), period, 1
@@ -80,6 +81,9 @@ class Rules(Transformer):
     def annual_anchor(self, annual):
         return semantics.annual_anchor(annual)
 
+    def event_anchor(self, name):
+        return semantics.event_anchor(str(name)[1:])
+
     def base(self):
         return semantics.base
 
@@ -91,6 +95,9 @@ class Rules(Transformer):
 
     def in_year(self, annual):
         return semantics.in_year(annual)
+
+    def event(self, name):
+        return semantics.event(str(name)[1:])
 
     def month_day(self, day, month):
         return semantics.month_day(int(day), str(month))
@@ -119,7 +126,7 @@ class Rules(Transformer):
 
 
 def parse(text, parser="lalr"):
-    """the rule of a schedule; evaluate it with rule(semantics.Context(base, market))
+    """the rule of a schedule; evaluate it with rule(semantics.Context(base, market, events))
 
     :raises lark.exceptions.UnexpectedInput: on a syntax error
     :raises ValueError: on an invalid date or a range without positive step

@@ -95,8 +95,8 @@ TOOLS = [
          pitfall="In LALR mode the contextual lexer only tries tokens the parser can accept next, so <code>&gt;SPOTUSDCAD</code> parses; ANTLR's lexer reads <code>SPOTUS</code> as a pair and rejects it."),
 ]
 
-LINES = {"antlr": "96", "combinators": "191", "coco": "129", "javacc": "140", "sablecc": "85 + 127",
-         "cup": "73 + 57", "bison": "186", "peg": "233", "lark": "44 + 84", "antlr-python": "64 + 99"}
+LINES = {"antlr": "99", "combinators": "215", "coco": "132", "javacc": "143", "sablecc": "88 + 131",
+         "cup": "75 + 59", "bison": "198", "peg": "275", "lark": "47 + 89", "antlr-python": "67 + 104"}
 LINE_NOTES = {"sablecc": "grammar + evaluator", "cup": "parser + lexer", "bison": "incl. hand-written scanner",
               "peg": "incl. date arithmetic", "lark": "grammar + transformer", "antlr-python": "grammar + visitor"}
 
@@ -107,7 +107,7 @@ for line in (ROOT / "examples/schedule.txt").read_text(encoding="utf-8").splitli
     if line.strip() and not line.startswith("#"):
         if previous.startswith("#"):
             groups.append((previous[1:].strip(), [], []))
-        if line.startswith("market "):
+        if line.startswith(("market ", "event ")):
             groups[-1][1].append(line)
         else:
             arrow = line.rindex("=>")

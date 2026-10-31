@@ -223,6 +223,7 @@
           <tr><td>T + 2B</td><td>two business days after the base date, in the market of the evaluation</td></tr>
           <tr><td>24 DEC IF MON TUE WED THU</td><td>Christmas Eve from Monday to Thursday, otherwise no date</td></tr>
           <tr><td>1 SHAWWAL, 1 ZHENGYUE</td><td>Eid al-Fitr and Chinese New Year in the year of <code>T</code></td></tr>
+          <tr><td>@FOMC + 1B</td><td>the business day after each FOMC decision of that year (a named event)</td></tr>
         </tbody>
       </table>
       <pre><code>schedule = range | item { "," item } .
@@ -233,12 +234,12 @@ expr     = date { ("+" | "-") period
                        | ("NEXT" | "PREV") anchor )
                | "{" shift { "," shift } "}" } .
 shift    = WEEKDAY ("+" | "-") period .
-anchor   = WEEKDAY | "BD" | "IMM" | annual .
+anchor   = WEEKDAY | "BD" | "IMM" | annual | EVENT .
 date     = "T" | "TOM" | "SPOT" [ PAIR ]
          | NUM ( "-" NUM "-" NUM       <span class="c">(* ISO    *)</span>
                | "." NUM "." NUM       <span class="c">(* German *)</span>
                | "/" NUM "/" NUM )     <span class="c">(* US     *)</span>
-         | annual .
+         | annual | EVENT .
 annual   = NUM MONTH                   <span class="c">(* 4 JUL     *)</span>
          | NUM WEEKDAY MONTH           <span class="c">(* 3 MON JAN *)</span>
          | "LAST" WEEKDAY MONTH | "EASTER" .
@@ -249,7 +250,8 @@ ROLL     = "FOLLOWING" | "PRECEDING" | "MODFOLLOWING"
 MONTH    = "JAN" | … | "DEC"           <span class="c">(* Gregorian *)</span>
          | "MUHARRAM" | … | "DHULHIJJAH"  <span class="c">(* Hijri *)</span>
          | "NISAN" | … | "ADARII"     <span class="c">(* Hebrew  *)</span>
-         | "ZHENGYUE" | … | "LAYUE" . <span class="c">(* Chinese *)</span></code></pre>
+         | "ZHENGYUE" | … | "LAYUE" . <span class="c">(* Chinese *)</span>
+EVENT    = "@" UPPER { UPPER | DIGIT | "_" } .  <span class="c">(* @FOMC *)</span></code></pre>
     </div>
     <p class="note">
       In grammatical terms (after <a href="https://en.wikipedia.org/wiki/Grammatical_category">grammatical category</a>):
@@ -299,7 +301,7 @@ MONTH    = "JAN" | … | "DEC"           <span class="c">(* Gregorian *)</span>
 
   <section aria-labelledby="compare">
     <h2 id="compare">Side by side</h2>
-    <p class="lead">Size counts non-blank, non-comment lines of the grammar files. The JVM modules also share a 324-line helper (market, context, rule builders, periods, business days, IMM and spot dates, ranges, annual dates, lunar months, rolling); the Python modules a 198-line one.</p>
+    <p class="lead">Size counts non-blank, non-comment lines of the grammar files. The JVM modules also share a 385-line helper (market, context, rule builders, periods, business days, IMM and spot dates, ranges, annual dates, lunar months, rolling, named events); the Python modules a 231-line one.</p>
     <div class="scroll">
       <table class="compare">
         <thead>
@@ -344,11 +346,16 @@ MONTH    = "JAN" | … | "DEC"           <span class="c">(* Gregorian *)</span>
           ANTLR's implicit keywords come first, JFlex, JavaCC and SableCC take the rule declared first, Coco/R checks its keyword table,
           and Bison's hand-written scanner tests the keywords before the length. Without a lexer, or with a contextual one,
           the pattern itself must exclude the keyword (<code>!"EASTER"</code> in Peggy, <code>(?!EASTER)</code> in Scala and Lark),
-          otherwise <code>T &gt; SPOT EASTER</code> would read a pair. Lunar month names such as <code>TISHRI</code> joined the list.</p></li>
+          otherwise <code>T &gt; SPOT EASTER</code> would read a pair. Lunar month names such as <code>TISHRI</code> joined the list.
+          Event names avoid the race altogether: the sigil in <code>@EASTER</code> makes it a name in every tool.</p></li>
+      <li><strong>Several dates from one expression, without touching the expression rules.</strong>
+        <p><code>@FOMC + 1B</code> has a date per FOMC decision, while every grammar builds an expression as a function returning one date.
+          Instead of changing that in ten places, the event's date throws until it is bound: the list catches it, looks up the event's dates
+          in the year of <code>T</code> and evaluates the item once per date. The grammars only gained the token and two alternatives.</p></li>
       <li><strong>A shared test file keeps everyone honest.</strong>
         <p>Every module reads <code>examples/schedule.txt</code>. Several tool-specific pitfalls, listed in the tabs above, surfaced only because the same cases had to pass everywhere.</p></li>
       <li><strong>Generated cases test the libraries too.</strong>
-        <p>2131 more cases come from a holiday rule catalog and from finance-date research, with the dates of that project's own engine. They showed that ICU's
+        <p>2186 more cases come from a holiday rule catalog and from finance-date research, with the dates of that project's own engine. They showed that ICU's
           astronomical Chinese calendar, in ICU4J and in Node's <code>Intl</code>, puts Chinese New Year 2027 and 2030 a day off: the new moon falls
           within minutes of midnight in Beijing. The JVM modules and Peggy now take Chinese dates from 6tail's lunar library.</p></li>
     </ul>
@@ -358,7 +365,7 @@ MONTH    = "JAN" | … | "DEC"           <span class="c">(* Gregorian *)</span>
     <h2 id="cases">The shared test cases</h2>
     <p class="lead">
       From <a href="{{REPO}}examples/schedule.txt">examples/schedule.txt</a>. Each module has a test that reads this file,
-      so adding a line here tests all ten implementations. They also read 2131 cases in
+      so adding a line here tests all ten implementations. They also read 2186 cases in
       <a href="{{REPO}}examples/catalog.txt">examples/catalog.txt</a>, generated from a holiday rule catalog (not listed here).
     </p>
     <div class="case-groups">

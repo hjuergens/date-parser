@@ -35,6 +35,7 @@ Tokens
 	roll = 'FOLLOWING' | 'PRECEDING' | 'MODFOLLOWING' | 'BOM' | 'EOM' | 'BOY' | 'EOY';
 	easter = 'EASTER';   /* before pair: on a match of the same length the earlier token wins */
 	pair = upper upper upper upper upper upper;
+	event = '@' upper (upper | digit | '_')*;   /* a named event such as @FOMC; the sigil keeps it apart from keywords */
 	gt = '>';
 	l_brace = '{';
 	r_brace = '}';
@@ -85,13 +86,15 @@ Productions
 		= {weekday} weekday
 		| {bd} bd
 		| {imm} imm
-		| {annual} annual;
+		| {annual} annual
+		| {event} event;
 
 	date
 		= {base} base
 		| {tom} tom
 		| {spot} spot pair?
 		| {annual} annual
+		| {event} event
 		| {iso} [year]:number [s1]:minus [month]:number [s2]:minus [day]:number
 		| {german} [day]:number [s1]:dot [month]:number [s2]:dot [year]:number
 		| {us} [month]:number [s1]:slash [day]:number [s2]:slash [year]:number;

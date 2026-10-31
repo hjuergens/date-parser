@@ -45,6 +45,7 @@ anchor
     | 'BD'                          # businessDayAnchor
     | 'IMM'                         # immAnchor
     | annual                        # annualAnchor
+    | EVENT                         # eventAnchor
     ;
 
 date
@@ -55,6 +56,7 @@ date
     | d=NUM '.' m=NUM '.' y=NUM     # german
     | m=NUM '/' d=NUM '/' y=NUM     # us
     | annual                        # inYear
+    | EVENT                         # event
     ;
 
 // dates that recur every year, evaluated in the year of the base date
@@ -79,6 +81,8 @@ MONTH   : 'JAN' | 'FEB' | 'MAR' | 'APR' | 'MAY' | 'JUN' | 'JUL' | 'AUG' | 'SEP' 
         | 'ADAR' | 'ADARII'
         | 'ZHENGYUE' | 'ERYUE' | 'SANYUE' | 'SIYUE' | 'WUYUE' | 'LIUYUE' | 'QIYUE' | 'BAYUE' | 'JIUYUE' | 'SHIYUE'
         | 'DONGYUE' | 'LAYUE' ;
+// a named event such as @FOMC; the sigil keeps names apart from keywords and pairs
+EVENT   : '@' [A-Z] [A-Z0-9_]* ;
 WEEKDAY : 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN' ;
 ROLL    : 'FOLLOWING' | 'PRECEDING' | 'MODFOLLOWING' | 'BOM' | 'EOM' | 'BOY' | 'EOY' ;
 // currency pair such as EURUSD; six-letter keywords ('EASTER', 'TISHRI', ...) have the same length and win, as they are defined first

@@ -74,6 +74,7 @@ anchor returns [Anchor value]
     | 'BD'                          { $value = ScheduleSemantics.BUSINESS_DAY; }
     | 'IMM'                         { $value = ScheduleSemantics.IMM; }
     | annual                        { $value = ScheduleSemantics.annual($annual.value); }
+    | EVENT                         { $value = ScheduleSemantics.eventAnchor($EVENT.text.substring(1)); }
     ;
 
 // a rule of its own: a PAIR label in the loop above would keep the pair of an earlier iteration
@@ -87,6 +88,7 @@ date returns [Expr value]
     | 'TOM'                         { $value = ScheduleSemantics.plus(ScheduleSemantics.BASE, ScheduleSemantics.period(1, "B")); }
     | spot                          { $value = ScheduleSemantics.spot(ScheduleSemantics.BASE, $spot.pair); }
     | annual                        { $value = ScheduleSemantics.inYear($annual.value); }
+    | EVENT                         { $value = ScheduleSemantics.event($EVENT.text.substring(1)); }
     | y=NUM '-' m=NUM '-' d=NUM     { $value = ScheduleSemantics.literal(LocalDate.of($y.int, $m.int, $d.int)); }  // ISO
     | d=NUM '.' m=NUM '.' y=NUM     { $value = ScheduleSemantics.literal(LocalDate.of($y.int, $m.int, $d.int)); }  // German
     | m=NUM '/' d=NUM '/' y=NUM     { $value = ScheduleSemantics.literal(LocalDate.of($y.int, $m.int, $d.int)); }  // US
@@ -114,6 +116,8 @@ MONTH   : 'JAN' | 'FEB' | 'MAR' | 'APR' | 'MAY' | 'JUN' | 'JUL' | 'AUG' | 'SEP' 
         | 'ADAR' | 'ADARII'
         | 'ZHENGYUE' | 'ERYUE' | 'SANYUE' | 'SIYUE' | 'WUYUE' | 'LIUYUE' | 'QIYUE' | 'BAYUE' | 'JIUYUE' | 'SHIYUE'
         | 'DONGYUE' | 'LAYUE' ;
+// a named event such as @FOMC; the sigil keeps names apart from keywords and pairs
+EVENT   : '@' [A-Z] [A-Z0-9_]* ;
 WEEKDAY : 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN' ;
 ROLL    : 'FOLLOWING' | 'PRECEDING' | 'MODFOLLOWING' | 'BOM' | 'EOM' | 'BOY' | 'EOY' ;
 // currency pair such as EURUSD; six-letter keywords ('EASTER', 'TISHRI', ...) have the same length and win, as they are defined first

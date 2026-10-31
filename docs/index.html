@@ -196,11 +196,11 @@
     <h1>Ten parsers, one date language</h1>
     <p class="lead">
       The same small language for dates, periods and ranges, implemented with ten parser generators and
-      parser libraries, from LL(1) to LALR(1), Earley and PEG. Every implementation passes the same 209 test cases.
+      parser libraries, from LL(1) to LALR(1), Earley and PEG. Every implementation passes the same 228 test cases.
     </p>
     <ul class="stats">
       <li><strong>10</strong><span>implementations, 4 languages</span></li>
-      <li><strong>209</strong><span>shared test cases</span></li>
+      <li><strong>228</strong><span>shared test cases</span></li>
       <li><strong>0</strong><span>grammar conflicts</span></li>
       <li><strong>1</strong><span>specification file</span></li>
     </ul>
@@ -223,6 +223,7 @@
           <tr><td>T + 2B</td><td>two business days after the base date, in the market of the evaluation</td></tr>
           <tr><td>24 DEC IF MON TUE WED THU</td><td>Christmas Eve from Monday to Thursday, otherwise no date</td></tr>
           <tr><td>1 SHAWWAL, 1 ZHENGYUE</td><td>Eid al-Fitr and Chinese New Year in the year of <code>T</code></td></tr>
+          <tr><td>@FOMC + 1B</td><td>the business day after each FOMC decision of that year (a named event)</td></tr>
         </tbody>
       </table>
       <pre><code>schedule = range | item { "," item } .
@@ -233,12 +234,12 @@ expr     = date { ("+" | "-") period
                        | ("NEXT" | "PREV") anchor )
                | "{" shift { "," shift } "}" } .
 shift    = WEEKDAY ("+" | "-") period .
-anchor   = WEEKDAY | "BD" | "IMM" | annual .
+anchor   = WEEKDAY | "BD" | "IMM" | annual | EVENT .
 date     = "T" | "TOM" | "SPOT" [ PAIR ]
          | NUM ( "-" NUM "-" NUM       <span class="c">(* ISO    *)</span>
                | "." NUM "." NUM       <span class="c">(* German *)</span>
                | "/" NUM "/" NUM )     <span class="c">(* US     *)</span>
-         | annual .
+         | annual | EVENT .
 annual   = NUM MONTH                   <span class="c">(* 4 JUL     *)</span>
          | NUM WEEKDAY MONTH           <span class="c">(* 3 MON JAN *)</span>
          | "LAST" WEEKDAY MONTH | "EASTER" .
@@ -249,7 +250,8 @@ ROLL     = "FOLLOWING" | "PRECEDING" | "MODFOLLOWING"
 MONTH    = "JAN" | … | "DEC"           <span class="c">(* Gregorian *)</span>
          | "MUHARRAM" | … | "DHULHIJJAH"  <span class="c">(* Hijri *)</span>
          | "NISAN" | … | "ADARII"     <span class="c">(* Hebrew  *)</span>
-         | "ZHENGYUE" | … | "LAYUE" . <span class="c">(* Chinese *)</span></code></pre>
+         | "ZHENGYUE" | … | "LAYUE" . <span class="c">(* Chinese *)</span>
+EVENT    = "@" UPPER { UPPER | DIGIT | "_" } .  <span class="c">(* @FOMC *)</span></code></pre>
     </div>
     <p class="note">
       In grammatical terms (after <a href="https://en.wikipedia.org/wiki/Grammatical_category">grammatical category</a>):
@@ -334,28 +336,28 @@ def visitExpr(self, ctx):
     def at(context):
         d = start(context)
         for shift in shifts:
-            d = shift(d, context.market)
+            d = shift(d, context)
         return d
     return at
 
 def visitPlus(self, ctx):
     period = self.visit(ctx.period())
-    return lambda d, market: semantics.plus(d, period, 1, market)
+    return lambda d, context: semantics.plus(d, period, 1, context.market)
 
 def visitMinus(self, ctx):
     period = self.visit(ctx.period())
-    return lambda d, market: semantics.plus(d, period, -1, market)
+    return lambda d, context: semantics.plus(d, period, -1, context.market)
 
 def visitImm(self, ctx):
-    return lambda d, market: semantics.next_imm(d)
+    return lambda d, context: semantics.next_imm(d)
 
 def visitSpot(self, ctx):
     pair = ctx.PAIR() and ctx.PAIR().getText()
-    return lambda d, market: market.spot(d, pair)
+    return lambda d, context: context.market.spot(d, pair)
 
 def visitRoll(self, ctx):
     convention = ctx.ROLL().getText()
-    return lambda d, market: semantics.roll(d, convention, market)</code></pre>
+    return lambda d, context: semantics.roll(d, convention, context.market)</code></pre>
       <p class="pitfall"><strong>Pitfall.</strong> Java actions can't be generated into Python, so the grammar is copied without them. The Python target also renames the rule <code>range</code> to <code>range_()</code>.</p>
     </div>
     <div role="tabpanel" id="panel-combinators" aria-labelledby="tab-combinators" hidden>
@@ -363,7 +365,7 @@ def visitRoll(self, ctx):
         <span class="kind">Recursive descent with backtracking</span><span class="lang">Scala 2.13</span>
         <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-combinators/src/main/scala/de/juergens/text/ScheduleParsers.scala">ScheduleParsers.scala ↗</a>
       </div>
-      <pre><code>def date: Parser[Context =&gt; LocalDate] = &quot;TOM&quot; ^^^ ((c: Context) =&gt; plusBusinessDays(base(c), 1, c.market)) |
+      <pre><code>def date: Parser[Context =&gt; LocalDate] = eventName ^^ event | &quot;TOM&quot; ^^^ ((c: Context) =&gt; plusBusinessDays(base(c), 1, c.market)) |
   &quot;T&quot; ^^^ base |
   &quot;SPOT&quot; ~&gt; opt(pair) ^^ (p =&gt; (c: Context) =&gt; c.market.spot(base(c), p)) |
   annual ^^ (a =&gt; (c: Context) =&gt; a(base(c).getYear)) | number ~ (
@@ -373,7 +375,7 @@ def visitRoll(self, ctx):
   ) ^^ { case first ~ toDate =&gt; val date = toDate(first); (_: Context) =&gt; date }
 
 def expr: Parser[Context =&gt; LocalDate] = date ~ rep(shift) ^^ {
-  case start ~ shifts =&gt; (c: Context) =&gt; shifts.foldLeft(start(c))((d, f) =&gt; f(d, c.market))
+  case start ~ shifts =&gt; (c: Context) =&gt; shifts.foldLeft(start(c))((d, f) =&gt; f(d, c))
 }</code></pre>
       <p class="pitfall"><strong>Pitfall.</strong> None: the grammar is ordinary Scala code, there is no generator step.</p>
     </div>
@@ -453,13 +455,15 @@ anchor
     = {weekday} weekday
     | {bd} bd
     | {imm} imm
-    | {annual} annual;
+    | {annual} annual
+    | {event} event;
 
 date
     = {base} base
     | {tom} tom
     | {spot} spot pair?
     | {annual} annual
+    | {event} event
     | {iso} [year]:number [s1]:minus [month]:number [s2]:minus [day]:number
     | {german} [day]:number [s1]:dot [month]:number [s2]:dot [year]:number
     | {us} [month]:number [s1]:slash [day]:number [s2]:slash [year]:number;
@@ -519,20 +523,20 @@ expr:
       </div>
       <pre><code><span class="c">// periods are applied from left to right</span>
 Expr
-  = start:Date shifts:(_ @Shift)* { return (c) =&gt; shifts.reduce((d, shift) =&gt; shift(d, c.market), start(c)); }
+  = start:Date shifts:(_ @Shift)* { return (c) =&gt; shifts.reduce((d, shift) =&gt; shift(d, c), start(c)); }
 
 Shift
-  = &quot;+&quot; _ p:Period { return (d, market) =&gt; plus(d, p, 1, market); }
-  / &quot;-&quot; _ p:Period { return (d, market) =&gt; plus(d, p, -1, market); }
+  = &quot;+&quot; _ p:Period { return (d, c) =&gt; plus(d, p, 1, c.market); }
+  / &quot;-&quot; _ p:Period { return (d, c) =&gt; plus(d, p, -1, c.market); }
   / &quot;&gt;&quot; _ &quot;IMM&quot; { return nextImm; }
-  / &quot;&gt;&quot; _ &quot;SPOT&quot; pair:(_ @Pair)? { return (d, market) =&gt; spot(d, pair, market); }
+  / &quot;&gt;&quot; _ &quot;SPOT&quot; pair:(_ @Pair)? { return (d, c) =&gt; spot(d, pair, c.market); }
   / &quot;&gt;&quot; _ convention:$(&quot;FOLLOWING&quot; / &quot;PRECEDING&quot; / &quot;MODFOLLOWING&quot; / &quot;BOM&quot; / &quot;EOM&quot; / &quot;BOY&quot; / &quot;EOY&quot;) {
-      return (d, market) =&gt; roll(d, convention, market);
+      return (d, c) =&gt; roll(d, convention, c.market);
     }
-  / &quot;&gt;&quot; _ &quot;NEXT&quot; _ anchor:Anchor { return (d, market) =&gt; anchor(d, 1, market); }
-  / &quot;&gt;&quot; _ &quot;PREV&quot; _ anchor:Anchor { return (d, market) =&gt; anchor(d, -1, market); }
+  / &quot;&gt;&quot; _ &quot;NEXT&quot; _ anchor:Anchor { return (d, c) =&gt; anchor(d, 1, c); }
+  / &quot;&gt;&quot; _ &quot;PREV&quot; _ anchor:Anchor { return (d, c) =&gt; anchor(d, -1, c); }
   / &quot;{&quot; _ head:Observe tail:(_ &quot;,&quot; _ @Observe)* _ &quot;}&quot; {
-      return (d, market) =&gt; observe(d, [head, ...tail], market);
+      return (d, c) =&gt; observe(d, [head, ...tail], c.market);
     }</code></pre>
       <p class="pitfall"><strong>Pitfall.</strong> Peggy provides <code>range()</code> in actions, which silently shadows a helper of the same name.</p>
     </div>
@@ -560,6 +564,7 @@ anchor: WEEKDAY             -&gt; weekday
       | &quot;BD&quot;                -&gt; business_day
       | &quot;IMM&quot;               -&gt; imm_anchor
       | annual              -&gt; annual_anchor
+      | EVENT               -&gt; event_anchor
 
 date: &quot;T&quot;                   -&gt; base
     | &quot;TOM&quot;                 -&gt; tom
@@ -568,6 +573,7 @@ date: &quot;T&quot;                   -&gt; base
     | NUM &quot;.&quot; NUM &quot;.&quot; NUM   -&gt; german
     | NUM &quot;/&quot; NUM &quot;/&quot; NUM   -&gt; us
     | annual                -&gt; in_year
+    | EVENT                 -&gt; event
 
 <span class="c">// dates that recur every year, evaluated in the year of the base date</span>
 annual: NUM MONTH           -&gt; month_day
@@ -583,7 +589,7 @@ period: NUM UNIT</code></pre>
 
   <section aria-labelledby="compare">
     <h2 id="compare">Side by side</h2>
-    <p class="lead">Size counts non-blank, non-comment lines of the grammar files. The JVM modules also share a 324-line helper (market, context, rule builders, periods, business days, IMM and spot dates, ranges, annual dates, lunar months, rolling); the Python modules a 198-line one.</p>
+    <p class="lead">Size counts non-blank, non-comment lines of the grammar files. The JVM modules also share a 385-line helper (market, context, rule builders, periods, business days, IMM and spot dates, ranges, annual dates, lunar months, rolling, named events); the Python modules a 231-line one.</p>
     <div class="scroll">
       <table class="compare">
         <thead>
@@ -593,70 +599,70 @@ period: NUM UNIT</code></pre>
         <tr>
           <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-antlr/src/main/antlr4/io/github/hjuergens/time/DateSchedule.g4">ANTLR 4</a></th>
           <td>ALL(*) · adaptive LL</td>
-          <td class="num">96</td>
+          <td class="num">99</td>
           <td>Actions with <code>returns […]</code> attributes</td>
           <td>Throwing error listener plus <code>BailErrorStrategy</code></td>
         </tr>
         <tr>
           <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-antlr-python/src/antlr_schedule/__init__.py">ANTLR 4 · Python</a></th>
           <td>ALL(*) · adaptive LL</td>
-          <td class="num">64 + 99<small>grammar + visitor</small></td>
+          <td class="num">67 + 104<small>grammar + visitor</small></td>
           <td>Visitor over the parse tree; the grammar has no actions</td>
           <td>Error listener on lexer and parser that raises</td>
         </tr>
         <tr>
           <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-combinators/src/main/scala/de/juergens/text/ScheduleParsers.scala">Scala combinators</a></th>
           <td>Recursive descent with backtracking</td>
-          <td class="num">191</td>
+          <td class="num">215</td>
           <td><code>^^</code> functions, <code>foldLeft</code> over the shifts</td>
           <td><code>NoSuccess</code> result, turned into an exception</td>
         </tr>
         <tr>
           <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-coco/src/main/coco/Schedule.atg">Coco/R</a></th>
           <td>LL(1)</td>
-          <td class="num">129</td>
+          <td class="num">132</td>
           <td><code>(. … .)</code> actions with <code>out</code> parameters</td>
           <td><code>errors.count</code>, messages written to a stream</td>
         </tr>
         <tr>
           <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-javacc/src/main/javacc/Schedule.jj">JavaCC</a></th>
           <td>LL(k), here LL(1)</td>
-          <td class="num">140</td>
+          <td class="num">143</td>
           <td>Java code inside the productions; each declares its locals</td>
           <td><code>ParseException</code>, <code>TokenMgrException</code></td>
         </tr>
         <tr>
           <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-sablecc/src/main/sablecc/schedule.grammar">SableCC</a></th>
           <td>LALR(1) with typed AST</td>
-          <td class="num">85 + 127<small>grammar + evaluator</small></td>
+          <td class="num">88 + 131<small>grammar + evaluator</small></td>
           <td>Separate evaluator walking the generated typed tree</td>
           <td><code>ParserException</code>, <code>LexerException</code></td>
         </tr>
         <tr>
           <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-cup-jflex/src/main/cup/schedule.cup">JFlex + CUP</a></th>
           <td>LALR(1)</td>
-          <td class="num">73 + 57<small>parser + lexer</small></td>
+          <td class="num">75 + 59<small>parser + lexer</small></td>
           <td><code>{: … :}</code> actions, left-recursive rules</td>
           <td><code>parse()</code> throws on the first syntax error</td>
         </tr>
         <tr>
           <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-bison/src/main/resources/schedule.y">GNU Bison</a></th>
           <td>LALR(1)</td>
-          <td class="num">186<small>incl. hand-written scanner</small></td>
+          <td class="num">198<small>incl. hand-written scanner</small></td>
           <td><code>{ … }</code> actions, left-recursive rules</td>
           <td><code>parse()</code> returns <code>false</code></td>
         </tr>
         <tr>
           <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-peg/schedule.pegjs">Peggy</a></th>
           <td>PEG · ordered choice</td>
-          <td class="num">233<small>incl. date arithmetic</small></td>
+          <td class="num">275<small>incl. date arithmetic</small></td>
           <td>Action blocks; date arithmetic written by hand</td>
           <td><code>SyntaxError</code> with expected tokens</td>
         </tr>
         <tr>
           <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-lark/src/lark_schedule/schedule.lark">Lark</a></th>
           <td>Earley and LALR(1), one grammar</td>
-          <td class="num">44 + 84<small>grammar + transformer</small></td>
+          <td class="num">47 + 89<small>grammar + transformer</small></td>
           <td><code>Transformer</code>, one method per rule alias</td>
           <td><code>UnexpectedInput</code>; <code>VisitError</code> wraps exceptions of the transformer</td>
         </tr>
@@ -697,11 +703,16 @@ period: NUM UNIT</code></pre>
           ANTLR's implicit keywords come first, JFlex, JavaCC and SableCC take the rule declared first, Coco/R checks its keyword table,
           and Bison's hand-written scanner tests the keywords before the length. Without a lexer, or with a contextual one,
           the pattern itself must exclude the keyword (<code>!"EASTER"</code> in Peggy, <code>(?!EASTER)</code> in Scala and Lark),
-          otherwise <code>T &gt; SPOT EASTER</code> would read a pair. Lunar month names such as <code>TISHRI</code> joined the list.</p></li>
+          otherwise <code>T &gt; SPOT EASTER</code> would read a pair. Lunar month names such as <code>TISHRI</code> joined the list.
+          Event names avoid the race altogether: the sigil in <code>@EASTER</code> makes it a name in every tool.</p></li>
+      <li><strong>Several dates from one expression, without touching the expression rules.</strong>
+        <p><code>@FOMC + 1B</code> has a date per FOMC decision, while every grammar builds an expression as a function returning one date.
+          Instead of changing that in ten places, the event's date throws until it is bound: the list catches it, looks up the event's dates
+          in the year of <code>T</code> and evaluates the item once per date. The grammars only gained the token and two alternatives.</p></li>
       <li><strong>A shared test file keeps everyone honest.</strong>
         <p>Every module reads <code>examples/schedule.txt</code>. Several tool-specific pitfalls, listed in the tabs above, surfaced only because the same cases had to pass everywhere.</p></li>
       <li><strong>Generated cases test the libraries too.</strong>
-        <p>2131 more cases come from a holiday rule catalog and from finance-date research, with the dates of that project's own engine. They showed that ICU's
+        <p>2186 more cases come from a holiday rule catalog and from finance-date research, with the dates of that project's own engine. They showed that ICU's
           astronomical Chinese calendar, in ICU4J and in Node's <code>Intl</code>, puts Chinese New Year 2027 and 2030 a day off: the new moon falls
           within minutes of midnight in Beijing. The JVM modules and Peggy now take Chinese dates from 6tail's lunar library.</p></li>
     </ul>
@@ -711,7 +722,7 @@ period: NUM UNIT</code></pre>
     <h2 id="cases">The shared test cases</h2>
     <p class="lead">
       From <a href="https://github.com/hjuergens/date-parser/blob/master/examples/schedule.txt">examples/schedule.txt</a>. Each module has a test that reads this file,
-      so adding a line here tests all ten implementations. They also read 2131 cases in
+      so adding a line here tests all ten implementations. They also read 2186 cases in
       <a href="https://github.com/hjuergens/date-parser/blob/master/examples/catalog.txt">examples/catalog.txt</a>, generated from a holiday rule catalog (not listed here).
     </p>
     <div class="case-groups">
@@ -992,6 +1003,35 @@ period: NUM UNIT</code></pre>
           <tr><td><code><span class="ctx">[2025-01-01]</span> 24 DEC IF WED, 25 DEC</code></td><td><span class="date">2025-12-24</span>, <span class="date">2025-12-25</span></td></tr>
           <tr><td><code><span class="ctx">[2025-01-01]</span> 24 DEC IF</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code><span class="ctx">[2025-01-01]</span> (24 DEC : 1D : 26 DEC) IF WED</code></td><td><span class="err">error</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>named events</h3>
+      <p class="market"><code>event FOMC = 2025-01-29, 2025-03-19, 2025-05-07, 2025-06-18, 2025-07-30, 2025-09-17, 2025-10-29, 2025-12-10</code></p>
+      <p class="market"><code>event THANKSGIVING = 4 THU NOV</code></p>
+      <p class="market"><code>event NEWYEAR = 1 JAN {SAT - 1D}</code></p>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> @FOMC</code></td><td><span class="date">2025-01-29</span>, <span class="date">2025-03-19</span>, <span class="date">2025-05-07</span>, <span class="date">2025-06-18</span>, <span class="date">2025-07-30</span>, <span class="date">2025-09-17</span>, <span class="date">2025-10-29</span>, <span class="date">2025-12-10</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-30]</span> @FOMC + 3W</code></td><td><span class="date">2025-02-19</span>, <span class="date">2025-04-09</span>, <span class="date">2025-05-28</span>, <span class="date">2025-07-09</span>, <span class="date">2025-08-20</span>, <span class="date">2025-10-08</span>, <span class="date">2025-11-19</span>, <span class="date">2025-12-31</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01 XNYS]</span> @FOMC + 1B</code></td><td><span class="date">2025-01-30</span>, <span class="date">2025-03-20</span>, <span class="date">2025-05-08</span>, <span class="date">2025-06-20</span>, <span class="date">2025-07-31</span>, <span class="date">2025-09-18</span>, <span class="date">2025-10-30</span>, <span class="date">2025-12-11</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> @THANKSGIVING + 1D, @FOMC IF FRI</code></td><td><span class="date">2025-11-28</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> (@THANKSGIVING : 1D : @THANKSGIVING + 3D)</code></td><td><span class="date">2025-11-27</span>, <span class="date">2025-11-28</span>, <span class="date">2025-11-29</span>, <span class="date">2025-11-30</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-02-01]</span> T &gt; NEXT @FOMC</code></td><td><span class="date">2025-03-19</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-03-19]</span> T &gt; NEXT @FOMC</code></td><td><span class="date">2025-05-07</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-03-19]</span> T &gt; PREV @FOMC</code></td><td><span class="date">2025-01-29</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> 1 DEC &gt; NEXT @FOMC</code></td><td><span class="date">2025-12-10</span></td></tr>
+          <tr><td><code><span class="ctx">[2024-01-01]</span> @FOMC</code></td><td><span class="none">empty list</span></td></tr>
+          <tr><td><code><span class="ctx">[2022-01-01]</span> @NEWYEAR</code></td><td><span class="none">empty list</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-12-15]</span> T &gt; NEXT @FOMC</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> (@FOMC : 1D : 31 DEC)</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> @NOPE</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>@FOMC</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> @EASTER</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> FOMC</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> @fomc</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> @ FOMC</code></td><td><span class="err">error</span></td></tr>
         </tbody>
       </table>
       </section>

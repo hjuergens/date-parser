@@ -1,13 +1,14 @@
 """Semantics of the shared "schedule" example: periods, business days, IMM and spot dates, ranges,
-annual dates (holiday rules, also in the Hijri, Hebrew and Chinese calendars), rolling and business day conventions.
+annual dates (holiday rules, also in the Hijri, Hebrew and Chinese calendars), rolling and business day conventions,
+named events.
 
-A parsed schedule is a rule: a function of the Context (base date and market), evaluated later.
+A parsed schedule is a rule: a function of the Context (base date, market and events), evaluated later.
 The arithmetic follows java.time, like ScheduleSemantics.java in the JVM modules.
 """
 import calendar
 import itertools
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from datetime import date, timedelta
 
 from hijridate import Gregorian, Hijri
@@ -55,9 +56,50 @@ class RuleMarket(Market):
 
 @dataclass(frozen=True)
 class Context:
-    """what a rule is evaluated against: the base date (only needed for T) and the market"""
+    """what a rule is evaluated against: the base date (only needed for T), the market and the named events
+    (name -> rule); occurrence is the date of the event an expression is being evaluated for"""
     base: date | None = None
     market: Market = WEEKENDS
+    events: dict = field(default_factory=dict)
+    occurrence: date | None = None
+
+
+class Unbound(Exception):
+    """raised by an event date that is not bound to one occurrence yet; values() catches it"""
+
+
+def event(name):
+    """@NAME: one occurrence of the event, bound by values()"""
+    def at(context):
+        if context.occurrence is None:
+            raise Unbound(name)
+        return context.occurrence
+    return at
+
+
+def occurrences(name, year, context):
+    """the dates of the event in the year: its rule evaluated with the first of January as base date"""
+    if name not in context.events:
+        raise ValueError(f"no event {name}")
+    first = Context(date(year, 1, 1), context.market, context.events)
+    return sorted(d for d in context.events[name](first) if d.year == year)
+
+
+def values(expr, context):
+    """the dates of an expression: one, or one per occurrence in the base year if it starts with an event"""
+    try:
+        return [expr(context)]
+    except Unbound as unbound:
+        name = unbound.args[0]
+        return [expr(replace(context, occurrence=d)) for d in occurrences(name, base(context).year, context)]
+
+
+def single(expr, context):
+    """the date of an expression that must have exactly one, such as the end of a range"""
+    dates = values(expr, context)
+    if len(dates) != 1:
+        raise ValueError(f"{len(dates)} dates where one is needed")
+    return dates[0]
 
 
 def base(context):
@@ -224,25 +266,36 @@ def in_year(annual):
 
 # anchors of > NEXT and > PREV: the first match strictly after (direction 1) or before (-1) a date
 def annual_anchor(annual):
-    def find(d, direction, market):
+    def find(d, direction, context):
         match = annual(d.year)
         return match if (match > d if direction > 0 else match < d) else annual(d.year + direction)
     return find
 
 
 def weekday_anchor(weekday):
-    def find(d, direction, market):
+    def find(d, direction, context):
         days = (WEEKDAYS.index(weekday) - d.weekday()) * direction % 7 or 7
         return d + timedelta(days=direction * days)
     return find
 
 
-def business_day_anchor(d, direction, market):
-    return plus_business_days(d, direction, market)
+def business_day_anchor(d, direction, context):
+    return plus_business_days(d, direction, context.market)
 
 
-def imm_anchor(d, direction, market):
+def imm_anchor(d, direction, context):
     return next_imm(d) if direction > 0 else previous_imm(d)
+
+
+def event_anchor(name):
+    """the occurrence of the event strictly after (before) the date, in its year or the next (previous)"""
+    def find(d, direction, context):
+        for year in (d.year, d.year + direction):
+            found = [o for o in occurrences(name, year, context) if (o > d if direction > 0 else o < d)]
+            if found:
+                return found[0] if direction > 0 else found[-1]
+        raise ValueError(f"no {name} {'after' if direction > 0 else 'before'} {d}")
+    return find
 
 
 def roll(d, convention, market):

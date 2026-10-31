@@ -12,6 +12,7 @@ import java.time.temporal.TemporalAmount;
 import java.time.temporal.TemporalUnit;
 import java.time.temporal.UnsupportedTemporalTypeException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -25,8 +26,8 @@ import com.nlf.calendar.Lunar;
 import com.nlf.calendar.Solar;
 
 /**
- * Semantics of the shared "schedule" example. A parsed schedule is a {@link Rule}: a function of the base date
- * and the market, both only known when the rule is evaluated.
+ * Semantics of the shared "schedule" example. A parsed schedule is a {@link Rule}: a function of the base date,
+ * the market and the named events, all only known when the rule is evaluated.
  */
 public final class ScheduleSemantics {
 
@@ -73,10 +74,22 @@ public final class ScheduleSemantics {
         };
     }
 
-    /** what a rule is evaluated against: the base date (only needed for T) and the market (default: weekends only) */
-    public record Context(LocalDate base, Market market) {
+    /**
+     * what a rule is evaluated against: the base date (only needed for T), the market (default: weekends only) and
+     * the named events; occurrence is the date of the event an expression is being evaluated for
+     */
+    public record Context(LocalDate base, Market market, Map<String, Rule> events, LocalDate occurrence) {
         public Context {
             market = market == null ? WEEKENDS : market;
+            events = events == null ? Map.of() : events;
+        }
+
+        public Context(LocalDate base, Market market) {
+            this(base, market, null, null);
+        }
+
+        public Context(LocalDate base, Market market, Map<String, Rule> events) {
+            this(base, market, events, null);
         }
     }
 
@@ -116,6 +129,56 @@ public final class ScheduleSemantics {
 
     public static Expr spot(Expr expr, String pair) {
         return context -> context.market().spot(expr.at(context), pair);
+    }
+
+    /** thrown by an event date that is not bound to one occurrence yet; values() catches it */
+    private static final class Unbound extends RuntimeException {
+        private final String name;
+
+        private Unbound(String name) {
+            super("unbound event " + name, null, false, false);
+            this.name = name;
+        }
+    }
+
+    /** @NAME: one occurrence of the event, bound by values() */
+    public static Expr event(String name) {
+        return context -> {
+            if (context.occurrence() == null) {
+                throw new Unbound(name);
+            }
+            return context.occurrence();
+        };
+    }
+
+    /** the dates of the event in the year: its rule evaluated with the first of January as base date */
+    private static List<LocalDate> occurrences(String name, int year, Context context) {
+        Rule rule = context.events().get(name);
+        if (rule == null) {
+            throw new IllegalArgumentException("no event " + name);
+        }
+        return rule.evaluate(new Context(LocalDate.of(year, 1, 1), context.market(), context.events())).stream()
+                .filter(date -> date.getYear() == year).sorted().toList();
+    }
+
+    /** the dates of an expression: one, or one per occurrence in the base year if it starts with an event */
+    private static List<LocalDate> values(Expr expr, Context context) {
+        try {
+            return Collections.singletonList(expr.at(context));
+        } catch (Unbound unbound) {
+            return occurrences(unbound.name, BASE.at(context).getYear(), context).stream()
+                    .map(date -> expr.at(new Context(context.base(), context.market(), context.events(), date)))
+                    .toList();
+        }
+    }
+
+    /** the date of an expression that must have exactly one, such as the end of a range */
+    private static LocalDate single(Expr expr, Context context) {
+        List<LocalDate> dates = values(expr, context);
+        if (dates.size() != 1) {
+            throw new IllegalArgumentException(dates.size() + " dates where one is needed");
+        }
+        return dates.get(0);
     }
 
     /** a date that recurs every year, such as the third Monday of January */
@@ -211,31 +274,46 @@ public final class ScheduleSemantics {
 
     /** what > NEXT and > PREV look for: the first match strictly after (direction 1) or before (-1) a date */
     public interface Anchor {
-        LocalDate from(LocalDate date, int direction, Market market);
+        LocalDate from(LocalDate date, int direction, Context context);
     }
 
     public static Anchor annual(Annual annual) {
-        return (date, direction, market) -> {
+        return (date, direction, context) -> {
             LocalDate match = annual.in(date.getYear());
             return Integer.signum(match.compareTo(date)) == direction ? match : annual.in(date.getYear() + direction);
         };
     }
 
     public static Anchor weekday(String weekday) {
-        return (date, direction, market) -> date.with(direction > 0
+        return (date, direction, context) -> date.with(direction > 0
                 ? TemporalAdjusters.next(dayOfWeek(weekday)) : TemporalAdjusters.previous(dayOfWeek(weekday)));
     }
 
-    public static final Anchor BUSINESS_DAY = (date, direction, market) -> plusBusinessDays(date, direction, market);
+    public static final Anchor BUSINESS_DAY = (date, direction, context) ->
+            plusBusinessDays(date, direction, context.market());
 
-    public static final Anchor IMM = (date, direction, market) -> direction > 0 ? nextImm(date) : previousImm(date);
+    public static final Anchor IMM = (date, direction, context) -> direction > 0 ? nextImm(date) : previousImm(date);
+
+    /** the occurrence of the event strictly after (before) the date, in its year or the next (previous) */
+    public static Anchor eventAnchor(String name) {
+        return (date, direction, context) -> {
+            for (int year : new int[] {date.getYear(), date.getYear() + direction}) {
+                List<LocalDate> found = occurrences(name, year, context).stream()
+                        .filter(occurrence -> Integer.signum(occurrence.compareTo(date)) == direction).toList();
+                if (!found.isEmpty()) {
+                    return direction > 0 ? found.get(0) : found.get(found.size() - 1);
+                }
+            }
+            throw new IllegalArgumentException("no " + name + (direction > 0 ? " after " : " before ") + date);
+        };
+    }
 
     public static Expr next(Expr expr, Anchor anchor) {
-        return context -> anchor.from(expr.at(context), 1, context.market());
+        return context -> anchor.from(expr.at(context), 1, context);
     }
 
     public static Expr previous(Expr expr, Anchor anchor) {
-        return context -> anchor.from(expr.at(context), -1, context.market());
+        return context -> anchor.from(expr.at(context), -1, context);
     }
 
     /**
@@ -302,10 +380,11 @@ public final class ScheduleSemantics {
         return DayOfWeek.of(WEEKDAYS.indexOf(name) + 1);
     }
 
-    /** a list of dates; an item that yields no date (see onlyOn) is left out */
+    /** a list of dates; an item that yields no date (see onlyOn) is left out, an event yields one per occurrence */
     public static Rule list(List<Expr> exprs) {
         List<Expr> copy = new ArrayList<>(exprs);
-        return context -> copy.stream().map(expr -> expr.at(context)).filter(Objects::nonNull).toList();
+        return context -> copy.stream().flatMap(expr -> values(expr, context).stream()).filter(Objects::nonNull)
+                .toList();
     }
 
     /** 24 DEC IF MON TUE WED THU: the date on these weekdays, otherwise none (null) */
@@ -323,7 +402,7 @@ public final class ScheduleSemantics {
         if (!isPositive(step)) {
             throw new IllegalArgumentException("step must be positive: " + step);
         }
-        return context -> range(first.at(context), step, last.at(context), context.market());
+        return context -> range(single(first, context), step, single(last, context), context.market());
     }
 
     /** {@code count} times D (day), W (week), M (month), Q (quarter), Y (year) or B (business day) */

@@ -30,6 +30,7 @@ public class SchedulesTest {
     public Object[][] examples() throws IOException {
         List<Object[]> cases = new ArrayList<>();
         Map<String, ScheduleSemantics.Market> markets = new HashMap<>();
+        Map<String, ScheduleSemantics.Rule> events = new HashMap<>();
         for (String file : new String[]{"schedule.txt", "catalog.txt"})
         for (String line : Files.readAllLines(Paths.get("..", "examples", file), StandardCharsets.UTF_8)) {
             if (line.trim().isEmpty() || line.trim().startsWith("#")) continue;
@@ -38,18 +39,23 @@ public class SchedulesTest {
                 markets.put(market[0].trim(), ScheduleSemantics.withHolidayRules(Schedules.parse(market[1].trim())));
                 continue;
             }
+            if (line.startsWith("event ")) {   // event NAME = schedule of its dates
+                String[] event = line.substring("event ".length()).split("=", 2);
+                events.put(event[0].trim(), Schedules.parse(event[1].trim()));
+                continue;
+            }
             int arrow = line.lastIndexOf("=>");
             String expected = line.substring(arrow + 2).trim();
             List<LocalDate> dates = new ArrayList<>();
             if (expected.equals("error")) dates = null;
             else if (!expected.equals("none")) for (String date : expected.split(",")) dates.add(LocalDate.parse(date.trim()));
             String input = line.substring(0, arrow).trim();
-            ScheduleSemantics.Context context = new ScheduleSemantics.Context(null, null);
+            ScheduleSemantics.Context context = new ScheduleSemantics.Context(null, null, events);
             Matcher prefix = CONTEXT.matcher(input);   // [base] or [base market]
             if (prefix.matches()) {
                 ScheduleSemantics.Market market = prefix.group(2) == null ? null
                         : Objects.requireNonNull(markets.get(prefix.group(2)), "unknown market " + prefix.group(2));
-                context = new ScheduleSemantics.Context(LocalDate.parse(prefix.group(1)), market);
+                context = new ScheduleSemantics.Context(LocalDate.parse(prefix.group(1)), market, events);
                 input = prefix.group(3);
             }
             cases.add(new Object[]{input, context, dates});

@@ -10,10 +10,10 @@ RUN apt-get update \
 
 # mise as a pinned release binary, checked against the release's SHASUMS256.txt
 # (https://github.com/jdx/mise/releases); no apt repository whose mirror sync can break the build
-ARG MISE_VERSION=2026.10.10
+ARG MISE_VERSION=2026.10.19
 RUN case "$(dpkg --print-architecture)" in \
-      amd64) arch=x64;   sha=7d79972e15549b286dcf9e25ef8c4fcef3d9fd7c0332d11cdfbc7d2842c418be ;; \
-      arm64) arch=arm64; sha=3978fbccfa2284b12e46cbf6df53cae118ec1f2fa780b6a204e6c9c792b620f6 ;; \
+      amd64) arch=x64;   sha=3162760f40b6b5f706c60641e4ef5ee7322bc6c54f72fc26a7111b337aa18d9d ;; \
+      arm64) arch=arm64; sha=4a4ca53b28e5433c527f4f73fac1f98f992a17cf32ca136a58e2e375f790f627 ;; \
       *) echo "no mise binary for $(dpkg --print-architecture)" >&2; exit 1 ;; \
     esac \
  && curl -fsSL -o /usr/local/bin/mise \

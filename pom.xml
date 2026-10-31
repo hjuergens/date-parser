@@ -37,7 +37,7 @@
         <scala-maven-plugin.version>4.10.0</scala-maven-plugin.version>
         <maven-checkstyle-plugin-version>3.6.0</maven-checkstyle-plugin-version>
         <!-- 3.6+ no longer reads TestNG suite XML files (testng.xml), which the modules use -->
-        <maven-surefire-plugin.version>3.5.6</maven-surefire-plugin.version>
+        <maven-surefire-plugin.version>3.6.1</maven-surefire-plugin.version>
         <maven-surefire-report-plugin-version>${maven-surefire-plugin.version}</maven-surefire-report-plugin-version>
         <slf4j.version>2.0.20</slf4j.version>
         <scalatest.version>3.2.20</scalatest.version>
@@ -110,7 +110,7 @@
         <dependency>
             <groupId>com.ibm.icu</groupId>
             <artifactId>icu4j</artifactId>
-            <version>78.3</version>
+            <version>79.1</version>
         </dependency>
         <dependency>
             <groupId>cn.6tail</groupId>

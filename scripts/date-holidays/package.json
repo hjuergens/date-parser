@@ -7,6 +7,6 @@
     "generate": "node generate.mjs"
   },
   "dependencies": {
-    "date-holidays": "3.37.0"
+    "date-holidays": "3.38.0"
   }
 }

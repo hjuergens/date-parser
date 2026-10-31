@@ -24,7 +24,7 @@
         <encoding>UTF-8</encoding>
         <scoverage.plugin.version>2.1.5</scoverage.plugin.version>
         <!-- PMD version bundled with maven-pmd-plugin 3.28.0 -->
-        <pmd.version>7.17.0</pmd.version>
+        <pmd.version>7.29.0</pmd.version>
         <surefire.version>${maven-surefire-plugin.version}</surefire.version>
         <scala.plugin.version>${scala-maven-plugin.version}</scala.plugin.version>
         <disable.surefire>false</disable.surefire>
@@ -82,20 +82,6 @@
             <groupId>org.pojava</groupId>
             <artifactId>datetime</artifactId>
             <version>3.0.2</version>
-        </dependency>
-
-        <!-- julian date -->
-        <dependency>
-            <groupId>org.jodd</groupId>
-            <artifactId>jodd-core</artifactId>
-            <version>3.8.6</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.codehaus.plexus</groupId>
-            <artifactId>plexus-utils</artifactId>
-            <version>3.6.1</version>
-            <scope>compile</scope>
         </dependency>
 
         <dependency>

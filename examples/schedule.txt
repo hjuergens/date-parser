@@ -43,6 +43,7 @@
 # if they fall into that year. An event with several dates in that year is an error at the end of a range.
 # Keywords are reserved: "EASTER" and six-letter month names such as "TISHRI" are never a currency pair.
 # examples/catalog.txt holds more cases, generated from a holiday rule catalog (scripts/catalog_cases.py).
+# examples/date-holidays.txt holds more, generated from the rules of date-holidays (scripts/date-holidays/).
 
 # date notations
 2015-06-09 => 2015-06-09

@@ -19,7 +19,8 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.expectThrows;
 
 /**
- * Runs the shared cases of {@code examples/schedule.txt} and {@code examples/catalog.txt} (project root).
+ * Runs the shared cases of {@code examples/schedule.txt}, {@code examples/catalog.txt} and {@code examples/date-holidays.txt}
+ * (project root).
  */
 public class SchedulesTest {
 
@@ -30,7 +31,7 @@ public class SchedulesTest {
         List<Object[]> cases = new ArrayList<>();
         Map<String, ScheduleSemantics.Market> markets = new HashMap<>();
         Map<String, ScheduleSemantics.Rule> events = new HashMap<>();
-        for (String file : new String[]{"schedule.txt", "catalog.txt"})
+        for (String file : new String[]{"schedule.txt", "catalog.txt", "date-holidays.txt"})
         for (String line : Files.readAllLines(Paths.get("..", "examples", file), StandardCharsets.UTF_8)) {
             if (line.trim().isEmpty() || line.trim().startsWith("#")) continue;
             if (line.startsWith("market ")) {   // market NAME = schedule of the holidays

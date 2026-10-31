@@ -34,7 +34,7 @@ mise run test:peg                # Node from mise.toml, then npm ci + npm test
 npm ci && npm test               # or directly, with Node 20 or later
 ```
 
-There are 2419 tests (`node:test`) in [test/list.test.mjs](test/list.test.mjs) and [test/schedule.test.mjs](test/schedule.test.mjs).
+There are 5721 tests (`node:test`) in [test/list.test.mjs](test/list.test.mjs) and [test/schedule.test.mjs](test/schedule.test.mjs).
 
 ## Shared example
 

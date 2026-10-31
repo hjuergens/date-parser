@@ -1,4 +1,4 @@
-"""Runs the shared cases of examples/schedule.txt and examples/catalog.txt with both Lark parsers."""
+"""Runs the shared cases of examples/schedule.txt, examples/catalog.txt and examples/date-holidays.txt with both Lark parsers."""
 import re
 from datetime import date
 from pathlib import Path
@@ -35,7 +35,7 @@ def cases(file):
 
 
 @pytest.mark.parametrize("parser", ["lalr", "earley"])
-@pytest.mark.parametrize("text, context, expected", [*cases("schedule.txt"), *cases("catalog.txt")])
+@pytest.mark.parametrize("text, context, expected", [*cases("schedule.txt"), *cases("catalog.txt"), *cases("date-holidays.txt")])
 def test_schedule(parser, text, context, expected):
     if expected == "error":
         with pytest.raises((UnexpectedInput, ValueError)):

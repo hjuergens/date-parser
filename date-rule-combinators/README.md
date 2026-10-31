@@ -72,7 +72,7 @@ Named events: `eventName` is the regex `@[A-Z][A-Z0-9_]*`, tried first in `date`
 
 ## Status
 
-- Working: 155 JUnit/TestNG tests and 2432 ScalaTest tests. One TestNG test is disabled (`firstDayOfNextMonthTest`).
+- Working: 155 JUnit/TestNG tests and 5734 ScalaTest tests. One TestNG test is disabled (`firstDayOfNextMonthTest`).
 - `QuarterAdjuster(n)` moves to another quarter **within the same year** (Q4 + 1 → Q1 of the same year).
 - Several rules in [high_sophisticated.txt](src/test/resources/complex/high_sophisticated.txt) are still commented out,
   for example "every friday the 13th of month" and "full moon next after the vernal equinox".

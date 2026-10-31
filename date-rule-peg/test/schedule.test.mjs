@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import peggy from 'peggy';
 import lunar from 'lunar-javascript';
 
-// runs the shared cases of examples/schedule.txt and examples/catalog.txt (project root)
+// runs the shared cases of examples/schedule.txt, examples/catalog.txt and examples/date-holidays.txt (project root)
 const { Solar } = lunar;   // Chinese calendar, passed to parse()
 const parser = peggy.generate(readFileSync(new URL('../schedule.pegjs', import.meta.url), 'utf8'));
 
@@ -29,7 +29,7 @@ function holidayMarket(rule) {
 const markets = new Map();
 const events = {};
 const cases = [];
-const files = ['schedule.txt', 'catalog.txt'];
+const files = ['schedule.txt', 'catalog.txt', 'date-holidays.txt'];
 for (const line of files.flatMap((file) => readFileSync(new URL(`../../examples/${file}`, import.meta.url), 'utf8').split('\n'))) {
   if (line.trim() === '' || line.trim().startsWith('#')) continue;
   if (line.startsWith('market ')) { // market NAME = schedule of the holidays

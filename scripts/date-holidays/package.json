@@ -1,0 +1,12 @@
+{
+  "name": "date-holidays-cases",
+  "private": true,
+  "description": "Generates examples/date-holidays.txt: test cases from the holiday rules of date-holidays",
+  "type": "module",
+  "scripts": {
+    "generate": "node generate.mjs"
+  },
+  "dependencies": {
+    "date-holidays": "3.37.0"
+  }
+}

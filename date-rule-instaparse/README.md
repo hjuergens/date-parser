@@ -37,10 +37,10 @@ EBNF. GLL accepts any context-free grammar, also ambiguous and left-recursive on
 
 ## Tests
 
-[SchedulesTest](src/test/java/io/github/hjuergens/instaparse/SchedulesTest.java) runs the 5716 cases of
+[SchedulesTest](src/test/java/io/github/hjuergens/instaparse/SchedulesTest.java) runs the 5733 cases of
 [examples/schedule.txt](../examples/schedule.txt), [examples/catalog.txt](../examples/catalog.txt) and
 [examples/date-holidays.txt](../examples/date-holidays.txt) with TestNG, the same harness as in the other JVM modules
-(5716 TestNG tests).
+(5733 TestNG tests).
 
 ```
 mvn -pl date-rule-instaparse test

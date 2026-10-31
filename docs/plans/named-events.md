@@ -4,7 +4,7 @@ Status: Part A (named events) is implemented in all ten modules, with 19 cases i
 FOMC-anchored catalog rules (HKMA, SAMA, CBO, CBUAE base rates, FOMC minutes) in `examples/catalog.txt`. Two details
 changed while implementing: an event may be the input of `> NEXT`/`> PREV` and is then evaluated per date (only a range
 end needs a single date), and the generator groups a rule's dates by the year of the anchor, as `@FOMC + 21D` shifts
-December meetings into January. Part B is implemented as well: 3302 cases in `examples/date-holidays.txt`.
+December meetings into January. Part B is implemented as well: 3319 cases in `examples/date-holidays.txt`.
 Found while implementing B: date-holidays files a substitute day by its own year (the Friday before a Saturday New Year
 is in the old year), counts "5th monday in October" into November, sometimes drops the date of an "observe both" rule,
 and reads a year condition before "and if" as a move; the generator leaves those years or rules out.

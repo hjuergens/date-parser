@@ -38,7 +38,7 @@ mvn -pl date-rule-coco verify
 The bundled [Coco.jar](Coco.jar) (version of 2011-04-19) runs through `maven-antrun-plugin` in `generate-sources`.
 It uses the frame files [Parser.frame](Parser.frame) and [Scanner.frame](Scanner.frame) from the module root
 and writes `Parser`, `Scanner`, and `Errors` to `target/generated-sources/coco` (package `io.github.hjuergens.coco`).
-There are 5722 TestNG tests: [DatesParserTest](src/test/java/io/github/hjuergens/coco/DatesParserTest.java) and the shared example.
+There are 5739 TestNG tests: [DatesParserTest](src/test/java/io/github/hjuergens/coco/DatesParserTest.java) and the shared example.
 Coco/R always names the generated classes `Parser`, `Scanner`, and `Errors`, so each grammar gets its own package.
 
 ## Shared example

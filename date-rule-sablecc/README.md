@@ -34,7 +34,7 @@ mvn -pl date-rule-sablecc verify
 ```
 
 `sablecc-maven-plugin` 2.2 (the latest release, from 2008) generates the sources into `target/generated-sources/sablecc`.
-There are 5727 TestNG tests.
+There are 5744 TestNG tests.
 
 ## Shared example
 

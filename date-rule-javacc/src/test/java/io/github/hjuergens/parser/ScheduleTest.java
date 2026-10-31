@@ -27,7 +27,7 @@ public class ScheduleTest {
 
     private static final Pattern CONTEXT = Pattern.compile("\\[(\\S+)(?: (\\S+))?] (.*)");
 
-    @Parameterized.Parameters(name = "{0} => {2}")
+    @Parameterized.Parameters(name = "{index}: {0} => {2}")
     public static List<Object[]> examples() throws Exception {
         List<Object[]> cases = new ArrayList<>();
         Map<String, ScheduleSemantics.Market> markets = new HashMap<>();

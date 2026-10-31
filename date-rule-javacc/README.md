@@ -50,7 +50,7 @@ Test: [ScheduleTest](src/test/java/io/github/hjuergens/parser/ScheduleTest.java)
 Holiday rules and rolling: `Date()` reads the number that starts both `2015-06-09` and `3 MON JAN`, then `AnnualTail(n)` continues.
 The tokens `MONTH`, `WEEKDAY`, `ROLL` and `EASTER` are declared before `PAIR`: on a match of the same length the earlier one wins.
 Lunar month names (`1 SHAWWAL`, `10 TISHRI`, `1 ZHENGYUE`) are more alternatives of `MONTH`; `Item()` adds
-`( "IF" ( <WEEKDAY> )+ )?` to a list item. `ScheduleTest` runs 1117 cases (with the case number in each name: two cases
+`( "IF" ( <WEEKDAY> )+ )?` to a list item. `ScheduleTest` runs 2340 cases (with the case number in each name: two cases
 differ only in their base date).
 
 ## Status

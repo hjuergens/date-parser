@@ -41,7 +41,7 @@ uv run pytest
   so generating a Python parser still needs a JDK (mise provides one). Without `java` on the `PATH` it asks to install a JRE.
 - The runtime `antlr4-python3-runtime` must have exactly the tool's version (4.13.2).
 - The generated sources in `src/antlr_schedule/generated` are not checked in.
-- There are 1117 tests (pytest), one per case of [examples/schedule.txt](../examples/schedule.txt) and [examples/catalog.txt](../examples/catalog.txt).
+- There are 2340 tests (pytest), one per case of [examples/schedule.txt](../examples/schedule.txt) and [examples/catalog.txt](../examples/catalog.txt).
 
 ## Shared example
 

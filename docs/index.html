@@ -701,7 +701,7 @@ period: NUM UNIT</code></pre>
       <li><strong>A shared test file keeps everyone honest.</strong>
         <p>Every module reads <code>examples/schedule.txt</code>. Several tool-specific pitfalls, listed in the tabs above, surfaced only because the same cases had to pass everywhere.</p></li>
       <li><strong>Generated cases test the libraries too.</strong>
-        <p>908 more cases come from a holiday rule catalog, with the dates of that project's own engine. They showed that ICU's
+        <p>2131 more cases come from a holiday rule catalog and from finance-date research, with the dates of that project's own engine. They showed that ICU's
           astronomical Chinese calendar, in ICU4J and in Node's <code>Intl</code>, puts Chinese New Year 2027 and 2030 a day off: the new moon falls
           within minutes of midnight in Beijing. The JVM modules and Peggy now take Chinese dates from 6tail's lunar library.</p></li>
     </ul>
@@ -711,7 +711,7 @@ period: NUM UNIT</code></pre>
     <h2 id="cases">The shared test cases</h2>
     <p class="lead">
       From <a href="https://github.com/hjuergens/date-parser/blob/master/examples/schedule.txt">examples/schedule.txt</a>. Each module has a test that reads this file,
-      so adding a line here tests all ten implementations. They also read 908 cases in
+      so adding a line here tests all ten implementations. They also read 2131 cases in
       <a href="https://github.com/hjuergens/date-parser/blob/master/examples/catalog.txt">examples/catalog.txt</a>, generated from a holiday rule catalog (not listed here).
     </p>
     <div class="case-groups">

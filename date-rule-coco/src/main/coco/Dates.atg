@@ -1,0 +1,50 @@
+/*
+ * A list of calendar dates in three notations:
+ *   ISO 8601   2015-06-09
+ *   German     09.06.2015
+ *   US         06/09/2015
+ * separated by ','. Each date is collected as java.time.LocalDate in 'dates'.
+ */
+import java.time.DateTimeException;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
+COMPILER Dates
+
+  /** dates parsed so far, in input order */
+  public final List<LocalDate> dates = new ArrayList<>();
+
+  private void add(int year, int month, int day) {
+    try {
+      dates.add(LocalDate.of(year, month, day));
+    } catch (DateTimeException e) {
+      SemErr(e.getMessage());
+    }
+  }
+
+CHARACTERS
+  digit = "0123456789".
+
+TOKENS
+  number = digit {digit}.
+
+IGNORE '\t' + '\r' + '\n'
+
+PRODUCTIONS
+
+  Dates = Date { "," Date }.
+
+  // error recovery may still run the actions below, so a date is only taken from an error-free parse
+  Date                                    (. int a, b, c; int errs = errors.count; .)
+  = Number<out a>
+    ( "-" Number<out b> "-" Number<out c> (. if (errors.count == errs) add(a, b, c); .)
+    | "." Number<out b> "." Number<out c> (. if (errors.count == errs) add(c, b, a); .)
+    | "/" Number<out b> "/" Number<out c> (. if (errors.count == errs) add(c, a, b); .)
+    ).
+
+  Number<out int n>
+  = number                                (. n = Integer.parseInt(t.val); .)
+  .
+
+END Dates.

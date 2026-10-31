@@ -28,11 +28,12 @@
     <packaging>jar</packaging>
 
     <name>${project.artifactId}</name>
-    <description>http://ssw.jku.at/Coco/</description>
-    <url>http://http://ssw.jku.at/Coco/</url>
+    <description>Date parser based on Coco/R (https://ssw.jku.at/Research/Projects/Coco/)</description>
+    <url>https://ssw.jku.at/Research/Projects/Coco/</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <coco.target>${project.build.directory}/generated-sources/coco</coco.target>
     </properties>
 
     <dependencies>
@@ -42,4 +43,55 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Coco/R (bundled Coco.jar, frame files in the module root): src/main/coco/Dates.atg -> Scanner, Parser, Errors -->
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>coco</id>
+                        <phase>generate-sources</phase>
+                        <configuration>
+                            <target>
+                                <mkdir dir="${coco.target}/io/github/hjuergens/coco"/>
+                                <java jar="${project.basedir}/Coco.jar" fork="true" failonerror="true">
+                                    <arg value="${project.basedir}/src/main/coco/Dates.atg"/>
+                                    <arg value="-package"/>
+                                    <arg value="io.github.hjuergens.coco"/>
+                                    <arg value="-frames"/>
+                                    <arg value="${project.basedir}"/>
+                                    <arg value="-o"/>
+                                    <arg value="${coco.target}/io/github/hjuergens/coco"/>
+                                </java>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>add-coco-source</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${coco.target}</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

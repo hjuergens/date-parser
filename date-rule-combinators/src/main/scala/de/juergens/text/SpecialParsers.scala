@@ -166,7 +166,7 @@ trait TemporalAdjustersParsers  extends JavaTokenParsers with ExtendedRegexParse
     }
   def lastInMonth : Parser[LocalDateAdjuster] = "last"~ dayOfWeek ~"in month" ^^
     {
-      case ~(~(_,dayOfWeek),_) => TemporalAdjusters.firstInMonth(dayOfWeek)
+      case ~(~(_,dayOfWeek),_) => TemporalAdjusters.lastInMonth(dayOfWeek)
     }
   def _dayOfWeekInMonth : Parser[LocalDateAdjuster] = ordinal ~ dayOfWeek ~ "in month" ^^
     {

@@ -93,8 +93,8 @@ var             { return newSym(Sym.VAR); }
 "["             { return newSym(Sym.LEFT_BRKT); }
 "]"             { return newSym(Sym.RT_BRKT); }
 "="             { return newSym(Sym.EQ); }
-"<"             { return newSym(Sym.GTR); }
-">"             { return newSym(Sym.LESS); }
+"<"             { return newSym(Sym.LESS); }
+">"             { return newSym(Sym.GTR); }
 "<="            { return newSym(Sym.LESS_EQ); }
 ">="            { return newSym(Sym.GTR_EQ); }
 "!="            { return newSym(Sym.NOT_EQ); }
@@ -102,9 +102,9 @@ var             { return newSym(Sym.VAR); }
 ":="            { return newSym(Sym.ASSMNT); }
 "."             { return newSym(Sym.DOT); }
 {identifier}    { return newSym(Sym.IDENT, yytext()); }
-{integer}       { return newSym(Sym.INT, new Integer(yytext())); }
-{real}          { return newSym(Sym.REAL, new Double(yytext())); }
-{char}          { return newSym(Sym.CHAR, new Character(yytext().charAt(1))); }
+{integer}       { return newSym(Sym.INT, Integer.valueOf(yytext())); }
+{real}          { return newSym(Sym.REAL, Double.valueOf(yytext())); }
+{char}          { return newSym(Sym.CHAR, Character.valueOf(yytext().charAt(1))); }
 {comment}       { /* For this stand-alone lexer, print out comments. */
                   System.out.println("Recognized comment: " + yytext()); }
 {whitespace}    { /* Ignore whitespace. */ }

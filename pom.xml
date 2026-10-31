@@ -23,23 +23,25 @@
     <inceptionYear>2015</inceptionYear>
 
     <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
-        <maven.compiler.release>11</maven.compiler.release>
-        <scala.major.version>2.11</scala.major.version>
-        <scala.version>2.11.12</scala.version>
-        <scala.compat.version>2.11</scala.compat.version>
+        <maven.compiler.release>17</maven.compiler.release>
+        <scala.major.version>2.13</scala.major.version>
+        <scala.version>2.13.18</scala.version>
+        <scala.compat.version>2.13</scala.compat.version>
         <scalaCompatVersion>${scala.compat.version}</scalaCompatVersion>
         <encoding>UTF-8</encoding>
         <project.build.sourceEncoding>${encoding}</project.build.sourceEncoding>
         <project.reporting.outputEncoding>${encoding}</project.reporting.outputEncoding>
         <project.resources.sourceEncoding>${encoding}</project.resources.sourceEncoding>
         <github.global.server>github</github.global.server>
-        <cobertura-maven-plugin.version>2.7</cobertura-maven-plugin.version>
-        <jacoco-maven-plugin.version>0.8.8</jacoco-maven-plugin.version>
-        <scala-maven-plugin.version>4.7.2</scala-maven-plugin.version>
-        <maven-checkstyle-plugin-version>2.17</maven-checkstyle-plugin-version>
-        <maven-surefire-report-plugin-version>3.0.0-M7</maven-surefire-report-plugin-version>
+        <jacoco-maven-plugin.version>0.8.16</jacoco-maven-plugin.version>
+        <scala-maven-plugin.version>4.10.0</scala-maven-plugin.version>
+        <maven-checkstyle-plugin-version>3.6.0</maven-checkstyle-plugin-version>
+        <!-- 3.6+ no longer reads TestNG suite XML files (testng.xml), which the modules use -->
+        <maven-surefire-plugin.version>3.5.6</maven-surefire-plugin.version>
+        <maven-surefire-report-plugin-version>${maven-surefire-plugin.version}</maven-surefire-report-plugin-version>
+        <slf4j.version>2.0.20</slf4j.version>
+        <scalatest.version>3.2.20</scalatest.version>
+        <specs2.version>4.23.0</specs2.version>
         <javadoc.opts>-Xdoclint:none</javadoc.opts>
     </properties>
 
@@ -101,12 +103,7 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>1.7.12</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>1.7.12</version>
+            <version>${slf4j.version}</version>
         </dependency>
         <!--dependency>
             <groupId>org.slf4j</groupId>
@@ -122,6 +119,22 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- JUnit Platform 1.x: testng-engine and scalatestplus are built against it -->
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>5.14.4</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.junit.support</groupId>
+                <artifactId>testng-engine</artifactId>
+                <version>1.1.0</version>
+                <scope>test</scope>
+            </dependency>
+
             <dependency>
                 <groupId>org.scala-lang</groupId>
                 <artifactId>scala-library</artifactId>
@@ -129,22 +142,28 @@
             </dependency>
 
             <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-simple</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>org.apache.poi</groupId>
                 <artifactId>poi</artifactId>
-                <version>5.2.3</version>
+                <version>6.0.0</version>
             </dependency>
 
             <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
-                <version>4.13.1</version>
+                <version>4.13.2</version>
                 <scope>test</scope>
             </dependency>
 
             <dependency>
                 <groupId>org.testng</groupId>
                 <artifactId>testng</artifactId>
-                <version>7.7.0</version>
+                <version>7.12.0</version>
                 <scope>test</scope>
             </dependency>
 
@@ -162,15 +181,15 @@
 
             <dependency>
                 <groupId>org.scalatest</groupId>
-                <artifactId>scalatest_2.11</artifactId>
-                <version>3.0.1</version>
+                <artifactId>scalatest_${scala.compat.version}</artifactId>
+                <version>${scalatest.version}</version>
                 <scope>test</scope>
             </dependency>
 
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
-                <version>2.4.1</version>
+                <version>5.24.0</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>
@@ -179,30 +198,23 @@
 
     <build>
 
-        <extensions>
-            <extension>
-                <groupId>org.mod4j.patched</groupId>
-                <artifactId>wagon-ftp</artifactId>
-                <version>1.0-beta-5-PATCHED-v1</version>
-            </extension>
-        </extensions>
 
         <pluginManagement>
             <plugins>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-install-plugin</artifactId>
-                    <version>2.5.2</version>
+                    <version>3.2.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-site-plugin</artifactId>
-                    <version>3.7.1</version>
+                    <version>3.22.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-project-info-reports-plugin</artifactId>
-                    <version>2.9</version>
+                    <version>3.9.0</version>
                 </plugin>
                 <plugin>
                     <groupId>net.alchim31.maven</groupId>
@@ -217,15 +229,11 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.3</version>
+                    <version>3.16.0</version>
                     <configuration>
-                        <source>${maven.compiler.source}</source>
-                        <target>${maven.compiler.target}</target>
-                        <compilerArgument>-Xlint:unchecked</compilerArgument>
+                        <release>${maven.compiler.release}</release>
                         <compilerArgs>
-                            <compilerArg>
-                                -Xlint:unchecked
-                            </compilerArg>
+                            <compilerArg>-Xlint:unchecked</compilerArg>
                         </compilerArgs>
                         <showDeprecation>true</showDeprecation>
                     </configuration>
@@ -233,29 +241,17 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jxr-plugin</artifactId>
-                    <version>2.5</version>
+                    <version>3.6.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>taglist-maven-plugin</artifactId>
-                    <version>2.4</version>
+                    <version>3.2.3</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-pmd-plugin</artifactId>
-                    <version>3.5</version>
-                    <dependencies>
-                        <dependency>
-                            <groupId>net.sourceforge.pmd</groupId>
-                            <artifactId>pmd-scala</artifactId>
-                            <version>5.3.2</version>
-                        </dependency>
-                    </dependencies>
-                </plugin>
-                <plugin>
-                    <groupId>net.sourceforge.pmd</groupId>
-                    <artifactId>pmd-scala</artifactId>
-                    <version>5.3.2</version>
+                    <version>3.28.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -275,23 +271,23 @@
                 </plugin>
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>sonar-maven-plugin</artifactId>
-                    <version>2.6</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
                     <artifactId>build-helper-maven-plugin</artifactId>
-                    <version>1.9.1</version>
+                    <version>3.6.2</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-resources-plugin</artifactId>
-                    <version>2.7</version>
+                    <version>3.5.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${maven-surefire-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-failsafe-plugin</artifactId>
-                    <version>2.19.1</version>
+                    <version>${maven-surefire-plugin.version}</version>
                     <executions>
                         <execution>
                             <id>integration-test</id>
@@ -305,63 +301,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>2.10.4</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>cobertura-maven-plugin</artifactId>
-                    <version>${cobertura-maven-plugin.version}</version>
-                    <inherited>false</inherited>
-                    <dependencies>
-                        <dependency>
-                            <groupId>org.ow2.asm</groupId>
-                            <artifactId>asm</artifactId>
-                            <version>5.1</version>
-                        </dependency>
-                    </dependencies>
-                    <configuration>
-                        <check>
-                            <haltOnFailure>true</haltOnFailure>
-                            <branchRate>50</branchRate>
-                            <lineRate>50</lineRate>
-                            <haltOnFailure>true</haltOnFailure>
-                            <totalBranchRate>50</totalBranchRate>
-                            <totalLineRate>50</totalLineRate>
-                            <packageLineRate>50</packageLineRate>
-                            <packageBranchRate>50</packageBranchRate>
-                        </check>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <id>clean</id>
-                            <phase>pre-site</phase>
-                            <goals>
-                                <goal>clean</goal>
-                            </goals>
-                        </execution>
-                        <execution>
-                            <id>instrument</id>
-                            <phase>site</phase>
-                            <goals>
-                                <!--<goal>instrument</goal>-->
-                                <goal>cobertura</goal>
-                            </goals>
-                        </execution>
-                        <execution>
-                            <id>instrument-code</id>
-                            <phase>process-classes</phase>
-                            <goals>
-                                <goal>instrument</goal>
-                            </goals>
-                        </execution>
-                        <execution>
-                            <id>verify</id>
-                            <phase>verify</phase>
-                            <goals>
-                                <goal>check</goal>
-                            </goals>
-                        </execution>
-                    </executions>
+                    <version>3.12.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.jacoco</groupId>
@@ -498,7 +438,7 @@
                    <windowtitle>${project.name} API Reference (${project.version}, r${buildNumber})</windowtitle>
                     -->
                     <links>
-                        <link>http://java.sun.com/j2se/${maven.compiler.source}/docs/api/</link>
+                        <link>https://docs.oracle.com/en/java/javase/17/docs/api/</link>
                         <link>http://slf4j.org/api/</link>
                         <link>http://commons.apache.org/lang/api-release/</link>
                         <link>http://commons.apache.org/io/api-release/</link>
@@ -521,7 +461,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-project-info-reports-plugin</artifactId>
-                <version>3.4.1</version>
+                <version>3.9.0</version>
                 <!--reportSets>
                     <reportSet>
                         <reports>
@@ -559,7 +499,7 @@
                         <link>http://junit.org/junit4/javadoc/latest/</link>
                         <link>http://docs.oracle.com/javase/1.4.2/docs/api</link>
                     </links>
-                    <additionalparam>${javadoc.opts}</additionalparam>
+                    <additionalOptions>${javadoc.opts}</additionalOptions>
                 </configuration>
             </plugin>
 
@@ -568,7 +508,7 @@
                 <!-- produces a cross-reference of the project's sources -->
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jxr-plugin</artifactId>
-                <version>2.5</version>
+                <version>3.6.0</version>
                 <reportSets>
                     <reportSet>
                         <id>aggregate</id>
@@ -585,7 +525,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-pmd-plugin</artifactId>
-                <version>3.4</version>
+                <version>3.28.0</version>
                 <reportSets>
                     <reportSet>
                         <inherited>false</inherited>
@@ -640,27 +580,12 @@
                 </configuration>
             </plugin>
 
-            <!-- sonar-report -->
-            <plugin>
-                <groupId>org.codehaus.sonar-plugins</groupId>
-                <artifactId>maven-report</artifactId>
-                <version>0.1</version>
-                <inherited>false</inherited>
-            </plugin>
-
             <!-- linkcheck -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-linkcheck-plugin</artifactId>
                 <version>1.2</version>
                 <inherited>false</inherited>
-            </plugin>
-
-            <!-- creating a diagram of all dependencies, dependency graph -->
-            <plugin>
-                <groupId>com.googlecode.maven-overview-plugin</groupId>
-                <artifactId>maven-overview-plugin</artifactId>
-                <version>1.6</version>
             </plugin>
 
             <!-- jacoco - code coverage -->
@@ -681,7 +606,7 @@
             <!-- dependency-analyze-report -->
             <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <version>3.3.0</version>
+                <version>3.11.0</version>
                 <inherited>true</inherited>
                 <reportSets>
                     <reportSet>
@@ -724,7 +649,7 @@
                                 <link>http://junit.org/junit4/javadoc/latest/</link>
                                 <link>http://docs.oracle.com/javase/1.4.2/docs/api</link>
                             </links>
-                            <additionalparam>${javadoc.opts}</additionalparam>
+                            <additionalOptions>${javadoc.opts}</additionalOptions>
                         </configuration>
                     </plugin>
                 </plugins>

@@ -6,7 +6,6 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
 import org.testng.Reporter
-import org.testng.annotations.{DataProvider => DataProviderNG, Test => TestNG}
 
 import java.io.{File, FilenameFilter}
 import java.time.temporal.Temporal
@@ -27,14 +26,12 @@ class JUnit4ParameterizedTest(textFile: jio.File) {
 
   import scala.io.Source
 
-  @DataProviderNG(name = "lines in text file", parallel = true)
   def lines: Iterator[Array[Object]] =
     Source.fromURI {
       textFile.toURI
     }.getLines().filterNot(_.trim.startsWith("#")).filterNot(_.isEmpty).map(Array[Object](_))
 
 
-  @TestNG(groups = Array { "seek"  }, dataProvider = "lines in text file", timeOut = 1000)
   def test(line: String) {
     val parser = new DateRuleParsers {
       def rule : Parser[Temporal => Stream[Temporal]] = """.*""".r ^^

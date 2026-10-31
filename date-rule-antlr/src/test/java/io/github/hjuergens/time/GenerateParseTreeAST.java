@@ -29,6 +29,7 @@ import org.antlr.v4.tool.DOTGenerator;
 import org.antlr.v4.tool.Grammar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -126,35 +127,29 @@ public class GenerateParseTreeAST {
     /**
      * <a href="https://stackoverflow.com/questions/10614659/no-viable-alternative-at-input"></a>
      */
-    @Test(expectedExceptions = java.lang.NoSuchFieldError.class)
+    @Test
     public void dotTree() {
 
         // the expression
-        String src = "(ICOM LIKE '%bridge%' or ICOM LIKE '%Munich%')";
+        String src = "09/06/2015";
 
-        // create a lexer & parser
-        //DatesLexer lexer = new DatesLexer(new ANTLRStringStream(src));
-        //DatesParser parser = new DatesParser(new CommonTokenStream(lexer));
-
-        DatesLexer lexer = new DatesLexer(new ANTLRInputStream(src));
+        DatesLexer lexer = new DatesLexer(CharStreams.fromString(src));
         DatesParser parser = new DatesParser(new CommonTokenStream(lexer));
 
-        // invoke the entry point of the parser (the parse() method) and get the AST
+        // invoke the entry point of the parser
         Tree tree = parser.date();
+        log.info("parse tree=" + tree.toStringTree());
         String grammarFileName = lexer.getGrammarFileName();
         log.info("grammar file name=" + grammarFileName);
 
-        // print the DOT representation of the AST 
-        Grammar grammar = Grammar.load(grammarFileName);
+        // print the DOT representation of the ATN of rule 'date'
+        Grammar grammar = Grammar.load("src/main/antlr4/io/github/hjuergens/time/" + grammarFileName);
+        Assert.assertNotNull(grammar, grammarFileName);
         DOTGenerator gen = new DOTGenerator(grammar);
 
-        ATNState startState = new ATNState() {
-            @Override
-            public int getStateType() {
-                return ATNState.BASIC;
-            }
-        };
+        ATNState startState = grammar.atn.ruleToStartState[grammar.getRule("date").index];
         String st = gen.getDOT(startState);
         log.info(st);
+        Assert.assertTrue(st.startsWith("digraph"), st);
     }
 }

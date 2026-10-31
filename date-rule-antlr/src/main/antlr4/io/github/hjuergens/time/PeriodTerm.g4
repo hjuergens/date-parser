@@ -34,6 +34,11 @@ input           : (adjust NEWLINE)+ EOF;
 chain : '^' adjust
     ;
 
+// entry point of SchedulerFactory: optional chain marker, anchored at EOF
+schedule returns [DateTimeAdjuster adjusterOut]
+    : '^'? adjust EOF { $adjusterOut = $adjust.adjusterOut; }
+    ;
+
 adjust returns [DateTimeAdjuster adjusterOut]
     :
     {

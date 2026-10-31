@@ -11,14 +11,15 @@ import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
 import java.util.List;
 
-terminal            PLUS, MINUS, GT, IMM, SPOT, BASE, TOM, NEXT, PREV, BD, LAST, EASTER;
+terminal            PLUS, MINUS, GT, IMM, SPOT, BASE, TOM, NEXT, PREV, BD, LAST, EASTER, IF;
 terminal            DOT, SLASH, COMMA, COLON, LPAREN, RPAREN, LBRACE, RBRACE;
 terminal Integer    NUM;
 terminal String     UNIT, PAIR, MONTH, WEEKDAY, ROLL;
 
 non terminal ScheduleSemantics.Rule                schedule;
 non terminal ArrayList<ScheduleSemantics.Expr>     exprs;
-non terminal ScheduleSemantics.Expr                expr, date;
+non terminal ScheduleSemantics.Expr                item, expr, date;
+non terminal ArrayList<String>                     weekdays;
 non terminal TemporalAmount                        period;
 non terminal ScheduleSemantics.Annual              annual;
 non terminal ScheduleSemantics.Anchor              anchor;
@@ -33,11 +34,20 @@ schedule ::= LPAREN expr:first COLON period:step COLON expr:last RPAREN
                 {: RESULT = ScheduleSemantics.list(list); :}
            ;
 
-exprs ::= expr:e
+exprs ::= item:e
                 {: RESULT = new ArrayList<>(); RESULT.add(e); :}
-        | exprs:list COMMA expr:e
+        | exprs:list COMMA item:e
                 {: list.add(e); RESULT = list; :}
         ;
+
+/* 24 DEC IF MON TUE WED THU: the date only on these weekdays */
+item ::= expr:e                     {: RESULT = e; :}
+       | expr:e IF weekdays:w       {: RESULT = ScheduleSemantics.onlyOn(e, w); :}
+       ;
+
+weekdays ::= WEEKDAY:w              {: RESULT = new ArrayList<>(); RESULT.add(w); :}
+           | weekdays:list WEEKDAY:w {: list.add(w); RESULT = list; :}
+           ;
 
 /* periods are applied from left to right */
 expr ::= date:d                     {: RESULT = d; :}

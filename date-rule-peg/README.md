@@ -34,7 +34,7 @@ mise run test:peg                # Node from mise.toml, then npm ci + npm test
 npm ci && npm test               # or directly, with Node 20 or later
 ```
 
-There are 193 tests (`node:test`) in [test/list.test.mjs](test/list.test.mjs) and [test/schedule.test.mjs](test/schedule.test.mjs).
+There are 1122 tests (`node:test`) in [test/list.test.mjs](test/list.test.mjs) and [test/schedule.test.mjs](test/schedule.test.mjs).
 
 ## Shared example
 
@@ -51,6 +51,9 @@ Implements the [shared schedule example](../README.md#shared-example-schedule) a
 - Don't name a helper `range`: Peggy provides `range()` (the location of the match) in actions.
 - Holiday rules and rolling: `"TOM"` must come before `"T"` in `Date`, and the pair is `!"EASTER" $[A-Z]|6|`; without a lexer
   nothing else would reserve the keyword. About 80 more lines of JavaScript compute annual dates, Easter and the roll conventions.
+- Lunar months and conditional dates: Lunar month names (`1 SHAWWAL`, `10 TISHRI`, `1 ZHENGYUE`) are more alternatives of `Month` (ordered choice: `"ADARII"`
+  before `"ADAR"`). Hijri and Hebrew dates come from `Intl`; Chinese ones from lunar-javascript, which a parser generated in memory
+  can't import, so `parse(text, { Solar })` passes it in as an option. `Item` adds `24 DEC IF MON TUE WED THU`.
 
 ## Status
 

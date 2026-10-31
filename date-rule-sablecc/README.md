@@ -34,7 +34,7 @@ mvn -pl date-rule-sablecc verify
 ```
 
 `sablecc-maven-plugin` 2.2 (the latest release, from 2008) generates the sources into `target/generated-sources/sablecc`.
-There are 199 TestNG tests.
+There are 1128 TestNG tests.
 
 ## Shared example
 
@@ -50,6 +50,8 @@ Each kind of shift (`+`, `-`, `> IMM`, `> SPOT [PAIR]`) is an alternative of `sh
 Test: [ScheduleEvaluatorTest](src/test/java/de/juergens/schedule/ScheduleEvaluatorTest.java).
 
 Holiday rules and rolling add the productions `observe`, `anchor` and `annual`; the evaluator gained one method for each.
+Lunar month names (`1 SHAWWAL`, `10 TISHRI`, `1 ZHENGYUE`) are more alternatives of `MONTH` (the token
+`month` comes before `pair`); `item = expr condition?` with `condition = if weekday+` adds `24 DEC IF MON TUE WED THU`.
 The token `easter` is declared before `pair`: on a match of the same length the earlier token wins.
 
 ## Status

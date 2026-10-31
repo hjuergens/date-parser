@@ -11,7 +11,7 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 
 /**
- * Runs the shared cases of examples/schedule.txt (project root).
+ * Runs the shared cases of examples/schedule.txt and examples/catalog.txt (project root).
  */
 class ScheduleParsersSuite extends AnyFunSuite {
 
@@ -19,7 +19,7 @@ class ScheduleParsersSuite extends AnyFunSuite {
 
   private val cases: Seq[(String, Context, Option[List[LocalDate]])] = {
     val markets = mutable.Map.empty[String, Market]
-    Files.readAllLines(Paths.get("..", "examples", "schedule.txt"), StandardCharsets.UTF_8).asScala.toSeq
+    Seq("schedule.txt", "catalog.txt").flatMap(file => Files.readAllLines(Paths.get("..", "examples", file), StandardCharsets.UTF_8).asScala)
       .filterNot(line => line.trim.isEmpty || line.trim.startsWith("#"))
       .flatMap { line =>
         if (line.startsWith("market ")) {   // market NAME = schedule of the holidays

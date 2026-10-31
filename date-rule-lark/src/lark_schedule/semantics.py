@@ -1,5 +1,5 @@
 """Semantics of the shared "schedule" example: periods, business days, IMM and spot dates, ranges,
-annual dates (holiday rules), rolling and business day conventions.
+annual dates (holiday rules, also in the Hijri, Hebrew and Chinese calendars), rolling and business day conventions.
 
 A parsed schedule is a rule: a function of the Context (base date and market), evaluated later.
 The arithmetic follows java.time, like ScheduleSemantics.java in the JVM modules.
@@ -9,6 +9,10 @@ import itertools
 import re
 from dataclasses import dataclass
 from datetime import date, timedelta
+
+from hijridate import Gregorian, Hijri
+from lunardate import LunarDate
+from pyluach.dates import HebrewDate
 
 
 class Market:
@@ -139,12 +143,45 @@ def previous_imm(d):
 
 MONTHS = "JAN FEB MAR APR MAY JUN JUL AUG SEP OCT NOV DEC".split()
 WEEKDAYS = "MON TUE WED THU FRI SAT SUN".split()
+HIJRI = ("MUHARRAM SAFAR RABIALAWWAL RABIALTHANI JUMADAALULA JUMADAALAKHIRA RAJAB SHABAN RAMADAN SHAWWAL "
+         "DHULQADAH DHULHIJJAH").split()                                       # Umm al-Qura
+HEBREW = "NISAN IYAR SIVAN TAMMUZ AV ELUL TISHRI HESHVAN KISLEV TEVET SHEVAT ADAR ADARII".split()  # ADAR: Adar I in a leap year
+CHINESE = "ZHENGYUE ERYUE SANYUE SIYUE WUYUE LIUYUE QIYUE BAYUE JIUYUE SHIYUE DONGYUE LAYUE".split()  # leap months excluded
 
 
 # annual dates: functions of the year
 def month_day(day, month):
-    """day of month, e.g. 4 JUL"""
+    """day of month, e.g. 4 JUL, or of a lunar month, e.g. 1 SHAWWAL"""
+    if month not in MONTHS:
+        return lambda year: lunar(day, month, year)
     return lambda year: date(year, MONTHS.index(month) + 1, day)
+
+
+def lunar(day, month, year):
+    """the day of a Hijri, Hebrew or Chinese month in the Gregorian year; an error if it occurs twice or not at all"""
+    if month in HIJRI:
+        first, last = (Gregorian(year, m, d).to_hijri().year for m, d in ((1, 1), (12, 31)))
+        candidates = [lambda y=y: Hijri(y, HIJRI.index(month) + 1, day).to_gregorian() for y in range(first, last + 1)]
+    elif month in HEBREW:
+        candidates = [lambda y=y: HebrewDate(y, HEBREW.index(month) + 1, day).to_pydate() for y in (year + 3760, year + 3761)]
+    else:
+        candidates = [lambda y=y: LunarDate(y, CHINESE.index(month) + 1, day).to_solar_date() for y in (year - 1, year)]
+    hits = []
+    for candidate in candidates:
+        try:
+            d = candidate()
+        except (ValueError, OverflowError):
+            continue
+        if d.year == year:
+            hits.append(d)
+    if len(hits) != 1:
+        raise ValueError(f"{day} {month} occurs {len(hits)} times in {year}")
+    return hits[0]
+
+
+def only_on(weekdays):
+    """IF MON TUE ...: the date on these weekdays, otherwise none"""
+    return lambda d: d if WEEKDAYS[d.weekday()] in weekdays else None
 
 
 def nth_weekday(n, weekday, month):

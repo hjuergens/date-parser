@@ -16,8 +16,14 @@ PARSERS = {name: Lark.open("schedule.lark", rel_to=__file__, parser=name) for na
 class Rules(Transformer):
     """builds the rule bottom-up from the parse tree: every node becomes a function of the context"""
 
-    def exprs(self, *exprs):
-        return lambda context: [expr(context) for expr in exprs]
+    def exprs(self, *items):
+        return lambda context: [d for item in items if (d := item(context)) is not None]
+
+    def item(self, expr, *weekdays):
+        if not weekdays:
+            return expr
+        keep = semantics.only_on({str(w) for w in weekdays})
+        return lambda context: keep(expr(context))
 
     def range(self, first, step, last):
         if not step.is_positive():

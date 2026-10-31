@@ -92,8 +92,47 @@
   }
 
   // annual dates: functions of the year
-  function monthDay(day, month) {
+  // Solar: the Chinese calendar of lunar-javascript, passed as parse option (a generated parser can't import it)
+  function monthDay(day, month, Solar) {
+    if (!MONTHS.includes(month)) return (year) => lunar(day, month, year, Solar);
     return (year) => date(year, MONTHS.indexOf(month) + 1, day);
+  }
+
+  const HIJRI = ['MUHARRAM', 'SAFAR', 'RABIALAWWAL', 'RABIALTHANI', 'JUMADAALULA', 'JUMADAALAKHIRA', 'RAJAB', 'SHABAN',
+    'RAMADAN', 'SHAWWAL', 'DHULQADAH', 'DHULHIJJAH'];
+  const HEBREW = ['NISAN', 'IYAR', 'SIVAN', 'TAMMUZ', 'AV', 'ELUL', 'TISHRI', 'HESHVAN', 'KISLEV', 'TEVET', 'SHEVAT', 'ADAR', 'ADARII'];
+  const CHINESE = ['ZHENGYUE', 'ERYUE', 'SANYUE', 'SIYUE', 'WUYUE', 'LIUYUE', 'QIYUE', 'BAYUE', 'JIUYUE', 'SHIYUE', 'DONGYUE', 'LAYUE'];
+  // Intl's names of the Hebrew months; Adar I (in a leap year) counts as ADAR
+  const INTL_HEBREW = { Tishri: 'TISHRI', Heshvan: 'HESHVAN', Kislev: 'KISLEV', Tevet: 'TEVET', Shevat: 'SHEVAT', 'Adar I': 'ADAR',
+    Adar: 'ADAR', 'Adar II': 'ADARII', Nisan: 'NISAN', Iyar: 'IYAR', Sivan: 'SIVAN', Tamuz: 'TAMMUZ', Av: 'AV', Elul: 'ELUL' };
+  const formats = {};
+
+  // the month and day of a date in the calendar of the given month: Hijri (Umm al-Qura) and Hebrew from Intl,
+  // Chinese from lunar-javascript (Intl's astronomical Chinese calendar misses some new moons close to midnight)
+  function lunarMonthDay(d, like, Solar) {
+    if (CHINESE.includes(like)) {
+      if (!Solar) throw new Error('Chinese months need the parse option Solar (lunar-javascript)');
+      const lunar = Solar.fromYmd(d.year, d.month, d.day).getLunar();
+      return { month: CHINESE[lunar.getMonth() - 1], day: lunar.getDay() };   // a leap month is negative: no name
+    }
+    const calendar = HIJRI.includes(like) ? 'islamic-umalqura' : 'hebrew';
+    formats[calendar] ??= new Intl.DateTimeFormat(`en-u-ca-${calendar}`,
+      { timeZone: 'UTC', month: calendar === 'hebrew' ? 'long' : 'numeric', day: 'numeric' });
+    const parts = Object.fromEntries(formats[calendar].formatToParts(new Date(Date.UTC(d.year, d.month - 1, d.day)))
+      .map((part) => [part.type, part.value]));
+    const month = calendar === 'hebrew' ? INTL_HEBREW[parts.month] : HIJRI[Number(parts.month) - 1];
+    return { month, day: Number(parts.day) };
+  }
+
+  // the day of a lunar month in the Gregorian year; an error if it occurs twice or not at all
+  function lunar(day, month, year, Solar) {
+    const hits = [];
+    for (let d = date(year, 1, 1); d.year === year; d = plusDays(d, 1)) {
+      const md = lunarMonthDay(d, month, Solar);
+      if (md.month === month && md.day === day) hits.push(d);
+    }
+    if (hits.length !== 1) throw new RangeError(`${day} ${month} occurs ${hits.length} times in ${year}`);
+    return hits[0];
   }
 
   function nthWeekday(n, wd, month) {
@@ -172,7 +211,14 @@
 
 Schedule
   = _ r:Range _ { return rule(r); }
-  / _ head:Expr tail:(_ "," _ @Expr)* _ { return rule((c) => [head, ...tail].map((expr) => expr(c))); }
+  / _ head:Item tail:(_ "," _ @Item)* _ { return rule((c) => [head, ...tail].map((item) => item(c)).filter((d) => d !== null)); }
+
+// 24 DEC IF MON TUE WED THU: the date only on these weekdays
+Item
+  = expr:Expr _ "IF" days:(_ @Weekday)+ {
+      return (c) => { const d = expr(c); return days.includes(WEEKDAYS[weekday(d)]) ? d : null; };
+    }
+  / Expr
 
 Range
   = "(" _ first:Expr _ ":" _ step:Period _ ":" _ last:Expr _ ")" {
@@ -218,20 +264,28 @@ Date
 
 // dates that recur every year, evaluated in the year of the base date
 Annual
-  = day:Number _ month:Month { return monthDay(day, month); }
+  = day:Number _ month:Month { return monthDay(day, month, options.Solar); }
   / n:Number _ wd:Weekday _ month:Month { return nthWeekday(n, wd, month); }
   / "LAST" _ wd:Weekday _ month:Month { return lastWeekday(wd, month); }
   / "EASTER" { return easter; }
 
+// Gregorian, then Hijri (Umm al-Qura), Hebrew and Chinese months; ordered choice, so ADARII before ADAR
 Month
-  = $("JAN" / "FEB" / "MAR" / "APR" / "MAY" / "JUN" / "JUL" / "AUG" / "SEP" / "OCT" / "NOV" / "DEC")
+  = $("JAN" / "FEB" / "MAR" / "APR" / "MAY" / "JUN" / "JUL" / "AUG" / "SEP" / "OCT" / "NOV" / "DEC"
+    / "MUHARRAM" / "SAFAR" / "RABIALAWWAL" / "RABIALTHANI" / "JUMADAALULA" / "JUMADAALAKHIRA" / "RAJAB" / "SHABAN"
+    / "RAMADAN" / "SHAWWAL" / "DHULQADAH" / "DHULHIJJAH"
+    / "NISAN" / "IYAR" / "SIVAN" / "TAMMUZ" / "AV" / "ELUL" / "TISHRI" / "HESHVAN" / "KISLEV" / "TEVET" / "SHEVAT"
+    / "ADARII" / "ADAR"
+    / "ZHENGYUE" / "ERYUE" / "SANYUE" / "SIYUE" / "WUYUE" / "LIUYUE" / "QIYUE" / "BAYUE" / "JIUYUE" / "SHIYUE"
+    / "DONGYUE" / "LAYUE")
 
 Weekday
   = $("MON" / "TUE" / "WED" / "THU" / "FRI" / "SAT" / "SUN")
 
-// currency pair such as EURUSD; without a lexer nothing reserves the keyword EASTER, so it's excluded here
+// currency pair such as EURUSD; without a lexer nothing reserves the six-letter keywords, so they're excluded here
 Pair
-  = !"EASTER" pair:$[A-Z]|6| { return pair; }
+  = !("EASTER" / "SHABAN" / "TAMMUZ" / "TISHRI" / "KISLEV" / "SHEVAT" / "ADARII" / "SANYUE" / "LIUYUE" / "JIUYUE" / "SHIYUE")
+    pair:$[A-Z]|6| { return pair; }
 
 Period
   = n:Number _ unit:[DWMQYB] {

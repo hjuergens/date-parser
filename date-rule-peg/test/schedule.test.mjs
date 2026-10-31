@@ -2,8 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import peggy from 'peggy';
+import lunar from 'lunar-javascript';
 
-// runs the shared cases of examples/schedule.txt (project root)
+// runs the shared cases of examples/schedule.txt and examples/catalog.txt (project root)
+const { Solar } = lunar;   // Chinese calendar, passed to parse()
 const parser = peggy.generate(readFileSync(new URL('../schedule.pegjs', import.meta.url), 'utf8'));
 
 const iso = ({ year, month, day }) =>
@@ -26,11 +28,12 @@ function holidayMarket(rule) {
 
 const markets = new Map();
 const cases = [];
-for (const line of readFileSync(new URL('../../examples/schedule.txt', import.meta.url), 'utf8').split('\n')) {
+const files = ['schedule.txt', 'catalog.txt'];
+for (const line of files.flatMap((file) => readFileSync(new URL(`../../examples/${file}`, import.meta.url), 'utf8').split('\n'))) {
   if (line.trim() === '' || line.trim().startsWith('#')) continue;
   if (line.startsWith('market ')) { // market NAME = schedule of the holidays
     const [name, holidays] = line.slice('market '.length).split('=');
-    markets.set(name.trim(), holidayMarket(parser.parse(holidays.trim())));
+    markets.set(name.trim(), holidayMarket(parser.parse(holidays.trim(), { Solar })));
     continue;
   }
   const arrow = line.lastIndexOf('=>');
@@ -52,9 +55,9 @@ for (const line of readFileSync(new URL('../../examples/schedule.txt', import.me
 for (const { input, context, expected } of cases) {
   test(`'${input}' => ${expected ? expected.join(', ') || 'none' : 'error'}`, () => {
     if (expected === null) {
-      assert.throws(() => parser.parse(input)(context));
+      assert.throws(() => parser.parse(input, { Solar })(context));
     } else {
-      assert.deepEqual(parser.parse(input)(context).map(iso), expected);
+      assert.deepEqual(parser.parse(input, { Solar })(context).map(iso), expected);
     }
   });
 }

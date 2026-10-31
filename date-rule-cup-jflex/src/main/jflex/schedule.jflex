@@ -36,13 +36,21 @@ private Symbol symbol(int type, Object value) {
 "PREV"          { return symbol(ScheduleSym.PREV); }
 "BD"            { return symbol(ScheduleSym.BD); }
 "LAST"          { return symbol(ScheduleSym.LAST); }
+"IF"            { return symbol(ScheduleSym.IF); }
+/* Gregorian, then Hijri (Umm al-Qura), Hebrew and Chinese months */
 "JAN" | "FEB" | "MAR" | "APR" | "MAY" | "JUN" | "JUL" | "AUG" | "SEP" | "OCT" | "NOV" | "DEC"
+  | "MUHARRAM" | "SAFAR" | "RABIALAWWAL" | "RABIALTHANI" | "JUMADAALULA" | "JUMADAALAKHIRA" | "RAJAB" | "SHABAN"
+  | "RAMADAN" | "SHAWWAL" | "DHULQADAH" | "DHULHIJJAH"
+  | "NISAN" | "IYAR" | "SIVAN" | "TAMMUZ" | "AV" | "ELUL" | "TISHRI" | "HESHVAN" | "KISLEV" | "TEVET" | "SHEVAT"
+  | "ADAR" | "ADARII"
+  | "ZHENGYUE" | "ERYUE" | "SANYUE" | "SIYUE" | "WUYUE" | "LIUYUE" | "QIYUE" | "BAYUE" | "JIUYUE" | "SHIYUE"
+  | "DONGYUE" | "LAYUE"
                 { return symbol(ScheduleSym.MONTH, yytext()); }
 "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN"
                 { return symbol(ScheduleSym.WEEKDAY, yytext()); }
 "FOLLOWING" | "PRECEDING" | "MODFOLLOWING" | "BOM" | "EOM" | "BOY" | "EOY"
                 { return symbol(ScheduleSym.ROLL, yytext()); }
-/* before the pair: on a match of the same length the earlier rule wins */
+/* the months above and EASTER come before the pair: on a match of the same length the earlier rule wins */
 "EASTER"        { return symbol(ScheduleSym.EASTER); }
 [A-Z]{6}        { return symbol(ScheduleSym.PAIR, yytext()); }
 [DWMQYB]        { return symbol(ScheduleSym.UNIT, yytext()); }

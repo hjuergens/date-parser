@@ -18,12 +18,24 @@ grammar DateSchedule;
 
 schedule returns [Rule result]
     : range EOF                     { $result = $range.result; }
-    | e+=expr (',' e+=expr)* EOF
+    | e+=item (',' e+=item)* EOF
       {
           List<Expr> exprs = new ArrayList<>();
-          for (ExprContext expr : $e) exprs.add(expr.value);
+          for (ItemContext item : $e) exprs.add(item.value);
           $result = ScheduleSemantics.list(exprs);
       }
+    ;
+
+// 24 DEC IF MON TUE WED THU: the date only on these weekdays
+item returns [Expr value]
+    : expr                          { $value = $expr.value; }
+      ( 'IF' (w+=WEEKDAY)+
+        {
+            List<String> weekdays = new ArrayList<>();
+            for (Token weekday : $w) weekdays.add(weekday.getText());
+            $value = ScheduleSemantics.onlyOn($value, weekdays);
+        }
+      )?
     ;
 
 range returns [Rule result]
@@ -94,9 +106,16 @@ period returns [java.time.temporal.TemporalAmount value]
 
 NUM  : [0-9]+ ;
 UNIT : [DWMQYB] ;
-MONTH   : 'JAN' | 'FEB' | 'MAR' | 'APR' | 'MAY' | 'JUN' | 'JUL' | 'AUG' | 'SEP' | 'OCT' | 'NOV' | 'DEC' ;
+// Gregorian, then Hijri (Umm al-Qura), Hebrew and Chinese months
+MONTH   : 'JAN' | 'FEB' | 'MAR' | 'APR' | 'MAY' | 'JUN' | 'JUL' | 'AUG' | 'SEP' | 'OCT' | 'NOV' | 'DEC'
+        | 'MUHARRAM' | 'SAFAR' | 'RABIALAWWAL' | 'RABIALTHANI' | 'JUMADAALULA' | 'JUMADAALAKHIRA' | 'RAJAB' | 'SHABAN'
+        | 'RAMADAN' | 'SHAWWAL' | 'DHULQADAH' | 'DHULHIJJAH'
+        | 'NISAN' | 'IYAR' | 'SIVAN' | 'TAMMUZ' | 'AV' | 'ELUL' | 'TISHRI' | 'HESHVAN' | 'KISLEV' | 'TEVET' | 'SHEVAT'
+        | 'ADAR' | 'ADARII'
+        | 'ZHENGYUE' | 'ERYUE' | 'SANYUE' | 'SIYUE' | 'WUYUE' | 'LIUYUE' | 'QIYUE' | 'BAYUE' | 'JIUYUE' | 'SHIYUE'
+        | 'DONGYUE' | 'LAYUE' ;
 WEEKDAY : 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN' ;
 ROLL    : 'FOLLOWING' | 'PRECEDING' | 'MODFOLLOWING' | 'BOM' | 'EOM' | 'BOY' | 'EOY' ;
-// currency pair such as EURUSD; the keyword 'EASTER' has the same length and wins, as it is defined first
+// currency pair such as EURUSD; six-letter keywords ('EASTER', 'TISHRI', ...) have the same length and win, as they are defined first
 PAIR : [A-Z] [A-Z] [A-Z] [A-Z] [A-Z] [A-Z] ;
 WS   : [ \t\r\n]+ -> skip ;

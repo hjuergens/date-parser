@@ -73,6 +73,8 @@ rule.evaluate(new Context(LocalDate.of(2015, 1, 15), null));  // [2015-01-15, 20
 Holiday rules and rolling (`4 JUL {SAT - 1D, SUN + 1D}`, `T > NEXT 3 MON JAN`, `> MODFOLLOWING`) are more alternatives in the
 loop of `expr`; `annual` is one rule used by `date` and by the anchor of `> NEXT`. The keyword `'EASTER'` wins over the six-letter
 `PAIR`, because ANTLR defines the implicit literal tokens before the lexer rules.
+Lunar month names (`1 SHAWWAL`, `10 TISHRI`, `1 ZHENGYUE`) are more alternatives of `MONTH`, which comes before `PAIR`
+for the same reason; `item` adds `'IF' (w+=WEEKDAY)+` to a list item (`24 DEC IF MON TUE WED THU`).
 
 ## Status and limitations
 

@@ -31,7 +31,14 @@
 # Rolling: "TOM" is T + 1B, "SPOT [PAIR]" is T > SPOT [PAIR]. "> NEXT x" and "> PREV x" move to the first x
 # strictly after or before the date; x is a weekday, BD (business day), IMM or an annual date such as 4 JUL.
 # "> BOM", "> EOM", "> BOY" and "> EOY" move to the first or last day of the month or year.
-# Keywords are reserved: "EASTER" is never a currency pair.
+#
+# Lunar months: "1 SHAWWAL" (Hijri, Umm al-Qura), "10 TISHRI" (Hebrew; ADAR is Adar I in a leap year, ADARII
+# Adar II) and "1 ZHENGYUE" (Chinese, without leap months) are the day of that month in the Gregorian year of the
+# base date; an error if it falls there twice or not at all. Their names are month names: "3 MON SHAWWAL" is an error.
+# Conditional dates: "24 DEC IF MON TUE WED THU" is the date on these weekdays and no date otherwise; IF closes
+# an item of a list.
+# Keywords are reserved: "EASTER" and six-letter month names such as "TISHRI" are never a currency pair.
+# examples/catalog.txt holds more cases, generated from a holiday rule catalog (scripts/catalog_cases.py).
 
 # date notations
 2015-06-09 => 2015-06-09
@@ -217,6 +224,31 @@ market XEVE = 1 JAN {SAT - 1D, SUN + 1D}
 [2025-06-09] TOM TOM => error
 [2025-06-09] T > EOM EOM => error
 TOM => error
+
+# lunar months
+[2025-01-01] 1 SHAWWAL => 2025-03-30
+[2025-01-01] (29 RAMADAN : 1D : 3 SHAWWAL) => 2025-03-29, 2025-03-30, 2025-03-31, 2025-04-01
+[2030-01-01] 1 RAMADAN => error
+[2025-01-01] 10 TISHRI => 2025-10-02
+[2025-01-01] 10 TISHRI - 1D => 2025-10-01
+[2024-01-01] 14 ADAR => 2024-02-23
+[2024-01-01] 14 ADARII => 2024-03-24
+[2025-01-01] 14 ADAR => 2025-03-14
+[2025-01-01] 14 ADARII => error
+[2025-01-01] 1 ZHENGYUE => 2025-01-29
+[2025-01-01] 1 ZHENGYUE - 1D => 2025-01-28
+[2025-06-01] T > NEXT 1 ZHENGYUE => 2026-02-17
+[2025-01-01] 3 MON SHAWWAL => error
+[2025-01-01] T > SPOT TISHRI => error
+1 SHAWWAL => error
+
+# conditional dates
+[2025-01-01] 24 DEC IF MON TUE WED THU => 2025-12-24
+[2027-01-01] 24 DEC IF MON TUE WED THU => none
+[2025-01-01] 3 JUL IF MON TUE WED THU, 24 DEC IF FRI => 2025-07-03
+[2025-01-01] 24 DEC IF WED, 25 DEC => 2025-12-24, 2025-12-25
+[2025-01-01] 24 DEC IF => error
+[2025-01-01] (24 DEC : 1D : 26 DEC) IF WED => error
 
 # invalid dates
 2015-02-29 => error

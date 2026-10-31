@@ -47,12 +47,25 @@ public final class ScheduleEvaluator {
                     .evaluate(context);
         }
         AListSchedule list = (AListSchedule) node;
-        List<LocalDate> dates = new ArrayList<>();
-        dates.add(expr(list.getExpr()).at(context));
-        for (Object more : list.getMoreExpr()) {
-            dates.add(expr(((AMoreExpr) more).getExpr()).at(context));
+        List<ScheduleSemantics.Expr> items = new ArrayList<>();
+        items.add(item(list.getItem()));
+        for (Object more : list.getMoreItem()) {
+            items.add(item(((AMoreItem) more).getItem()));
         }
-        return dates;
+        return ScheduleSemantics.list(items).evaluate(context);
+    }
+
+    /** 24 DEC IF MON TUE WED THU: the date only on these weekdays */
+    static ScheduleSemantics.Expr item(PItem node) {
+        AItem item = (AItem) node;
+        if (item.getCondition() == null) {
+            return expr(item.getExpr());
+        }
+        List<String> weekdays = new ArrayList<>();
+        for (Object weekday : ((ACondition) item.getCondition()).getWeekday()) {
+            weekdays.add(((TWeekday) weekday).getText());
+        }
+        return ScheduleSemantics.onlyOn(expr(item.getExpr()), weekdays);
     }
 
     /** periods are applied from left to right */

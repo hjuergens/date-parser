@@ -5,6 +5,9 @@ description = "The shared schedule example parsed with ANTLR 4's Python target"
 requires-python = ">=3.13"
 dependencies = [
     "antlr4-python3-runtime==4.13.2",
+    "hijridate>=2.6.0",
+    "lunardate>=0.3.0",
+    "pyluach>=2.3.0",
 ]
 
 [dependency-groups]

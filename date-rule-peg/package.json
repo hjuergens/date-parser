@@ -20,5 +20,8 @@
     "type": "git",
     "url": "git://github.com/hjuergens/date-parser.git",
     "directory": "date-rule-peg"
+  },
+  "dependencies": {
+    "lunar-javascript": "1.7.7"
   }
 }

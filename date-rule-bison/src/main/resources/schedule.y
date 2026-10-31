@@ -38,11 +38,13 @@
 %token BD "BD"
 %token LAST "LAST"
 %token EASTER "EASTER"
+%token IF "IF"
 %token <String> PAIR "currency pair"
 %token <String> MONTH "month"
 %token <String> WEEKDAY "weekday"
 %token <String> ROLL "roll convention"
-%type <Expr> expr date
+%type <Expr> item expr date
+%type <ArrayList<String>> weekdays
 %type <Annual> annual
 %type <Anchor> anchor
 %type <Shift> shift
@@ -58,8 +60,19 @@ schedule:
 ;
 
 exprs:
-  expr                              { ArrayList<Expr> list = new ArrayList<> (); list.add ($1); $$ = list; }
-| exprs ',' expr                    { $1.add ($3); $$ = $1; }   /* $$ is untyped in Java, $1 is not */
+  item                              { ArrayList<Expr> list = new ArrayList<> (); list.add ($1); $$ = list; }
+| exprs ',' item                    { $1.add ($3); $$ = $1; }   /* $$ is untyped in Java, $1 is not */
+;
+
+/* 24 DEC IF MON TUE WED THU: the date only on these weekdays */
+item:
+  expr                              { $$ = $1; }
+| expr IF weekdays                  { $$ = ScheduleSemantics.onlyOn ($1, $3); }
+;
+
+weekdays:
+  WEEKDAY                           { ArrayList<String> list = new ArrayList<> (); list.add ($1); $$ = list; }
+| weekdays WEEKDAY                  { $1.add ($2); $$ = $1; }
 ;
 
 /* periods are applied from left to right */
@@ -175,13 +188,20 @@ class ScheduleLexer implements ScheduleParser.Lexer {
           return BD;
         if (word.equals ("LAST"))
           return LAST;
-        if (word.matches ("JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC"))
+        if (word.equals ("IF"))
+          return IF;
+        /* Gregorian, then Hijri (Umm al-Qura), Hebrew and Chinese months */
+        if (word.matches ("JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC"
+                          + "|MUHARRAM|SAFAR|RABIALAWWAL|RABIALTHANI|JUMADAALULA|JUMADAALAKHIRA|RAJAB|SHABAN"
+                          + "|RAMADAN|SHAWWAL|DHULQADAH|DHULHIJJAH"
+                          + "|NISAN|IYAR|SIVAN|TAMMUZ|AV|ELUL|TISHRI|HESHVAN|KISLEV|TEVET|SHEVAT|ADAR|ADARII"
+                          + "|ZHENGYUE|ERYUE|SANYUE|SIYUE|WUYUE|LIUYUE|QIYUE|BAYUE|JIUYUE|SHIYUE|DONGYUE|LAYUE"))
           return MONTH;
         if (word.matches ("MON|TUE|WED|THU|FRI|SAT|SUN"))
           return WEEKDAY;
         if (word.matches ("FOLLOWING|PRECEDING|MODFOLLOWING|BOM|EOM|BOY|EOY"))
           return ROLL;
-        if (word.equals ("EASTER"))   /* a keyword before it can be a pair */
+        if (word.equals ("EASTER"))   /* keywords (the months above too) before a word can be a pair */
           return EASTER;
         if (word.length () == 6)
           return PAIR;   /* currency pair such as EURUSD */

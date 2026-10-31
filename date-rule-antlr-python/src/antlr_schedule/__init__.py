@@ -31,8 +31,15 @@ class Rules(DateScheduleVisitor):
         # Python target: the rule "range" becomes range_(), it would shadow the builtin
         if ctx.range_():
             return self.visit(ctx.range_())
-        exprs = [self.visit(expr) for expr in ctx.expr()]
-        return lambda context: [expr(context) for expr in exprs]
+        items = [self.visit(item) for item in ctx.item()]
+        return lambda context: [d for item in items if (d := item(context)) is not None]
+
+    def visitItem(self, ctx):
+        expr = self.visit(ctx.expr())
+        if not ctx.WEEKDAY():
+            return expr
+        keep = semantics.only_on({w.getText() for w in ctx.WEEKDAY()})
+        return lambda context: keep(expr(context))
 
     def visitRange(self, ctx):
         first, step, last = self.visit(ctx.first), self.visit(ctx.step), self.visit(ctx.last)

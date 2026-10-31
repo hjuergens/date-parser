@@ -22,7 +22,15 @@ Tokens
 	prev = 'PREV';
 	bd = 'BD';
 	last = 'LAST';
-	month = 'JAN' | 'FEB' | 'MAR' | 'APR' | 'MAY' | 'JUN' | 'JUL' | 'AUG' | 'SEP' | 'OCT' | 'NOV' | 'DEC';
+	if = 'IF';
+	/* Gregorian, then Hijri (Umm al-Qura), Hebrew and Chinese months; before pair, like easter */
+	month = 'JAN' | 'FEB' | 'MAR' | 'APR' | 'MAY' | 'JUN' | 'JUL' | 'AUG' | 'SEP' | 'OCT' | 'NOV' | 'DEC'
+		| 'MUHARRAM' | 'SAFAR' | 'RABIALAWWAL' | 'RABIALTHANI' | 'JUMADAALULA' | 'JUMADAALAKHIRA' | 'RAJAB' | 'SHABAN'
+		| 'RAMADAN' | 'SHAWWAL' | 'DHULQADAH' | 'DHULHIJJAH'
+		| 'NISAN' | 'IYAR' | 'SIVAN' | 'TAMMUZ' | 'AV' | 'ELUL' | 'TISHRI' | 'HESHVAN' | 'KISLEV' | 'TEVET' | 'SHEVAT'
+		| 'ADAR' | 'ADARII'
+		| 'ZHENGYUE' | 'ERYUE' | 'SANYUE' | 'SIYUE' | 'WUYUE' | 'LIUYUE' | 'QIYUE' | 'BAYUE' | 'JIUYUE' | 'SHIYUE'
+		| 'DONGYUE' | 'LAYUE';
 	weekday = 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN';
 	roll = 'FOLLOWING' | 'PRECEDING' | 'MODFOLLOWING' | 'BOM' | 'EOM' | 'BOY' | 'EOY';
 	easter = 'EASTER';   /* before pair: on a match of the same length the earlier token wins */
@@ -46,9 +54,14 @@ Ignored Tokens
 Productions
 	schedule
 		= {range} l_par [first]:expr [c1]:colon period [c2]:colon [last]:expr r_par
-		| {list} expr more_expr*;
+		| {list} item more_item*;
 
-	more_expr = comma expr;
+	more_item = comma item;
+
+	/* 24 DEC IF MON TUE WED THU: the date only on these weekdays */
+	item = expr condition?;
+
+	condition = if weekday+;
 
 	expr = date shift*;
 

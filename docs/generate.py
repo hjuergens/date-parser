@@ -95,8 +95,8 @@ TOOLS = [
          pitfall="In LALR mode the contextual lexer only tries tokens the parser can accept next, so <code>&gt;SPOTUSDCAD</code> parses; ANTLR's lexer reads <code>SPOTUS</code> as a pair and rejects it."),
 ]
 
-LINES = {"antlr": "80", "combinators": "155", "coco": "116", "javacc": "127", "sablecc": "72 + 116",
-         "cup": "66 + 50", "bison": "170", "peg": "190", "lark": "37 + 79", "antlr-python": "55 + 93"}
+LINES = {"antlr": "96", "combinators": "191", "coco": "129", "javacc": "140", "sablecc": "85 + 127",
+         "cup": "73 + 57", "bison": "186", "peg": "233", "lark": "44 + 84", "antlr-python": "64 + 99"}
 LINE_NOTES = {"sablecc": "grammar + evaluator", "cup": "parser + lexer", "bison": "incl. hand-written scanner",
               "peg": "incl. date arithmetic", "lark": "grammar + transformer", "antlr-python": "grammar + visitor"}
 

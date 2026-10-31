@@ -1,7 +1,11 @@
 package de.juergens.text
 
-import java.time.temporal.{Temporal, TemporalAdjusters, TemporalAmount, TemporalUnit, UnsupportedTemporalTypeException}
+import java.time.chrono.HijrahDate
+import java.time.temporal.{ChronoField, JulianFields, Temporal, TemporalAdjusters, TemporalAmount, TemporalUnit, UnsupportedTemporalTypeException}
 import java.time.{DateTimeException, DayOfWeek, LocalDate, Period}
+
+import com.ibm.icu.util.{Calendar, HebrewCalendar}
+import com.nlf.calendar.Solar
 
 import scala.util.parsing.combinator.RegexParsers
 
@@ -18,12 +22,17 @@ class ScheduleParsers extends RegexParsers {
 
   def number: Parser[Int] = """\d+""".r ^^ (_.toInt)
 
-  def month: Parser[String] = "JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC".r
+  // Gregorian, then Hijri (Umm al-Qura), Hebrew and Chinese months; the regex takes the first alternative, so ADARII before ADAR
+  def month: Parser[String] = ("JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC"
+    + "|MUHARRAM|SAFAR|RABIALAWWAL|RABIALTHANI|JUMADAALULA|JUMADAALAKHIRA|RAJAB|SHABAN|RAMADAN|SHAWWAL|DHULQADAH|DHULHIJJAH"
+    + "|NISAN|IYAR|SIVAN|TAMMUZ|AV|ELUL|TISHRI|HESHVAN|KISLEV|TEVET|SHEVAT|ADARII|ADAR"
+    + "|ZHENGYUE|ERYUE|SANYUE|SIYUE|WUYUE|LIUYUE|QIYUE|BAYUE|JIUYUE|SHIYUE|DONGYUE|LAYUE").r
 
   def weekday: Parser[String] = "MON|TUE|WED|THU|FRI|SAT|SUN".r
 
   /** dates that recur every year, such as 3 MON JAN */
-  def annual: Parser[Annual] = (number ~ month ^^ { case d ~ m => (y: Int) => LocalDate.of(y, months(m), d) }
+  def annual: Parser[Annual] = (number ~ month ^^ { case d ~ m => (y: Int) =>
+        if (months.contains(m)) LocalDate.of(y, months(m), d) else lunar(d, m, y) }
     | number ~ weekday ~ month ^^ { case n ~ w ~ m => nthWeekday(n, w, m) }
     | "LAST" ~> weekday ~ month ^^ { case w ~ m => (y: Int) =>
         LocalDate.of(y, months(m), 1).`with`(TemporalAdjusters.lastInMonth(weekdays(w))) }
@@ -48,8 +57,8 @@ class ScheduleParsers extends RegexParsers {
     case n ~ "B" => BusinessDays(n)
   }
 
-  // without a lexer nothing reserves the keyword EASTER, so the pattern excludes it
-  def pair: Parser[String] = "(?!EASTER)[A-Z]{6}".r
+  // without a lexer nothing reserves the six-letter keywords, so the pattern excludes them
+  def pair: Parser[String] = "(?!EASTER|SHABAN|TAMMUZ|TISHRI|KISLEV|SHEVAT|ADARII|SANYUE|LIUYUE|JIUYUE|SHIYUE)[A-Z]{6}".r
 
   def anchor: Parser[Anchor] = (weekday ^^ (w => (d: LocalDate, dir: Int, _: Market) =>
         d.`with`(if (dir > 0) TemporalAdjusters.next(weekdays(w)) else TemporalAdjusters.previous(weekdays(w))))
@@ -97,8 +106,14 @@ class ScheduleParsers extends RegexParsers {
       }
   }
 
+  /** 24 DEC IF MON TUE WED THU: the date only on these weekdays */
+  def item: Parser[Context => Option[LocalDate]] = expr ~ opt("IF" ~> rep1(weekday)) ^^ {
+    case e ~ None => (c: Context) => Some(e(c))
+    case e ~ Some(days) => (c: Context) => Some(e(c)).filter(d => days.map(weekdays).contains(d.getDayOfWeek))
+  }
+
   def schedule: Parser[Context => List[LocalDate]] =
-    range | rep1sep(expr, ",") ^^ (exprs => (c: Context) => exprs.map(_(c)))
+    range | rep1sep(item, ",") ^^ (items => (c: Context) => items.flatMap(_(c)))
 }
 
 object ScheduleParsers {
@@ -181,6 +196,37 @@ object ScheduleParsers {
 
   val weekdays: Map[String, DayOfWeek] =
     "MON TUE WED THU FRI SAT SUN".split(" ").zipWithIndex.map { case (w, i) => w -> DayOfWeek.of(i + 1) }.toMap
+
+  val hijri: Seq[String] = ("MUHARRAM SAFAR RABIALAWWAL RABIALTHANI JUMADAALULA JUMADAALAKHIRA RAJAB SHABAN RAMADAN SHAWWAL"
+    + " DHULQADAH DHULHIJJAH").split(" ").toSeq
+  val hebrew: Seq[String] = "NISAN IYAR SIVAN TAMMUZ AV ELUL TISHRI HESHVAN KISLEV TEVET SHEVAT ADAR ADARII".split(" ").toSeq
+  val chinese: Seq[String] = "ZHENGYUE ERYUE SANYUE SIYUE WUYUE LIUYUE QIYUE BAYUE JIUYUE SHIYUE DONGYUE LAYUE".split(" ").toSeq
+
+  // ICU's Hebrew months start with Tishri; ADAR_1 (5) only exists in a leap year, where ADAR (6) is Adar II
+  private val icuHebrew = "TISHRI HESHVAN KISLEV TEVET SHEVAT ADAR ADAR NISAN IYAR SIVAN TAMMUZ AV ELUL".split(" ")
+
+  /** the day of a Hijri (Umm al-Qura), Hebrew or Chinese month in the Gregorian year; an error if it occurs twice or not at all */
+  def lunar(day: Int, month: String, year: Int): LocalDate = {
+    val calendar: Calendar = new HebrewCalendar()
+    def monthDay(date: LocalDate): (String, Int) =
+      if (hijri.contains(month)) {
+        val h = HijrahDate.from(date)
+        (hijri(h.get(ChronoField.MONTH_OF_YEAR) - 1), h.get(ChronoField.DAY_OF_MONTH))
+      } else if (chinese.contains(month)) {
+        // 6tail's lunar: ICU's astronomical Chinese calendar misses some new moons close to midnight
+        val lunar = Solar.fromYmd(date.getYear, date.getMonthValue, date.getDayOfMonth).getLunar
+        (if (lunar.getMonth > 0) chinese(lunar.getMonth - 1) else "", lunar.getDay)   // a leap month is negative
+      } else {
+        calendar.clear()
+        calendar.set(Calendar.JULIAN_DAY, date.getLong(JulianFields.JULIAN_DAY).toInt)
+        val m = calendar.get(Calendar.MONTH)
+        (if (m == 6 && (7 * calendar.get(Calendar.EXTENDED_YEAR) + 1) % 19 < 7) "ADARII" else icuHebrew(m), calendar.get(Calendar.DAY_OF_MONTH))
+      }
+    val hits = Iterator.iterate(LocalDate.of(year, 1, 1))(_.plusDays(1)).takeWhile(_.getYear == year)
+      .filter(monthDay(_) == (month, day)).toList
+    if (hits.size != 1) throw new DateTimeException(s"$day $month occurs ${hits.size} times in $year")
+    hits.head
+  }
 
   /** the n-th weekday of the month; there is no fifth Monday in every month */
   def nthWeekday(n: Int, weekday: String, month: String): Annual = year => {

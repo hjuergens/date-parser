@@ -20,7 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
 /**
- * Runs the shared cases of {@code examples/schedule.txt} (project root).
+ * Runs the shared cases of {@code examples/schedule.txt} and {@code examples/catalog.txt} (project root).
  */
 @RunWith(Parameterized.class)
 public class ScheduleTest {
@@ -31,7 +31,8 @@ public class ScheduleTest {
     public static List<Object[]> examples() throws Exception {
         List<Object[]> cases = new ArrayList<>();
         Map<String, ScheduleSemantics.Market> markets = new HashMap<>();
-        for (String line : Files.readAllLines(Paths.get("..", "examples", "schedule.txt"), StandardCharsets.UTF_8)) {
+        for (String file : new String[]{"schedule.txt", "catalog.txt"})
+        for (String line : Files.readAllLines(Paths.get("..", "examples", file), StandardCharsets.UTF_8)) {
             if (line.trim().isEmpty() || line.trim().startsWith("#")) continue;
             if (line.startsWith("market ")) {   // market NAME = schedule of the holidays
                 String[] market = line.substring("market ".length()).split("=", 2);

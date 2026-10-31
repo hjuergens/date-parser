@@ -1,4 +1,4 @@
-"""Runs the shared cases of examples/schedule.txt with both Lark parsers."""
+"""Runs the shared cases of examples/schedule.txt and examples/catalog.txt with both Lark parsers."""
 import re
 from datetime import date
 from pathlib import Path
@@ -9,13 +9,13 @@ from lark.exceptions import UnexpectedInput
 from lark_schedule import parse
 from lark_schedule.semantics import WEEKENDS, Context, RuleMarket
 
-CASES = Path(__file__).resolve().parents[2] / "examples" / "schedule.txt"
+EXAMPLES = Path(__file__).resolve().parents[2] / "examples"
 PREFIX = re.compile(r"\[(\S+)(?: (\S+))?\] (.*)")  # [base] or [base market]
 
 
-def cases():
+def cases(file):
     markets = {}
-    for line in CASES.read_text(encoding="utf-8").splitlines():
+    for line in (EXAMPLES / file).read_text(encoding="utf-8").splitlines():
         if not line.strip() or line.startswith("#"):
             continue
         if line.startswith("market "):  # market NAME = schedule of the holidays
@@ -31,7 +31,7 @@ def cases():
 
 
 @pytest.mark.parametrize("parser", ["lalr", "earley"])
-@pytest.mark.parametrize("text, context, expected", list(cases()))
+@pytest.mark.parametrize("text, context, expected", [*cases("schedule.txt"), *cases("catalog.txt")])
 def test_schedule(parser, text, context, expected):
     if expected == "error":
         with pytest.raises((UnexpectedInput, ValueError)):

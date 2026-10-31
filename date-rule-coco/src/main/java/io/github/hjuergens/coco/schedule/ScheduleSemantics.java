@@ -3,6 +3,9 @@ package io.github.hjuergens.coco.schedule;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.Period;
+import java.time.chrono.HijrahDate;
+import java.time.temporal.ChronoField;
+import java.time.temporal.JulianFields;
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAdjusters;
 import java.time.temporal.TemporalAmount;
@@ -13,7 +16,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+
+import com.ibm.icu.util.Calendar;
+import com.ibm.icu.util.HebrewCalendar;
+import com.nlf.calendar.Lunar;
+import com.nlf.calendar.Solar;
 
 /**
  * Semantics of the shared "schedule" example. A parsed schedule is a {@link Rule}: a function of the base date
@@ -119,9 +128,59 @@ public final class ScheduleSemantics {
         return context -> annual.in(BASE.at(context).getYear());
     }
 
-    /** day of month, e.g. 4 JUL */
+    /** day of month, e.g. 4 JUL, or of a lunar month, e.g. 1 SHAWWAL */
     public static Annual monthDay(int day, String month) {
+        if (!MONTHS.contains(month)) {
+            return year -> lunar(day, month, year);
+        }
         return year -> LocalDate.of(year, month(month), day);
+    }
+
+    /** the day of a Hijri (Umm al-Qura), Hebrew or Chinese month in the Gregorian year; an error if it occurs twice or not at all */
+    private static LocalDate lunar(int day, String month, int year) {
+        Calendar hebrew = new HebrewCalendar();
+        List<LocalDate> hits = new ArrayList<>();
+        for (LocalDate date = LocalDate.of(year, 1, 1); date.getYear() == year; date = date.plusDays(1)) {
+            if (lunarMonth(date, month, hebrew).equals(month) && dayOfMonth(date, month, hebrew) == day) {
+                hits.add(date);
+            }
+        }
+        if (hits.size() != 1) {
+            throw new java.time.DateTimeException(day + " " + month + " occurs " + hits.size() + " times in " + year);
+        }
+        return hits.get(0);
+    }
+
+    // ICU's Hebrew months start with Tishri; ADAR_1 (5) only exists in a leap year, where ADAR (6) is Adar II
+    private static final List<String> ICU_HEBREW = List.of("TISHRI", "HESHVAN", "KISLEV", "TEVET", "SHEVAT", "ADAR", "ADAR",
+            "NISAN", "IYAR", "SIVAN", "TAMMUZ", "AV", "ELUL");
+
+    /** the name of the month of the date in the calendar of the given month name; "" for a Chinese leap month */
+    private static String lunarMonth(LocalDate date, String like, Calendar hebrew) {
+        if (HIJRI.contains(like)) {
+            return HIJRI.get(HijrahDate.from(date).get(ChronoField.MONTH_OF_YEAR) - 1);
+        }
+        if (CHINESE.contains(like)) {
+            int month = chinese(date).getMonth();   // negative for a leap month
+            return month > 0 ? CHINESE.get(month - 1) : "";
+        }
+        hebrew.clear();
+        hebrew.set(Calendar.JULIAN_DAY, (int) date.getLong(JulianFields.JULIAN_DAY));
+        int month = hebrew.get(Calendar.MONTH);
+        boolean leap = (7 * hebrew.get(Calendar.EXTENDED_YEAR) + 1) % 19 < 7;
+        return month == 6 && leap ? "ADARII" : ICU_HEBREW.get(month);
+    }
+
+    private static int dayOfMonth(LocalDate date, String like, Calendar hebrew) {
+        if (HIJRI.contains(like)) {
+            return HijrahDate.from(date).get(ChronoField.DAY_OF_MONTH);
+        }
+        return CHINESE.contains(like) ? chinese(date).getDay() : hebrew.get(Calendar.DAY_OF_MONTH);
+    }
+
+    /** the Chinese date from 6tail's lunar: ICU's astronomical Chinese calendar misses some new moons close to midnight */
+    private static Lunar chinese(LocalDate date) {
+        return Solar.fromYmd(date.getYear(), date.getMonthValue(), date.getDayOfMonth()).getLunar();
     }
 
     /** the n-th weekday of the month, e.g. 3 MON JAN; there is no fifth Monday in every month */
@@ -228,6 +287,12 @@ public final class ScheduleSemantics {
     private static final List<String> MONTHS =
             List.of("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC");
     private static final List<String> WEEKDAYS = List.of("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN");
+    private static final List<String> HIJRI = List.of("MUHARRAM", "SAFAR", "RABIALAWWAL", "RABIALTHANI", "JUMADAALULA",
+            "JUMADAALAKHIRA", "RAJAB", "SHABAN", "RAMADAN", "SHAWWAL", "DHULQADAH", "DHULHIJJAH");
+    private static final List<String> HEBREW = List.of("NISAN", "IYAR", "SIVAN", "TAMMUZ", "AV", "ELUL", "TISHRI", "HESHVAN",
+            "KISLEV", "TEVET", "SHEVAT", "ADAR", "ADARII");
+    private static final List<String> CHINESE = List.of("ZHENGYUE", "ERYUE", "SANYUE", "SIYUE", "WUYUE", "LIUYUE", "QIYUE",
+            "BAYUE", "JIUYUE", "SHIYUE", "DONGYUE", "LAYUE");
 
     private static int month(String name) {
         return MONTHS.indexOf(name) + 1;
@@ -237,9 +302,20 @@ public final class ScheduleSemantics {
         return DayOfWeek.of(WEEKDAYS.indexOf(name) + 1);
     }
 
+    /** a list of dates; an item that yields no date (see onlyOn) is left out */
     public static Rule list(List<Expr> exprs) {
         List<Expr> copy = new ArrayList<>(exprs);
-        return context -> copy.stream().map(expr -> expr.at(context)).toList();
+        return context -> copy.stream().map(expr -> expr.at(context)).filter(Objects::nonNull).toList();
+    }
+
+    /** 24 DEC IF MON TUE WED THU: the date on these weekdays, otherwise none (null) */
+    public static Expr onlyOn(Expr expr, List<String> weekdays) {
+        Set<DayOfWeek> days = new HashSet<>();
+        weekdays.forEach(weekday -> days.add(dayOfWeek(weekday)));
+        return context -> {
+            LocalDate date = expr.at(context);
+            return days.contains(date.getDayOfWeek()) ? date : null;
+        };
     }
 
     /** first + k * step for k = 0, 1, ... while not after last */

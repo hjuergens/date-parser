@@ -41,10 +41,17 @@ SKIP : { " " | "\t" | "\r" | "\n" }
 TOKEN : {
   < NUM : (["0"-"9"])+ >
 | < UNIT : ["D", "W", "M", "Q", "Y", "B"] >
-| < MONTH : "JAN" | "FEB" | "MAR" | "APR" | "MAY" | "JUN" | "JUL" | "AUG" | "SEP" | "OCT" | "NOV" | "DEC" >
+  // Gregorian, then Hijri (Umm al-Qura), Hebrew and Chinese months
+| < MONTH : "JAN" | "FEB" | "MAR" | "APR" | "MAY" | "JUN" | "JUL" | "AUG" | "SEP" | "OCT" | "NOV" | "DEC"
+          | "MUHARRAM" | "SAFAR" | "RABIALAWWAL" | "RABIALTHANI" | "JUMADAALULA" | "JUMADAALAKHIRA" | "RAJAB" | "SHABAN"
+          | "RAMADAN" | "SHAWWAL" | "DHULQADAH" | "DHULHIJJAH"
+          | "NISAN" | "IYAR" | "SIVAN" | "TAMMUZ" | "AV" | "ELUL" | "TISHRI" | "HESHVAN" | "KISLEV" | "TEVET" | "SHEVAT"
+          | "ADAR" | "ADARII"
+          | "ZHENGYUE" | "ERYUE" | "SANYUE" | "SIYUE" | "WUYUE" | "LIUYUE" | "QIYUE" | "BAYUE" | "JIUYUE" | "SHIYUE"
+          | "DONGYUE" | "LAYUE" >
 | < WEEKDAY : "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN" >
 | < ROLL : "FOLLOWING" | "PRECEDING" | "MODFOLLOWING" | "BOM" | "EOM" | "BOY" | "EOY" >
-  // declared before PAIR: on a match of the same length the earlier token wins
+  // MONTH and EASTER are declared before PAIR: on a match of the same length the earlier token wins
 | < EASTER : "EASTER" >
 | < PAIR : (["A"-"Z"]){6} >   // currency pair such as EURUSD
 }
@@ -60,9 +67,18 @@ Rule Input() :
 Rule Exprs() :
 { List<ScheduleSemantics.Expr> exprs = new ArrayList<ScheduleSemantics.Expr>(); ScheduleSemantics.Expr d; }
 {
-  d = Expr() { exprs.add(d); }
-  ( "," d = Expr() { exprs.add(d); } )*
+  d = Item() { exprs.add(d); }
+  ( "," d = Item() { exprs.add(d); } )*
   { return ScheduleSemantics.list(exprs); }
+}
+
+/** 24 DEC IF MON TUE WED THU: the date only on these weekdays */
+ScheduleSemantics.Expr Item() :
+{ ScheduleSemantics.Expr d; Token w; List<String> weekdays = new ArrayList<String>(); }
+{
+  d = Expr()
+  ( "IF" ( w = <WEEKDAY> { weekdays.add(w.image); } )+ { d = ScheduleSemantics.onlyOn(d, weekdays); } )?
+  { return d; }
 }
 
 Rule Range() :

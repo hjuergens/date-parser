@@ -34,7 +34,8 @@ mise run test:lark        # or, inside this directory:
 uv run pytest             # uv installs Lark and pytest into .venv (versions in uv.lock)
 ```
 
-There are 376 tests (pytest): the 188 cases of [examples/schedule.txt](../examples/schedule.txt), each with `lalr` and `earley`.
+There are 2234 tests (pytest): the 209 cases of [examples/schedule.txt](../examples/schedule.txt) and the 908 of
+[examples/catalog.txt](../examples/catalog.txt), each with `lalr` and `earley`.
 
 ## Shared example
 
@@ -50,6 +51,8 @@ There are 376 tests (pytest): the 188 cases of [examples/schedule.txt](../exampl
   `01/02/2015` (US or European order) would.
 - Holiday rules and rolling: `MONTH`, `WEEKDAY` and `ROLL` are terminals. The contextual lexer would read `EASTER` after `SPOT` as
   a currency pair, because only a pair can follow there, so the pair pattern is `/(?!EASTER)[A-Z]{6}/`.
+- Lunar months and conditional dates: Lunar month names (`1 SHAWWAL`, `10 TISHRI`, `1 ZHENGYUE`) are more alternatives of `MONTH`, and the pair pattern excludes the six-letter
+  ones (`TISHRI`, …) as well. `item: expr ("IF" WEEKDAY+)?` keeps a date only on these weekdays.
 
 ## Status
 

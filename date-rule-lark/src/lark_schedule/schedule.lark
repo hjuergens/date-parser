@@ -4,7 +4,10 @@
 
 ?start: range | exprs
 
-exprs: expr ("," expr)*
+exprs: item ("," item)*
+
+// 24 DEC IF MON TUE WED THU: the date only on these weekdays
+item: expr ("IF" WEEKDAY+)?
 
 range: "(" expr ":" period ":" expr ")"
 
@@ -46,10 +49,17 @@ period: NUM UNIT
 
 NUM: /[0-9]+/
 UNIT: /[DWMQYB]/
+// Gregorian, then Hijri (Umm al-Qura), Hebrew and Chinese months; ADARII before ADAR
 MONTH: "JAN" | "FEB" | "MAR" | "APR" | "MAY" | "JUN" | "JUL" | "AUG" | "SEP" | "OCT" | "NOV" | "DEC"
+     | "MUHARRAM" | "SAFAR" | "RABIALAWWAL" | "RABIALTHANI" | "JUMADAALULA" | "JUMADAALAKHIRA" | "RAJAB" | "SHABAN"
+     | "RAMADAN" | "SHAWWAL" | "DHULQADAH" | "DHULHIJJAH"
+     | "NISAN" | "IYAR" | "SIVAN" | "TAMMUZ" | "AV" | "ELUL" | "TISHRI" | "HESHVAN" | "KISLEV" | "TEVET" | "SHEVAT"
+     | "ADARII" | "ADAR"
+     | "ZHENGYUE" | "ERYUE" | "SANYUE" | "SIYUE" | "WUYUE" | "LIUYUE" | "QIYUE" | "BAYUE" | "JIUYUE" | "SHIYUE"
+     | "DONGYUE" | "LAYUE"
 WEEKDAY: "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN"
 ROLL: "FOLLOWING" | "PRECEDING" | "MODFOLLOWING" | "BOM" | "EOM" | "BOY" | "EOY"
-// currency pair such as EURUSD; the contextual lexer would also take the keyword EASTER after SPOT
-PAIR: /(?!EASTER)[A-Z]{6}/
+// currency pair such as EURUSD; the contextual lexer would also take a six-letter keyword after SPOT
+PAIR: /(?!EASTER|SHABAN|TAMMUZ|TISHRI|KISLEV|SHEVAT|ADARII|SANYUE|LIUYUE|JIUYUE|SHIYUE)[A-Z]{6}/
 
 %ignore /[ \t\r\n]+/

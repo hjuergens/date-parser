@@ -245,6 +245,15 @@ ROLL     = "FOLLOWING" | "PRECEDING" | "MODFOLLOWING"
          | "BOM" | "EOM" | "BOY" | "EOY" .</code></pre>
     </div>
     <p class="note">
+      In grammatical terms (after <a href="https://en.wikipedia.org/wiki/Grammatical_category">grammatical category</a>):
+      the upper-case symbols are <em>lexical</em> categories, word classes that the lexer recognises; the lower-case rules are
+      <em>phrasal</em> categories that the parser builds from words. The numbers carry the content, and the grammar adds a few things
+      with a small, closed set of forms: <em>number</em> (one date, or several from a list or range), <em>tense</em>
+      (<code>T</code> is the base date, the anchor date that tense relates to; <code>TOM</code> and <code>SPOT</code> are relative to it, <code>&gt; NEXT</code> and
+      <code>&gt; PREV</code> look forward and back) and <em>definiteness</em> (<code>4 JUL</code> is the one in the year of <code>T</code>,
+      <code>&gt; NEXT 4 JUL</code> the next one).
+    </p>
+    <p class="note">
       Every decision is LL(1): after the first number, the separator selects the notation; after a complete date,
       <code>+</code> or <code>-</code> starts a period. Periods follow <code>java.time</code>: months first, with the day clamped
       to the end of the month (<code>2016-01-31 + 1M</code> is <code>2016-02-29</code>), then days.

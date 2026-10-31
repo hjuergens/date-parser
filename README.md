@@ -71,6 +71,19 @@ ROLL     = "FOLLOWING" | "PRECEDING" | "MODFOLLOWING" | "BOM" | "EOM" | "BOY" | 
 MONTH    = "JAN" | … | "DEC" .   WEEKDAY = "MON" | … | "SUN" .
 ```
 
+**In grammatical terms** (after [grammatical category](https://en.wikipedia.org/wiki/Grammatical_category)): the upper-case symbols
+are *lexical* categories, the word classes `NUM`, `MONTH`, `WEEKDAY`, `ROLL`, `PAIR` and the keywords, which the lexer recognises;
+the lower-case rules are *phrasal* categories (`date`, `period`, `expr`, `schedule`), which the parser builds from words.
+The numbers carry the content, and the grammar adds a few things with a small, closed set of forms, as a natural language does:
+
+- *number*: an `expr` is one date; a list or a range is several.
+- *tense*: `T` is the base date, the anchor date that tense relates to; `TOM` and `SPOT` are relative to it, like
+  "tomorrow"; `> NEXT` and `> PREV` look forward and back from a date.
+- *definiteness*: `4 JUL` is definite through its context, the 4 July in the year of `T`, as "the dog" is the one already
+  mentioned; `T > NEXT 4 JUL` picks the next one instead.
+
+As with an inflection, a category the language has must be marked: a period always carries its unit (`3M`, never `3`).
+
 Periods follow `java.time`: months first (with the day clamped to the end of the month, so `2016-01-31 + 1M` is `2016-02-29`), then days.
 `B` counts business days, Monday to Friday; `- 1B` counts backwards and `+ 0B` leaves even a Saturday as it is.
 A range yields `start + k * step` while the date isn't after the end.
@@ -120,7 +133,8 @@ market name them in a prefix, `[2015-06-09 XTEST] T + 2B => 2015-06-12`, and tes
 implementation under test and evaluated per year, so `market XNYS = 1 JAN {SUN + 1D}, 3 MON JAN, …` declares the NYSE calendar from
 holiday rules (`ScheduleSemantics.withHolidayRules`).
 
-Keywords are reserved: `EASTER` has six capital letters like a currency pair, and `T > SPOT EASTER` is an error everywhere.
+Every word belongs to exactly one word class: `EASTER` has six capital letters like a currency pair, but it is a keyword,
+so `T > SPOT EASTER` is an error everywhere.
 The tools with a lexer get this from their rule order; Peggy, the Scala combinators and Lark's contextual lexer exclude the keyword in the pair pattern.
 
 | Module | Grammar | Lines¹ | How the rule is built | How errors surface | Notable |

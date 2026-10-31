@@ -102,6 +102,12 @@
             <version>${specs2.version}</version>
             <scope>test</scope>
         </dependency>
+        <!-- the specs2 *Spec classes (failsafe) run with JUnitRunner, a JUnit 4 runner, on the JUnit Platform -->
+        <dependency>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -221,14 +227,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
-                <dependencies>
-                    <!-- the specs2 *Spec classes run with JUnitRunner, not with TestNG -->
-                    <dependency>
-                        <groupId>org.apache.maven.surefire</groupId>
-                        <artifactId>surefire-junit4</artifactId>
-                        <version>${maven-surefire-plugin.version}</version>
-                    </dependency>
-                </dependencies>
                 <configuration>
                     <parallel>methods</parallel>
                     <threadCount>10</threadCount>

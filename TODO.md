@@ -13,5 +13,3 @@
 - **Playground on the Pages site**: an editor in the browser that parses a schedule as you type, with the Peggy parser
   (it runs in the browser and reports the error position), marks errors in the line and shows the dates for a chosen
   base date and market. It replaces the old Ace editor experiment (deleted in 2022).
-- **Clojure with [instaparse](https://github.com/Engelberg/instaparse)**: a GLL parser on the JVM that accepts
-  ambiguous and left-recursive grammars written as EBNF strings.

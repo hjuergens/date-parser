@@ -93,12 +93,20 @@ TOOLS = [
          values="<code>Transformer</code>, one method per rule alias",
          errors="<code>UnexpectedInput</code>; <code>VisitError</code> wraps exceptions of the transformer",
          pitfall="In LALR mode the contextual lexer only tries tokens the parser can accept next, so <code>&gt;SPOTUSDCAD</code> parses; ANTLR's lexer reads <code>SPOTUS</code> as a pair and rejects it."),
+    dict(id="instaparse", name="instaparse", kind="GLL · any context-free grammar", lang="Clojure",
+         file="date-rule-instaparse/src/main/clojure/io/github/hjuergens/instaparse/schedule.ebnf",
+         snippet=lambda f: between(f, r"^\(\* shifts are applied", r"^<anchor>"),
+         values="<code>insta/transform</code>, one function per tag, calling the shared Java helper",
+         errors="<code>insta/failure?</code> on the result, turned into an exception",
+         pitfall="Scannerless with <code>:auto-whitespace</code>: whitespace may come between any two tokens, so a name like <code>@FOMC</code> must be a single regex to keep <code>@ FOMC</code> out."),
 ]
 
 LINES = {"antlr": "99", "combinators": "215", "coco": "132", "javacc": "143", "sablecc": "88 + 131",
-         "cup": "75 + 59", "bison": "198", "peg": "275", "lark": "47 + 89", "antlr-python": "67 + 104"}
+         "cup": "75 + 59", "bison": "198", "peg": "275", "lark": "47 + 89", "antlr-python": "67 + 104",
+         "instaparse": "44 + 48"}
 LINE_NOTES = {"sablecc": "grammar + evaluator", "cup": "parser + lexer", "bison": "incl. hand-written scanner",
-              "peg": "incl. date arithmetic", "lark": "grammar + transformer", "antlr-python": "grammar + visitor"}
+              "peg": "incl. date arithmetic", "lark": "grammar + transformer", "antlr-python": "grammar + visitor",
+              "instaparse": "grammar + transform"}
 
 # shared test cases, grouped by the comment headers of schedule.txt
 groups = []   # (title, market declarations, cases)

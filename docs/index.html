@@ -3,24 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ten Parsers, One Language</title>
-<meta name="description" content="The same small date language implemented with ANTLR (Java and Python), Scala parser combinators, Coco/R, JavaCC, SableCC, JFlex + CUP, GNU Bison, Peggy and Lark, tested against one shared set of cases.">
+<title>Eleven Parsers, One Language</title>
+<meta name="description" content="The same small date language implemented with ANTLR (Java and Python), Scala parser combinators, Coco/R, JavaCC, SableCC, JFlex + CUP, GNU Bison, Peggy, Lark and instaparse (Clojure), tested against one shared set of cases.">
 <link rel="canonical" href="https://hjuergens.github.io/date-parser/">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Ten Parsers, One Language">
-<meta property="og:description" content="ANTLR, JavaCC, Bison, JFlex + CUP, SableCC, Coco/R, Peggy, Lark and Scala parser combinators implement the same date language, side by side.">
+<meta property="og:title" content="Eleven Parsers, One Language">
+<meta property="og:description" content="ANTLR, JavaCC, Bison, JFlex + CUP, SableCC, Coco/R, Peggy, Lark, instaparse and Scala parser combinators implement the same date language, side by side.">
 <meta property="og:url" content="https://hjuergens.github.io/date-parser/">
 <meta name="twitter:card" content="summary">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "SoftwareSourceCode",
-  "name": "date-parser: ten parsers, one language",
-  "description": "One date-schedule language implemented with ANTLR (Java and Python), JavaCC, GNU Bison, JFlex + CUP, SableCC, Coco/R, Peggy, Lark and Scala parser combinators, tested against one shared set of cases.",
+  "name": "date-parser: eleven parsers, one language",
+  "description": "One date-schedule language implemented with ANTLR (Java and Python), JavaCC, GNU Bison, JFlex + CUP, SableCC, Coco/R, Peggy, Lark, instaparse and Scala parser combinators, tested against one shared set of cases.",
   "url": "https://hjuergens.github.io/date-parser/",
   "codeRepository": "https://github.com/hjuergens/date-parser",
-  "programmingLanguage": ["Java", "Scala", "JavaScript", "Python"],
-  "keywords": "parser generator, ANTLR, JavaCC, Bison, JFlex, CUP, SableCC, Coco/R, PEG, Peggy, Lark, Earley, parser combinators, grammar, LL, LALR",
+  "programmingLanguage": ["Java", "Scala", "JavaScript", "Python", "Clojure"],
+  "keywords": "parser generator, ANTLR, JavaCC, Bison, JFlex, CUP, SableCC, Coco/R, PEG, Peggy, Lark, Earley, instaparse, GLL, Clojure, parser combinators, grammar, LL, LALR",
   "license": "https://www.apache.org/licenses/LICENSE-2.0"
 }
 </script>
@@ -193,13 +193,13 @@
 <main>
   <header>
     <p class="eyebrow">date-parser · parser technology comparison</p>
-    <h1>Ten parsers, one date language</h1>
+    <h1>Eleven parsers, one date language</h1>
     <p class="lead">
-      The same small language for dates, periods and ranges, implemented with ten parser generators and
-      parser libraries, from LL(1) to LALR(1), Earley and PEG. Every implementation passes the same 228 test cases.
+      The same small language for dates, periods and ranges, implemented with eleven parser generators and
+      parser libraries, from LL(1) to LALR(1), Earley, GLL and PEG. Every implementation passes the same 228 test cases.
     </p>
     <ul class="stats">
-      <li><strong>10</strong><span>implementations, 4 languages</span></li>
+      <li><strong>11</strong><span>implementations, 5 languages</span></li>
       <li><strong>228</strong><span>shared test cases</span></li>
       <li><strong>0</strong><span>grammar conflicts</span></li>
       <li><strong>1</strong><span>specification file</span></li>
@@ -303,6 +303,7 @@ EVENT    = "@" UPPER { UPPER | DIGIT | "_" } .  <span class="c">(* @FOMC *)</spa
       <button role="tab" id="tab-bison" aria-controls="panel-bison" aria-selected="false" tabindex="-1">GNU Bison</button>
       <button role="tab" id="tab-peg" aria-controls="panel-peg" aria-selected="false" tabindex="-1">Peggy</button>
       <button role="tab" id="tab-lark" aria-controls="panel-lark" aria-selected="false" tabindex="-1">Lark</button>
+      <button role="tab" id="tab-instaparse" aria-controls="panel-instaparse" aria-selected="false" tabindex="-1">instaparse</button>
       </div>
     <div role="tabpanel" id="panel-antlr" aria-labelledby="tab-antlr">
       <div class="panel-head">
@@ -584,6 +585,25 @@ annual: NUM MONTH           -&gt; month_day
 period: NUM UNIT</code></pre>
       <p class="pitfall"><strong>Pitfall.</strong> In LALR mode the contextual lexer only tries tokens the parser can accept next, so <code>&gt;SPOTUSDCAD</code> parses; ANTLR's lexer reads <code>SPOTUS</code> as a pair and rejects it.</p>
     </div>
+    <div role="tabpanel" id="panel-instaparse" aria-labelledby="tab-instaparse" hidden>
+      <div class="panel-head">
+        <span class="kind">GLL · any context-free grammar</span><span class="lang">Clojure</span>
+        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-instaparse/src/main/clojure/io/github/hjuergens/instaparse/schedule.ebnf">schedule.ebnf ↗</a>
+      </div>
+      <pre><code><span class="c">(* shifts are applied from left to right *)</span>
+expr     = date shift*
+&lt;shift&gt;  = plus | minus | imm | spot | roll | next | prev | observance
+plus     = &lt;&#x27;+&#x27;&gt; period
+minus    = &lt;&#x27;-&#x27;&gt; period
+imm      = &lt;&#x27;&gt;&#x27;&gt; &lt;&#x27;IMM&#x27;&gt;
+spot     = &lt;&#x27;&gt;&#x27;&gt; &lt;&#x27;SPOT&#x27;&gt; PAIR?
+roll     = &lt;&#x27;&gt;&#x27;&gt; ROLL
+next     = &lt;&#x27;&gt;&#x27;&gt; &lt;&#x27;NEXT&#x27;&gt; anchor
+prev     = &lt;&#x27;&gt;&#x27;&gt; &lt;&#x27;PREV&#x27;&gt; anchor
+observance = &lt;&#x27;{&#x27;&gt; observe (&lt;&#x27;,&#x27;&gt; observe)* &lt;&#x27;}&#x27;&gt;
+observe  = WEEKDAY SIGN period</code></pre>
+      <p class="pitfall"><strong>Pitfall.</strong> Scannerless with <code>:auto-whitespace</code>: whitespace may come between any two tokens, so a name like <code>@FOMC</code> must be a single regex to keep <code>@ FOMC</code> out.</p>
+    </div>
     </div>
   </section>
 
@@ -666,6 +686,13 @@ period: NUM UNIT</code></pre>
           <td><code>Transformer</code>, one method per rule alias</td>
           <td><code>UnexpectedInput</code>; <code>VisitError</code> wraps exceptions of the transformer</td>
         </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-instaparse/src/main/clojure/io/github/hjuergens/instaparse/schedule.ebnf">instaparse</a></th>
+          <td>GLL · any context-free grammar</td>
+          <td class="num">44 + 48<small>grammar + transform</small></td>
+          <td><code>insta/transform</code>, one function per tag, calling the shared Java helper</td>
+          <td><code>insta/failure?</code> on the result, turned into an exception</td>
+        </tr>
         </tbody>
       </table>
     </div>
@@ -691,23 +718,25 @@ period: NUM UNIT</code></pre>
           On the JVM, <code>Period</code> can't express business days, so <code>B</code> needs a <code>TemporalAmount</code> of its own. The end-of-month cases in the test file exist to catch differences.</p></li>
       <li><strong>One grammar, two algorithms.</strong>
         <p>Lark builds an Earley parser or an LALR(1) parser from the same grammar file; every shared case runs with both.
-          Earley accepts any context-free grammar, including ambiguous ones, but this language doesn't need that.</p></li>
+          Earley accepts any context-free grammar, including ambiguous ones, but this language doesn't need that.
+          instaparse (GLL) can return every parse of an input: each of the shared cases has exactly one, so the grammar is unambiguous
+          on all of them, which no other tool here could show by running it.</p></li>
       <li><strong>Actions tie a grammar to one language.</strong>
         <p>ANTLR's Java grammar computes the dates in Java actions, so it can't be generated into Python. The Python module
           uses the same rules without actions and a visitor, which would work for every ANTLR target.</p></li>
       <li><strong>A lexer may or may not know the parser's state.</strong>
         <p><code>&gt;SPOTUSDCAD</code> without a space: ANTLR, Coco/R, JavaCC, JFlex and SableCC read <code>SPOTUS</code> as a currency pair and fail.
-          Peggy and the Scala combinators have no lexer, and Lark's contextual lexer only tries the tokens the parser expects; all three accept it.</p></li>
+          Peggy, instaparse and the Scala combinators have no lexer, and Lark's contextual lexer only tries the tokens the parser expects; all four accept it.</p></li>
       <li><strong>Six capitals: keyword or currency pair?</strong>
         <p><code>EASTER</code> has six capital letters, like <code>EURUSD</code>. The tools with a lexer decide by order:
           ANTLR's implicit keywords come first, JFlex, JavaCC and SableCC take the rule declared first, Coco/R checks its keyword table,
           and Bison's hand-written scanner tests the keywords before the length. Without a lexer, or with a contextual one,
-          the pattern itself must exclude the keyword (<code>!"EASTER"</code> in Peggy, <code>(?!EASTER)</code> in Scala and Lark),
+          the pattern itself must exclude the keyword (<code>!"EASTER"</code> in Peggy, <code>!('EASTER' | …)</code> in instaparse, <code>(?!EASTER)</code> in Scala and Lark),
           otherwise <code>T &gt; SPOT EASTER</code> would read a pair. Lunar month names such as <code>TISHRI</code> joined the list.
           Event names avoid the race altogether: the sigil in <code>@EASTER</code> makes it a name in every tool.</p></li>
       <li><strong>Several dates from one expression, without touching the expression rules.</strong>
         <p><code>@FOMC + 1B</code> has a date per FOMC decision, while every grammar builds an expression as a function returning one date.
-          Instead of changing that in ten places, the event's date throws until it is bound: the list catches it, looks up the event's dates
+          Instead of changing that in every implementation, the event's date throws until it is bound: the list catches it, looks up the event's dates
           in the year of <code>T</code> and evaluates the item once per date. The grammars only gained the token and two alternatives.</p></li>
       <li><strong>A shared test file keeps everyone honest.</strong>
         <p>Every module reads <code>examples/schedule.txt</code>. Several tool-specific pitfalls, listed in the tabs above, surfaced only because the same cases had to pass everywhere.</p></li>
@@ -725,7 +754,7 @@ period: NUM UNIT</code></pre>
     <h2 id="cases">The shared test cases</h2>
     <p class="lead">
       From <a href="https://github.com/hjuergens/date-parser/blob/master/examples/schedule.txt">examples/schedule.txt</a>. Each module has a test that reads this file,
-      so adding a line here tests all ten implementations. They also read 2186 cases in
+      so adding a line here tests all eleven implementations. They also read 2186 cases in
       <a href="https://github.com/hjuergens/date-parser/blob/master/examples/catalog.txt">examples/catalog.txt</a>, generated from a holiday rule catalog, and 3302 in
       <a href="https://github.com/hjuergens/date-parser/blob/master/examples/date-holidays.txt">examples/date-holidays.txt</a>, generated from date-holidays (neither listed here).
     </p>

@@ -1,0 +1,63 @@
+(* Shared "schedule" example (see examples/schedule.txt in the project root):
+     2015-06-09 + 3M, 09.06.2015, (2015-01-15 : 1Q : 2015-12-31)
+   instaparse reads this EBNF at run time and parses with GLL; whitespace between tokens comes from
+   :auto-whitespace. <...> hides a rule or token from the tree, so the transform only sees what carries meaning. *)
+
+schedule = range | items
+items    = item (<','> item)*
+
+(* 24 DEC IF MON TUE WED THU: the date only on these weekdays *)
+item     = expr (<'IF'> WEEKDAY+)?
+
+range    = <'('> expr <':'> period <':'> expr <')'>
+
+(* shifts are applied from left to right *)
+expr     = date shift*
+<shift>  = plus | minus | imm | spot | roll | next | prev | observance
+plus     = <'+'> period
+minus    = <'-'> period
+imm      = <'>'> <'IMM'>
+spot     = <'>'> <'SPOT'> PAIR?
+roll     = <'>'> ROLL
+next     = <'>'> <'NEXT'> anchor
+prev     = <'>'> <'PREV'> anchor
+observance = <'{'> observe (<','> observe)* <'}'>
+observe  = WEEKDAY SIGN period
+
+<anchor> = weekday-anchor | bd-anchor | imm-anchor | annual-anchor | event-anchor
+weekday-anchor = WEEKDAY
+bd-anchor      = <'BD'>
+imm-anchor     = <'IMM'>
+annual-anchor  = annual
+event-anchor   = EVENT
+
+<date>   = base | tom | spot-date | iso | german | us | in-year | event
+base     = <'T'>
+tom      = <'TOM'>
+spot-date = <'SPOT'> PAIR?
+iso      = NUM <'-'> NUM <'-'> NUM
+german   = NUM <'.'> NUM <'.'> NUM
+us       = NUM <'/'> NUM <'/'> NUM
+in-year  = annual
+event    = EVENT
+
+(* dates that recur every year, evaluated in the year of the base date *)
+<annual> = month-day | nth-weekday | last-weekday | easter
+month-day    = NUM MONTH
+nth-weekday  = NUM WEEKDAY MONTH
+last-weekday = <'LAST'> WEEKDAY MONTH
+easter       = <'EASTER'>
+
+period   = NUM UNIT
+
+<NUM>     = #'[0-9]+'
+<UNIT>    = #'[DWMQYB]'
+<SIGN>    = '+' | '-'
+(* Gregorian, then Hijri (Umm al-Qura), Hebrew and Chinese months; a regex takes the first alternative, so ADARII before ADAR *)
+<MONTH>   = #'JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC|MUHARRAM|SAFAR|RABIALAWWAL|RABIALTHANI|JUMADAALULA|JUMADAALAKHIRA|RAJAB|SHABAN|RAMADAN|SHAWWAL|DHULQADAH|DHULHIJJAH|NISAN|IYAR|SIVAN|TAMMUZ|AV|ELUL|TISHRI|HESHVAN|KISLEV|TEVET|SHEVAT|ADARII|ADAR|ZHENGYUE|ERYUE|SANYUE|SIYUE|WUYUE|LIUYUE|QIYUE|BAYUE|JIUYUE|SHIYUE|DONGYUE|LAYUE'
+<WEEKDAY> = #'MON|TUE|WED|THU|FRI|SAT|SUN'
+<ROLL>    = #'MODFOLLOWING|FOLLOWING|PRECEDING|BOM|EOM|BOY|EOY'
+(* currency pair such as EURUSD; without a lexer nothing reserves the six-letter keywords, so a lookahead excludes them *)
+<PAIR>    = !('EASTER' | 'SHABAN' | 'TAMMUZ' | 'TISHRI' | 'KISLEV' | 'SHEVAT' | 'ADARII' | 'SANYUE' | 'LIUYUE' | 'JIUYUE' | 'SHIYUE') #'[A-Z]{6}'
+(* a named event such as @FOMC; one regex, so there is no whitespace inside *)
+<EVENT>   = #'@[A-Z][A-Z0-9_]*'

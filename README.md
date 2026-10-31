@@ -1,8 +1,9 @@
-# date-parser: ten parsers, one language
+# date-parser: eleven parsers, one language
 
 The same date-schedule language implemented with **ANTLR 4 (Java and Python targets), JavaCC, GNU Bison, JFlex + CUP, SableCC,
-Coco/R, Peggy (PEG), Lark (Earley and LALR) and Scala parser combinators**, all tested against one shared set of cases.
-It is a hands-on comparison of LL, LALR, Earley, PEG and combinator parsing in Java, Scala, JavaScript and Python.
+Coco/R, Peggy (PEG), Lark (Earley and LALR), instaparse (GLL, Clojure) and Scala parser combinators**, all tested against one
+shared set of cases. It is a hands-on comparison of LL, LALR, Earley, GLL, PEG and combinator parsing in Java, Scala, JavaScript,
+Python and Clojure.
 
 **[See the side-by-side comparison →](https://hjuergens.github.io/date-parser/)**
 
@@ -27,13 +28,14 @@ Planned additions are in [TODO.md](TODO.md).
 | [date-rule-peg](date-rule-peg/README.md) | Peggy (PEG.js successor) | PEG (packrat) | JavaScript | `(start:step:end)` range lists | 5721 `node:test` |
 | [date-rule-lark](date-rule-lark/README.md) | Lark 1.3 | Earley and LALR(1), one grammar | Python | The shared example, every case with both algorithms | 11432 pytest |
 | [date-rule-antlr-python](date-rule-antlr-python/README.md) | ANTLR 4.13, Python target | ALL(*) (adaptive LL) | Python | The shared example; grammar without actions, plus a visitor | 5716 pytest |
+| [date-rule-instaparse](date-rule-instaparse/README.md) | instaparse 1.5 | GLL (any context-free grammar) | Clojure 1.12 | The shared example; EBNF grammar read at run time, `insta/transform` onto the shared Java helper | 5716 TestNG |
 
-Each module also implements the [shared schedule example](#shared-example-schedule), so all ten implementations
+Each module also implements the [shared schedule example](#shared-example-schedule), so all eleven implementations
 can be compared on the same language. Each module README has a section on how its tool handles it.
 
 ## Shared example: schedule
 
-> A visual version of this comparison, with the rules of all ten implementations side by side, is at [hjuergens.github.io/date-parser](https://hjuergens.github.io/date-parser/)
+> A visual version of this comparison, with the rules of all eleven implementations side by side, is at [hjuergens.github.io/date-parser](https://hjuergens.github.io/date-parser/)
 > (source: [docs/index.html](docs/index.html), served by GitHub Pages from `/docs`; regenerate it with `python3 docs/generate.py`).
 
 A small date language that every tool can handle (no left recursion is needed, and all decisions are LL(1)):
@@ -150,7 +152,7 @@ market brings its holidays: the context maps a name to a rule, and `@FOMC` is ev
 each shifted by the rest of the expression (`@FOMC + 21D`, `@FOMC + 1B`, `@FOMC IF WED`). `T > NEXT @FOMC` and `T > PREV @FOMC`
 move to the next or previous one. An event's rule is any schedule, so `event THANKSGIVING = 4 THU NOV` names a rule as well. A name
 that isn't declared is an error, and so is an event with several dates at the end of a range. The implementations evaluate an item
-once per date of its event: the event's date throws until the item binds it, which needs no change to how the ten grammars build
+once per date of its event: the event's date throws until the item binds it, which needs no change to how the eleven grammars build
 expressions.
 
 All implementations are tested against the same 228 cases in [examples/schedule.txt](examples/schedule.txt),
@@ -196,6 +198,7 @@ The tools with a lexer get this from their rule order; Peggy, the Scala combinat
 | peg | [schedule.pegjs](date-rule-peg/schedule.pegjs) | 275³ | action blocks return functions, ordered choice | `SyntaxError` | `range()` is built into Peggy actions; date arithmetic hand-written |
 | lark | [schedule.lark](date-rule-lark/src/lark_schedule/schedule.lark) + [Transformer](date-rule-lark/src/lark_schedule/__init__.py) | 47 + 89 | `Transformer` returns closures, one method per rule alias | `UnexpectedInput`; `VisitError` unwrapped | the same grammar runs as Earley and as LALR(1); the contextual lexer accepts `>SPOTUSDCAD` |
 | antlr-python | [DateSchedule.g4](date-rule-antlr-python/DateSchedule.g4) + [visitor](date-rule-antlr-python/src/antlr_schedule/__init__.py) | 67 + 104 | visitor over the parse tree returns closures | raising error listener | Java actions can't be generated into Python; `range` becomes `range_()` |
+| instaparse | [schedule.ebnf](date-rule-instaparse/src/main/clojure/io/github/hjuergens/instaparse/schedule.ebnf) + [transform](date-rule-instaparse/src/main/clojure/io/github/hjuergens/instaparse/schedule.clj) | 44 + 48 | `insta/transform`, one function per tag, onto `ScheduleSemantics` | `insta/failure?` → exception | scannerless with `:auto-whitespace`; GLL returns every parse, and each shared case has exactly one |
 
 ¹ Non-blank, non-comment lines. The JVM modules also share a 385-line `ScheduleSemantics` (market, context, rule builders, periods,
   business days, IMM and spot dates, ranges, annual dates, lunar months, rolling, named events); `java.time.Period` can't express business days, so `B`

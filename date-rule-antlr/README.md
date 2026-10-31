@@ -44,8 +44,8 @@ mvn -pl date-rule-antlr verify
 ```
 
 - The `antlr4-maven-plugin` generates lexers, parsers, listeners, and visitors into `target/generated-sources/antlr4`.
-- Unit tests use TestNG and run from the suite in [src/test/resources/testng.xml](src/test/resources/testng.xml).
-  **Register new test classes there**, or surefire won't run them.
+- Unit tests use TestNG. Surefire runs the classes named `*Test`, plus `GenerateParseTreeAST` and `RingCheck` (the `includes`
+  in [pom.xml](pom.xml)); a test class with another name must be added there.
 - [RingCheck](src/test/scala/io/github/hjuergens/util/RingCheck.scala) is a ScalaCheck property test that runs through ScalaTest's `TestNGSuite`.
 - [RingSpec](src/integration-test/scala/io/github/hjuergens/util/RingSpec.scala) is a specs2 example run by failsafe in `verify`.
 - The `test` phase also runs ANTLR's `TestRig` on [dates.expr](src/test/resources/dates.expr) (exec-maven-plugin).

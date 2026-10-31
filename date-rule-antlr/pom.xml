@@ -207,9 +207,12 @@
                 <configuration>
                     <parallel>methods</parallel>
                     <threadCount>10</threadCount>
-                    <suiteXmlFiles>
-                        <suiteXmlFile>${project.build.testOutputDirectory}/testng.xml</suiteXmlFile>
-                    </suiteXmlFiles>
+                    <!-- surefire 3.6 runs TestNG on the JUnit Platform, which reads no testng.xml suites -->
+                    <includes>
+                        <include>**/*Test</include>
+                        <include>**/GenerateParseTreeAST</include>
+                        <include>**/RingCheck</include>
+                    </includes>
                 </configuration>
 
             </plugin>

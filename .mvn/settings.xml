@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Project-wide Maven settings, passed as global settings by .mvn/maven.config (your ~/.m2/settings.xml still applies).
+
+  net.java:jvnet-parent, the parent POM of javax.activation, jaxb-api and others (here pulled in by plugin
+  dependencies), declares the repositories of maven.java.net. That server was shut down and its certificate has
+  expired; every artifact it hosted is on Maven Central. The mirror sends these repository ids to Central instead.
+-->
+<settings xmlns="http://maven.apache.org/SETTINGS/1.2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.2.0 https://maven.apache.org/xsd/settings-1.2.0.xsd">
+  <mirrors>
+    <mirror>
+      <id>java-net-to-central</id>
+      <name>maven.java.net (shut down), redirected to Maven Central</name>
+      <mirrorOf>jvnet-nexus-releases,jvnet-nexus-snapshots,jvnet-nexus-staging,jvnet-nexus-promoted</mirrorOf>
+      <url>https://repo.maven.apache.org/maven2</url>
+    </mirror>
+  </mirrors>
+</settings>

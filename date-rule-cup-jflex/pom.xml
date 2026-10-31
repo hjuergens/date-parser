@@ -64,27 +64,43 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- CUP: src/main/cup/pascal.cup -> Sym.java (token constants) and PascalParser.java -->
+            <!-- CUP: one execution per grammar -->
             <plugin>
                 <groupId>com.github.vbmacher</groupId>
                 <artifactId>cup-maven-plugin</artifactId>
                 <version>${cup.version}</version>
-                <configuration>
-                    <cupDefinition>src/main/cup/pascal.cup</cupDefinition>
-                    <packageName>${cup.packageName}</packageName>
-                    <className>PascalParser</className>
-                    <symbolsName>Sym</symbolsName>
-                    <symbolsInterface>false</symbolsInterface>
-                </configuration>
                 <executions>
+                    <!-- src/main/cup/pascal.cup -> Sym.java (token constants) and PascalParser.java -->
                     <execution>
+                        <id>pascal</id>
                         <goals>
                             <goal>generate</goal>
                         </goals>
+                        <configuration>
+                            <cupDefinition>src/main/cup/pascal.cup</cupDefinition>
+                            <packageName>${cup.packageName}</packageName>
+                            <className>PascalParser</className>
+                            <symbolsName>Sym</symbolsName>
+                            <symbolsInterface>false</symbolsInterface>
+                        </configuration>
+                    </execution>
+                    <!-- src/main/cup/schedule.cup -> ScheduleSym.java and ScheduleParser.java -->
+                    <execution>
+                        <id>schedule</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <cupDefinition>src/main/cup/schedule.cup</cupDefinition>
+                            <packageName>io.github.hjuergens.schedule</packageName>
+                            <className>ScheduleParser</className>
+                            <symbolsName>ScheduleSym</symbolsName>
+                            <symbolsInterface>false</symbolsInterface>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
-            <!-- JFlex: src/main/jflex/pascal.jflex -> PascalLexer.java -->
+            <!-- JFlex: src/main/jflex/*.jflex -> PascalLexer.java, ScheduleLexer.java -->
             <plugin>
                 <groupId>de.jflex</groupId>
                 <artifactId>jflex-maven-plugin</artifactId>

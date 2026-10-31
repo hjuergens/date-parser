@@ -46,7 +46,7 @@
 
     <build>
         <plugins>
-            <!-- Coco/R (bundled Coco.jar, frame files in the module root): src/main/coco/Dates.atg -> Scanner, Parser, Errors -->
+            <!-- Coco/R (bundled Coco.jar, frame files in the module root): src/main/coco/*.atg -> Scanner, Parser, Errors (one package per grammar) -->
             <plugin>
                 <artifactId>maven-antrun-plugin</artifactId>
                 <version>3.2.0</version>
@@ -65,6 +65,16 @@
                                     <arg value="${project.basedir}"/>
                                     <arg value="-o"/>
                                     <arg value="${coco.target}/io/github/hjuergens/coco"/>
+                                </java>
+                                <mkdir dir="${coco.target}/io/github/hjuergens/coco/schedule"/>
+                                <java jar="${project.basedir}/Coco.jar" fork="true" failonerror="true">
+                                    <arg value="${project.basedir}/src/main/coco/Schedule.atg"/>
+                                    <arg value="-package"/>
+                                    <arg value="io.github.hjuergens.coco.schedule"/>
+                                    <arg value="-frames"/>
+                                    <arg value="${project.basedir}"/>
+                                    <arg value="-o"/>
+                                    <arg value="${coco.target}/io/github/hjuergens/coco/schedule"/>
                                 </java>
                             </target>
                         </configuration>

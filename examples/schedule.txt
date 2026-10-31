@@ -1,0 +1,287 @@
+# Shared test cases for the "schedule" grammar, implemented in every date-rule-* module.
+#
+#   <input> => <expected>
+#
+# <expected> is a comma-separated list of ISO dates, "none" for an empty list, or "error".
+# Periods are applied left to right with java.time semantics: months (M, Q = 3M, Y = 12M)
+# are added first and the day is clamped to the end of the month, then days (D, W = 7D).
+# B counts business days of the market; without one, Monday to Friday (only Saturdays and Sundays
+# are skipped). "- 1B" counts backwards, "+ 0B" leaves the date as it is.
+# A range (start : step : end) yields start + k * step for k = 0, 1, ... while <= end
+# (with a step of nB: start + k * n business days).
+# "> IMM" moves to the next IMM date strictly after the date: the third Wednesday of
+# March, June, September or December.
+# "> SPOT [PAIR]" moves to the FX spot date: + 1B for USD against CAD, TRY, PHP or RUB,
+# otherwise + 2B (also without pair). So 2015-12-31 > SPOT is 2016-01-04, although Jan 1 is
+# a holiday.
+#
+# A schedule is a rule: a function of the base date and the market, both supplied when it is evaluated.
+# "T" is the base date. A market only says which days are business days (B, SPOT); without one, only
+# Saturdays and Sundays are skipped. The test cases name base date and market in a prefix that is not part
+# of the language:  [<base>] <input> => ...  or  [<base> <market>] <input> => ...
+# Markets for the tests are declared as  market <name> = <schedule>: Saturdays and Sundays plus the dates the
+# schedule yields when it is evaluated with the first of January of a year as base date (the year before and
+# after are checked too, as an observed holiday can fall into the neighbouring year).
+#
+# Holiday rules: "4 JUL" (day of month), "3 MON JAN" (n-th weekday), "LAST MON MAY" and "EASTER" (Western) are
+# dates in the year of the base date. An observance "{SAT - 1D, SUN + 1D}" shifts a date by the first item for
+# its weekday; the items don't chain. "> FOLLOWING", "> PRECEDING" and "> MODFOLLOWING" (following unless that
+# leaves the month, then preceding) move to a business day of the market.
+#
+# Rolling: "TOM" is T + 1B, "SPOT [PAIR]" is T > SPOT [PAIR]. "> NEXT x" and "> PREV x" move to the first x
+# strictly after or before the date; x is a weekday, BD (business day), IMM or an annual date such as 4 JUL.
+# "> BOM", "> EOM", "> BOY" and "> EOY" move to the first or last day of the month or year.
+#
+# Lunar months: "1 SHAWWAL" (Hijri, Umm al-Qura), "10 TISHRI" (Hebrew; ADAR is Adar I in a leap year, ADARII
+# Adar II) and "1 ZHENGYUE" (Chinese, without leap months) are the day of that month in the Gregorian year of the
+# base date; an error if it falls there twice or not at all. Their names are month names: "3 MON SHAWWAL" is an error.
+# Conditional dates: "24 DEC IF MON TUE WED THU" is the date on these weekdays and no date otherwise; IF closes
+# an item of a list.
+# Keywords are reserved: "EASTER" and six-letter month names such as "TISHRI" are never a currency pair.
+# examples/catalog.txt holds more cases, generated from a holiday rule catalog (scripts/catalog_cases.py).
+
+# date notations
+2015-06-09 => 2015-06-09
+09.06.2015 => 2015-06-09
+06/09/2015 => 2015-06-09
+1.1.2000 => 2000-01-01
+
+# date plus / minus periods
+09.06.2015 + 3M => 2015-09-09
+06/09/2015 + 1W - 2D => 2015-06-14
+2015-06-09 - 3M => 2015-03-09
+2015-06-09 + 2Q => 2015-12-09
+2015-06-09+10D => 2015-06-19
+2015-06-09 - 1Y + 1D => 2014-06-10
+2015-06-09 + 0D => 2015-06-09
+
+# end of month
+2016-02-29 + 1Y => 2017-02-28
+2016-01-31 + 1M => 2016-02-29
+2016-01-31 + 1M - 1M => 2016-01-29
+
+# lists
+2015-06-09, 01.01.2000 + 1Y => 2015-06-09, 2001-01-01
+2015-06-09,2015-06-09 => 2015-06-09, 2015-06-09
+
+# ranges
+(2015-01-15 : 1Q : 2015-12-31) => 2015-01-15, 2015-04-15, 2015-07-15, 2015-10-15
+(2016-01-31 : 1M : 2016-04-30) => 2016-01-31, 2016-02-29, 2016-03-31, 2016-04-30
+(2015-06-09 : 1W : 2015-06-09 + 2W) => 2015-06-09, 2015-06-16, 2015-06-23
+(2015-06-09 : 1D : 2015-06-09) => 2015-06-09
+(2015-06-09 : 1D : 2015-06-08) => none
+
+# business days
+2015-06-09 + 2B => 2015-06-11
+2015-06-12 + 1B => 2015-06-15
+2015-06-12 + 2B => 2015-06-16
+2015-06-13 + 1B => 2015-06-15
+2015-06-09 + 10B => 2015-06-23
+2015-06-15 - 1B => 2015-06-12
+2015-06-14 - 1B => 2015-06-12
+2015-06-13 + 0B => 2015-06-13
+2015-06-11 + 1M + 1B => 2015-07-13
+2015-06-09 > SPOT + 3B => 2015-06-16
+(2015-06-11 : 1B : 2015-06-16) => 2015-06-11, 2015-06-12, 2015-06-15, 2015-06-16
+(2015-06-13 : 2B : 2015-06-19) => 2015-06-13, 2015-06-16, 2015-06-18
+
+# IMM dates
+2015-06-09 > IMM => 2015-06-17
+2015-06-17 > IMM => 2015-09-16
+2015-12-20 > IMM => 2016-03-16
+2016-12-20 > IMM => 2016-12-21
+01.01.2015 > IMM => 2015-03-18
+2015-06-09>IMM => 2015-06-17
+2015-06-09 > IMM > IMM => 2015-09-16
+2015-06-09 + 3M > IMM => 2015-09-16
+2015-06-09 > IMM + 1D => 2015-06-18
+(2015-01-01 > IMM : 1W : 2015-04-01) => 2015-03-18, 2015-03-25, 2015-04-01
+
+# FX spot dates
+2015-06-09 > SPOT => 2015-06-11
+2015-06-11 > SPOT => 2015-06-15
+2015-06-12 > SPOT => 2015-06-16
+2015-06-13 > SPOT => 2015-06-16
+2015-12-31 > SPOT => 2016-01-04
+2015-06-09 > SPOT EURUSD => 2015-06-11
+2015-06-09 > SPOT EURCAD => 2015-06-11
+2015-06-09 > SPOT USDCAD => 2015-06-10
+2015-06-09 > SPOT CADUSD => 2015-06-10
+2015-06-12 > SPOT USDCAD => 2015-06-15
+2015-06-09>SPOT USDTRY => 2015-06-10
+2015-06-12 > SPOT USDCAD > SPOT => 2015-06-17
+2015-06-09 > SPOT + 1W => 2015-06-18
+2015-06-09 > SPOT > IMM => 2015-06-17
+(2015-06-09 > SPOT : 1W : 2015-06-30) => 2015-06-11, 2015-06-18, 2015-06-25
+
+# base date and market
+market XTEST = 2015-06-10, 2015-07-03, 2015-12-25
+[2015-06-09] T => 2015-06-09
+[2015-06-09] T + 1M => 2015-07-09
+[2015-06-09] T > IMM => 2015-06-17
+[2015-06-09] T, 2015-01-01 => 2015-06-09, 2015-01-01
+[2015-06-09] (T : 1W : T + 2W) => 2015-06-09, 2015-06-16, 2015-06-23
+[2015-06-09] T + 2B => 2015-06-11
+[2015-06-09 XTEST] T + 2B => 2015-06-12
+[2015-06-09 XTEST] T + 1B => 2015-06-11
+[2015-06-11 XTEST] T - 1B => 2015-06-09
+[2015-07-02 XTEST] T + 1B => 2015-07-06
+[2015-06-09 XTEST] 2015-06-09 + 2B => 2015-06-12
+[2015-06-09 XTEST] T > SPOT => 2015-06-12
+[2015-06-09 XTEST] T > SPOT USDCAD => 2015-06-11
+[2015-12-24 XTEST] T > SPOT => 2015-12-29
+[2015-06-09 XTEST] (T : 1B : T + 3B) => 2015-06-09, 2015-06-11, 2015-06-12, 2015-06-15
+[2015-06-09 XTEST] T + 1M => 2015-07-09
+T => error
+T + 1D => error
+
+# holiday rules
+[2025-06-09] 4 JUL => 2025-07-04
+[2025-06-09] 3 MON JAN => 2025-01-20
+[2025-06-09] 1 MON SEP => 2025-09-01
+[2025-06-09] 4 THU NOV => 2025-11-27
+[2025-06-09] 4 THU NOV + 1D => 2025-11-28
+[2025-06-09] LAST MON MAY => 2025-05-26
+[2025-06-09] 5 FRI JAN => 2025-01-31
+[2025-06-09] EASTER => 2025-04-20
+[2025-06-09] EASTER - 2D => 2025-04-18
+[2024-06-09] EASTER + 1D => 2024-04-01
+[2025-06-09] 4 JUL {SAT - 1D, SUN + 1D} => 2025-07-04
+[2026-06-09] 4 JUL {SAT - 1D, SUN + 1D} => 2026-07-03
+[2027-06-09] 4 JUL {SAT - 1D, SUN + 1D} => 2027-07-05
+[2022-06-09] 1 JAN {SUN + 1D} => 2022-01-01
+[2023-06-09] 1 JAN {SUN + 1D} => 2023-01-02
+[2022-06-09] 25 DEC {SAT - 1D, SUN + 1D} => 2022-12-26
+[2024-06-09] 1 JUN {SAT + 1D, SUN + 1D} => 2024-06-02
+[2025-06-09] 4 JUL, 25 DEC => 2025-07-04, 2025-12-25
+[2025-06-09] (15 JAN : 1Q : 31 DEC) => 2025-01-15, 2025-04-15, 2025-07-15, 2025-10-15
+[2024-06-09] 29 FEB => 2024-02-29
+[2025-06-09] 29 FEB => error
+[2025-06-09] 31 APR => error
+[2025-06-09] 5 MON FEB => error
+[2025-06-09] 0 MON JAN => error
+4 JUL => error
+EASTER => error
+[2025-06-09] 4 JUL 2025 => error
+[2025-06-09] LAST JAN => error
+[2025-06-09] 4 JUL {SAT} => error
+[2025-06-09] 4 JUL {} => error
+[2025-06-09] 4 JUL {SAT - 1D SUN + 1D} => error
+[2025-06-09] T > SPOT EASTER => error
+
+# markets declared from holiday rules
+market XNYS = 1 JAN {SUN + 1D}, 3 MON JAN, 3 MON FEB, EASTER - 2D, LAST MON MAY, 19 JUN {SAT - 1D, SUN + 1D}, 4 JUL {SAT - 1D, SUN + 1D}, 1 MON SEP, 4 THU NOV, 25 DEC {SAT - 1D, SUN + 1D}
+market XEVE = 1 JAN {SAT - 1D, SUN + 1D}
+[2025-07-03 XNYS] T + 1B => 2025-07-07
+[2026-07-02 XNYS] T + 1B => 2026-07-06
+[2025-04-17 XNYS] T + 1B => 2025-04-21
+[2022-12-23 XNYS] T + 1B => 2022-12-27
+[2021-12-30 XNYS] T + 1B => 2021-12-31
+[2021-12-30 XEVE] T + 1B => 2022-01-03
+[2025-11-26 XNYS] T > SPOT => 2025-12-01
+[2025-01-01 XNYS] 3 FRI APR > PRECEDING => 2025-04-17
+[2025-01-01 XNYS] 3 FRI MAR > PRECEDING => 2025-03-21
+[2025-01-01 XNYS] 1 MAR - 1B => 2025-02-28
+[2025-01-01 XNYS] 20 JAN > FOLLOWING => 2025-01-21
+[2025-01-01] 20 JAN > FOLLOWING => 2025-01-20
+
+# rolling
+[2025-06-09] TOM => 2025-06-10
+[2025-06-13] TOM => 2025-06-16
+[2025-11-26 XNYS] TOM => 2025-11-28
+[2025-06-09] SPOT => 2025-06-11
+[2025-06-09] SPOT USDCAD => 2025-06-10
+[2025-06-09] SPOT + 1M => 2025-07-11
+[2025-06-09] T > NEXT FRI => 2025-06-13
+[2025-06-13] T > NEXT FRI => 2025-06-20
+[2025-06-13] T > PREV FRI => 2025-06-06
+[2025-06-13] T > NEXT BD => 2025-06-16
+[2025-06-16] T > PREV BD => 2025-06-13
+[2025-06-09] T > NEXT IMM => 2025-06-18
+[2025-06-09] T > PREV IMM => 2025-03-19
+[2025-06-09] T > NEXT 4 JUL => 2025-07-04
+[2025-07-04] T > NEXT 4 JUL => 2026-07-04
+[2025-12-01] T > NEXT 3 MON JAN => 2026-01-19
+[2025-06-09] T > NEXT LAST MON MAY => 2026-05-25
+[2025-06-09] T > PREV EASTER => 2025-04-20
+[2025-04-20] T > PREV EASTER => 2024-03-31
+[2026-06-09] T > NEXT 4 JUL {SAT - 1D, SUN + 1D} => 2026-07-03
+[2025-06-09] T > BOM => 2025-06-01
+[2025-06-09] T > EOM => 2025-06-30
+[2024-02-10] T > EOM => 2024-02-29
+[2025-06-09] T > BOY => 2025-01-01
+[2025-06-09] T > EOY => 2025-12-31
+2016-01-31 + 1M > EOM => 2016-02-29
+[2025-05-09] T > EOM > PRECEDING => 2025-05-30
+[2025-06-09] T > BOM > FOLLOWING => 2025-06-02
+[2025-05-09] T > EOM > MODFOLLOWING => 2025-05-30
+[2025-05-30 XNYS] T + 1M > MODFOLLOWING => 2025-06-30
+[2025-05-30 XNYS] T > MODFOLLOWING => 2025-05-30
+[2025-06-09] T > NEXT => error
+[2025-06-09] T > NEXT 3M => error
+[2025-06-09] T > NEXT T => error
+[2025-06-09] T > NEXT MONDAY => error
+[2025-06-09] TOM TOM => error
+[2025-06-09] T > EOM EOM => error
+TOM => error
+
+# lunar months
+[2025-01-01] 1 SHAWWAL => 2025-03-30
+[2025-01-01] (29 RAMADAN : 1D : 3 SHAWWAL) => 2025-03-29, 2025-03-30, 2025-03-31, 2025-04-01
+[2030-01-01] 1 RAMADAN => error
+[2025-01-01] 10 TISHRI => 2025-10-02
+[2025-01-01] 10 TISHRI - 1D => 2025-10-01
+[2024-01-01] 14 ADAR => 2024-02-23
+[2024-01-01] 14 ADARII => 2024-03-24
+[2025-01-01] 14 ADAR => 2025-03-14
+[2025-01-01] 14 ADARII => error
+[2025-01-01] 1 ZHENGYUE => 2025-01-29
+[2025-01-01] 1 ZHENGYUE - 1D => 2025-01-28
+[2025-06-01] T > NEXT 1 ZHENGYUE => 2026-02-17
+[2025-01-01] 3 MON SHAWWAL => error
+[2025-01-01] T > SPOT TISHRI => error
+1 SHAWWAL => error
+
+# conditional dates
+[2025-01-01] 24 DEC IF MON TUE WED THU => 2025-12-24
+[2027-01-01] 24 DEC IF MON TUE WED THU => none
+[2025-01-01] 3 JUL IF MON TUE WED THU, 24 DEC IF FRI => 2025-07-03
+[2025-01-01] 24 DEC IF WED, 25 DEC => 2025-12-24, 2025-12-25
+[2025-01-01] 24 DEC IF => error
+[2025-01-01] (24 DEC : 1D : 26 DEC) IF WED => error
+
+# invalid dates
+2015-02-29 => error
+2015-13-01 => error
+31.04.2015 => error
+
+# syntax errors
+2015-06 => error
++ 3M => error
+2015-06-09 + 3 => error
+2015-06-09 + M => error
+2015-06-09 + 3X => error
+2015-06-09 , => error
+2015-06-09 2015-06-10 => error
+2015-06.09 => error
+(2015-01-01 : 1M) => error
+2015-06-09 > => error
+2015-06-09 IMM => error
+2015-06-09 > 3M => error
+2015-06-09 > IM => error
+2015-06-09 SPOT => error
+2015-06-09 > USDCAD => error
+2015-06-09 > SPOT EUR => error
+2015-06-09 > SPOT EURUSDX => error
+2015-06-09 > SPOT usdcad => error
+2015-06-09 > SPOT USDCAD USDCAD => error
+[2015-06-09] 2015-06-09 + T => error
+[2015-06-09] T T => error
+2015-06-09 + 2b => error
+2015-06-09 > 2B => error
+(2015-01-01 : 1M : 2015-02-01), 2015-03-01 => error
+ => error
+
+# step of a range must be positive
+(2015-01-01 : 0D : 2015-02-01) => error
+(2015-06-01 : 0B : 2015-06-05) => error

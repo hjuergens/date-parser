@@ -1,0 +1,1096 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ten Parsers, One Language</title>
+<meta name="description" content="The same small date language implemented with ANTLR (Java and Python), Scala parser combinators, Coco/R, JavaCC, SableCC, JFlex + CUP, GNU Bison, Peggy and Lark, tested against one shared set of cases.">
+<link rel="canonical" href="https://hjuergens.github.io/date-parser/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Ten Parsers, One Language">
+<meta property="og:description" content="ANTLR, JavaCC, Bison, JFlex + CUP, SableCC, Coco/R, Peggy, Lark and Scala parser combinators implement the same date language, side by side.">
+<meta property="og:url" content="https://hjuergens.github.io/date-parser/">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareSourceCode",
+  "name": "date-parser: ten parsers, one language",
+  "description": "One date-schedule language implemented with ANTLR (Java and Python), JavaCC, GNU Bison, JFlex + CUP, SableCC, Coco/R, Peggy, Lark and Scala parser combinators, tested against one shared set of cases.",
+  "url": "https://hjuergens.github.io/date-parser/",
+  "codeRepository": "https://github.com/hjuergens/date-parser",
+  "programmingLanguage": ["Java", "Scala", "JavaScript", "Python"],
+  "keywords": "parser generator, ANTLR, JavaCC, Bison, JFlex, CUP, SableCC, Coco/R, PEG, Peggy, Lark, Earley, parser combinators, grammar, LL, LALR",
+  "license": "https://www.apache.org/licenses/LICENSE-2.0"
+}
+</script>
+<style>
+  :root {
+    --bg: #fbfaf7;
+    --surface: #ffffff;
+    --surface-2: #f3f1ec;
+    --text: #1f2328;
+    --muted: #5d636b;
+    --border: #e2dfd8;
+    --accent: #2f5fd0;
+    --accent-soft: #e8eefc;
+    --code-bg: #f6f5f1;
+    --comment: #7a7f87;
+    --ok: #1d7a4c;
+    --err: #b3352d;
+    --radius: 10px;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14161a;
+      --surface: #1b1e23;
+      --surface-2: #22262c;
+      --text: #e6e8eb;
+      --muted: #a0a6ae;
+      --border: #30353d;
+      --accent: #7ea2ff;
+      --accent-soft: #232c42;
+      --code-bg: #181b20;
+      --comment: #8a919b;
+      --ok: #5cc48f;
+      --err: #f08a80;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14161a;
+    --surface: #1b1e23;
+    --surface-2: #22262c;
+    --text: #e6e8eb;
+    --muted: #a0a6ae;
+    --border: #30353d;
+    --accent: #7ea2ff;
+    --accent-soft: #232c42;
+    --code-bg: #181b20;
+    --comment: #8a919b;
+    --ok: #5cc48f;
+    --err: #f08a80;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 var(--sans);
+  }
+  main { max-width: 980px; margin: 0 auto; padding: 0 16px 64px; }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  code { font-family: var(--mono); font-size: 0.88em; }
+  p code, td code, li code { background: var(--surface-2); padding: 0.1em 0.35em; border-radius: 4px; }
+  h1, h2, h3 { line-height: 1.2; letter-spacing: -0.01em; }
+  h2 { font-size: 1.5rem; margin: 64px 0 8px; }
+  h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 28px 0 8px; }
+  .lead { color: var(--muted); max-width: 46em; margin-top: 0; }
+
+  /* header */
+  header { padding: 56px 0 8px; }
+  .eyebrow { font: 600 0.8rem/1 var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin: 0 0 16px; }
+  h1 { font-size: clamp(2rem, 6vw, 3.2rem); margin: 0 0 16px; }
+  header .lead { font-size: 1.12rem; }
+  .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 32px 0 0; padding: 0; list-style: none; }
+  .stats li { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  .stats strong { display: block; font-size: 1.7rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .stats span { color: var(--muted); font-size: 0.9rem; }
+
+  /* code */
+  pre {
+    margin: 0;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    overflow-x: auto;
+    font: 0.86rem/1.55 var(--mono);
+    tab-size: 4;
+  }
+  pre code { font-size: inherit; }
+  .c { color: var(--comment); font-style: italic; }
+
+  /* language */
+  .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; margin-top: 24px; }
+  .examples { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .examples td { padding: 10px 14px; border-top: 1px solid var(--border); vertical-align: top; }
+  .examples tr:first-child td { border-top: 0; }
+  .examples td:first-child { font-family: var(--mono); font-size: 0.86rem; white-space: nowrap; }
+  .examples td:last-child { color: var(--muted); font-size: 0.92rem; }
+  .note { color: var(--muted); font-size: 0.95rem; margin: 16px 0 0; }
+
+  /* tabs */
+  .tabs { margin-top: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+  [role="tablist"] { display: flex; gap: 4px; padding: 8px; border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: thin; }
+  [role="tab"] {
+    flex: none;
+    font: 500 0.92rem/1 var(--sans);
+    color: var(--muted);
+    background: transparent;
+    border: 0;
+    border-radius: 7px;
+    padding: 10px 12px;
+    cursor: pointer;
+  }
+  [role="tab"]:hover { color: var(--text); background: var(--surface-2); }
+  [role="tab"][aria-selected="true"] { color: var(--accent); background: var(--accent-soft); }
+  [role="tab"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  [role="tabpanel"] { padding: 16px; }
+  .panel-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; font-size: 0.9rem; }
+  .kind { font-weight: 600; }
+  .lang { color: var(--muted); }
+  .panel-head a { margin-left: auto; }
+  .pitfall { margin: 14px 0 0; font-size: 0.95rem; }
+
+  /* comparison */
+  .scroll { overflow-x: auto; margin-top: 24px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+  .compare { width: 100%; border-collapse: collapse; min-width: 760px; font-size: 0.92rem; }
+  .compare th, .compare td { text-align: left; padding: 11px 14px; border-top: 1px solid var(--border); vertical-align: top; }
+  .compare thead th { border-top: 0; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 600; background: var(--surface-2); }
+  .compare tbody th { white-space: nowrap; }
+  .compare .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .compare small { display: block; color: var(--muted); font-size: 0.8rem; }
+
+  /* lessons */
+  .lessons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 24px; padding: 0; list-style: none; }
+  .lessons li { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
+  .lessons strong { display: block; margin-bottom: 4px; }
+  .lessons p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+
+  /* cases */
+  .case-groups { columns: 2 420px; column-gap: 24px; margin-top: 8px; }
+  .case-groups section { break-inside: avoid; }
+  .cases { width: 100%; border-collapse: collapse; font-size: 0.88rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .cases td { padding: 7px 12px; border-top: 1px solid var(--border); vertical-align: top; }
+  .cases tr:first-child td { border-top: 0; }
+  .cases td:first-child { width: 55%; }
+  .cases td:first-child code { background: none; padding: 0; white-space: pre-wrap; word-break: break-word; }
+  .date { font-family: var(--mono); font-size: 0.86em; color: var(--ok); white-space: nowrap; }
+  .err { font-family: var(--mono); font-size: 0.86em; color: var(--err); }
+  .none { color: var(--muted); font-style: italic; }
+  .ctx { color: var(--muted); }
+  .market { margin: 0 0 8px; font-size: 0.86rem; color: var(--muted); }
+
+  footer { max-width: 980px; margin: 0 auto; padding: 24px 16px 48px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.9rem; }
+
+  @media (max-width: 720px) {
+    .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .two, .lessons { grid-template-columns: minmax(0, 1fr); }
+    .examples td:first-child { white-space: normal; }
+    .panel-head a { margin-left: 0; }
+    h2 { margin-top: 48px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <p class="eyebrow">date-parser · parser technology comparison</p>
+    <h1>Ten parsers, one date language</h1>
+    <p class="lead">
+      The same small language for dates, periods and ranges, implemented with ten parser generators and
+      parser libraries, from LL(1) to LALR(1), Earley and PEG. Every implementation passes the same 209 test cases.
+    </p>
+    <ul class="stats">
+      <li><strong>10</strong><span>implementations, 4 languages</span></li>
+      <li><strong>209</strong><span>shared test cases</span></li>
+      <li><strong>0</strong><span>grammar conflicts</span></li>
+      <li><strong>1</strong><span>specification file</span></li>
+    </ul>
+  </header>
+
+  <section aria-labelledby="language">
+    <h2 id="language">The language</h2>
+    <p class="lead">Small enough for every tool, rich enough to show their differences: three date notations, periods, business days, IMM and FX spot dates, lists and ranges. A schedule is a rule: a function of the base date <code>T</code> and the market.</p>
+    <div class="two">
+      <table class="examples">
+        <tbody>
+          <tr><td>2015-06-09</td><td>one date (ISO)</td></tr>
+          <tr><td>09.06.2015 + 3M</td><td>2015-09-09 (German notation)</td></tr>
+          <tr><td>06/09/2015 + 1W - 2D</td><td>2015-06-14 (US notation, left to right)</td></tr>
+          <tr><td>2015-06-09, 1.1.2000 + 1Y</td><td>2015-06-09, 2001-01-01</td></tr>
+          <tr><td>(2015-01-15 : 1Q : 2015-12-31)</td><td>2015-01-15, -04-15, -07-15, -10-15</td></tr>
+          <tr><td>2015-06-12 + 1B</td><td>2015-06-15 (business days)</td></tr>
+          <tr><td>2015-06-09 + 3M &gt; IMM</td><td>2015-09-16 (next IMM date)</td></tr>
+          <tr><td>2015-06-12 &gt; SPOT USDCAD</td><td>2015-06-15 (FX spot, T+1)</td></tr>
+          <tr><td>T + 2B</td><td>two business days after the base date, in the market of the evaluation</td></tr>
+          <tr><td>24 DEC IF MON TUE WED THU</td><td>Christmas Eve from Monday to Thursday, otherwise no date</td></tr>
+          <tr><td>1 SHAWWAL, 1 ZHENGYUE</td><td>Eid al-Fitr and Chinese New Year in the year of <code>T</code></td></tr>
+        </tbody>
+      </table>
+      <pre><code>schedule = range | item { "," item } .
+item     = expr [ "IF" WEEKDAY { WEEKDAY } ] .
+range    = "(" expr ":" period ":" expr ")" .
+expr     = date { ("+" | "-") period
+               | "&gt;" ( "IMM" | "SPOT" [ PAIR ] | ROLL
+                       | ("NEXT" | "PREV") anchor )
+               | "{" shift { "," shift } "}" } .
+shift    = WEEKDAY ("+" | "-") period .
+anchor   = WEEKDAY | "BD" | "IMM" | annual .
+date     = "T" | "TOM" | "SPOT" [ PAIR ]
+         | NUM ( "-" NUM "-" NUM       <span class="c">(* ISO    *)</span>
+               | "." NUM "." NUM       <span class="c">(* German *)</span>
+               | "/" NUM "/" NUM )     <span class="c">(* US     *)</span>
+         | annual .
+annual   = NUM MONTH                   <span class="c">(* 4 JUL     *)</span>
+         | NUM WEEKDAY MONTH           <span class="c">(* 3 MON JAN *)</span>
+         | "LAST" WEEKDAY MONTH | "EASTER" .
+period   = NUM ( "D" | "W" | "M"
+               | "Q" | "Y" | "B" ) .
+ROLL     = "FOLLOWING" | "PRECEDING" | "MODFOLLOWING"
+         | "BOM" | "EOM" | "BOY" | "EOY" .
+MONTH    = "JAN" | … | "DEC"           <span class="c">(* Gregorian *)</span>
+         | "MUHARRAM" | … | "DHULHIJJAH"  <span class="c">(* Hijri *)</span>
+         | "NISAN" | … | "ADARII"     <span class="c">(* Hebrew  *)</span>
+         | "ZHENGYUE" | … | "LAYUE" . <span class="c">(* Chinese *)</span></code></pre>
+    </div>
+    <p class="note">
+      In grammatical terms (after <a href="https://en.wikipedia.org/wiki/Grammatical_category">grammatical category</a>):
+      the upper-case symbols are <em>lexical</em> categories, word classes that the lexer recognises; the lower-case rules are
+      <em>phrasal</em> categories that the parser builds from words. The numbers carry the content, and the grammar adds a few things
+      with a small, closed set of forms: <em>number</em> (one date, or several from a list or range), <em>tense</em>
+      (<code>T</code> is the base date, the anchor date that tense relates to; <code>TOM</code> and <code>SPOT</code> are relative to it, <code>&gt; NEXT</code> and
+      <code>&gt; PREV</code> look forward and back) and <em>definiteness</em> (<code>4 JUL</code> is the one in the year of <code>T</code>,
+      <code>&gt; NEXT 4 JUL</code> the next one).
+    </p>
+    <p class="note">
+      Every decision is LL(1): after the first number, the separator selects the notation; after a complete date,
+      <code>+</code> or <code>-</code> starts a period. Periods follow <code>java.time</code>: months first, with the day clamped
+      to the end of the month (<code>2016-01-31 + 1M</code> is <code>2016-02-29</code>), then days.
+      <code>B</code> counts business days, Monday to Friday.
+      <code>&gt; IMM</code> moves to the next IMM date strictly after the date: the third Wednesday of March, June, September or December.
+      <code>&gt; SPOT</code> moves to the FX spot date: <code>+ 1B</code> for USD against CAD, TRY, PHP or RUB, <code>+ 2B</code> for every other pair
+      (<code>PAIR</code> is six capital letters such as <code>EURUSD</code>).
+    </p>
+    <p class="note">
+      Parsing a schedule yields a rule, not dates: a function that gets the base date <code>T</code> and a market only when it is evaluated.
+      The grammar never names a market. A market only answers questions about days (which days are business days, and so which day is spot);
+      the meaning of a rule doesn't depend on it, so <code>IMM</code> is the third Wednesday everywhere. Without a market, only Saturdays and Sundays are skipped.
+    </p>
+    <p class="note">
+      Holiday rules: <code>4 JUL</code>, <code>3 MON JAN</code>, <code>LAST MON MAY</code> and <code>EASTER</code> are dates in the year of <code>T</code>.
+      An observance <code>{SAT - 1D, SUN + 1D}</code> shifts a date by the first item for its weekday, so <code>4 JUL {SAT - 1D, SUN + 1D}</code>
+      is Independence Day as the NYSE observes it. A market can be declared from such rules; the test markets in the case list below are.
+      Rolling, seen from <code>T</code>: <code>TOM</code> and <code>SPOT</code> are dates; <code>&gt; NEXT FRI</code>, <code>&gt; PREV IMM</code> or
+      <code>&gt; NEXT 4 JUL</code> look strictly after or before the date; <code>&gt; EOM</code> and friends move to the edge of month or year,
+      and <code>&gt; FOLLOWING</code>, <code>&gt; PRECEDING</code> and <code>&gt; MODFOLLOWING</code> to a business day of the market.
+      Hijri (Umm al-Qura), Hebrew and Chinese months are month names too: <code>1 SHAWWAL</code> is the day in the year of <code>T</code>,
+      an error if it falls there twice or not at all. <code>24 DEC IF MON TUE WED THU</code> keeps a date only on these weekdays.
+    </p>
+  </section>
+
+  <section aria-labelledby="tools">
+    <h2 id="tools">The same rules in every tool</h2>
+    <p class="lead">Rules <code>expr</code> and <code>date</code>, copied from the grammar files. Pick a tool:</p>
+    <div class="tabs">
+      <div role="tablist" aria-label="Parser technology">
+      <button role="tab" id="tab-antlr" aria-controls="panel-antlr" aria-selected="true" tabindex="0">ANTLR 4</button>
+      <button role="tab" id="tab-antlr-python" aria-controls="panel-antlr-python" aria-selected="false" tabindex="-1">ANTLR 4 · Python</button>
+      <button role="tab" id="tab-combinators" aria-controls="panel-combinators" aria-selected="false" tabindex="-1">Scala combinators</button>
+      <button role="tab" id="tab-coco" aria-controls="panel-coco" aria-selected="false" tabindex="-1">Coco/R</button>
+      <button role="tab" id="tab-javacc" aria-controls="panel-javacc" aria-selected="false" tabindex="-1">JavaCC</button>
+      <button role="tab" id="tab-sablecc" aria-controls="panel-sablecc" aria-selected="false" tabindex="-1">SableCC</button>
+      <button role="tab" id="tab-cup" aria-controls="panel-cup" aria-selected="false" tabindex="-1">JFlex + CUP</button>
+      <button role="tab" id="tab-bison" aria-controls="panel-bison" aria-selected="false" tabindex="-1">GNU Bison</button>
+      <button role="tab" id="tab-peg" aria-controls="panel-peg" aria-selected="false" tabindex="-1">Peggy</button>
+      <button role="tab" id="tab-lark" aria-controls="panel-lark" aria-selected="false" tabindex="-1">Lark</button>
+      </div>
+    <div role="tabpanel" id="panel-antlr" aria-labelledby="tab-antlr">
+      <div class="panel-head">
+        <span class="kind">ALL(*) · adaptive LL</span><span class="lang">Java</span>
+        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-antlr/src/main/antlr4/io/github/hjuergens/time/DateSchedule.g4">DateSchedule.g4 ↗</a>
+      </div>
+      <pre><code><span class="c">// periods are applied from left to right</span>
+expr returns [Expr value]
+    : date                          { $value = $date.value; }
+      ( &#x27;+&#x27; period                  { $value = ScheduleSemantics.plus($value, $period.value); }
+      | &#x27;-&#x27; period                  { $value = ScheduleSemantics.minus($value, $period.value); }
+      | &#x27;&gt;&#x27; &#x27;IMM&#x27;                   { $value = ScheduleSemantics.nextImm($value); }
+      | &#x27;&gt;&#x27; spot                    { $value = ScheduleSemantics.spot($value, $spot.pair); }
+      | &#x27;&gt;&#x27; ROLL                    { $value = ScheduleSemantics.roll($value, $ROLL.text); }
+      | &#x27;&gt;&#x27; &#x27;NEXT&#x27; anchor           { $value = ScheduleSemantics.next($value, $anchor.value); }
+      | &#x27;&gt;&#x27; &#x27;PREV&#x27; anchor           { $value = ScheduleSemantics.previous($value, $anchor.value); }
+      | observance                  { $value = ScheduleSemantics.observe($value, $observance.shifts); }
+      )*
+    ;</code></pre>
+      <p class="pitfall"><strong>Pitfall.</strong> <code>$start</code> is reserved (the rule's first token), so the range labels are <code>first</code>/<code>last</code>.</p>
+    </div>
+    <div role="tabpanel" id="panel-antlr-python" aria-labelledby="tab-antlr-python" hidden>
+      <div class="panel-head">
+        <span class="kind">ALL(*) · adaptive LL</span><span class="lang">Python</span>
+        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-antlr-python/src/antlr_schedule/__init__.py">__init__.py ↗</a>
+      </div>
+      <pre><code># shifts are applied from left to right
+def visitExpr(self, ctx):
+    start, shifts = self.visit(ctx.date()), [self.visit(shift) for shift in ctx.shift()]
+
+    def at(context):
+        d = start(context)
+        for shift in shifts:
+            d = shift(d, context.market)
+        return d
+    return at
+
+def visitPlus(self, ctx):
+    period = self.visit(ctx.period())
+    return lambda d, market: semantics.plus(d, period, 1, market)
+
+def visitMinus(self, ctx):
+    period = self.visit(ctx.period())
+    return lambda d, market: semantics.plus(d, period, -1, market)
+
+def visitImm(self, ctx):
+    return lambda d, market: semantics.next_imm(d)
+
+def visitSpot(self, ctx):
+    pair = ctx.PAIR() and ctx.PAIR().getText()
+    return lambda d, market: market.spot(d, pair)
+
+def visitRoll(self, ctx):
+    convention = ctx.ROLL().getText()
+    return lambda d, market: semantics.roll(d, convention, market)</code></pre>
+      <p class="pitfall"><strong>Pitfall.</strong> Java actions can't be generated into Python, so the grammar is copied without them. The Python target also renames the rule <code>range</code> to <code>range_()</code>.</p>
+    </div>
+    <div role="tabpanel" id="panel-combinators" aria-labelledby="tab-combinators" hidden>
+      <div class="panel-head">
+        <span class="kind">Recursive descent with backtracking</span><span class="lang">Scala 2.13</span>
+        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-combinators/src/main/scala/de/juergens/text/ScheduleParsers.scala">ScheduleParsers.scala ↗</a>
+      </div>
+      <pre><code>def date: Parser[Context =&gt; LocalDate] = &quot;TOM&quot; ^^^ ((c: Context) =&gt; plusBusinessDays(base(c), 1, c.market)) |
+  &quot;T&quot; ^^^ base |
+  &quot;SPOT&quot; ~&gt; opt(pair) ^^ (p =&gt; (c: Context) =&gt; c.market.spot(base(c), p)) |
+  annual ^^ (a =&gt; (c: Context) =&gt; a(base(c).getYear)) | number ~ (
+    (&quot;-&quot; ~&gt; number) ~ (&quot;-&quot; ~&gt; number) ^^ { case m ~ d =&gt; (y: Int) =&gt; LocalDate.of(y, m, d) }  <span class="c">// ISO</span>
+  | (&quot;.&quot; ~&gt; number) ~ (&quot;.&quot; ~&gt; number) ^^ { case m ~ y =&gt; (d: Int) =&gt; LocalDate.of(y, m, d) }  <span class="c">// German</span>
+  | (&quot;/&quot; ~&gt; number) ~ (&quot;/&quot; ~&gt; number) ^^ { case d ~ y =&gt; (m: Int) =&gt; LocalDate.of(y, m, d) }  <span class="c">// US</span>
+  ) ^^ { case first ~ toDate =&gt; val date = toDate(first); (_: Context) =&gt; date }
+
+def expr: Parser[Context =&gt; LocalDate] = date ~ rep(shift) ^^ {
+  case start ~ shifts =&gt; (c: Context) =&gt; shifts.foldLeft(start(c))((d, f) =&gt; f(d, c.market))
+}</code></pre>
+      <p class="pitfall"><strong>Pitfall.</strong> None: the grammar is ordinary Scala code, there is no generator step.</p>
+    </div>
+    <div role="tabpanel" id="panel-coco" aria-labelledby="tab-coco" hidden>
+      <div class="panel-head">
+        <span class="kind">LL(1)</span><span class="lang">Java</span>
+        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-coco/src/main/coco/Schedule.atg">Schedule.atg ↗</a>
+      </div>
+      <pre><code>Expr&lt;out ScheduleSemantics.Expr d&gt;      (. TemporalAmount p; String code; ScheduleSemantics.Anchor a;
+                                           List&lt;ScheduleSemantics.Shift&gt; shifts = new ArrayList&lt;&gt;(); .)
+= Date&lt;out d&gt;
+  { &quot;+&quot; Period&lt;out p&gt;                   (. d = ScheduleSemantics.plus(d, p); .)
+  | &quot;-&quot; Period&lt;out p&gt;                   (. d = ScheduleSemantics.minus(d, p); .)
+  | &quot;&gt;&quot;
+    ( &quot;IMM&quot;                             (. d = ScheduleSemantics.nextImm(d); .)
+    | Spot&lt;out code&gt;                    (. d = ScheduleSemantics.spot(d, code); .)
+    | Roll&lt;out code&gt;                    (. d = ScheduleSemantics.roll(d, code); .)
+    | &quot;NEXT&quot; Anchor&lt;out a&gt;              (. d = ScheduleSemantics.next(d, a); .)
+    | &quot;PREV&quot; Anchor&lt;out a&gt;              (. d = ScheduleSemantics.previous(d, a); .)
+    )
+  | &quot;{&quot; Shift&lt;shifts&gt;                   <span class="c">/* {SAT - 1D, SUN + 1D} */</span>
+    { &quot;,&quot; Shift&lt;shifts&gt; }
+    &quot;}&quot;                                 (. d = ScheduleSemantics.observe(d, shifts); shifts = new ArrayList&lt;&gt;(); .)
+  }.</code></pre>
+      <p class="pitfall"><strong>Pitfall.</strong> Error recovery keeps running semantic actions on incomplete input, so they must not throw.</p>
+    </div>
+    <div role="tabpanel" id="panel-javacc" aria-labelledby="tab-javacc" hidden>
+      <div class="panel-head">
+        <span class="kind">LL(k), here LL(1)</span><span class="lang">Java</span>
+        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-javacc/src/main/javacc/Schedule.jj">Schedule.jj ↗</a>
+      </div>
+      <pre><code>ScheduleSemantics.Expr Expr() :
+{ ScheduleSemantics.Expr d; TemporalAmount p; String pair; Token roll; ScheduleSemantics.Anchor a;
+  List&lt;ScheduleSemantics.Shift&gt; shifts; }
+{
+  d = Date()
+  ( &quot;+&quot; p = Period() { d = ScheduleSemantics.plus(d, p); }
+  | &quot;-&quot; p = Period() { d = ScheduleSemantics.minus(d, p); }
+  | &quot;&gt;&quot;
+    ( &quot;IMM&quot; { d = ScheduleSemantics.nextImm(d); }
+    | pair = Spot() { d = ScheduleSemantics.spot(d, pair); }
+    | roll = &lt;ROLL&gt; { d = ScheduleSemantics.roll(d, roll.image); }
+    | &quot;NEXT&quot; a = Anchor() { d = ScheduleSemantics.next(d, a); }
+    | &quot;PREV&quot; a = Anchor() { d = ScheduleSemantics.previous(d, a); }
+    )
+  | { shifts = new ArrayList&lt;ScheduleSemantics.Shift&gt;(); }   <span class="c">// {SAT - 1D, SUN + 1D}</span>
+    &quot;{&quot; Shift(shifts) ( &quot;,&quot; Shift(shifts) )* &quot;}&quot; { d = ScheduleSemantics.observe(d, shifts); }
+  )*
+  { return d; }
+}</code></pre>
+      <p class="pitfall"><strong>Pitfall.</strong> ParserGeneratorCC (used by the Maven plugin) rejects the classic <code>STATIC</code> option.</p>
+    </div>
+    <div role="tabpanel" id="panel-sablecc" aria-labelledby="tab-sablecc" hidden>
+      <div class="panel-head">
+        <span class="kind">LALR(1) with typed AST</span><span class="lang">Java</span>
+        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-sablecc/src/main/sablecc/schedule.grammar">schedule.grammar ↗</a>
+      </div>
+      <pre><code>expr = date shift*;
+
+shift
+    = {plus} plus period
+    | {minus} minus period
+    | {imm} gt imm
+    | {spot} gt spot pair?
+    | {roll} gt roll
+    | {next} gt next anchor
+    | {prev} gt prev anchor
+    | {observance} l_brace observe more_observe* r_brace;
+
+observe
+    = {plus} weekday plus period
+    | {minus} weekday minus period;
+
+more_observe = comma observe;
+
+anchor
+    = {weekday} weekday
+    | {bd} bd
+    | {imm} imm
+    | {annual} annual;
+
+date
+    = {base} base
+    | {tom} tom
+    | {spot} spot pair?
+    | {annual} annual
+    | {iso} [year]:number [s1]:minus [month]:number [s2]:minus [day]:number
+    | {german} [day]:number [s1]:dot [month]:number [s2]:dot [year]:number
+    | {us} [month]:number [s1]:slash [day]:number [s2]:slash [year]:number;
+
+annual
+    = {month_day} number month
+    | {nth_weekday} number weekday month
+    | {last} last weekday month
+    | {easter} easter;
+
+period = number unit;</code></pre>
+      <p class="pitfall"><strong>Pitfall.</strong> Elements that occur twice in one alternative need names: <code>[year]:number</code>, <code>[s1]:minus</code>.</p>
+    </div>
+    <div role="tabpanel" id="panel-cup" aria-labelledby="tab-cup" hidden>
+      <div class="panel-head">
+        <span class="kind">LALR(1)</span><span class="lang">Java</span>
+        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-cup-jflex/src/main/cup/schedule.cup">schedule.cup ↗</a>
+      </div>
+      <pre><code><span class="c">/* periods are applied from left to right */</span>
+expr ::= date:d                     {: RESULT = d; :}
+       | expr:e PLUS period:p       {: RESULT = ScheduleSemantics.plus(e, p); :}
+       | expr:e MINUS period:p      {: RESULT = ScheduleSemantics.minus(e, p); :}
+       | expr:e GT IMM              {: RESULT = ScheduleSemantics.nextImm(e); :}
+       | expr:e GT SPOT             {: RESULT = ScheduleSemantics.spot(e, null); :}
+       | expr:e GT SPOT PAIR:p      {: RESULT = ScheduleSemantics.spot(e, p); :}
+       | expr:e GT ROLL:r           {: RESULT = ScheduleSemantics.roll(e, r); :}
+       | expr:e GT NEXT anchor:a    {: RESULT = ScheduleSemantics.next(e, a); :}
+       | expr:e GT PREV anchor:a    {: RESULT = ScheduleSemantics.previous(e, a); :}
+       | expr:e LBRACE shifts:s RBRACE {: RESULT = ScheduleSemantics.observe(e, s); :}   <span class="c">/* {SAT - 1D, SUN + 1D} */</span>
+       ;</code></pre>
+      <p class="pitfall"><strong>Pitfall.</strong> In the JFlex spec, <code>%cupsym</code> must come before <code>%cup</code>, or the EOF action refers to <code>sym</code>.</p>
+    </div>
+    <div role="tabpanel" id="panel-bison" aria-labelledby="tab-bison" hidden>
+      <div class="panel-head">
+        <span class="kind">LALR(1)</span><span class="lang">Java skeleton</span>
+        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-bison/src/main/resources/schedule.y">schedule.y ↗</a>
+      </div>
+      <pre><code><span class="c">/* periods are applied from left to right */</span>
+expr:
+  date                              { $$ = $1; }
+| expr &#x27;+&#x27; period                   { $$ = ScheduleSemantics.plus ($1, $3); }
+| expr &#x27;-&#x27; period                   { $$ = ScheduleSemantics.minus ($1, $3); }
+| expr &#x27;&gt;&#x27; IMM                      { $$ = ScheduleSemantics.nextImm ($1); }
+| expr &#x27;&gt;&#x27; SPOT                     { $$ = ScheduleSemantics.spot ($1, null); }
+| expr &#x27;&gt;&#x27; SPOT PAIR                { $$ = ScheduleSemantics.spot ($1, $4); }
+| expr &#x27;&gt;&#x27; ROLL                     { $$ = ScheduleSemantics.roll ($1, $3); }
+| expr &#x27;&gt;&#x27; NEXT anchor              { $$ = ScheduleSemantics.next ($1, $4); }
+| expr &#x27;&gt;&#x27; PREV anchor              { $$ = ScheduleSemantics.previous ($1, $4); }
+| expr &#x27;{&#x27; shifts &#x27;}&#x27;               { $$ = ScheduleSemantics.observe ($1, $3); }   <span class="c">/* {SAT - 1D, SUN + 1D} */</span>
+;</code></pre>
+      <p class="pitfall"><strong>Pitfall.</strong> In Bison's Java skeleton <code>$$</code> is a plain <code>Object</code>; only <code>$1</code>…<code>$n</code> are typed.</p>
+    </div>
+    <div role="tabpanel" id="panel-peg" aria-labelledby="tab-peg" hidden>
+      <div class="panel-head">
+        <span class="kind">PEG · ordered choice</span><span class="lang">JavaScript</span>
+        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-peg/schedule.pegjs">schedule.pegjs ↗</a>
+      </div>
+      <pre><code><span class="c">// periods are applied from left to right</span>
+Expr
+  = start:Date shifts:(_ @Shift)* { return (c) =&gt; shifts.reduce((d, shift) =&gt; shift(d, c.market), start(c)); }
+
+Shift
+  = &quot;+&quot; _ p:Period { return (d, market) =&gt; plus(d, p, 1, market); }
+  / &quot;-&quot; _ p:Period { return (d, market) =&gt; plus(d, p, -1, market); }
+  / &quot;&gt;&quot; _ &quot;IMM&quot; { return nextImm; }
+  / &quot;&gt;&quot; _ &quot;SPOT&quot; pair:(_ @Pair)? { return (d, market) =&gt; spot(d, pair, market); }
+  / &quot;&gt;&quot; _ convention:$(&quot;FOLLOWING&quot; / &quot;PRECEDING&quot; / &quot;MODFOLLOWING&quot; / &quot;BOM&quot; / &quot;EOM&quot; / &quot;BOY&quot; / &quot;EOY&quot;) {
+      return (d, market) =&gt; roll(d, convention, market);
+    }
+  / &quot;&gt;&quot; _ &quot;NEXT&quot; _ anchor:Anchor { return (d, market) =&gt; anchor(d, 1, market); }
+  / &quot;&gt;&quot; _ &quot;PREV&quot; _ anchor:Anchor { return (d, market) =&gt; anchor(d, -1, market); }
+  / &quot;{&quot; _ head:Observe tail:(_ &quot;,&quot; _ @Observe)* _ &quot;}&quot; {
+      return (d, market) =&gt; observe(d, [head, ...tail], market);
+    }</code></pre>
+      <p class="pitfall"><strong>Pitfall.</strong> Peggy provides <code>range()</code> in actions, which silently shadows a helper of the same name.</p>
+    </div>
+    <div role="tabpanel" id="panel-lark" aria-labelledby="tab-lark" hidden>
+      <div class="panel-head">
+        <span class="kind">Earley and LALR(1), one grammar</span><span class="lang">Python</span>
+        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-lark/src/lark_schedule/schedule.lark">schedule.lark ↗</a>
+      </div>
+      <pre><code><span class="c">// shifts are applied from left to right</span>
+expr: date shift*
+
+shift: &quot;+&quot; period           -&gt; plus
+     | &quot;-&quot; period           -&gt; minus
+     | &quot;&gt;&quot; &quot;IMM&quot;            -&gt; imm
+     | &quot;&gt;&quot; &quot;SPOT&quot; [PAIR]    -&gt; spot
+     | &quot;&gt;&quot; ROLL             -&gt; roll
+     | &quot;&gt;&quot; &quot;NEXT&quot; anchor    -&gt; next
+     | &quot;&gt;&quot; &quot;PREV&quot; anchor    -&gt; prev
+     | &quot;{&quot; observe (&quot;,&quot; observe)* &quot;}&quot; -&gt; observance
+
+observe: WEEKDAY &quot;+&quot; period -&gt; observe_plus
+       | WEEKDAY &quot;-&quot; period -&gt; observe_minus
+
+anchor: WEEKDAY             -&gt; weekday
+      | &quot;BD&quot;                -&gt; business_day
+      | &quot;IMM&quot;               -&gt; imm_anchor
+      | annual              -&gt; annual_anchor
+
+date: &quot;T&quot;                   -&gt; base
+    | &quot;TOM&quot;                 -&gt; tom
+    | &quot;SPOT&quot; [PAIR]         -&gt; spot_date
+    | NUM &quot;-&quot; NUM &quot;-&quot; NUM   -&gt; iso
+    | NUM &quot;.&quot; NUM &quot;.&quot; NUM   -&gt; german
+    | NUM &quot;/&quot; NUM &quot;/&quot; NUM   -&gt; us
+    | annual                -&gt; in_year
+
+<span class="c">// dates that recur every year, evaluated in the year of the base date</span>
+annual: NUM MONTH           -&gt; month_day
+      | NUM WEEKDAY MONTH   -&gt; nth_weekday
+      | &quot;LAST&quot; WEEKDAY MONTH -&gt; last_weekday
+      | &quot;EASTER&quot;            -&gt; easter
+
+period: NUM UNIT</code></pre>
+      <p class="pitfall"><strong>Pitfall.</strong> In LALR mode the contextual lexer only tries tokens the parser can accept next, so <code>&gt;SPOTUSDCAD</code> parses; ANTLR's lexer reads <code>SPOTUS</code> as a pair and rejects it.</p>
+    </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="compare">
+    <h2 id="compare">Side by side</h2>
+    <p class="lead">Size counts non-blank, non-comment lines of the grammar files. The JVM modules also share a 324-line helper (market, context, rule builders, periods, business days, IMM and spot dates, ranges, annual dates, lunar months, rolling); the Python modules a 198-line one.</p>
+    <div class="scroll">
+      <table class="compare">
+        <thead>
+          <tr><th scope="col">Tool</th><th scope="col">Parsing</th><th scope="col">Lines</th><th scope="col">Values computed by</th><th scope="col">Errors surface as</th></tr>
+        </thead>
+        <tbody>
+        <tr>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-antlr/src/main/antlr4/io/github/hjuergens/time/DateSchedule.g4">ANTLR 4</a></th>
+          <td>ALL(*) · adaptive LL</td>
+          <td class="num">96</td>
+          <td>Actions with <code>returns […]</code> attributes</td>
+          <td>Throwing error listener plus <code>BailErrorStrategy</code></td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-antlr-python/src/antlr_schedule/__init__.py">ANTLR 4 · Python</a></th>
+          <td>ALL(*) · adaptive LL</td>
+          <td class="num">64 + 99<small>grammar + visitor</small></td>
+          <td>Visitor over the parse tree; the grammar has no actions</td>
+          <td>Error listener on lexer and parser that raises</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-combinators/src/main/scala/de/juergens/text/ScheduleParsers.scala">Scala combinators</a></th>
+          <td>Recursive descent with backtracking</td>
+          <td class="num">191</td>
+          <td><code>^^</code> functions, <code>foldLeft</code> over the shifts</td>
+          <td><code>NoSuccess</code> result, turned into an exception</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-coco/src/main/coco/Schedule.atg">Coco/R</a></th>
+          <td>LL(1)</td>
+          <td class="num">129</td>
+          <td><code>(. … .)</code> actions with <code>out</code> parameters</td>
+          <td><code>errors.count</code>, messages written to a stream</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-javacc/src/main/javacc/Schedule.jj">JavaCC</a></th>
+          <td>LL(k), here LL(1)</td>
+          <td class="num">140</td>
+          <td>Java code inside the productions; each declares its locals</td>
+          <td><code>ParseException</code>, <code>TokenMgrException</code></td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-sablecc/src/main/sablecc/schedule.grammar">SableCC</a></th>
+          <td>LALR(1) with typed AST</td>
+          <td class="num">85 + 127<small>grammar + evaluator</small></td>
+          <td>Separate evaluator walking the generated typed tree</td>
+          <td><code>ParserException</code>, <code>LexerException</code></td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-cup-jflex/src/main/cup/schedule.cup">JFlex + CUP</a></th>
+          <td>LALR(1)</td>
+          <td class="num">73 + 57<small>parser + lexer</small></td>
+          <td><code>{: … :}</code> actions, left-recursive rules</td>
+          <td><code>parse()</code> throws on the first syntax error</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-bison/src/main/resources/schedule.y">GNU Bison</a></th>
+          <td>LALR(1)</td>
+          <td class="num">186<small>incl. hand-written scanner</small></td>
+          <td><code>{ … }</code> actions, left-recursive rules</td>
+          <td><code>parse()</code> returns <code>false</code></td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-peg/schedule.pegjs">Peggy</a></th>
+          <td>PEG · ordered choice</td>
+          <td class="num">233<small>incl. date arithmetic</small></td>
+          <td>Action blocks; date arithmetic written by hand</td>
+          <td><code>SyntaxError</code> with expected tokens</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-lark/src/lark_schedule/schedule.lark">Lark</a></th>
+          <td>Earley and LALR(1), one grammar</td>
+          <td class="num">44 + 84<small>grammar + transformer</small></td>
+          <td><code>Transformer</code>, one method per rule alias</td>
+          <td><code>UnexpectedInput</code>; <code>VisitError</code> wraps exceptions of the transformer</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="lessons">
+    <h2 id="lessons">What the comparison shows</h2>
+    <ul class="lessons">
+      <li><strong>Top-down needs right recursion, bottom-up likes left recursion.</strong>
+        <p>The LL tools and Peggy write <code>date { ("+" | "-") period }</code> as a loop. CUP and Bison write <code>expr '+' period</code>, which is natural for LALR(1).</p></li>
+      <li><strong>Separating syntax from semantics is a choice.</strong>
+        <p>SableCC's grammar contains no code at all; a separate tree walker computes the dates. Every other tool interleaves actions with the rules.</p></li>
+      <li><strong>Compute while parsing, or build a rule first.</strong>
+        <p>Because the market only arrives at evaluation, no tool can compute the dates while parsing. The action-based tools (ANTLR, Coco/R, JavaCC, CUP, Bison, Peggy)
+          now build functions in their actions; in SableCC the syntax tree already is the rule, and the visitor, transformer and combinator versions only gained a parameter.
+          A side effect: Coco/R's actions no longer compute anything during error recovery.</p></li>
+      <li><strong>Error recovery has consequences.</strong>
+        <p>Coco/R recovers and keeps executing actions on incomplete input, so the actions must tolerate it. ANTLR needs a bail strategy to stop at the first error.</p></li>
+      <li><strong>Ordered choice is not alternation.</strong>
+        <p>PEG tries the alternatives in order and commits to the first match. Here this is harmless because the separators differ, but it's the main semantic difference to the generated LL and LR parsers.</p></li>
+      <li><strong>The library matters as much as the parser.</strong>
+        <p>In JavaScript, about 35 lines (plus 25 for markets, business days, IMM and spot dates) reproduce <code>java.time</code>'s month arithmetic.
+          On the JVM, <code>Period</code> can't express business days, so <code>B</code> needs a <code>TemporalAmount</code> of its own. The end-of-month cases in the test file exist to catch differences.</p></li>
+      <li><strong>One grammar, two algorithms.</strong>
+        <p>Lark builds an Earley parser or an LALR(1) parser from the same grammar file; every shared case runs with both.
+          Earley accepts any context-free grammar, including ambiguous ones, but this language doesn't need that.</p></li>
+      <li><strong>Actions tie a grammar to one language.</strong>
+        <p>ANTLR's Java grammar computes the dates in Java actions, so it can't be generated into Python. The Python module
+          uses the same rules without actions and a visitor, which would work for every ANTLR target.</p></li>
+      <li><strong>A lexer may or may not know the parser's state.</strong>
+        <p><code>&gt;SPOTUSDCAD</code> without a space: ANTLR, Coco/R, JavaCC, JFlex and SableCC read <code>SPOTUS</code> as a currency pair and fail.
+          Peggy and the Scala combinators have no lexer, and Lark's contextual lexer only tries the tokens the parser expects; all three accept it.</p></li>
+      <li><strong>Six capitals: keyword or currency pair?</strong>
+        <p><code>EASTER</code> has six capital letters, like <code>EURUSD</code>. The tools with a lexer decide by order:
+          ANTLR's implicit keywords come first, JFlex, JavaCC and SableCC take the rule declared first, Coco/R checks its keyword table,
+          and Bison's hand-written scanner tests the keywords before the length. Without a lexer, or with a contextual one,
+          the pattern itself must exclude the keyword (<code>!"EASTER"</code> in Peggy, <code>(?!EASTER)</code> in Scala and Lark),
+          otherwise <code>T &gt; SPOT EASTER</code> would read a pair. Lunar month names such as <code>TISHRI</code> joined the list.</p></li>
+      <li><strong>A shared test file keeps everyone honest.</strong>
+        <p>Every module reads <code>examples/schedule.txt</code>. Several tool-specific pitfalls, listed in the tabs above, surfaced only because the same cases had to pass everywhere.</p></li>
+      <li><strong>Generated cases test the libraries too.</strong>
+        <p>908 more cases come from a holiday rule catalog, with the dates of that project's own engine. They showed that ICU's
+          astronomical Chinese calendar, in ICU4J and in Node's <code>Intl</code>, puts Chinese New Year 2027 and 2030 a day off: the new moon falls
+          within minutes of midnight in Beijing. The JVM modules and Peggy now take Chinese dates from 6tail's lunar library.</p></li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="cases">
+    <h2 id="cases">The shared test cases</h2>
+    <p class="lead">
+      From <a href="https://github.com/hjuergens/date-parser/blob/master/examples/schedule.txt">examples/schedule.txt</a>. Each module has a test that reads this file,
+      so adding a line here tests all ten implementations. They also read 908 cases in
+      <a href="https://github.com/hjuergens/date-parser/blob/master/examples/catalog.txt">examples/catalog.txt</a>, generated from a holiday rule catalog (not listed here).
+    </p>
+    <div class="case-groups">
+      <section>
+      <h3>date notations</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code>2015-06-09</code></td><td><span class="date">2015-06-09</span></td></tr>
+          <tr><td><code>09.06.2015</code></td><td><span class="date">2015-06-09</span></td></tr>
+          <tr><td><code>06/09/2015</code></td><td><span class="date">2015-06-09</span></td></tr>
+          <tr><td><code>1.1.2000</code></td><td><span class="date">2000-01-01</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>date plus / minus periods</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code>09.06.2015 + 3M</code></td><td><span class="date">2015-09-09</span></td></tr>
+          <tr><td><code>06/09/2015 + 1W - 2D</code></td><td><span class="date">2015-06-14</span></td></tr>
+          <tr><td><code>2015-06-09 - 3M</code></td><td><span class="date">2015-03-09</span></td></tr>
+          <tr><td><code>2015-06-09 + 2Q</code></td><td><span class="date">2015-12-09</span></td></tr>
+          <tr><td><code>2015-06-09+10D</code></td><td><span class="date">2015-06-19</span></td></tr>
+          <tr><td><code>2015-06-09 - 1Y + 1D</code></td><td><span class="date">2014-06-10</span></td></tr>
+          <tr><td><code>2015-06-09 + 0D</code></td><td><span class="date">2015-06-09</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>end of month</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code>2016-02-29 + 1Y</code></td><td><span class="date">2017-02-28</span></td></tr>
+          <tr><td><code>2016-01-31 + 1M</code></td><td><span class="date">2016-02-29</span></td></tr>
+          <tr><td><code>2016-01-31 + 1M - 1M</code></td><td><span class="date">2016-01-29</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>lists</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code>2015-06-09, 01.01.2000 + 1Y</code></td><td><span class="date">2015-06-09</span>, <span class="date">2001-01-01</span></td></tr>
+          <tr><td><code>2015-06-09,2015-06-09</code></td><td><span class="date">2015-06-09</span>, <span class="date">2015-06-09</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>ranges</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code>(2015-01-15 : 1Q : 2015-12-31)</code></td><td><span class="date">2015-01-15</span>, <span class="date">2015-04-15</span>, <span class="date">2015-07-15</span>, <span class="date">2015-10-15</span></td></tr>
+          <tr><td><code>(2016-01-31 : 1M : 2016-04-30)</code></td><td><span class="date">2016-01-31</span>, <span class="date">2016-02-29</span>, <span class="date">2016-03-31</span>, <span class="date">2016-04-30</span></td></tr>
+          <tr><td><code>(2015-06-09 : 1W : 2015-06-09 + 2W)</code></td><td><span class="date">2015-06-09</span>, <span class="date">2015-06-16</span>, <span class="date">2015-06-23</span></td></tr>
+          <tr><td><code>(2015-06-09 : 1D : 2015-06-09)</code></td><td><span class="date">2015-06-09</span></td></tr>
+          <tr><td><code>(2015-06-09 : 1D : 2015-06-08)</code></td><td><span class="none">empty list</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>business days</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code>2015-06-09 + 2B</code></td><td><span class="date">2015-06-11</span></td></tr>
+          <tr><td><code>2015-06-12 + 1B</code></td><td><span class="date">2015-06-15</span></td></tr>
+          <tr><td><code>2015-06-12 + 2B</code></td><td><span class="date">2015-06-16</span></td></tr>
+          <tr><td><code>2015-06-13 + 1B</code></td><td><span class="date">2015-06-15</span></td></tr>
+          <tr><td><code>2015-06-09 + 10B</code></td><td><span class="date">2015-06-23</span></td></tr>
+          <tr><td><code>2015-06-15 - 1B</code></td><td><span class="date">2015-06-12</span></td></tr>
+          <tr><td><code>2015-06-14 - 1B</code></td><td><span class="date">2015-06-12</span></td></tr>
+          <tr><td><code>2015-06-13 + 0B</code></td><td><span class="date">2015-06-13</span></td></tr>
+          <tr><td><code>2015-06-11 + 1M + 1B</code></td><td><span class="date">2015-07-13</span></td></tr>
+          <tr><td><code>2015-06-09 &gt; SPOT + 3B</code></td><td><span class="date">2015-06-16</span></td></tr>
+          <tr><td><code>(2015-06-11 : 1B : 2015-06-16)</code></td><td><span class="date">2015-06-11</span>, <span class="date">2015-06-12</span>, <span class="date">2015-06-15</span>, <span class="date">2015-06-16</span></td></tr>
+          <tr><td><code>(2015-06-13 : 2B : 2015-06-19)</code></td><td><span class="date">2015-06-13</span>, <span class="date">2015-06-16</span>, <span class="date">2015-06-18</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>IMM dates</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code>2015-06-09 &gt; IMM</code></td><td><span class="date">2015-06-17</span></td></tr>
+          <tr><td><code>2015-06-17 &gt; IMM</code></td><td><span class="date">2015-09-16</span></td></tr>
+          <tr><td><code>2015-12-20 &gt; IMM</code></td><td><span class="date">2016-03-16</span></td></tr>
+          <tr><td><code>2016-12-20 &gt; IMM</code></td><td><span class="date">2016-12-21</span></td></tr>
+          <tr><td><code>01.01.2015 &gt; IMM</code></td><td><span class="date">2015-03-18</span></td></tr>
+          <tr><td><code>2015-06-09&gt;IMM</code></td><td><span class="date">2015-06-17</span></td></tr>
+          <tr><td><code>2015-06-09 &gt; IMM &gt; IMM</code></td><td><span class="date">2015-09-16</span></td></tr>
+          <tr><td><code>2015-06-09 + 3M &gt; IMM</code></td><td><span class="date">2015-09-16</span></td></tr>
+          <tr><td><code>2015-06-09 &gt; IMM + 1D</code></td><td><span class="date">2015-06-18</span></td></tr>
+          <tr><td><code>(2015-01-01 &gt; IMM : 1W : 2015-04-01)</code></td><td><span class="date">2015-03-18</span>, <span class="date">2015-03-25</span>, <span class="date">2015-04-01</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>FX spot dates</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code>2015-06-09 &gt; SPOT</code></td><td><span class="date">2015-06-11</span></td></tr>
+          <tr><td><code>2015-06-11 &gt; SPOT</code></td><td><span class="date">2015-06-15</span></td></tr>
+          <tr><td><code>2015-06-12 &gt; SPOT</code></td><td><span class="date">2015-06-16</span></td></tr>
+          <tr><td><code>2015-06-13 &gt; SPOT</code></td><td><span class="date">2015-06-16</span></td></tr>
+          <tr><td><code>2015-12-31 &gt; SPOT</code></td><td><span class="date">2016-01-04</span></td></tr>
+          <tr><td><code>2015-06-09 &gt; SPOT EURUSD</code></td><td><span class="date">2015-06-11</span></td></tr>
+          <tr><td><code>2015-06-09 &gt; SPOT EURCAD</code></td><td><span class="date">2015-06-11</span></td></tr>
+          <tr><td><code>2015-06-09 &gt; SPOT USDCAD</code></td><td><span class="date">2015-06-10</span></td></tr>
+          <tr><td><code>2015-06-09 &gt; SPOT CADUSD</code></td><td><span class="date">2015-06-10</span></td></tr>
+          <tr><td><code>2015-06-12 &gt; SPOT USDCAD</code></td><td><span class="date">2015-06-15</span></td></tr>
+          <tr><td><code>2015-06-09&gt;SPOT USDTRY</code></td><td><span class="date">2015-06-10</span></td></tr>
+          <tr><td><code>2015-06-12 &gt; SPOT USDCAD &gt; SPOT</code></td><td><span class="date">2015-06-17</span></td></tr>
+          <tr><td><code>2015-06-09 &gt; SPOT + 1W</code></td><td><span class="date">2015-06-18</span></td></tr>
+          <tr><td><code>2015-06-09 &gt; SPOT &gt; IMM</code></td><td><span class="date">2015-06-17</span></td></tr>
+          <tr><td><code>(2015-06-09 &gt; SPOT : 1W : 2015-06-30)</code></td><td><span class="date">2015-06-11</span>, <span class="date">2015-06-18</span>, <span class="date">2015-06-25</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>base date and market</h3>
+      <p class="market"><code>market XTEST = 2015-06-10, 2015-07-03, 2015-12-25</code></p>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2015-06-09]</span> T</code></td><td><span class="date">2015-06-09</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09]</span> T + 1M</code></td><td><span class="date">2015-07-09</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09]</span> T &gt; IMM</code></td><td><span class="date">2015-06-17</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09]</span> T, 2015-01-01</code></td><td><span class="date">2015-06-09</span>, <span class="date">2015-01-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09]</span> (T : 1W : T + 2W)</code></td><td><span class="date">2015-06-09</span>, <span class="date">2015-06-16</span>, <span class="date">2015-06-23</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09]</span> T + 2B</code></td><td><span class="date">2015-06-11</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09 XTEST]</span> T + 2B</code></td><td><span class="date">2015-06-12</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09 XTEST]</span> T + 1B</code></td><td><span class="date">2015-06-11</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-11 XTEST]</span> T - 1B</code></td><td><span class="date">2015-06-09</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-07-02 XTEST]</span> T + 1B</code></td><td><span class="date">2015-07-06</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09 XTEST]</span> 2015-06-09 + 2B</code></td><td><span class="date">2015-06-12</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09 XTEST]</span> T &gt; SPOT</code></td><td><span class="date">2015-06-12</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09 XTEST]</span> T &gt; SPOT USDCAD</code></td><td><span class="date">2015-06-11</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-12-24 XTEST]</span> T &gt; SPOT</code></td><td><span class="date">2015-12-29</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09 XTEST]</span> (T : 1B : T + 3B)</code></td><td><span class="date">2015-06-09</span>, <span class="date">2015-06-11</span>, <span class="date">2015-06-12</span>, <span class="date">2015-06-15</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09 XTEST]</span> T + 1M</code></td><td><span class="date">2015-07-09</span></td></tr>
+          <tr><td><code>T</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>T + 1D</code></td><td><span class="err">error</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>holiday rules</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> 4 JUL</code></td><td><span class="date">2025-07-04</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> 3 MON JAN</code></td><td><span class="date">2025-01-20</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> 1 MON SEP</code></td><td><span class="date">2025-09-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> 4 THU NOV</code></td><td><span class="date">2025-11-27</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> 4 THU NOV + 1D</code></td><td><span class="date">2025-11-28</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> LAST MON MAY</code></td><td><span class="date">2025-05-26</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> 5 FRI JAN</code></td><td><span class="date">2025-01-31</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> EASTER</code></td><td><span class="date">2025-04-20</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> EASTER - 2D</code></td><td><span class="date">2025-04-18</span></td></tr>
+          <tr><td><code><span class="ctx">[2024-06-09]</span> EASTER + 1D</code></td><td><span class="date">2024-04-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> 4 JUL {SAT - 1D, SUN + 1D}</code></td><td><span class="date">2025-07-04</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-06-09]</span> 4 JUL {SAT - 1D, SUN + 1D}</code></td><td><span class="date">2026-07-03</span></td></tr>
+          <tr><td><code><span class="ctx">[2027-06-09]</span> 4 JUL {SAT - 1D, SUN + 1D}</code></td><td><span class="date">2027-07-05</span></td></tr>
+          <tr><td><code><span class="ctx">[2022-06-09]</span> 1 JAN {SUN + 1D}</code></td><td><span class="date">2022-01-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2023-06-09]</span> 1 JAN {SUN + 1D}</code></td><td><span class="date">2023-01-02</span></td></tr>
+          <tr><td><code><span class="ctx">[2022-06-09]</span> 25 DEC {SAT - 1D, SUN + 1D}</code></td><td><span class="date">2022-12-26</span></td></tr>
+          <tr><td><code><span class="ctx">[2024-06-09]</span> 1 JUN {SAT + 1D, SUN + 1D}</code></td><td><span class="date">2024-06-02</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> 4 JUL, 25 DEC</code></td><td><span class="date">2025-07-04</span>, <span class="date">2025-12-25</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> (15 JAN : 1Q : 31 DEC)</code></td><td><span class="date">2025-01-15</span>, <span class="date">2025-04-15</span>, <span class="date">2025-07-15</span>, <span class="date">2025-10-15</span></td></tr>
+          <tr><td><code><span class="ctx">[2024-06-09]</span> 29 FEB</code></td><td><span class="date">2024-02-29</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> 29 FEB</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> 31 APR</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> 5 MON FEB</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> 0 MON JAN</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>4 JUL</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>EASTER</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> 4 JUL 2025</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> LAST JAN</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> 4 JUL {SAT}</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> 4 JUL {}</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> 4 JUL {SAT - 1D SUN + 1D}</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> T &gt; SPOT EASTER</code></td><td><span class="err">error</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>markets declared from holiday rules</h3>
+      <p class="market"><code>market XNYS = 1 JAN {SUN + 1D}, 3 MON JAN, 3 MON FEB, EASTER - 2D, LAST MON MAY, 19 JUN {SAT - 1D, SUN + 1D}, 4 JUL {SAT - 1D, SUN + 1D}, 1 MON SEP, 4 THU NOV, 25 DEC {SAT - 1D, SUN + 1D}</code></p>
+      <p class="market"><code>market XEVE = 1 JAN {SAT - 1D, SUN + 1D}</code></p>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2025-07-03 XNYS]</span> T + 1B</code></td><td><span class="date">2025-07-07</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-07-02 XNYS]</span> T + 1B</code></td><td><span class="date">2026-07-06</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-04-17 XNYS]</span> T + 1B</code></td><td><span class="date">2025-04-21</span></td></tr>
+          <tr><td><code><span class="ctx">[2022-12-23 XNYS]</span> T + 1B</code></td><td><span class="date">2022-12-27</span></td></tr>
+          <tr><td><code><span class="ctx">[2021-12-30 XNYS]</span> T + 1B</code></td><td><span class="date">2021-12-31</span></td></tr>
+          <tr><td><code><span class="ctx">[2021-12-30 XEVE]</span> T + 1B</code></td><td><span class="date">2022-01-03</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-11-26 XNYS]</span> T &gt; SPOT</code></td><td><span class="date">2025-12-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01 XNYS]</span> 3 FRI APR &gt; PRECEDING</code></td><td><span class="date">2025-04-17</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01 XNYS]</span> 3 FRI MAR &gt; PRECEDING</code></td><td><span class="date">2025-03-21</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01 XNYS]</span> 1 MAR - 1B</code></td><td><span class="date">2025-02-28</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01 XNYS]</span> 20 JAN &gt; FOLLOWING</code></td><td><span class="date">2025-01-21</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> 20 JAN &gt; FOLLOWING</code></td><td><span class="date">2025-01-20</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>rolling</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> TOM</code></td><td><span class="date">2025-06-10</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-13]</span> TOM</code></td><td><span class="date">2025-06-16</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-11-26 XNYS]</span> TOM</code></td><td><span class="date">2025-11-28</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> SPOT</code></td><td><span class="date">2025-06-11</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> SPOT USDCAD</code></td><td><span class="date">2025-06-10</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> SPOT + 1M</code></td><td><span class="date">2025-07-11</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> T &gt; NEXT FRI</code></td><td><span class="date">2025-06-13</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-13]</span> T &gt; NEXT FRI</code></td><td><span class="date">2025-06-20</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-13]</span> T &gt; PREV FRI</code></td><td><span class="date">2025-06-06</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-13]</span> T &gt; NEXT BD</code></td><td><span class="date">2025-06-16</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-16]</span> T &gt; PREV BD</code></td><td><span class="date">2025-06-13</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> T &gt; NEXT IMM</code></td><td><span class="date">2025-06-18</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> T &gt; PREV IMM</code></td><td><span class="date">2025-03-19</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> T &gt; NEXT 4 JUL</code></td><td><span class="date">2025-07-04</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-07-04]</span> T &gt; NEXT 4 JUL</code></td><td><span class="date">2026-07-04</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-12-01]</span> T &gt; NEXT 3 MON JAN</code></td><td><span class="date">2026-01-19</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> T &gt; NEXT LAST MON MAY</code></td><td><span class="date">2026-05-25</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> T &gt; PREV EASTER</code></td><td><span class="date">2025-04-20</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-04-20]</span> T &gt; PREV EASTER</code></td><td><span class="date">2024-03-31</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-06-09]</span> T &gt; NEXT 4 JUL {SAT - 1D, SUN + 1D}</code></td><td><span class="date">2026-07-03</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> T &gt; BOM</code></td><td><span class="date">2025-06-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> T &gt; EOM</code></td><td><span class="date">2025-06-30</span></td></tr>
+          <tr><td><code><span class="ctx">[2024-02-10]</span> T &gt; EOM</code></td><td><span class="date">2024-02-29</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> T &gt; BOY</code></td><td><span class="date">2025-01-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> T &gt; EOY</code></td><td><span class="date">2025-12-31</span></td></tr>
+          <tr><td><code>2016-01-31 + 1M &gt; EOM</code></td><td><span class="date">2016-02-29</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-05-09]</span> T &gt; EOM &gt; PRECEDING</code></td><td><span class="date">2025-05-30</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> T &gt; BOM &gt; FOLLOWING</code></td><td><span class="date">2025-06-02</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-05-09]</span> T &gt; EOM &gt; MODFOLLOWING</code></td><td><span class="date">2025-05-30</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-05-30 XNYS]</span> T + 1M &gt; MODFOLLOWING</code></td><td><span class="date">2025-06-30</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-05-30 XNYS]</span> T &gt; MODFOLLOWING</code></td><td><span class="date">2025-05-30</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> T &gt; NEXT</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> T &gt; NEXT 3M</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> T &gt; NEXT T</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> T &gt; NEXT MONDAY</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> TOM TOM</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> T &gt; EOM EOM</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>TOM</code></td><td><span class="err">error</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>lunar months</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> 1 SHAWWAL</code></td><td><span class="date">2025-03-30</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> (29 RAMADAN : 1D : 3 SHAWWAL)</code></td><td><span class="date">2025-03-29</span>, <span class="date">2025-03-30</span>, <span class="date">2025-03-31</span>, <span class="date">2025-04-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2030-01-01]</span> 1 RAMADAN</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> 10 TISHRI</code></td><td><span class="date">2025-10-02</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> 10 TISHRI - 1D</code></td><td><span class="date">2025-10-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2024-01-01]</span> 14 ADAR</code></td><td><span class="date">2024-02-23</span></td></tr>
+          <tr><td><code><span class="ctx">[2024-01-01]</span> 14 ADARII</code></td><td><span class="date">2024-03-24</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> 14 ADAR</code></td><td><span class="date">2025-03-14</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> 14 ADARII</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> 1 ZHENGYUE</code></td><td><span class="date">2025-01-29</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> 1 ZHENGYUE - 1D</code></td><td><span class="date">2025-01-28</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-01]</span> T &gt; NEXT 1 ZHENGYUE</code></td><td><span class="date">2026-02-17</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> 3 MON SHAWWAL</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> T &gt; SPOT TISHRI</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>1 SHAWWAL</code></td><td><span class="err">error</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>conditional dates</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> 24 DEC IF MON TUE WED THU</code></td><td><span class="date">2025-12-24</span></td></tr>
+          <tr><td><code><span class="ctx">[2027-01-01]</span> 24 DEC IF MON TUE WED THU</code></td><td><span class="none">empty list</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> 3 JUL IF MON TUE WED THU, 24 DEC IF FRI</code></td><td><span class="date">2025-07-03</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> 24 DEC IF WED, 25 DEC</code></td><td><span class="date">2025-12-24</span>, <span class="date">2025-12-25</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> 24 DEC IF</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> (24 DEC : 1D : 26 DEC) IF WED</code></td><td><span class="err">error</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>invalid dates</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code>2015-02-29</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>2015-13-01</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>31.04.2015</code></td><td><span class="err">error</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>syntax errors</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code>2015-06</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>+ 3M</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>2015-06-09 + 3</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>2015-06-09 + M</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>2015-06-09 + 3X</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>2015-06-09 ,</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>2015-06-09 2015-06-10</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>2015-06.09</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>(2015-01-01 : 1M)</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>2015-06-09 &gt;</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>2015-06-09 IMM</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>2015-06-09 &gt; 3M</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>2015-06-09 &gt; IM</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>2015-06-09 SPOT</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>2015-06-09 &gt; USDCAD</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>2015-06-09 &gt; SPOT EUR</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>2015-06-09 &gt; SPOT EURUSDX</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>2015-06-09 &gt; SPOT usdcad</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>2015-06-09 &gt; SPOT USDCAD USDCAD</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09]</span> 2015-06-09 + T</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09]</span> T T</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>2015-06-09 + 2b</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>2015-06-09 &gt; 2B</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>(2015-01-01 : 1M : 2015-02-01), 2015-03-01</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><em>(empty input)</em></code></td><td><span class="err">error</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>step of a range must be positive</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code>(2015-01-01 : 0D : 2015-02-01)</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>(2015-06-01 : 0B : 2015-06-05)</code></td><td><span class="err">error</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+    </div>
+  </section>
+
+  <section aria-labelledby="run">
+    <h2 id="run">Run it yourself</h2>
+    <p class="lead">You need JDK 17 and Maven 3.9. Bison is optional: without it the Bison module builds empty. The Peggy module downloads its own Node.js.</p>
+    <pre><code>git clone https://github.com/hjuergens/date-parser.git
+cd date-parser
+mvn clean verify                      <span class="c"># all modules</span>
+mvn -pl date-rule-coco test           <span class="c"># one module</span></code></pre>
+  </section>
+</main>
+
+<footer>
+  Source and per-module documentation: <a href="https://github.com/hjuergens/date-parser">github.com/hjuergens/date-parser</a>.
+  This page is generated from the grammar files and the shared test cases.
+</footer>
+
+<script>
+  (function () {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+    function select(tab, focus) {
+      tabs.forEach(function (t) {
+        var selected = t === tab;
+        t.setAttribute('aria-selected', selected ? 'true' : 'false');
+        t.tabIndex = selected ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !selected;
+      });
+      if (focus) tab.focus();
+      if (history.replaceState) history.replaceState(null, '', '#' + tab.id.replace('tab-', ''));
+    }
+    tabs.forEach(function (tab, i) {
+      tab.addEventListener('click', function () { select(tab, false); });
+      tab.addEventListener('keydown', function (e) {
+        var next = null;
+        if (e.key === 'ArrowRight') next = tabs[(i + 1) % tabs.length];
+        if (e.key === 'ArrowLeft') next = tabs[(i - 1 + tabs.length) % tabs.length];
+        if (e.key === 'Home') next = tabs[0];
+        if (e.key === 'End') next = tabs[tabs.length - 1];
+        if (next) { e.preventDefault(); select(next, true); }
+      });
+    });
+    var initial = document.getElementById('tab-' + location.hash.slice(1));
+    if (initial) select(initial, false);
+  })();
+</script>
+</body>
+</html>

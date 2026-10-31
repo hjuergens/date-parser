@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "peggy --format es -o target/list-parser.mjs list.pegjs",
-    "test": "node --test \"test/**/*.test.mjs\""
+    "test": "node --test test/*.test.mjs"
   },
   "keywords": [
     "parser",
@@ -20,5 +20,8 @@
     "type": "git",
     "url": "git://github.com/hjuergens/date-parser.git",
     "directory": "date-rule-peg"
+  },
+  "dependencies": {
+    "lunar-javascript": "1.7.7"
   }
 }

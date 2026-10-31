@@ -1,0 +1,97 @@
+/*
+ * Shared "schedule" example (see examples/schedule.txt in the project root):
+ *   2015-06-09 + 3M, 09.06.2015, (2015-01-15 : 1Q : 2015-12-31)
+ * LALR(1): lists and period chains are written left recursive.
+ * The actions build a ScheduleSemantics.Rule, a function of base date and market that is evaluated later.
+ */
+package io.github.hjuergens.schedule;
+
+import java.time.LocalDate;
+import java.time.temporal.TemporalAmount;
+import java.util.ArrayList;
+import java.util.List;
+
+terminal            PLUS, MINUS, GT, IMM, SPOT, BASE, TOM, NEXT, PREV, BD, LAST, EASTER, IF;
+terminal            DOT, SLASH, COMMA, COLON, LPAREN, RPAREN, LBRACE, RBRACE;
+terminal Integer    NUM;
+terminal String     UNIT, PAIR, MONTH, WEEKDAY, ROLL;
+
+non terminal ScheduleSemantics.Rule                schedule;
+non terminal ArrayList<ScheduleSemantics.Expr>     exprs;
+non terminal ScheduleSemantics.Expr                item, expr, date;
+non terminal ArrayList<String>                     weekdays;
+non terminal TemporalAmount                        period;
+non terminal ScheduleSemantics.Annual              annual;
+non terminal ScheduleSemantics.Anchor              anchor;
+non terminal ArrayList<ScheduleSemantics.Shift>    shifts;
+non terminal ScheduleSemantics.Shift               shift;
+
+start with schedule;
+
+schedule ::= LPAREN expr:first COLON period:step COLON expr:last RPAREN
+                {: RESULT = ScheduleSemantics.range(first, step, last); :}
+           | exprs:list
+                {: RESULT = ScheduleSemantics.list(list); :}
+           ;
+
+exprs ::= item:e
+                {: RESULT = new ArrayList<>(); RESULT.add(e); :}
+        | exprs:list COMMA item:e
+                {: list.add(e); RESULT = list; :}
+        ;
+
+/* 24 DEC IF MON TUE WED THU: the date only on these weekdays */
+item ::= expr:e                     {: RESULT = e; :}
+       | expr:e IF weekdays:w       {: RESULT = ScheduleSemantics.onlyOn(e, w); :}
+       ;
+
+weekdays ::= WEEKDAY:w              {: RESULT = new ArrayList<>(); RESULT.add(w); :}
+           | weekdays:list WEEKDAY:w {: list.add(w); RESULT = list; :}
+           ;
+
+/* periods are applied from left to right */
+expr ::= date:d                     {: RESULT = d; :}
+       | expr:e PLUS period:p       {: RESULT = ScheduleSemantics.plus(e, p); :}
+       | expr:e MINUS period:p      {: RESULT = ScheduleSemantics.minus(e, p); :}
+       | expr:e GT IMM              {: RESULT = ScheduleSemantics.nextImm(e); :}
+       | expr:e GT SPOT             {: RESULT = ScheduleSemantics.spot(e, null); :}
+       | expr:e GT SPOT PAIR:p      {: RESULT = ScheduleSemantics.spot(e, p); :}
+       | expr:e GT ROLL:r           {: RESULT = ScheduleSemantics.roll(e, r); :}
+       | expr:e GT NEXT anchor:a    {: RESULT = ScheduleSemantics.next(e, a); :}
+       | expr:e GT PREV anchor:a    {: RESULT = ScheduleSemantics.previous(e, a); :}
+       | expr:e LBRACE shifts:s RBRACE {: RESULT = ScheduleSemantics.observe(e, s); :}   /* {SAT - 1D, SUN + 1D} */
+       ;
+
+shifts ::= shift:s                  {: RESULT = new ArrayList<>(); RESULT.add(s); :}
+         | shifts:list COMMA shift:s {: list.add(s); RESULT = list; :}
+         ;
+
+shift ::= WEEKDAY:w PLUS period:p   {: RESULT = ScheduleSemantics.shift(w, p, 1); :}
+        | WEEKDAY:w MINUS period:p  {: RESULT = ScheduleSemantics.shift(w, p, -1); :}
+        ;
+
+anchor ::= WEEKDAY:w                {: RESULT = ScheduleSemantics.weekday(w); :}
+         | BD                       {: RESULT = ScheduleSemantics.BUSINESS_DAY; :}
+         | IMM                      {: RESULT = ScheduleSemantics.IMM; :}
+         | annual:a                 {: RESULT = ScheduleSemantics.annual(a); :}
+         ;
+
+date ::= BASE                             {: RESULT = ScheduleSemantics.BASE; :}                         /* T */
+       | TOM                              {: RESULT = ScheduleSemantics.plus(ScheduleSemantics.BASE, ScheduleSemantics.period(1, "B")); :}
+       | SPOT                             {: RESULT = ScheduleSemantics.spot(ScheduleSemantics.BASE, null); :}
+       | SPOT PAIR:p                      {: RESULT = ScheduleSemantics.spot(ScheduleSemantics.BASE, p); :}
+       | annual:a                         {: RESULT = ScheduleSemantics.inYear(a); :}
+       | NUM:y MINUS NUM:m MINUS NUM:d      {: RESULT = ScheduleSemantics.literal(LocalDate.of(y, m, d)); :}   /* ISO */
+       | NUM:d DOT NUM:m DOT NUM:y          {: RESULT = ScheduleSemantics.literal(LocalDate.of(y, m, d)); :}   /* German */
+       | NUM:m SLASH NUM:d SLASH NUM:y      {: RESULT = ScheduleSemantics.literal(LocalDate.of(y, m, d)); :}   /* US */
+       ;
+
+/* dates that recur every year, evaluated in the year of the base date */
+annual ::= NUM:d MONTH:m                  {: RESULT = ScheduleSemantics.monthDay(d, m); :}
+         | NUM:n WEEKDAY:w MONTH:m        {: RESULT = ScheduleSemantics.nthWeekday(n, w, m); :}
+         | LAST WEEKDAY:w MONTH:m         {: RESULT = ScheduleSemantics.lastWeekday(w, m); :}
+         | EASTER                         {: RESULT = ScheduleSemantics.EASTER; :}
+         ;
+
+period ::= NUM:n UNIT:u                     {: RESULT = ScheduleSemantics.period(n, u); :}
+         ;

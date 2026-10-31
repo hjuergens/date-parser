@@ -38,7 +38,25 @@ mvn -pl date-rule-coco verify
 The bundled [Coco.jar](Coco.jar) (version of 2011-04-19) runs through `maven-antrun-plugin` in `generate-sources`.
 It uses the frame files [Parser.frame](Parser.frame) and [Scanner.frame](Scanner.frame) from the module root
 and writes `Parser`, `Scanner`, and `Errors` to `target/generated-sources/coco` (package `io.github.hjuergens.coco`).
-There are 6 TestNG tests in [DatesParserTest](src/test/java/io/github/hjuergens/coco/DatesParserTest.java).
+There are 1123 TestNG tests: [DatesParserTest](src/test/java/io/github/hjuergens/coco/DatesParserTest.java) and the shared example.
+Coco/R always names the generated classes `Parser`, `Scanner`, and `Errors`, so each grammar gets its own package.
+
+## Shared example
+
+Implements the [shared schedule example](../README.md#shared-example-schedule) and is tested against [examples/schedule.txt](../examples/schedule.txt).
+
+- [Schedule.atg](src/main/coco/Schedule.atg) generates into package `io.github.hjuergens.coco.schedule`.
+- [Schedules.parse](src/main/java/io/github/hjuergens/coco/schedule/Schedules.java) collects Coco/R's error messages and throws if `errors.count > 0`.
+- After `">"`, the grammar branches on `"IMM"` or `"SPOT"` with an optional `pair` token (six capital letters),
+  which keeps it LL(1). Coco/R's LL(1) check runs on every build and reports no warnings.
+- The semantic actions avoid exceptions (invalid dates become `SemErr`), because error recovery may run them on incomplete input.
+  Since they only build functions of base date and market, the old `errors.count == 0` guards around IMM and spot are gone.
+- Test: [SchedulesTest](src/test/java/io/github/hjuergens/coco/schedule/SchedulesTest.java).
+- Holiday rules and rolling: `3 MON JAN` and `2015-06-09` both start with a number, so `Date` reads it and `AnnualTail` continues;
+  the grammar stays LL(1). An attribute whose type contains `>` needs Coco's `<. … .>` brackets, and the `out` attribute must come first.
+  `EASTER` matches the token class `pair`, so Coco/R makes it a keyword of that class.
+- Lunar months and conditional dates: Lunar month names (`1 SHAWWAL`, `10 TISHRI`, `1 ZHENGYUE`) are more alternatives of `Month`; six-letter ones such as
+  `TISHRI` become keywords of `pair` like `EASTER`. `Item` adds `[ "IF" Weekday { Weekday } ]` to a list item, still LL(1).
 
 ## Status
 

@@ -50,9 +50,28 @@ The tests mix four frameworks:
 `verify` also runs scalastyle, CPD duplicate-code detection on Scala sources, and the scoverage check.
 The test-only dependency `org.jquantlib:jquantlib:0.2.4` is installed from the repository's [repo/](../repo) directory by the parent build.
 
+## Shared example
+
+Implements the [shared schedule example](../README.md#shared-example-schedule) and is tested against [examples/schedule.txt](../examples/schedule.txt).
+
+[ScheduleParsers](src/main/scala/de/juergens/text/ScheduleParsers.scala) is plain Scala:
+the grammar is a set of `Parser` values, and `foldLeft` applies the shifts (periods, `> IMM` and `> SPOT`) from left to right.
+The parsers return functions of a `Context` (base date `T` and `Market`), applied when the rule is evaluated.
+Business days (`B`) are a small case class `BusinessDays` that implements `java.time.temporal.TemporalAmount`.
+Without a separate lexer, `>SPOTUSDCAD` without a space parses as well (as in the PEG module); the tools with a lexer reject it.
+Test: [ScheduleParsersSuite](src/test/scala/de/juergens/text/ScheduleParsersSuite.scala).
+
+```scala
+ScheduleParsers.parse("T + 1W - 2D")(Context(Some(LocalDate.of(2015, 6, 9))))   // List(2015-06-14)
+```
+
+Holiday rules and rolling are more parsers (`annual`, `anchor`, `observe`). Without a lexer, order matters (`"TOM"` before `"T"`),
+and the pair pattern `(?!EASTER|TISHRI|…)[A-Z]{6}` excludes the six-letter keywords, or `T > SPOT EASTER` would parse.
+Lunar month names extend the `month` regex, where `ADARII` must come before `ADAR`: a regex alternation takes the first match.
+
 ## Status
 
-- Working: 155 JUnit/TestNG tests and 18 ScalaTest tests. One TestNG test is disabled (`firstDayOfNextMonthTest`).
+- Working: 155 JUnit/TestNG tests and 1135 ScalaTest tests. One TestNG test is disabled (`firstDayOfNextMonthTest`).
 - `QuarterAdjuster(n)` moves to another quarter **within the same year** (Q4 + 1 → Q1 of the same year).
 - Several rules in [high_sophisticated.txt](src/test/resources/complex/high_sophisticated.txt) are still commented out,
   for example "every friday the 13th of month" and "full moon next after the vernal equinox".

@@ -1,0 +1,29 @@
+{
+  "name": "date-parser",
+  "build": { "dockerfile": "Dockerfile" },
+  "remoteUser": "vscode",
+
+  // downloads survive container rebuilds; the Python virtual environments are kept apart from the host's,
+  // whose interpreter paths don't exist in the container
+  "mounts": [
+    "source=date-parser-mise,target=/home/vscode/.local/share/mise,type=volume",
+    "source=date-parser-m2,target=/home/vscode/.m2,type=volume",
+    "source=date-parser-uv-cache,target=/home/vscode/.cache/uv,type=volume",
+    "source=date-parser-lark-venv,target=${containerWorkspaceFolder}/date-rule-lark/.venv,type=volume",
+    "source=date-parser-antlr-python-venv,target=${containerWorkspaceFolder}/date-rule-antlr-python/.venv,type=volume"
+  ],
+
+  // new volumes belong to root; then install the toolchains of mise.toml
+  "postCreateCommand": "sudo chown -R vscode: ~/.local/share/mise ~/.m2 ~/.cache/uv date-rule-lark/.venv date-rule-antlr-python/.venv && mise trust && mise install",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "scalameta.metals",
+        "mike-lischke.vscode-antlr4",
+        "ms-python.python"
+      ]
+    }
+  }
+}

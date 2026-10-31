@@ -15,8 +15,6 @@
         <module>date-rule-cup-jflex</module>
 	    <!-- https://www.gnu.org/software/bison -->
         <module>date-rule-bison</module>
-        <!-- https://pegjs.org/ -->
-        <module>date-rule-peg</module>
     </modules>
     <name>${project.artifactId}</name>
     <description>Date Parser - evaluating various technologies</description>
@@ -104,6 +102,18 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
+        </dependency>
+        <!-- lunar month names: java.time only has the Hijri calendar; the Hebrew one comes from ICU and the Chinese one
+             from 6tail's lunar (ICU's astronomical Chinese calendar misses some new moons close to midnight) -->
+        <dependency>
+            <groupId>com.ibm.icu</groupId>
+            <artifactId>icu4j</artifactId>
+            <version>78.3</version>
+        </dependency>
+        <dependency>
+            <groupId>cn.6tail</groupId>
+            <artifactId>lunar</artifactId>
+            <version>1.7.7</version>
         </dependency>
         <!--dependency>
             <groupId>org.slf4j</groupId>

@@ -1,0 +1,105 @@
+/*
+	filename   : schedule.grammar
+	description: shared "schedule" example (see examples/schedule.txt in the project root)
+	             2015-06-09 + 3M, 09.06.2015, (2015-01-15 : 1Q : 2015-12-31)
+	             SableCC only builds the syntax tree, ScheduleEvaluator computes the dates.
+*/
+
+Package de.juergens.schedule;
+
+Helpers
+	digit = ['0' .. '9'];
+	upper = ['A' .. 'Z'];
+
+Tokens
+	number = digit+;
+	unit = 'D' | 'W' | 'M' | 'Q' | 'Y' | 'B';
+	imm = 'IMM';
+	spot = 'SPOT';
+	base = 'T';
+	tom = 'TOM';
+	next = 'NEXT';
+	prev = 'PREV';
+	bd = 'BD';
+	last = 'LAST';
+	if = 'IF';
+	/* Gregorian, then Hijri (Umm al-Qura), Hebrew and Chinese months; before pair, like easter */
+	month = 'JAN' | 'FEB' | 'MAR' | 'APR' | 'MAY' | 'JUN' | 'JUL' | 'AUG' | 'SEP' | 'OCT' | 'NOV' | 'DEC'
+		| 'MUHARRAM' | 'SAFAR' | 'RABIALAWWAL' | 'RABIALTHANI' | 'JUMADAALULA' | 'JUMADAALAKHIRA' | 'RAJAB' | 'SHABAN'
+		| 'RAMADAN' | 'SHAWWAL' | 'DHULQADAH' | 'DHULHIJJAH'
+		| 'NISAN' | 'IYAR' | 'SIVAN' | 'TAMMUZ' | 'AV' | 'ELUL' | 'TISHRI' | 'HESHVAN' | 'KISLEV' | 'TEVET' | 'SHEVAT'
+		| 'ADAR' | 'ADARII'
+		| 'ZHENGYUE' | 'ERYUE' | 'SANYUE' | 'SIYUE' | 'WUYUE' | 'LIUYUE' | 'QIYUE' | 'BAYUE' | 'JIUYUE' | 'SHIYUE'
+		| 'DONGYUE' | 'LAYUE';
+	weekday = 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN';
+	roll = 'FOLLOWING' | 'PRECEDING' | 'MODFOLLOWING' | 'BOM' | 'EOM' | 'BOY' | 'EOY';
+	easter = 'EASTER';   /* before pair: on a match of the same length the earlier token wins */
+	pair = upper upper upper upper upper upper;
+	gt = '>';
+	l_brace = '{';
+	r_brace = '}';
+	plus = '+';
+	minus = '-';
+	dot = '.';
+	slash = '/';
+	comma = ',';
+	colon = ':';
+	l_par = '(';
+	r_par = ')';
+	blank = (' ' | 9 | 10 | 13)+;
+
+Ignored Tokens
+	blank;
+
+Productions
+	schedule
+		= {range} l_par [first]:expr [c1]:colon period [c2]:colon [last]:expr r_par
+		| {list} item more_item*;
+
+	more_item = comma item;
+
+	/* 24 DEC IF MON TUE WED THU: the date only on these weekdays */
+	item = expr condition?;
+
+	condition = if weekday+;
+
+	expr = date shift*;
+
+	shift
+		= {plus} plus period
+		| {minus} minus period
+		| {imm} gt imm
+		| {spot} gt spot pair?
+		| {roll} gt roll
+		| {next} gt next anchor
+		| {prev} gt prev anchor
+		| {observance} l_brace observe more_observe* r_brace;
+
+	observe
+		= {plus} weekday plus period
+		| {minus} weekday minus period;
+
+	more_observe = comma observe;
+
+	anchor
+		= {weekday} weekday
+		| {bd} bd
+		| {imm} imm
+		| {annual} annual;
+
+	date
+		= {base} base
+		| {tom} tom
+		| {spot} spot pair?
+		| {annual} annual
+		| {iso} [year]:number [s1]:minus [month]:number [s2]:minus [day]:number
+		| {german} [day]:number [s1]:dot [month]:number [s2]:dot [year]:number
+		| {us} [month]:number [s1]:slash [day]:number [s2]:slash [year]:number;
+
+	annual
+		= {month_day} number month
+		| {nth_weekday} number weekday month
+		| {last} last weekday month
+		| {easter} easter;
+
+	period = number unit;

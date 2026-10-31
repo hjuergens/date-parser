@@ -55,6 +55,12 @@
                                             <arg value="${project.basedir}/src/main/resources/calc.y"/>
                                             <arg value="--output=${bison.target}/io/github/hjuergens/bison/Calc.java"/>
                                         </exec>
+                                        <exec executable="${bison.executable}" failonerror="true">
+                                            <arg value="-Werror=conflicts-sr"/>
+                                            <arg value="-Werror=conflicts-rr"/>
+                                            <arg value="${project.basedir}/src/main/resources/schedule.y"/>
+                                            <arg value="--output=${bison.target}/io/github/hjuergens/bison/ScheduleParser.java"/>
+                                        </exec>
                                     </target>
                                 </configuration>
                                 <goals>

@@ -45,6 +45,7 @@
             <class name="io.github.hjuergens.time.ShifterTest"/>
             <class name="io.github.hjuergens.time.TermStructureTest"/>
             <class name="io.github.hjuergens.time.GrammarTest"/>
+            <class name="io.github.hjuergens.time.DateSchedulesTest"/>
             <class name="io.github.hjuergens.time.PairTest"/>
             <class name="io.github.hjuergens.time.QuarterlyTest"/>
             <class name="io.github.hjuergens.time.dateparser.ICalendarExprTest"/>

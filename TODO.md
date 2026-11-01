@@ -10,6 +10,8 @@
   before a named event (the Fed's blackout from the second Saturday before a meeting), weekend regimes per market (Friday and Saturday in
   Saudi Arabia and the UAE), Orthodox Easter, the UAE's "Ramadan 30 if the month has 30 days", the end-of-month rule for tenors from
   spot, and a business-day convention per element of a range (`(20 JAN : 1M : 20 DEC) > FOLLOWING`).
-- **Playground on the Pages site**: an editor in the browser that parses a schedule as you type, with the Peggy parser
-  (it runs in the browser and reports the error position), marks errors in the line and shows the dates for a chosen
-  base date and market. It replaces the old Ace editor experiment (deleted in 2022).
+- invest and make use of: https://natty-parser.github.io/
+- Webui using peg
+- https://en.wikipedia.org/wiki/Comparison_of_parser_generators
+- C code generation and swig
+- format of the calendar

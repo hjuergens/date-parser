@@ -3,6 +3,7 @@
 Run from anywhere after changing a grammar or the shared test cases:  python3 docs/generate.py
 """
 import html
+import json
 import re
 from pathlib import Path
 
@@ -172,10 +173,22 @@ cases = "\n".join(
         for i, e in items) + "\n        </tbody>\n      </table>\n      </section>"
     for title, markets, items in groups)
 
+# the playground: the Peggy grammar and the markets and events of schedule.txt, embedded in the page
+peg_grammar = (ROOT / "date-rule-peg/schedule.pegjs").read_text(encoding="utf-8")
+assert "</script" not in peg_grammar.lower()
+declarations = {"markets": {}, "events": {}}
+for line in (ROOT / "examples/schedule.txt").read_text(encoding="utf-8").splitlines():
+    if line.startswith(("market ", "event ")):
+        kind, rest = line.split(" ", 1)
+        name, rule = rest.split("=", 1)
+        declarations[kind + "s"][name.strip()] = rule.strip()
+peg_context = json.dumps(declarations, indent=1).replace("</", "<\\/")
+
 page = (Path(__file__).parent / "page_template.html").read_text(encoding="utf-8")
 page = (page.replace("{{TABS}}", tabs).replace("{{PANELS}}", panels).replace("{{ROWS}}", rows)
         .replace("{{CASES}}", cases).replace("{{CASE_COUNT}}", str(case_count))
-        .replace("{{TOOL_COUNT}}", str(len(TOOLS))).replace("{{LANG_COUNT}}", str(len({t["lang"].split()[0] for t in TOOLS}))).replace("{{REPO}}", REPO))
+        .replace("{{TOOL_COUNT}}", str(len(TOOLS))).replace("{{LANG_COUNT}}", str(len({t["lang"].split()[0] for t in TOOLS}))).replace("{{REPO}}", REPO)
+        .replace("{{PEG_GRAMMAR}}", peg_grammar).replace("{{PEG_CONTEXT}}", peg_context))
 (ROOT / "docs").mkdir(exist_ok=True)
 (ROOT / "docs/index.html").write_text(page, encoding="utf-8")
 print("cases:", case_count, "groups:", [t for t, _, _ in groups])

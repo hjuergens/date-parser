@@ -178,6 +178,37 @@
   .ctx { color: var(--muted); }
   .market { margin: 0 0 8px; font-size: 0.86rem; color: var(--muted); }
 
+  /* playground */
+  .play { margin-top: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .play label { display: block; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 4px; }
+  .play-input {
+    width: 100%; min-height: 3.2em; resize: vertical;
+    font: 0.95rem/1.5 var(--mono); color: var(--text);
+    background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px;
+  }
+  .play-input:focus, .play-row input:focus, .play-row select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .play-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
+  .play-row > div { flex: 1 1 180px; }
+  .play-row input, .play-row select {
+    width: 100%; font: 0.92rem/1.4 var(--sans); color: var(--text);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 0; padding: 0; list-style: none; }
+  .chips button {
+    font: 0.82rem/1.3 var(--mono); color: var(--text); background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px; cursor: pointer;
+  }
+  .chips button:hover { border-color: var(--accent); color: var(--accent); }
+  .play-out { margin-top: 16px; min-height: 2.5em; }
+  .play-out .dates { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0; padding: 0; list-style: none; }
+  .play-out .dates li { font-family: var(--mono); font-size: 0.9rem; }
+  .play-out .dates small { color: var(--muted); font-family: var(--sans); margin-right: 4px; }
+  .play-out pre { margin-top: 8px; padding: 8px 12px; }
+  .play-out mark { background: color-mix(in srgb, var(--err) 25%, transparent); color: inherit; border-bottom: 2px solid var(--err); }
+  .play-status { color: var(--muted); font-size: 0.9rem; margin: 0 0 6px; }
+  .cases td:first-child code.try { cursor: pointer; }
+  .cases td:first-child code.try:hover, .cases td:first-child code.try:focus-visible { color: var(--accent); outline: none; }
+
   footer { max-width: 980px; margin: 0 auto; padding: 24px 16px 48px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.9rem; }
 
   @media (max-width: 720px) {
@@ -286,6 +317,31 @@ EVENT    = "@" UPPER { UPPER | DIGIT | "_" } .  <span class="c">(* @FOMC *)</spa
       Hijri (Umm al-Qura), Hebrew and Chinese months are month names too: <code>1 SHAWWAL</code> is the day in the year of <code>T</code>,
       an error if it falls there twice or not at all. <code>24 DEC IF MON TUE WED THU</code> keeps a date only on these weekdays.
     </p>
+  </section>
+
+  <section aria-labelledby="try">
+    <h2 id="try">Try it</h2>
+    <p class="lead">The Peggy parser of this project, running in your browser: type a schedule, pick the base date <code>T</code> and a market,
+      and the dates appear as you type. The markets and events are the ones of the test cases; a click on a test case below loads it here.</p>
+    <div class="play" id="play">
+      <label for="play-input">Schedule</label>
+      <textarea id="play-input" class="play-input" spellcheck="false" autocapitalize="characters" autocomplete="off">T + 3M &gt; IMM, T &gt; SPOT USDCAD</textarea>
+      <div class="play-row">
+        <div><label for="play-base">Base date T</label><input id="play-base" type="date"></div>
+        <div><label for="play-market">Market</label><select id="play-market"><option value="">Saturdays and Sundays only</option></select></div>
+      </div>
+      <ul class="chips" aria-label="Examples">
+        <li><button type="button" data-input="2015-06-09 + 3M, 09.06.2015, (2015-01-15 : 1Q : 2015-12-31)">notations and a range</button></li>
+        <li><button type="button" data-input="T + 2B, TOM, SPOT EURUSD, SPOT USDCAD" data-market="XNYS">business days and spot</button></li>
+        <li><button type="button" data-input="T &gt; IMM, TOM &gt; IMM, SPOT &gt; IMM, SPOT - 1D &gt; IMM">next IMM date</button></li>
+        <li><button type="button" data-input="4 JUL {SAT - 1D, SUN + 1D}, 4 THU NOV, 25 DEC {SAT - 1D, SUN + 1D}">US holidays</button></li>
+        <li><button type="button" data-input="EASTER - 2D, EASTER + 1D, 1 SHAWWAL, 10 TISHRI, 1 ZHENGYUE">Easter and lunar months</button></li>
+        <li><button type="button" data-input="12 MAY - 1D &gt; NEXT SAT + 20D &gt; PRECEDING" data-market="XFED">US employment report</button></li>
+        <li><button type="button" data-input="@FOMC + 1B" data-base="2025-01-01" data-market="XNYS">after each FOMC decision</button></li>
+        <li><button type="button" data-input="2015-06-09 + 3X">a syntax error</button></li>
+      </ul>
+      <div class="play-out" id="play-out" aria-live="polite"><p class="play-status">Loading the parser …</p></div>
+    </div>
   </section>
 
   <section aria-labelledby="tools">
@@ -1198,6 +1254,508 @@ mvn -pl date-rule-coco test           <span class="c"># one module</span></code>
     });
     var initial = document.getElementById('tab-' + location.hash.slice(1));
     if (initial) select(initial, false);
+  })();
+</script>
+<script type="text/plain" id="peg-grammar">/*
+ * Shared "schedule" example (see examples/schedule.txt in the project root):
+ *   2015-06-09 + 3M, 09.06.2015, (2015-01-15 : 1Q : 2015-12-31)
+ * Dates are {year, month, day} objects, periods {months, days, business}; the arithmetic
+ * follows java.time: months first (day clamped to the end of the month), then days.
+ * parse() returns the rule, a function of the context { base, market, events } that is evaluated later;
+ * a market is an object with isBusinessDay(date), the default skips Saturdays and Sundays only;
+ * events maps a name to a rule.
+ */
+
+{{
+  function daysInMonth(year, month) {
+    return new Date(Date.UTC(year, month, 0)).getUTCDate();
+  }
+
+  function date(year, month, day) {
+    if (month < 1 || month > 12 || day < 1 || day > daysInMonth(year, month)) {
+      throw new RangeError(`invalid date ${year}-${month}-${day}`);
+    }
+    return { year, month, day };
+  }
+
+  // the default market: Monday to Friday, no holidays
+  const WEEKENDS = { isBusinessDay: (d) => new Date(Date.UTC(d.year, d.month - 1, d.day)).getUTCDay() % 6 !== 0 };
+
+  // the rule of a schedule; base date, market and events only come with the evaluation
+  function rule(dates) {
+    return (context = {}) => dates({ base: context.base, market: context.market ?? WEEKENDS, events: context.events ?? {} });
+  }
+
+  // thrown by an event date that is not bound to one occurrence yet; values() catches it
+  class Unbound {
+    constructor(name) {
+      this.name = name;
+    }
+  }
+
+  // @NAME: one occurrence of the event, bound by values()
+  function event(name) {
+    return (c) => {
+      if (!c.occurrence) throw new Unbound(name);
+      return c.occurrence;
+    };
+  }
+
+  // the dates of the event in the year: its rule evaluated with the first of January as base date
+  function occurrences(name, year, c) {
+    if (!c.events[name]) throw new Error(`no event ${name}`);
+    return c.events[name]({ base: { year, month: 1, day: 1 }, market: c.market, events: c.events })
+      .filter((d) => d.year === year).sort(compare);
+  }
+
+  // the dates of an expression: one, or one per occurrence in the base year if it starts with an event
+  function values(expr, c) {
+    try {
+      return [expr(c)];
+    } catch (e) {
+      if (!(e instanceof Unbound)) throw e;
+      return occurrences(e.name, base(c).year, c).map((d) => expr({ ...c, occurrence: d }));
+    }
+  }
+
+  // the date of an expression that must have exactly one, such as the end of a range
+  function single(expr, c) {
+    const dates = values(expr, c);
+    if (dates.length !== 1) throw new Error(`${dates.length} dates where one is needed`);
+    return dates[0];
+  }
+
+  // T: the base date of the evaluation
+  function base(context) {
+    if (!context.base) throw new Error('no base date');
+    return context.base;
+  }
+
+  function plus(d, period, sign, market) {
+    if (period.business) return plusBusinessDays(d, sign * period.business, market);
+    const total = d.year * 12 + (d.month - 1) + sign * period.months;
+    const year = Math.floor(total / 12);
+    const month = total - year * 12 + 1;
+    const clamped = new Date(Date.UTC(year, month - 1, Math.min(d.day, daysInMonth(year, month))));
+    clamped.setUTCDate(clamped.getUTCDate() + sign * period.days);
+    return { year: clamped.getUTCFullYear(), month: clamped.getUTCMonth() + 1, day: clamped.getUTCDate() };
+  }
+
+  // the third Wednesday of March, June, September or December strictly after d
+  function nextImm(d) {
+    for (let { year, month } = d; ; month === 12 ? (year++, month = 1) : month++) {
+      if (month % 3 !== 0) continue;
+      const firstDay = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
+      const imm = { year, month, day: 1 + (3 - firstDay + 7) % 7 + 14 };
+      if (compare(imm, d) > 0) return imm;
+    }
+  }
+
+  // count business days of the market later (earlier if negative)
+  function plusBusinessDays(d, count, market) {
+    const t = new Date(Date.UTC(d.year, d.month - 1, d.day));
+    for (let days = 0; days !== count; ) {
+      t.setUTCDate(t.getUTCDate() + Math.sign(count));
+      const next = { year: t.getUTCFullYear(), month: t.getUTCMonth() + 1, day: t.getUTCDate() };
+      if (market.isBusinessDay(next)) days += Math.sign(count);
+    }
+    return { year: t.getUTCFullYear(), month: t.getUTCMonth() + 1, day: t.getUTCDate() };
+  }
+
+  // FX spot: T+1 for USD against CAD, TRY, PHP or RUB, otherwise T+2
+  function spot(d, pair, market) {
+    return plusBusinessDays(d, /^(USD(CAD|TRY|PHP|RUB)|(CAD|TRY|PHP|RUB)USD)$/.test(pair) ? 1 : 2, market);
+  }
+
+  // the IMM date strictly before d
+  function previousImm(d) {
+    for (let { year, month } = d; ; month === 1 ? (year--, month = 12) : month--) {
+      if (month % 3 !== 0) continue;
+      const firstDay = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
+      const imm = { year, month, day: 1 + (3 - firstDay + 7) % 7 + 14 };
+      if (compare(imm, d) < 0) return imm;
+    }
+  }
+
+  const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  const WEEKDAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+
+  // 0 = Monday, as in WEEKDAYS
+  function weekday(d) {
+    return (new Date(Date.UTC(d.year, d.month - 1, d.day)).getUTCDay() + 6) % 7;
+  }
+
+  function plusDays(d, days) {
+    return plus(d, { months: 0, days, business: 0 }, 1, WEEKENDS);
+  }
+
+  // annual dates: functions of the year
+  // Solar: the Chinese calendar of lunar-javascript, passed as parse option (a generated parser can't import it)
+  function monthDay(day, month, Solar) {
+    if (!MONTHS.includes(month)) return (year) => lunar(day, month, year, Solar);
+    return (year) => date(year, MONTHS.indexOf(month) + 1, day);
+  }
+
+  const HIJRI = ['MUHARRAM', 'SAFAR', 'RABIALAWWAL', 'RABIALTHANI', 'JUMADAALULA', 'JUMADAALAKHIRA', 'RAJAB', 'SHABAN',
+    'RAMADAN', 'SHAWWAL', 'DHULQADAH', 'DHULHIJJAH'];
+  const HEBREW = ['NISAN', 'IYAR', 'SIVAN', 'TAMMUZ', 'AV', 'ELUL', 'TISHRI', 'HESHVAN', 'KISLEV', 'TEVET', 'SHEVAT', 'ADAR', 'ADARII'];
+  const CHINESE = ['ZHENGYUE', 'ERYUE', 'SANYUE', 'SIYUE', 'WUYUE', 'LIUYUE', 'QIYUE', 'BAYUE', 'JIUYUE', 'SHIYUE', 'DONGYUE', 'LAYUE'];
+  // Intl's names of the Hebrew months; Adar I (in a leap year) counts as ADAR
+  const INTL_HEBREW = { Tishri: 'TISHRI', Heshvan: 'HESHVAN', Kislev: 'KISLEV', Tevet: 'TEVET', Shevat: 'SHEVAT', 'Adar I': 'ADAR',
+    Adar: 'ADAR', 'Adar II': 'ADARII', Nisan: 'NISAN', Iyar: 'IYAR', Sivan: 'SIVAN', Tamuz: 'TAMMUZ', Av: 'AV', Elul: 'ELUL' };
+  const formats = {};
+
+  // the month and day of a date in the calendar of the given month: Hijri (Umm al-Qura) and Hebrew from Intl,
+  // Chinese from lunar-javascript (Intl's astronomical Chinese calendar misses some new moons close to midnight)
+  function lunarMonthDay(d, like, Solar) {
+    if (CHINESE.includes(like)) {
+      if (!Solar) throw new Error('Chinese months need the parse option Solar (lunar-javascript)');
+      const lunar = Solar.fromYmd(d.year, d.month, d.day).getLunar();
+      return { month: CHINESE[lunar.getMonth() - 1], day: lunar.getDay() };   // a leap month is negative: no name
+    }
+    const calendar = HIJRI.includes(like) ? 'islamic-umalqura' : 'hebrew';
+    formats[calendar] ??= new Intl.DateTimeFormat(`en-u-ca-${calendar}`,
+      { timeZone: 'UTC', month: calendar === 'hebrew' ? 'long' : 'numeric', day: 'numeric' });
+    const parts = Object.fromEntries(formats[calendar].formatToParts(new Date(Date.UTC(d.year, d.month - 1, d.day)))
+      .map((part) => [part.type, part.value]));
+    const month = calendar === 'hebrew' ? INTL_HEBREW[parts.month] : HIJRI[Number(parts.month) - 1];
+    return { month, day: Number(parts.day) };
+  }
+
+  // the day of a lunar month in the Gregorian year; an error if it occurs twice or not at all
+  function lunar(day, month, year, Solar) {
+    const hits = [];
+    for (let d = date(year, 1, 1); d.year === year; d = plusDays(d, 1)) {
+      const md = lunarMonthDay(d, month, Solar);
+      if (md.month === month && md.day === day) hits.push(d);
+    }
+    if (hits.length !== 1) throw new RangeError(`${day} ${month} occurs ${hits.length} times in ${year}`);
+    return hits[0];
+  }
+
+  function nthWeekday(n, wd, month) {
+    return (year) => {
+      const first = date(year, MONTHS.indexOf(month) + 1, 1);
+      const d = plusDays(first, (WEEKDAYS.indexOf(wd) - weekday(first) + 7) % 7 + 7 * (n - 1));
+      if (n < 1 || d.month !== first.month) throw new RangeError(`no ${n} ${wd} ${month} in ${year}`);
+      return d;
+    };
+  }
+
+  function lastWeekday(wd, month) {
+    return (year) => {
+      const m = MONTHS.indexOf(month) + 1;
+      const last = date(year, m, daysInMonth(year, m));
+      return plusDays(last, -((weekday(last) - WEEKDAYS.indexOf(wd) + 7) % 7));
+    };
+  }
+
+  // Western Easter Sunday (anonymous Gregorian algorithm)
+  function easter(year) {
+    const a = year % 19, b = Math.floor(year / 100), c = year % 100, d = Math.floor(b / 4), e = b % 4;
+    const g = Math.floor((8 * b + 13) / 25), h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4;
+    const l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+    return date(year, Math.floor((h + l - 7 * m + 114) / 31), (h + l - 7 * m + 114) % 31 + 1);
+  }
+
+  // anchors of > NEXT and > PREV: the first match strictly after (direction 1) or before (-1) d
+  function annualAnchor(annual) {
+    return (d, direction) => {
+      const match = annual(d.year);
+      return Math.sign(compare(match, d)) === direction ? match : annual(d.year + direction);
+    };
+  }
+
+  function eventAnchor(name) {
+    return (d, direction, c) => {
+      for (const year of [d.year, d.year + direction]) {
+        const found = occurrences(name, year, c).filter((o) => Math.sign(compare(o, d)) === direction);
+        if (found.length) return direction > 0 ? found[0] : found[found.length - 1];
+      }
+      throw new Error(`no ${name} ${direction > 0 ? 'after' : 'before'} the date`);
+    };
+  }
+
+  function weekdayAnchor(wd) {
+    return (d, direction) => plusDays(d, direction * ((direction * (WEEKDAYS.indexOf(wd) - weekday(d)) % 7 + 7) % 7 || 7));
+  }
+
+  // FOLLOWING, PRECEDING, MODFOLLOWING (following unless that leaves the month); BOM, EOM, BOY, EOY
+  function roll(d, convention, market) {
+    switch (convention) {
+      case 'FOLLOWING': return market.isBusinessDay(d) ? d : plusBusinessDays(d, 1, market);
+      case 'PRECEDING': return market.isBusinessDay(d) ? d : plusBusinessDays(d, -1, market);
+      case 'MODFOLLOWING': {
+        const following = roll(d, 'FOLLOWING', market);
+        return following.month === d.month ? following : roll(d, 'PRECEDING', market);
+      }
+      case 'BOM': return { ...d, day: 1 };
+      case 'EOM': return { ...d, day: daysInMonth(d.year, d.month) };
+      case 'BOY': return { year: d.year, month: 1, day: 1 };
+      case 'EOY': return { year: d.year, month: 12, day: 31 };
+    }
+  }
+
+  // the first shift for the weekday of d applies; shifts don't chain
+  function observe(d, shifts, market) {
+    const shift = shifts.find((s) => WEEKDAYS.indexOf(s.weekday) === weekday(d));
+    return shift ? plus(d, shift.period, shift.sign, market) : d;
+  }
+
+  function compare(a, b) {
+    return a.year - b.year || a.month - b.month || a.day - b.day;
+  }
+
+  // not "range": Peggy provides range() (the location of the match) in actions
+  function expand(first, step, last, market) {
+    const dates = [];
+    for (let k = 0; ; k++) {
+      const d = plus(first, { months: k * step.months, days: k * step.days, business: k * step.business }, 1, market);
+      if (compare(d, last) > 0) return dates;
+      dates.push(d);
+    }
+  }
+}}
+
+Schedule
+  = _ r:Range _ { return rule(r); }
+  / _ head:Item tail:(_ "," _ @Item)* _ { return rule((c) => [head, ...tail].flatMap((item) => values(item, c)).filter((d) => d !== null)); }
+
+// 24 DEC IF MON TUE WED THU: the date only on these weekdays
+Item
+  = expr:Expr _ "IF" days:(_ @Weekday)+ {
+      return (c) => { const d = expr(c); return days.includes(WEEKDAYS[weekday(d)]) ? d : null; };
+    }
+  / Expr
+
+Range
+  = "(" _ first:Expr _ ":" _ step:Period _ ":" _ last:Expr _ ")" {
+      if (step.months <= 0 && step.days <= 0 && step.business <= 0) throw new RangeError('step must be positive');
+      return (c) => expand(single(first, c), step, single(last, c), c.market);
+    }
+
+// periods are applied from left to right
+Expr
+  = start:Date shifts:(_ @Shift)* { return (c) => shifts.reduce((d, shift) => shift(d, c), start(c)); }
+
+Shift
+  = "+" _ p:Period { return (d, c) => plus(d, p, 1, c.market); }
+  / "-" _ p:Period { return (d, c) => plus(d, p, -1, c.market); }
+  / ">" _ "IMM" { return nextImm; }
+  / ">" _ "SPOT" pair:(_ @Pair)? { return (d, c) => spot(d, pair, c.market); }
+  / ">" _ convention:$("FOLLOWING" / "PRECEDING" / "MODFOLLOWING" / "BOM" / "EOM" / "BOY" / "EOY") {
+      return (d, c) => roll(d, convention, c.market);
+    }
+  / ">" _ "NEXT" _ anchor:Anchor { return (d, c) => anchor(d, 1, c); }
+  / ">" _ "PREV" _ anchor:Anchor { return (d, c) => anchor(d, -1, c); }
+  / "{" _ head:Observe tail:(_ "," _ @Observe)* _ "}" {
+      return (d, c) => observe(d, [head, ...tail], c.market);
+    }
+
+Observe
+  = weekday:Weekday _ sign:("+" / "-") _ period:Period { return { weekday, sign: sign === '+' ? 1 : -1, period }; }
+
+Anchor
+  = wd:Weekday { return weekdayAnchor(wd); }
+  / "BD" { return (d, direction, c) => plusBusinessDays(d, direction, c.market); }
+  / "IMM" { return (d, direction) => direction > 0 ? nextImm(d) : previousImm(d); }
+  / annual:Annual { return annualAnchor(annual); }
+  / name:Event { return eventAnchor(name); }
+
+Date
+  = "TOM" { return (c) => plusBusinessDays(base(c), 1, c.market); }  // before "T": no lexer, so order matters
+  / "T" { return base; }  // the base date
+  / "SPOT" pair:(_ @Pair)? { return (c) => spot(base(c), pair, c.market); }
+  / y:Number _ "-" _ m:Number _ "-" _ d:Number { const value = date(y, m, d); return () => value; }  // ISO
+  / d:Number _ "." _ m:Number _ "." _ y:Number { const value = date(y, m, d); return () => value; }  // German
+  / m:Number _ "/" _ d:Number _ "/" _ y:Number { const value = date(y, m, d); return () => value; }  // US
+  / annual:Annual { return (c) => annual(base(c).year); }
+  / name:Event { return event(name); }
+
+// dates that recur every year, evaluated in the year of the base date
+Annual
+  = day:Number _ month:Month { return monthDay(day, month, options.Solar); }
+  / n:Number _ wd:Weekday _ month:Month { return nthWeekday(n, wd, month); }
+  / "LAST" _ wd:Weekday _ month:Month { return lastWeekday(wd, month); }
+  / "EASTER" { return easter; }
+
+// Gregorian, then Hijri (Umm al-Qura), Hebrew and Chinese months; ordered choice, so ADARII before ADAR
+Month
+  = $("JAN" / "FEB" / "MAR" / "APR" / "MAY" / "JUN" / "JUL" / "AUG" / "SEP" / "OCT" / "NOV" / "DEC"
+    / "MUHARRAM" / "SAFAR" / "RABIALAWWAL" / "RABIALTHANI" / "JUMADAALULA" / "JUMADAALAKHIRA" / "RAJAB" / "SHABAN"
+    / "RAMADAN" / "SHAWWAL" / "DHULQADAH" / "DHULHIJJAH"
+    / "NISAN" / "IYAR" / "SIVAN" / "TAMMUZ" / "AV" / "ELUL" / "TISHRI" / "HESHVAN" / "KISLEV" / "TEVET" / "SHEVAT"
+    / "ADARII" / "ADAR"
+    / "ZHENGYUE" / "ERYUE" / "SANYUE" / "SIYUE" / "WUYUE" / "LIUYUE" / "QIYUE" / "BAYUE" / "JIUYUE" / "SHIYUE"
+    / "DONGYUE" / "LAYUE")
+
+// a named event such as @FOMC; the sigil keeps names apart from keywords and pairs
+Event
+  = "@" name:$([A-Z] [A-Z0-9_]*) { return name; }
+
+Weekday
+  = $("MON" / "TUE" / "WED" / "THU" / "FRI" / "SAT" / "SUN")
+
+// currency pair such as EURUSD; without a lexer nothing reserves the six-letter keywords, so they're excluded here
+Pair
+  = !("EASTER" / "SHABAN" / "TAMMUZ" / "TISHRI" / "KISLEV" / "SHEVAT" / "ADARII" / "SANYUE" / "LIUYUE" / "JIUYUE" / "SHIYUE")
+    pair:$[A-Z]|6| { return pair; }
+
+Period
+  = n:Number _ unit:[DWMQYB] {
+      switch (unit) {
+        case 'D': return { months: 0, days: n, business: 0 };
+        case 'W': return { months: 0, days: 7 * n, business: 0 };
+        case 'M': return { months: n, days: 0, business: 0 };
+        case 'Q': return { months: 3 * n, days: 0, business: 0 };
+        case 'Y': return { months: 12 * n, days: 0, business: 0 };
+        case 'B': return { months: 0, days: 0, business: n };
+      }
+    }
+
+Number "number"
+  = digits:$[0-9]+ { return parseInt(digits, 10); }
+
+_ "whitespace"
+  = [ \t\r\n]*
+</script>
+<script type="application/json" id="peg-context">{
+ "markets": {
+  "XTEST": "2015-06-10, 2015-07-03, 2015-12-25",
+  "XNYS": "1 JAN {SUN + 1D}, 3 MON JAN, 3 MON FEB, EASTER - 2D, LAST MON MAY, 19 JUN {SAT - 1D, SUN + 1D}, 4 JUL {SAT - 1D, SUN + 1D}, 1 MON SEP, 4 THU NOV, 25 DEC {SAT - 1D, SUN + 1D}",
+  "XEVE": "1 JAN {SAT - 1D, SUN + 1D}",
+  "XFED": "1 JAN {SAT - 1D, SUN + 1D}, 3 MON JAN, 3 MON FEB, LAST MON MAY, 19 JUN {SAT - 1D, SUN + 1D}, 4 JUL {SAT - 1D, SUN + 1D}, 1 MON SEP, 2 MON OCT, 11 NOV {SAT - 1D, SUN + 1D}, 4 THU NOV, 25 DEC {SAT - 1D, SUN + 1D}"
+ },
+ "events": {
+  "FOMC": "2025-01-29, 2025-03-19, 2025-05-07, 2025-06-18, 2025-07-30, 2025-09-17, 2025-10-29, 2025-12-10",
+  "THANKSGIVING": "4 THU NOV",
+  "NEWYEAR": "1 JAN {SAT - 1D}"
+ }
+}</script>
+<script src="https://cdn.jsdelivr.net/npm/peggy@5.1.1/browser/peggy.min.js" integrity="sha384-INVf3CCoK9rVkW2sqHHXbdcBexMaN9NJOtLlqpBxTMVfQyJNdqFHHiJOs1jdmdAY" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.7/lunar.js" integrity="sha384-CkiJVUh8zHLFNZYeiszeRw7KEWYDIf1yIZ+jVnZt+omUzQLv2ilCE94w1VItn8uH" crossorigin="anonymous"></script>
+<script>
+  // the playground: the parser is generated here from date-rule-peg/schedule.pegjs, evaluated as in its tests
+  (function () {
+    var input = document.getElementById('play-input');
+    var baseInput = document.getElementById('play-base');
+    var marketSelect = document.getElementById('play-market');
+    var out = document.getElementById('play-out');
+    var WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    function escape(text) {
+      return text.replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; });
+    }
+    function iso(d) {
+      return String(d.year).padStart(4, '0') + '-' + String(d.month).padStart(2, '0') + '-' + String(d.day).padStart(2, '0');
+    }
+    function weekday(d) { return WEEKDAYS[new Date(Date.UTC(d.year, d.month - 1, d.day)).getUTCDay()]; }
+    function status(text) { out.innerHTML = '<p class="play-status">' + escape(text) + '</p>'; }
+
+    if (!window.peggy || !window.Solar) {
+      status('The parser could not be loaded (Peggy and lunar-javascript come from cdn.jsdelivr.net).');
+      return;
+    }
+    var options = { Solar: window.Solar };
+    var parser = peggy.generate(document.getElementById('peg-grammar').textContent);
+    var declared = JSON.parse(document.getElementById('peg-context').textContent);
+
+    // events and markets as in the tests: a market is weekends plus the dates its rule yields in the year and around it
+    var events = {};
+    Object.keys(declared.events).forEach(function (name) { events[name] = parser.parse(declared.events[name], options); });
+    var markets = {};
+    function market(name) {
+      if (!name) return undefined;
+      if (!markets[name]) {
+        var rule = parser.parse(declared.markets[name], options);
+        var years = {};
+        var holidays = function (year) {
+          if (!years[year]) {
+            years[year] = {};
+            rule({ base: { year: year, month: 1, day: 1 }, events: events }).forEach(function (d) { years[year][iso(d)] = true; });
+          }
+          return years[year];
+        };
+        markets[name] = {
+          isBusinessDay: function (d) {
+            var key = iso(d);
+            return new Date(Date.UTC(d.year, d.month - 1, d.day)).getUTCDay() % 6 !== 0
+              && !holidays(d.year - 1)[key] && !holidays(d.year)[key] && !holidays(d.year + 1)[key];
+          }
+        };
+      }
+      return markets[name];
+    }
+    Object.keys(declared.markets).forEach(function (name) {
+      var option = document.createElement('option');
+      option.value = name;
+      option.textContent = name;
+      option.title = declared.markets[name];
+      marketSelect.appendChild(option);
+    });
+
+    function run() {
+      var text = input.value;
+      var base = baseInput.value ? baseInput.value.split('-').map(Number) : null;
+      var context = { base: base && { year: base[0], month: base[1], day: base[2] }, market: market(marketSelect.value), events: events };
+      var rule;
+      try {
+        rule = parser.parse(text.trim(), options);
+      } catch (e) {
+        if (!e.location) { status(e.message); return; }
+        var lead = text.length - text.trimStart().length;
+        var from = lead + e.location.start.offset, to = lead + Math.max(e.location.end.offset, e.location.start.offset + 1);
+        out.innerHTML = '<p class="err">syntax error: ' + escape(e.message) + '</p><pre><code>' + escape(text.slice(0, from))
+          + '<mark>' + (escape(text.slice(from, to)) || ' ') + '</mark>' + escape(text.slice(to)) + '</code></pre>';
+        return;
+      }
+      try {
+        var dates = rule(context);
+        out.innerHTML = dates.length === 0 ? '<p class="none">no date</p>'
+          : '<p class="play-status">' + dates.length + (dates.length === 1 ? ' date' : ' dates') + '</p><ul class="dates">'
+            + dates.map(function (d) { return '<li><small>' + weekday(d) + '</small><span class="date">' + iso(d) + '</span></li>'; }).join('') + '</ul>';
+      } catch (e) {
+        out.innerHTML = '<p class="err">error: ' + escape(e.message || String(e)) + '</p>';
+      }
+      if (history.replaceState) {
+        var query = new URLSearchParams({ s: text });
+        if (baseInput.value) query.set('t', baseInput.value);
+        if (marketSelect.value) query.set('m', marketSelect.value);
+        history.replaceState(null, '', '?' + query + location.hash);
+      }
+    }
+
+    function load(text, base, marketName) {
+      input.value = text;
+      if (base) baseInput.value = base;
+      marketSelect.value = marketName && declared.markets[marketName] ? marketName : '';
+      run();
+    }
+
+    var today = new Date();
+    baseInput.value = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+    var params = new URLSearchParams(location.search);
+    if (params.has('s')) load(params.get('s'), params.get('t'), params.get('m')); else run();
+
+    input.addEventListener('input', run);
+    baseInput.addEventListener('input', run);
+    marketSelect.addEventListener('change', run);
+    Array.prototype.forEach.call(document.querySelectorAll('.chips button'), function (button) {
+      button.addEventListener('click', function () { load(button.dataset.input, button.dataset.base, button.dataset.market); });
+    });
+    // a test case: [base market] input; the case's market and base date go into the fields
+    Array.prototype.forEach.call(document.querySelectorAll('.cases td:first-child code'), function (code) {
+      code.classList.add('try');
+      code.tabIndex = 0;
+      code.title = 'Try it';
+      var open = function () {
+        var match = code.textContent.match(/^\[(\S+)(?: (\S+))?\] (.*)$/);
+        if (match) load(match[3], match[1], match[2]); else load(code.textContent, null, null);
+        document.getElementById('try').scrollIntoView({ behavior: 'smooth' });
+      };
+      code.addEventListener('click', open);
+      code.addEventListener('keydown', function (e) { if (e.key === 'Enter') open(); });
+    });
   })();
 </script>
 </body>

@@ -178,6 +178,37 @@
   .ctx { color: var(--muted); }
   .market { margin: 0 0 8px; font-size: 0.86rem; color: var(--muted); }
 
+  /* playground */
+  .play { margin-top: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .play label { display: block; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 4px; }
+  .play-input {
+    width: 100%; min-height: 3.2em; resize: vertical;
+    font: 0.95rem/1.5 var(--mono); color: var(--text);
+    background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px;
+  }
+  .play-input:focus, .play-row input:focus, .play-row select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .play-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
+  .play-row > div { flex: 1 1 180px; }
+  .play-row input, .play-row select {
+    width: 100%; font: 0.92rem/1.4 var(--sans); color: var(--text);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 0; padding: 0; list-style: none; }
+  .chips button {
+    font: 0.82rem/1.3 var(--mono); color: var(--text); background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px; cursor: pointer;
+  }
+  .chips button:hover { border-color: var(--accent); color: var(--accent); }
+  .play-out { margin-top: 16px; min-height: 2.5em; }
+  .play-out .dates { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0; padding: 0; list-style: none; }
+  .play-out .dates li { font-family: var(--mono); font-size: 0.9rem; }
+  .play-out .dates small { color: var(--muted); font-family: var(--sans); margin-right: 4px; }
+  .play-out pre { margin-top: 8px; padding: 8px 12px; }
+  .play-out mark { background: color-mix(in srgb, var(--err) 25%, transparent); color: inherit; border-bottom: 2px solid var(--err); }
+  .play-status { color: var(--muted); font-size: 0.9rem; margin: 0 0 6px; }
+  .cases td:first-child code.try { cursor: pointer; }
+  .cases td:first-child code.try:hover, .cases td:first-child code.try:focus-visible { color: var(--accent); outline: none; }
+
   footer { max-width: 980px; margin: 0 auto; padding: 24px 16px 48px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.9rem; }
 
   @media (max-width: 720px) {
@@ -286,6 +317,31 @@ EVENT    = "@" UPPER { UPPER | DIGIT | "_" } .  <span class="c">(* @FOMC *)</spa
       Hijri (Umm al-Qura), Hebrew and Chinese months are month names too: <code>1 SHAWWAL</code> is the day in the year of <code>T</code>,
       an error if it falls there twice or not at all. <code>24 DEC IF MON TUE WED THU</code> keeps a date only on these weekdays.
     </p>
+  </section>
+
+  <section aria-labelledby="try">
+    <h2 id="try">Try it</h2>
+    <p class="lead">The Peggy parser of this project, running in your browser: type a schedule, pick the base date <code>T</code> and a market,
+      and the dates appear as you type. The markets and events are the ones of the test cases; a click on a test case below loads it here.</p>
+    <div class="play" id="play">
+      <label for="play-input">Schedule</label>
+      <textarea id="play-input" class="play-input" spellcheck="false" autocapitalize="characters" autocomplete="off">T + 3M &gt; IMM, T &gt; SPOT USDCAD</textarea>
+      <div class="play-row">
+        <div><label for="play-base">Base date T</label><input id="play-base" type="date"></div>
+        <div><label for="play-market">Market</label><select id="play-market"><option value="">Saturdays and Sundays only</option></select></div>
+      </div>
+      <ul class="chips" aria-label="Examples">
+        <li><button type="button" data-input="2015-06-09 + 3M, 09.06.2015, (2015-01-15 : 1Q : 2015-12-31)">notations and a range</button></li>
+        <li><button type="button" data-input="T + 2B, TOM, SPOT EURUSD, SPOT USDCAD" data-market="XNYS">business days and spot</button></li>
+        <li><button type="button" data-input="T &gt; IMM, TOM &gt; IMM, SPOT &gt; IMM, SPOT - 1D &gt; IMM">next IMM date</button></li>
+        <li><button type="button" data-input="4 JUL {SAT - 1D, SUN + 1D}, 4 THU NOV, 25 DEC {SAT - 1D, SUN + 1D}">US holidays</button></li>
+        <li><button type="button" data-input="EASTER - 2D, EASTER + 1D, 1 SHAWWAL, 10 TISHRI, 1 ZHENGYUE">Easter and lunar months</button></li>
+        <li><button type="button" data-input="12 MAY - 1D &gt; NEXT SAT + 20D &gt; PRECEDING" data-market="XFED">US employment report</button></li>
+        <li><button type="button" data-input="@FOMC + 1B" data-base="2025-01-01" data-market="XNYS">after each FOMC decision</button></li>
+        <li><button type="button" data-input="2015-06-09 + 3X">a syntax error</button></li>
+      </ul>
+      <div class="play-out" id="play-out" aria-live="polite"><p class="play-status">Loading the parser …</p></div>
+    </div>
   </section>
 
   <section aria-labelledby="tools">
@@ -420,6 +476,134 @@ mvn -pl date-rule-coco test           <span class="c"># one module</span></code>
     });
     var initial = document.getElementById('tab-' + location.hash.slice(1));
     if (initial) select(initial, false);
+  })();
+</script>
+<script type="text/plain" id="peg-grammar">{{PEG_GRAMMAR}}</script>
+<script type="application/json" id="peg-context">{{PEG_CONTEXT}}</script>
+<script src="https://cdn.jsdelivr.net/npm/peggy@5.1.1/browser/peggy.min.js" integrity="sha384-INVf3CCoK9rVkW2sqHHXbdcBexMaN9NJOtLlqpBxTMVfQyJNdqFHHiJOs1jdmdAY" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.7/lunar.js" integrity="sha384-CkiJVUh8zHLFNZYeiszeRw7KEWYDIf1yIZ+jVnZt+omUzQLv2ilCE94w1VItn8uH" crossorigin="anonymous"></script>
+<script>
+  // the playground: the parser is generated here from date-rule-peg/schedule.pegjs, evaluated as in its tests
+  (function () {
+    var input = document.getElementById('play-input');
+    var baseInput = document.getElementById('play-base');
+    var marketSelect = document.getElementById('play-market');
+    var out = document.getElementById('play-out');
+    var WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    function escape(text) {
+      return text.replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; });
+    }
+    function iso(d) {
+      return String(d.year).padStart(4, '0') + '-' + String(d.month).padStart(2, '0') + '-' + String(d.day).padStart(2, '0');
+    }
+    function weekday(d) { return WEEKDAYS[new Date(Date.UTC(d.year, d.month - 1, d.day)).getUTCDay()]; }
+    function status(text) { out.innerHTML = '<p class="play-status">' + escape(text) + '</p>'; }
+
+    if (!window.peggy || !window.Solar) {
+      status('The parser could not be loaded (Peggy and lunar-javascript come from cdn.jsdelivr.net).');
+      return;
+    }
+    var options = { Solar: window.Solar };
+    var parser = peggy.generate(document.getElementById('peg-grammar').textContent);
+    var declared = JSON.parse(document.getElementById('peg-context').textContent);
+
+    // events and markets as in the tests: a market is weekends plus the dates its rule yields in the year and around it
+    var events = {};
+    Object.keys(declared.events).forEach(function (name) { events[name] = parser.parse(declared.events[name], options); });
+    var markets = {};
+    function market(name) {
+      if (!name) return undefined;
+      if (!markets[name]) {
+        var rule = parser.parse(declared.markets[name], options);
+        var years = {};
+        var holidays = function (year) {
+          if (!years[year]) {
+            years[year] = {};
+            rule({ base: { year: year, month: 1, day: 1 }, events: events }).forEach(function (d) { years[year][iso(d)] = true; });
+          }
+          return years[year];
+        };
+        markets[name] = {
+          isBusinessDay: function (d) {
+            var key = iso(d);
+            return new Date(Date.UTC(d.year, d.month - 1, d.day)).getUTCDay() % 6 !== 0
+              && !holidays(d.year - 1)[key] && !holidays(d.year)[key] && !holidays(d.year + 1)[key];
+          }
+        };
+      }
+      return markets[name];
+    }
+    Object.keys(declared.markets).forEach(function (name) {
+      var option = document.createElement('option');
+      option.value = name;
+      option.textContent = name;
+      option.title = declared.markets[name];
+      marketSelect.appendChild(option);
+    });
+
+    function run() {
+      var text = input.value;
+      var base = baseInput.value ? baseInput.value.split('-').map(Number) : null;
+      var context = { base: base && { year: base[0], month: base[1], day: base[2] }, market: market(marketSelect.value), events: events };
+      var rule;
+      try {
+        rule = parser.parse(text.trim(), options);
+      } catch (e) {
+        if (!e.location) { status(e.message); return; }
+        var lead = text.length - text.trimStart().length;
+        var from = lead + e.location.start.offset, to = lead + Math.max(e.location.end.offset, e.location.start.offset + 1);
+        out.innerHTML = '<p class="err">syntax error: ' + escape(e.message) + '</p><pre><code>' + escape(text.slice(0, from))
+          + '<mark>' + (escape(text.slice(from, to)) || ' ') + '</mark>' + escape(text.slice(to)) + '</code></pre>';
+        return;
+      }
+      try {
+        var dates = rule(context);
+        out.innerHTML = dates.length === 0 ? '<p class="none">no date</p>'
+          : '<p class="play-status">' + dates.length + (dates.length === 1 ? ' date' : ' dates') + '</p><ul class="dates">'
+            + dates.map(function (d) { return '<li><small>' + weekday(d) + '</small><span class="date">' + iso(d) + '</span></li>'; }).join('') + '</ul>';
+      } catch (e) {
+        out.innerHTML = '<p class="err">error: ' + escape(e.message || String(e)) + '</p>';
+      }
+      if (history.replaceState) {
+        var query = new URLSearchParams({ s: text });
+        if (baseInput.value) query.set('t', baseInput.value);
+        if (marketSelect.value) query.set('m', marketSelect.value);
+        history.replaceState(null, '', '?' + query + location.hash);
+      }
+    }
+
+    function load(text, base, marketName) {
+      input.value = text;
+      if (base) baseInput.value = base;
+      marketSelect.value = marketName && declared.markets[marketName] ? marketName : '';
+      run();
+    }
+
+    var today = new Date();
+    baseInput.value = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+    var params = new URLSearchParams(location.search);
+    if (params.has('s')) load(params.get('s'), params.get('t'), params.get('m')); else run();
+
+    input.addEventListener('input', run);
+    baseInput.addEventListener('input', run);
+    marketSelect.addEventListener('change', run);
+    Array.prototype.forEach.call(document.querySelectorAll('.chips button'), function (button) {
+      button.addEventListener('click', function () { load(button.dataset.input, button.dataset.base, button.dataset.market); });
+    });
+    // a test case: [base market] input; the case's market and base date go into the fields
+    Array.prototype.forEach.call(document.querySelectorAll('.cases td:first-child code'), function (code) {
+      code.classList.add('try');
+      code.tabIndex = 0;
+      code.title = 'Try it';
+      var open = function () {
+        var match = code.textContent.match(/^\[(\S+)(?: (\S+))?\] (.*)$/);
+        if (match) load(match[3], match[1], match[2]); else load(code.textContent, null, null);
+        document.getElementById('try').scrollIntoView({ behavior: 'smooth' });
+      };
+      code.addEventListener('click', open);
+      code.addEventListener('keydown', function (e) { if (e.key === 'Enter') open(); });
+    });
   })();
 </script>
 </body>

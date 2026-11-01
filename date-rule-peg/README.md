@@ -15,7 +15,7 @@ the maintained successor of PEG.js.
 | `(9:1)` | `[]` |
 | `(3:)` | `SyntaxError` |
 
-This is the same `(start:step:end)` notation as `List.g4` in [date-rule-antlr](../date-rule-antlr/README.md).
+This is the same `(start:step:end)` notation as `List.g4` in [date-rule-antlr-java](../date-rule-antlr-java/README.md).
 
 ## Usage
 

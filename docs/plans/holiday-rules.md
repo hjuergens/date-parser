@@ -80,7 +80,7 @@ anchor = WEEKDAY | "BD" | NUM MONTH | NUM WEEKDAY MONTH | "LAST" WEEKDAY MONTH |
 
 ## 2. Semantics (pattern repeats per language)
 Add these to `ScheduleSemantics.java` (6 identical JVM copies, e.g.
-`date-rule-antlr/src/main/java/io/github/hjuergens/time/ScheduleSemantics.java`), to the companion object in
+`date-rule-antlr-java/src/main/java/io/github/hjuergens/time/ScheduleSemantics.java`), to the companion object in
 `ScheduleParsers.scala`, to the initializer of `schedule.pegjs`, and to both copies of `semantics.py`:
 - `monthDay(int day, int month)`, `nthWeekday(int n, DayOfWeek, int month)`, `lastWeekday(DayOfWeek, int month)`,
   `EASTER` (an anonymous Gregorian computus, ~10 lines). All of these are `Expr`s that read `context.base().getYear()`,

@@ -33,8 +33,8 @@ def code(text):
 
 
 TOOLS = [
-    dict(id="antlr", name="ANTLR 4", kind="ALL(*) · adaptive LL", lang="Java",
-         file="date-rule-antlr/src/main/antlr4/io/github/hjuergens/time/DateSchedule.g4",
+    dict(id="antlr-java", name="ANTLR 4 · Java", kind="ALL(*) · adaptive LL", lang="Java",
+         file="date-rule-antlr-java/src/main/antlr4/io/github/hjuergens/time/DateSchedule.g4",
          snippet=lambda f: between(f, r"^// periods are applied", r"^// \{SAT"),
          values="Actions with <code>returns […]</code> attributes",
          errors="Throwing error listener plus <code>BailErrorStrategy</code>",
@@ -101,7 +101,7 @@ TOOLS = [
          pitfall="Scannerless with <code>:auto-whitespace</code>: whitespace may come between any two tokens, so a name like <code>@FOMC</code> must be a single regex to keep <code>@ FOMC</code> out."),
 ]
 
-LINES = {"antlr": "99", "combinators": "215", "coco": "132", "javacc": "143", "sablecc": "88 + 131",
+LINES = {"antlr-java": "99", "combinators": "215", "coco": "132", "javacc": "143", "sablecc": "88 + 131",
          "cup": "75 + 59", "bison": "198", "peg": "275", "lark": "47 + 89", "antlr-python": "67 + 104",
          "instaparse": "44 + 48"}
 LINE_NOTES = {"sablecc": "grammar + evaluator", "cup": "parser + lexer", "bison": "incl. hand-written scanner",

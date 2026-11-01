@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>date-parser</groupId>
-  <artifactId>date-rule-clojure-antlr</artifactId>
+  <artifactId>date-rule-antlr-clojure</artifactId>
   <packaging>jar</packaging>
   <version>0.1.1-SNAPSHOT</version>
-  <name>date-rule-clojure-antlr</name>
+  <name>date-rule-antlr-clojure</name>
   <description>Date Rule Interpreter using Antlr</description>
-  <url>http://hjuergens.github.io/date-parser/date-rule-clojure-antlr</url>
+  <url>http://hjuergens.github.io/date-parser/date-rule-antlr-clojure</url>
   <licenses>
     <license>
       <name>Eclipse Public License</name>

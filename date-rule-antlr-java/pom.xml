@@ -7,7 +7,7 @@
         <version>0.0.2-SNAPSHOT</version>
     </parent>
 
-    <artifactId>date-rule-antlr</artifactId>
+    <artifactId>date-rule-antlr-java</artifactId>
     <version>0.0.7</version>
     <packaging>jar</packaging>
 

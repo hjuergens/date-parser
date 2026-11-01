@@ -196,11 +196,11 @@
     <h1>Eleven parsers, one date language</h1>
     <p class="lead">
       The same small language for dates, periods and ranges, implemented with eleven parser generators and
-      parser libraries, from LL(1) to LALR(1), Earley, GLL and PEG. Every implementation passes the same 228 test cases.
+      parser libraries, from LL(1) to LALR(1), Earley, GLL and PEG. Every implementation passes the same 238 test cases.
     </p>
     <ul class="stats">
       <li><strong>11</strong><span>implementations, 5 languages</span></li>
-      <li><strong>228</strong><span>shared test cases</span></li>
+      <li><strong>238</strong><span>shared test cases</span></li>
       <li><strong>0</strong><span>grammar conflicts</span></li>
       <li><strong>1</strong><span>specification file</span></li>
     </ul>
@@ -293,7 +293,7 @@ EVENT    = "@" UPPER { UPPER | DIGIT | "_" } .  <span class="c">(* @FOMC *)</spa
     <p class="lead">Rules <code>expr</code> and <code>date</code>, copied from the grammar files. Pick a tool:</p>
     <div class="tabs">
       <div role="tablist" aria-label="Parser technology">
-      <button role="tab" id="tab-antlr" aria-controls="panel-antlr" aria-selected="true" tabindex="0">ANTLR 4</button>
+      <button role="tab" id="tab-antlr-java" aria-controls="panel-antlr-java" aria-selected="true" tabindex="0">ANTLR 4 · Java</button>
       <button role="tab" id="tab-antlr-python" aria-controls="panel-antlr-python" aria-selected="false" tabindex="-1">ANTLR 4 · Python</button>
       <button role="tab" id="tab-combinators" aria-controls="panel-combinators" aria-selected="false" tabindex="-1">Scala combinators</button>
       <button role="tab" id="tab-coco" aria-controls="panel-coco" aria-selected="false" tabindex="-1">Coco/R</button>
@@ -305,10 +305,10 @@ EVENT    = "@" UPPER { UPPER | DIGIT | "_" } .  <span class="c">(* @FOMC *)</spa
       <button role="tab" id="tab-lark" aria-controls="panel-lark" aria-selected="false" tabindex="-1">Lark</button>
       <button role="tab" id="tab-instaparse" aria-controls="panel-instaparse" aria-selected="false" tabindex="-1">instaparse</button>
       </div>
-    <div role="tabpanel" id="panel-antlr" aria-labelledby="tab-antlr">
+    <div role="tabpanel" id="panel-antlr-java" aria-labelledby="tab-antlr-java">
       <div class="panel-head">
         <span class="kind">ALL(*) · adaptive LL</span><span class="lang">Java</span>
-        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-antlr/src/main/antlr4/io/github/hjuergens/time/DateSchedule.g4">DateSchedule.g4 ↗</a>
+        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-antlr-java/src/main/antlr4/io/github/hjuergens/time/DateSchedule.g4">DateSchedule.g4 ↗</a>
       </div>
       <pre><code><span class="c">// periods are applied from left to right</span>
 expr returns [Expr value]
@@ -617,7 +617,7 @@ observe  = WEEKDAY SIGN period</code></pre>
         </thead>
         <tbody>
         <tr>
-          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-antlr/src/main/antlr4/io/github/hjuergens/time/DateSchedule.g4">ANTLR 4</a></th>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-antlr-java/src/main/antlr4/io/github/hjuergens/time/DateSchedule.g4">ANTLR 4 · Java</a></th>
           <td>ALL(*) · adaptive LL</td>
           <td class="num">99</td>
           <td>Actions with <code>returns […]</code> attributes</td>
@@ -1065,6 +1065,24 @@ observe  = WEEKDAY SIGN period</code></pre>
           <tr><td><code><span class="ctx">[2025-01-01]</span> FOMC</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code><span class="ctx">[2025-01-01]</span> @fomc</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code><span class="ctx">[2025-01-01]</span> @ FOMC</code></td><td><span class="err">error</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>US employment report (non-farm payrolls)</h3>
+      <p class="market"><code>market XFED = 1 JAN {SAT - 1D, SUN + 1D}, 3 MON JAN, 3 MON FEB, LAST MON MAY, 19 JUN {SAT - 1D, SUN + 1D}, 4 JUL {SAT - 1D, SUN + 1D}, 1 MON SEP, 2 MON OCT, 11 NOV {SAT - 1D, SUN + 1D}, 4 THU NOV, 25 DEC {SAT - 1D, SUN + 1D}</code></p>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2025-01-01 XFED]</span> 3 JAN &gt; NEXT FRI, 12 JAN - 1D &gt; NEXT SAT + 20D &gt; PRECEDING, 12 FEB - 1D &gt; NEXT SAT + 20D &gt; PRECEDING, 12 MAR - 1D &gt; NEXT SAT + 20D &gt; PRECEDING, 12 APR - 1D &gt; NEXT SAT + 20D &gt; PRECEDING, 12 MAY - 1D &gt; NEXT SAT + 20D &gt; PRECEDING, 12 JUN - 1D &gt; NEXT SAT + 20D &gt; PRECEDING, 12 JUL - 1D &gt; NEXT SAT + 20D &gt; PRECEDING, 12 AUG - 1D &gt; NEXT SAT + 20D &gt; PRECEDING, 12 SEP - 1D &gt; NEXT SAT + 20D &gt; PRECEDING, 12 OCT - 1D &gt; NEXT SAT + 20D &gt; PRECEDING, 12 NOV - 1D &gt; NEXT SAT + 20D &gt; PRECEDING</code></td><td><span class="date">2025-01-10</span>, <span class="date">2025-02-07</span>, <span class="date">2025-03-07</span>, <span class="date">2025-04-04</span>, <span class="date">2025-05-02</span>, <span class="date">2025-06-06</span>, <span class="date">2025-07-03</span>, <span class="date">2025-08-01</span>, <span class="date">2025-09-05</span>, <span class="date">2025-10-03</span>, <span class="date">2025-11-07</span>, <span class="date">2025-12-05</span></td></tr>
+          <tr><td><code><span class="ctx">[2024-01-01 XFED]</span> 3 JAN &gt; NEXT FRI, 12 JAN - 1D &gt; NEXT SAT + 20D &gt; PRECEDING, 12 FEB - 1D &gt; NEXT SAT + 20D &gt; PRECEDING, 12 MAR - 1D &gt; NEXT SAT + 20D &gt; PRECEDING, 12 APR - 1D &gt; NEXT SAT + 20D &gt; PRECEDING, 12 MAY - 1D &gt; NEXT SAT + 20D &gt; PRECEDING, 12 JUN - 1D &gt; NEXT SAT + 20D &gt; PRECEDING, 12 JUL - 1D &gt; NEXT SAT + 20D &gt; PRECEDING, 12 AUG - 1D &gt; NEXT SAT + 20D &gt; PRECEDING, 12 SEP - 1D &gt; NEXT SAT + 20D &gt; PRECEDING, 12 OCT - 1D &gt; NEXT SAT + 20D &gt; PRECEDING, 12 NOV - 1D &gt; NEXT SAT + 20D &gt; PRECEDING</code></td><td><span class="date">2024-01-05</span>, <span class="date">2024-02-02</span>, <span class="date">2024-03-08</span>, <span class="date">2024-04-05</span>, <span class="date">2024-05-03</span>, <span class="date">2024-06-07</span>, <span class="date">2024-07-05</span>, <span class="date">2024-08-02</span>, <span class="date">2024-09-06</span>, <span class="date">2024-10-04</span>, <span class="date">2024-11-01</span>, <span class="date">2024-12-06</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01 XFED]</span> 12 APR - 1D &gt; NEXT SAT + 20D &gt; PRECEDING</code></td><td><span class="date">2026-05-08</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01]</span> 1 FRI MAY</code></td><td><span class="date">2026-05-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2020-01-01 XFED]</span> 12 JUN - 1D &gt; NEXT SAT + 20D &gt; PRECEDING</code></td><td><span class="date">2020-07-02</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01 XFED]</span> 12 JUN - 1D &gt; NEXT SAT + 20D &gt; PRECEDING</code></td><td><span class="date">2026-07-02</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01 XFED]</span> 12 FEB - 1D &gt; NEXT SAT + 20D &gt; PRECEDING</code></td><td><span class="date">2026-03-06</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> 3 JAN &gt; NEXT FRI</code></td><td><span class="date">2025-01-10</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01]</span> 3 JAN &gt; NEXT FRI</code></td><td><span class="date">2026-01-09</span></td></tr>
+          <tr><td><code><span class="ctx">[2019-01-01]</span> 3 JAN &gt; NEXT FRI</code></td><td><span class="date">2019-01-04</span></td></tr>
         </tbody>
       </table>
       </section>

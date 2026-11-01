@@ -6,7 +6,7 @@
     <packaging>pom</packaging>
     <version>0.0.2-SNAPSHOT</version>
     <modules>
-        <module>date-rule-antlr</module>
+        <module>date-rule-antlr-java</module>
         <module>date-rule-combinators</module>
         <module>date-rule-coco</module>
         <module>date-rule-sablecc</module>

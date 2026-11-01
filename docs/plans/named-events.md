@@ -46,7 +46,7 @@ EVENT  = "@" UPPER { UPPER | DIGIT | "_" } .
 - Context gains `events: name → rule`, beside `market`.
 
 ### A2. Implementations (pattern per language, as for holiday rules)
-- Semantics: `ScheduleSemantics.java` (date-rule-antlr, copied to the 5 other JVM modules), the companion of
+- Semantics: `ScheduleSemantics.java` (date-rule-antlr-java, copied to the 5 other JVM modules), the companion of
   `ScheduleParsers.scala`, the initializer of `schedule.pegjs`, `semantics.py` (Lark, copied to antlr-python):
   `event(name)` → occurrences in the base year; a multi-valued expr = list of starts mapped through the shifts
   (`expr` already applies shifts in a loop, e.g. `Rules.expr` in `date-rule-lark/src/lark_schedule/__init__.py`);

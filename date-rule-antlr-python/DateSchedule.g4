@@ -1,7 +1,7 @@
 /*
  * Shared "schedule" example (see examples/schedule.txt in the project root):
  *   2015-06-09 + 3M, 09.06.2015, (2015-01-15 : 1Q : 2015-12-31)
- * The rules of date-rule-antlr/.../DateSchedule.g4, but without actions: Java actions can't be
+ * The rules of date-rule-antlr-java/.../DateSchedule.g4, but without actions: Java actions can't be
  * generated into Python, so a visitor (src/antlr_schedule/__init__.py) builds the rule.
  */
 grammar DateSchedule;

@@ -18,7 +18,7 @@ Planned additions are in [TODO.md](TODO.md).
 
 | Module | Technology | Parser type | Language | What works | Tests |
 |---|---|---|---|---|---|
-| [date-rule-antlr](date-rule-antlr/README.md) | ANTLR 4.13 | ALL(*) (adaptive LL) | Java grammars, Joda-Time | **Most complete.** Periods (`14M7W9D`), shifts and selectors (`+3M1W`, `>>>wednesday`, `>Q`), term structures, lists, ISO and other date formats, iCalendar | 5811 TestNG + 3 specs2 IT |
+| [date-rule-antlr-java](date-rule-antlr-java/README.md) | ANTLR 4.13 | ALL(*) (adaptive LL) | Java grammars, Joda-Time | **Most complete.** Periods (`14M7W9D`), shifts and selectors (`+3M1W`, `>>>wednesday`, `>Q`), term structures, lists, ISO and other date formats, iCalendar | 5811 TestNG + 3 specs2 IT |
 | [date-rule-combinators](date-rule-combinators/README.md) | Scala parser combinators 2.x | Recursive descent with backtracking | Scala 2.13, `java.time` | **Natural language:** "next thursday", "three weeks ago", "last monday in month", "2 London business days prior to the 3rd Wednesday …", seasons, business days | 155 JUnit/TestNG + 5751 ScalaTest |
 | [date-rule-coco](date-rule-coco/README.md) | Coco/R | LL(1) | Java | Date lists in ISO, German, and US notation → `LocalDate` | 5739 TestNG |
 | [date-rule-javacc](date-rule-javacc/README.md) | JavaCC (ParserGeneratorCC) | LL(k) | Java | Brace-matching demo grammar, JUnit 4 experiments | 5744 JUnit (+5 ignored) |
@@ -188,7 +188,7 @@ The tools with a lexer get this from their rule order; Peggy, the Scala combinat
 
 | Module | Grammar | Lines¹ | How the rule is built | How errors surface | Notable |
 |---|---|---|---|---|---|
-| antlr | [DateSchedule.g4](date-rule-antlr/src/main/antlr4/io/github/hjuergens/time/DateSchedule.g4) | 99 | actions with `returns […]` build functions | listener throws; `BailErrorStrategy` | `$start` is reserved, so range labels are `first`/`last`; an attribute `rule` becomes `rule_`; an optional token in a loop needs its own rule |
+| antlr-java | [DateSchedule.g4](date-rule-antlr-java/src/main/antlr4/io/github/hjuergens/time/DateSchedule.g4) | 99 | actions with `returns […]` build functions | listener throws; `BailErrorStrategy` | `$start` is reserved, so range labels are `first`/`last`; an attribute `rule` becomes `rule_`; an optional token in a loop needs its own rule |
 | combinators | [ScheduleParsers.scala](date-rule-combinators/src/main/scala/de/juergens/text/ScheduleParsers.scala) | 215 | `^^` functions of the context, `foldLeft` over the shifts | `NoSuccess` → exception | grammar is plain Scala; no generator |
 | coco | [Schedule.atg](date-rule-coco/src/main/coco/Schedule.atg) | 132 | `(. … .)` actions build functions, `out` parameters | `errors.count`, messages on a stream | recovery keeps running actions, so they must tolerate garbage (now they only build functions); an attribute whose type contains `>` needs `<. … .>`, and the `out` attribute comes first |
 | javacc | [Schedule.jj](date-rule-javacc/src/main/javacc/Schedule.jj) | 143 | productions return functions | `ParseException`, `TokenMgrException` | locals declared per production; LL(1) without lookahead hints |
@@ -249,7 +249,7 @@ the Python virtual environments of the container are volumes as well, separate f
 mise install                           # toolchains, as pinned in mise.toml
 mise run test                          # all modules; the module tasks run in parallel
 mise tasks                             # list the tasks, e.g. test:lark, test:peg, docs
-mvn -pl date-rule-antlr test           # a single JVM module, directly with Maven
+mvn -pl date-rule-antlr-java test           # a single JVM module, directly with Maven
 mvn -pl date-rule-bison -Pbison -Dbison.executable=/opt/bison/bin/bison verify   # bison outside /usr/bin
 ```
 

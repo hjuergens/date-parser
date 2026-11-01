@@ -1,4 +1,4 @@
-# date-rule-antlr
+# date-rule-antlr-java
 
 Date expressions and term structures parsed with [ANTLR 4](https://www.antlr.org/) (4.13).
 The grammars produce [Joda-Time](https://www.joda.org/joda-time/) periods and `DateTimeAdjuster`s,
@@ -40,7 +40,7 @@ List<Pair<DateTimeAdjuster, DateTimeAdjuster>> forwards = parser.forwards().list
 ## Build and test
 
 ```
-mvn -pl date-rule-antlr verify
+mvn -pl date-rule-antlr-java verify
 ```
 
 - The `antlr4-maven-plugin` generates lexers, parsers, listeners, and visitors into `target/generated-sources/antlr4`.

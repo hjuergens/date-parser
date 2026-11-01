@@ -41,6 +41,11 @@
 # ("@FOMC + 1B"); "> NEXT @FOMC" and "> PREV @FOMC" move to the next or previous one. Events for the tests are declared
 # as  event <name> = <schedule>, evaluated like a market with the first of January of the year as base date and kept
 # if they fall into that year. An event with several dates in that year is an error at the end of a range.
+# US employment report (non-farm payrolls): BLS publishes the report for month M on the third Friday after the week
+# (Sunday to Saturday) that contains the 12th of M, "12 MAY - 1D > NEXT SAT + 20D", the day before if that Friday is a
+# federal holiday (market XFED); the December report comes out on the first Friday on or after January 4. That is often,
+# but not always, the first Friday of the month. A government shutdown postpones a release (October and November
+# 2025); no rule knows that, the cases are the scheduled dates.
 # Keywords are reserved: "EASTER" and six-letter month names such as "TISHRI" are never a currency pair.
 # examples/catalog.txt holds more cases, generated from a holiday rule catalog (scripts/catalog_cases.py).
 # examples/date-holidays.txt holds more, generated from the rules of date-holidays (scripts/date-holidays/).
@@ -278,6 +283,19 @@ event NEWYEAR = 1 JAN {SAT - 1D}
 [2025-01-01] FOMC => error
 [2025-01-01] @fomc => error
 [2025-01-01] @ FOMC => error
+
+# US employment report (non-farm payrolls)
+market XFED = 1 JAN {SAT - 1D, SUN + 1D}, 3 MON JAN, 3 MON FEB, LAST MON MAY, 19 JUN {SAT - 1D, SUN + 1D}, 4 JUL {SAT - 1D, SUN + 1D}, 1 MON SEP, 2 MON OCT, 11 NOV {SAT - 1D, SUN + 1D}, 4 THU NOV, 25 DEC {SAT - 1D, SUN + 1D}
+[2025-01-01 XFED] 3 JAN > NEXT FRI, 12 JAN - 1D > NEXT SAT + 20D > PRECEDING, 12 FEB - 1D > NEXT SAT + 20D > PRECEDING, 12 MAR - 1D > NEXT SAT + 20D > PRECEDING, 12 APR - 1D > NEXT SAT + 20D > PRECEDING, 12 MAY - 1D > NEXT SAT + 20D > PRECEDING, 12 JUN - 1D > NEXT SAT + 20D > PRECEDING, 12 JUL - 1D > NEXT SAT + 20D > PRECEDING, 12 AUG - 1D > NEXT SAT + 20D > PRECEDING, 12 SEP - 1D > NEXT SAT + 20D > PRECEDING, 12 OCT - 1D > NEXT SAT + 20D > PRECEDING, 12 NOV - 1D > NEXT SAT + 20D > PRECEDING => 2025-01-10, 2025-02-07, 2025-03-07, 2025-04-04, 2025-05-02, 2025-06-06, 2025-07-03, 2025-08-01, 2025-09-05, 2025-10-03, 2025-11-07, 2025-12-05
+[2024-01-01 XFED] 3 JAN > NEXT FRI, 12 JAN - 1D > NEXT SAT + 20D > PRECEDING, 12 FEB - 1D > NEXT SAT + 20D > PRECEDING, 12 MAR - 1D > NEXT SAT + 20D > PRECEDING, 12 APR - 1D > NEXT SAT + 20D > PRECEDING, 12 MAY - 1D > NEXT SAT + 20D > PRECEDING, 12 JUN - 1D > NEXT SAT + 20D > PRECEDING, 12 JUL - 1D > NEXT SAT + 20D > PRECEDING, 12 AUG - 1D > NEXT SAT + 20D > PRECEDING, 12 SEP - 1D > NEXT SAT + 20D > PRECEDING, 12 OCT - 1D > NEXT SAT + 20D > PRECEDING, 12 NOV - 1D > NEXT SAT + 20D > PRECEDING => 2024-01-05, 2024-02-02, 2024-03-08, 2024-04-05, 2024-05-03, 2024-06-07, 2024-07-05, 2024-08-02, 2024-09-06, 2024-10-04, 2024-11-01, 2024-12-06
+[2026-01-01 XFED] 12 APR - 1D > NEXT SAT + 20D > PRECEDING => 2026-05-08
+[2026-01-01] 1 FRI MAY => 2026-05-01
+[2020-01-01 XFED] 12 JUN - 1D > NEXT SAT + 20D > PRECEDING => 2020-07-02
+[2026-01-01 XFED] 12 JUN - 1D > NEXT SAT + 20D > PRECEDING => 2026-07-02
+[2026-01-01 XFED] 12 FEB - 1D > NEXT SAT + 20D > PRECEDING => 2026-03-06
+[2025-01-01] 3 JAN > NEXT FRI => 2025-01-10
+[2026-01-01] 3 JAN > NEXT FRI => 2026-01-09
+[2019-01-01] 3 JAN > NEXT FRI => 2019-01-04
 
 # invalid dates
 2015-02-29 => error

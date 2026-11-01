@@ -1,7 +1,7 @@
 # date-rule-antlr-python
 
 The shared date schedule language parsed with [ANTLR 4](https://www.antlr.org/) (4.13.2), Python target.
-It is the counterpart of [date-rule-antlr](../date-rule-antlr/README.md): the same tool and rules, another target language.
+It is the counterpart of [date-rule-antlr-java](../date-rule-antlr-java/README.md): the same tool and rules, another target language.
 
 ## What it parses
 

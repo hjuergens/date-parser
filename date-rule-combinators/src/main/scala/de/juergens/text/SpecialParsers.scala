@@ -53,17 +53,21 @@ trait SeasonParsers  extends JavaTokenParsers with ExtendedRegexParsers {
   self : DateRuleParsers =>
 
   import java.time.temporal.{TemporalAccessor, TemporalQuery}
-  import java.time.{LocalDate, MonthDay}
+  import java.time.LocalDate
 
-  import de.juergens.time.LocalDateAdjuster
+  import de.juergens.time.{LocalDateAdjuster, Season}
 
+  // the astronomical start of the season (northern hemisphere) in the year of the date, as a UTC date
   def season : Parser[LocalDateAdjuster] = ("spring" | "summer" | "autumn" | "fall" | "winter") ^^
     {
-      case "spring" => MonthDay.of(java.time.Month.FEBRUARY,13)
-      case "summer" => MonthDay.of(java.time.Month.FEBRUARY,13)
-      case "autumn" | "fall"  => MonthDay.of(java.time.Month.FEBRUARY,13)
-      case "winter" => MonthDay.of(java.time.Month.FEBRUARY,13)
+      case "spring" => seasonStart(Season.MarchEquinox)
+      case "summer" => seasonStart(Season.JuneSolstice)
+      case "autumn" | "fall"  => seasonStart(Season.SeptemberEquinox)
+      case "winter" => seasonStart(Season.DecemberSolstice)
     }
+
+  private def seasonStart(event: Season.Event) : LocalDateAdjuster =
+    LocalDateAdjuster((date: LocalDate) => Season.date(event, date.getYear))
 
   val seasonQuery = new TemporalQuery[(LocalDate,LocalDate)] {
     override def queryFrom(temporal: TemporalAccessor): (LocalDate, LocalDate) = ???

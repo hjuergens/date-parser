@@ -15,3 +15,8 @@
 - https://en.wikipedia.org/wiki/Comparison_of_parser_generators
 - C code generation and swig
 - format of the calendar
+- [ ] **Equinoxes and solstices in the schedule language**: the combinators module has them now
+  ([Season.scala](date-rule-combinators/src/main/scala/de/juergens/time/Season.scala), Meeus chapter 27 written anew,
+  instead of the GPL-3.0 [MeeusSeasons](https://github.com/hjuergens/MeeusSeasons)). Next: a date such as `EQUINOX MAR` in
+  all tools, evaluated in the market's time zone (JST for Japan's Vernal and Autumnal Equinox Days; date-holidays has
+  2 such rules), and the sun's longitude (chapter 25) for the Chinese solar terms (Qingming, 4 rules in date-holidays).

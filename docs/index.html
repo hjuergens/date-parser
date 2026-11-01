@@ -196,11 +196,11 @@
     <h1>Eleven parsers, one date language</h1>
     <p class="lead">
       The same small language for dates, periods and ranges, implemented with eleven parser generators and
-      parser libraries, from LL(1) to LALR(1), Earley, GLL and PEG. Every implementation passes the same 238 test cases.
+      parser libraries, from LL(1) to LALR(1), Earley, GLL and PEG. Every implementation passes the same 248 test cases.
     </p>
     <ul class="stats">
       <li><strong>11</strong><span>implementations, 5 languages</span></li>
-      <li><strong>238</strong><span>shared test cases</span></li>
+      <li><strong>248</strong><span>shared test cases</span></li>
       <li><strong>0</strong><span>grammar conflicts</span></li>
       <li><strong>1</strong><span>specification file</span></li>
     </ul>
@@ -1001,6 +1001,23 @@ observe  = WEEKDAY SIGN period</code></pre>
           <tr><td><code><span class="ctx">[2025-06-09]</span> TOM TOM</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code><span class="ctx">[2025-06-09]</span> T &gt; EOM EOM</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code>TOM</code></td><td><span class="err">error</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>next IMM date from today, tomorrow or spot</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2025-06-16]</span> T &gt; IMM</code></td><td><span class="date">2025-06-18</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-16]</span> TOM &gt; IMM</code></td><td><span class="date">2025-06-18</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-16]</span> SPOT &gt; IMM</code></td><td><span class="date">2025-09-17</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-16]</span> SPOT - 1D &gt; IMM</code></td><td><span class="date">2025-06-18</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-16]</span> SPOT + 1B &gt; IMM</code></td><td><span class="date">2025-09-17</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-16]</span> SPOT USDCAD &gt; IMM</code></td><td><span class="date">2025-06-18</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-16]</span> SPOT EURSEK &gt; IMM</code></td><td><span class="date">2025-09-17</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-17]</span> TOM &gt; IMM</code></td><td><span class="date">2025-09-17</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-18]</span> T &gt; IMM</code></td><td><span class="date">2025-09-17</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-18]</span> T - 1D &gt; IMM</code></td><td><span class="date">2025-06-18</span></td></tr>
         </tbody>
       </table>
       </section>

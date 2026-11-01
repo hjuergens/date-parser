@@ -10,7 +10,8 @@
 # A range (start : step : end) yields start + k * step for k = 0, 1, ... while <= end
 # (with a step of nB: start + k * n business days).
 # "> IMM" moves to the next IMM date strictly after the date: the third Wednesday of
-# March, June, September or December.
+# March, June, September or December. Which date "next" counts from is written in front of it: today
+# ("T > IMM"), tomorrow ("TOM > IMM"), spot ("SPOT EURSEK > IMM") or spot + 1B; "SPOT - 1D > IMM" is on or after spot.
 # "> SPOT [PAIR]" moves to the FX spot date: + 1B for USD against CAD, TRY, PHP or RUB,
 # otherwise + 2B (also without pair). So 2015-12-31 > SPOT is 2016-01-04, although Jan 1 is
 # a holiday.
@@ -234,6 +235,18 @@ market XEVE = 1 JAN {SAT - 1D, SUN + 1D}
 [2025-06-09] TOM TOM => error
 [2025-06-09] T > EOM EOM => error
 TOM => error
+
+# next IMM date from today, tomorrow or spot
+[2025-06-16] T > IMM => 2025-06-18
+[2025-06-16] TOM > IMM => 2025-06-18
+[2025-06-16] SPOT > IMM => 2025-09-17
+[2025-06-16] SPOT - 1D > IMM => 2025-06-18
+[2025-06-16] SPOT + 1B > IMM => 2025-09-17
+[2025-06-16] SPOT USDCAD > IMM => 2025-06-18
+[2025-06-16] SPOT EURSEK > IMM => 2025-09-17
+[2025-06-17] TOM > IMM => 2025-09-17
+[2025-06-18] T > IMM => 2025-09-17
+[2025-06-18] T - 1D > IMM => 2025-06-18
 
 # lunar months
 [2025-01-01] 1 SHAWWAL => 2025-03-30

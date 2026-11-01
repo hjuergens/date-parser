@@ -34,7 +34,7 @@ mise run test:lark        # or, inside this directory:
 uv run pytest             # uv installs Lark and pytest into .venv (versions in uv.lock)
 ```
 
-There are 11466 tests (pytest): the 228 cases of [examples/schedule.txt](../examples/schedule.txt), the 2186 of
+There are 11506 tests (pytest): the 248 cases of [examples/schedule.txt](../examples/schedule.txt), the 2186 of
 [examples/catalog.txt](../examples/catalog.txt) and the 3319 of [examples/date-holidays.txt](../examples/date-holidays.txt), each with
 `lalr` and `earley`.
 

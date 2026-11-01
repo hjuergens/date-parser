@@ -48,8 +48,8 @@
     <!-- Licensing -->
     <licenses>
         <license>
-            <name>The GNU Lesser General Public License, Version 3.0</name>
-            <url>http://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
@@ -324,25 +324,6 @@
         </pluginManagement>
 
         <plugins>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-install-plugin</artifactId>
-                <inherited>false</inherited>
-                <executions>
-                    <execution>
-                        <id>validate</id>
-                        <phase>validate</phase>
-                        <configuration>
-                            <pomFile>repo/org/jquantlib/jquantlib/0.2.4/jquantlib-0.2.4.pom</pomFile>
-                            <file>repo/org/jquantlib/jquantlib/0.2.4/jquantlib-0.2.4.jar</file>
-                        </configuration>
-                        <goals>
-                            <goal>install-file</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
 
             <!--
             ************************************************************************

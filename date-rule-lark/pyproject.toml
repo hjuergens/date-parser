@@ -2,6 +2,7 @@
 name = "date-rule-lark"
 version = "0.0.1"
 description = "The shared schedule example parsed with Lark, in Earley and in LALR mode"
+license = "Apache-2.0"
 requires-python = ">=3.13"
 dependencies = [
     "hijridate>=2.6.0",

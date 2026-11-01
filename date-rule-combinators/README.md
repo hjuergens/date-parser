@@ -48,7 +48,6 @@ The tests mix four frameworks:
 - specs2 specifications that use `JUnitRunner` run through the vintage engine.
 
 `verify` also runs scalastyle, CPD duplicate-code detection on Scala sources, and the scoverage check.
-The test-only dependency `org.jquantlib:jquantlib:0.2.4` is installed from the repository's [repo/](../repo) directory by the parent build.
 
 ## Shared example
 
@@ -72,7 +71,7 @@ Named events: `eventName` is the regex `@[A-Z][A-Z0-9_]*`, tried first in `date`
 
 ## Status
 
-- Working: 155 JUnit/TestNG tests and 5751 ScalaTest tests. One TestNG test is disabled (`firstDayOfNextMonthTest`).
+- Working: 153 JUnit/TestNG tests and 5751 ScalaTest tests. One TestNG test is disabled (`firstDayOfNextMonthTest`).
 - `QuarterAdjuster(n)` moves to another quarter **within the same year** (Q4 + 1 → Q1 of the same year).
 - Several rules in [high_sophisticated.txt](src/test/resources/complex/high_sophisticated.txt) are still commented out,
   for example "every friday the 13th of month" and "full moon next after the vernal equinox".

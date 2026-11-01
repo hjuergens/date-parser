@@ -19,7 +19,7 @@ Planned additions are in [TODO.md](TODO.md).
 | Module | Technology | Parser type | Language | What works | Tests |
 |---|---|---|---|---|---|
 | [date-rule-antlr-java](date-rule-antlr-java/README.md) | ANTLR 4.13 | ALL(*) (adaptive LL) | Java grammars, Joda-Time | **Most complete.** Periods (`14M7W9D`), shifts and selectors (`+3M1W`, `>>>wednesday`, `>Q`), term structures, lists, ISO and other date formats, iCalendar | 5811 TestNG + 3 specs2 IT |
-| [date-rule-combinators](date-rule-combinators/README.md) | Scala parser combinators 2.x | Recursive descent with backtracking | Scala 2.13, `java.time` | **Natural language:** "next thursday", "three weeks ago", "last monday in month", "2 London business days prior to the 3rd Wednesday …", seasons, business days | 155 JUnit/TestNG + 5751 ScalaTest |
+| [date-rule-combinators](date-rule-combinators/README.md) | Scala parser combinators 2.x | Recursive descent with backtracking | Scala 2.13, `java.time` | **Natural language:** "next thursday", "three weeks ago", "last monday in month", "2 London business days prior to the 3rd Wednesday …", seasons, business days | 153 JUnit/TestNG + 5751 ScalaTest |
 | [date-rule-coco](date-rule-coco/README.md) | Coco/R | LL(1) | Java | Date lists in ISO, German, and US notation → `LocalDate` | 5739 TestNG |
 | [date-rule-javacc](date-rule-javacc/README.md) | JavaCC (ParserGeneratorCC) | LL(k) | Java | Brace-matching demo grammar, JUnit 4 experiments | 5744 JUnit (+5 ignored) |
 | [date-rule-sablecc](date-rule-sablecc/README.md) | SableCC 2 | LALR(1) with typed AST | Java | Arithmetic expressions, AST walker and evaluator | 5744 TestNG |
@@ -224,7 +224,6 @@ Coco/R's LL(1) check also passes without warnings.
 - Surefire 3.6 runs TestNG on the JUnit Platform and reads no TestNG suite files, so the antlr module selects its tests with `includes`.
 - [.mvn/settings.xml](.mvn/settings.xml) (passed by [.mvn/maven.config](.mvn/maven.config)) redirects the repositories of the
   shut-down maven.java.net, which old parent POMs of plugin dependencies still declare, to Maven Central.
-- [repo/](repo) contains `jquantlib-0.2.4`, a test dependency of the combinators module. The parent build installs it into the local Maven repository during `validate`.
 
 ## Prerequisites
 
@@ -270,5 +269,5 @@ cd scripts/date-holidays && npm ci && npm run generate
 
 ## License
 
-[LICENSE.txt](LICENSE.txt) contains the Apache License 2.0. Note that [pom.xml](pom.xml) declares
-LGPL 3.0; these two should be aligned.
+Apache License 2.0, see [LICENSE.txt](LICENSE.txt). The generated cases in
+[examples/date-holidays.txt](examples/date-holidays.txt) contain holiday data of date-holidays under CC BY 3.0.

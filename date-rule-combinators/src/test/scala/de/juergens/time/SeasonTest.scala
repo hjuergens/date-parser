@@ -47,6 +47,11 @@ class SeasonTest {
     assertEquals(LocalDate.of(2026, 9, 22), date(SeptemberEquinox, 2026, ZoneId.of("America/New_York")))
   }
 
-  @Test(expected = classOf[IllegalArgumentException])
-  def outsideTheTable(): Unit = instant(MarchEquinox, 999)
+  // Qingming: the sun at 15 degrees, the date in China (UTC+8)
+  @Test
+  def qingming(): Unit = {
+    val days = Seq("2020-04-04", "2021-04-04", "2022-04-05", "2023-04-05", "2024-04-04", "2025-04-04", "2026-04-05",
+      "2027-04-05")
+    for ((day, year) <- days.zip(2020 to 2027)) assertEquals(LocalDate.parse(day), sunAt(15, year, 8 * 60))
+  }
 }

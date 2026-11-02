@@ -136,6 +136,12 @@ class Rules(DateScheduleVisitor):
     def visitEaster(self, ctx):
         return semantics.easter
 
+    def visitSeason(self, ctx):
+        return semantics.season(ctx.k.text, ctx.MONTH().getText(), semantics.zone(ctx.ZONE() and ctx.ZONE().getText()))
+
+    def visitSolarTerm(self, ctx):
+        return semantics.solar_term(int(ctx.NUM().getText()), semantics.zone(ctx.ZONE() and ctx.ZONE().getText()))
+
     def visitIso(self, ctx):
         value = date(int(ctx.y.text), int(ctx.m.text), int(ctx.d.text))
         return lambda context: value

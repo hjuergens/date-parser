@@ -14,6 +14,8 @@
 
 (defn- date-of [y m d] (ScheduleSemantics/literal (LocalDate/of (int-of y) (int-of m) (int-of d))))
 
+(defn- zone-of [zone] (if zone (ScheduleSemantics/zone zone) 0))
+
 ;; one function per tag; a shift becomes a function from expression to expression
 (def ^:private transforms
   {:schedule       identity
@@ -47,6 +49,8 @@
    :nth-weekday    (fn [n weekday month] (ScheduleSemantics/nthWeekday (int-of n) weekday month))
    :last-weekday   (fn [weekday month] (ScheduleSemantics/lastWeekday weekday month))
    :easter         (fn [] ScheduleSemantics/EASTER)
+   :season         (fn [kind month & [zone]] (ScheduleSemantics/season kind month (zone-of zone)))
+   :solar-term     (fn [n & [zone]] (ScheduleSemantics/solarTerm (int-of n) (zone-of zone)))
    :period         (fn [n unit] (ScheduleSemantics/period (int-of n) unit))})
 
 (defn parse

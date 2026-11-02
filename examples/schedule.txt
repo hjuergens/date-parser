@@ -36,6 +36,11 @@
 # Lunar months: "1 SHAWWAL" (Hijri, Umm al-Qura), "10 TISHRI" (Hebrew; ADAR is Adar I in a leap year, ADARII
 # Adar II) and "1 ZHENGYUE" (Chinese, without leap months) are the day of that month in the Gregorian year of the
 # base date; an error if it falls there twice or not at all. Their names are month names: "3 MON SHAWWAL" is an error.
+# Equinoxes, solstices and solar terms: "EQUINOX MAR", "SOLSTICE JUN", "EQUINOX SEP" and "SOLSTICE DEC" are the days on which
+# the sun's apparent longitude reaches 0, 90, 180 and 270 degrees, "SOLARTERM 1" to "SOLARTERM 24" those of the Chinese solar
+# terms, counted from Lichun (315 degrees; SOLARTERM 5 is Qingming, 15 degrees), all in the Gregorian year of the base
+# date. The day is the one in UTC, or in a fixed offset written after it ("EQUINOX MAR UTC+9" for Japan), as the rule
+# doesn't depend on the market. Computed after Meeus, Astronomical Algorithms (VSOP87 with the terms of appendix III).
 # Conditional dates: "24 DEC IF MON TUE WED THU" is the date on these weekdays and no date otherwise; IF closes
 # an item of a list.
 # Named events: "@FOMC" is every date of the event FOMC in the year of the base date, the shifts applied to each
@@ -263,6 +268,33 @@ TOM => error
 [2025-06-01] T > NEXT 1 ZHENGYUE => 2026-02-17
 [2025-01-01] 3 MON SHAWWAL => error
 [2025-01-01] T > SPOT TISHRI => error
+
+# equinoxes, solstices and solar terms
+[2025-01-01] EQUINOX MAR => 2025-03-20
+[2025-01-01] SOLSTICE JUN => 2025-06-21
+[2025-01-01] EQUINOX SEP => 2025-09-22
+[2025-01-01] EQUINOX SEP UTC+9 => 2025-09-23
+[2025-01-01] SOLSTICE DEC => 2025-12-21
+[2026-01-01] EQUINOX SEP => 2026-09-23
+[2026-01-01] EQUINOX SEP UTC-4 => 2026-09-22
+[2027-01-01] SOLSTICE DEC => 2027-12-22
+[2027-01-01] SOLSTICE DEC UTC-5 => 2027-12-21
+[2024-01-01] SOLSTICE JUN UTC-4 => 2024-06-20
+[2024-01-01] EQUINOX SEP UTC+9, EQUINOX SEP UTC+9 + 1D IF MON => 2024-09-22, 2024-09-23
+[2025-01-01] EQUINOX SEP UTC+9, EQUINOX SEP UTC+9 + 1D IF MON => 2025-09-23
+[2025-01-01] SOLARTERM 5 UTC+8 => 2025-04-04
+[2026-01-01] SOLARTERM 5 UTC+8 => 2026-04-05
+[2025-01-01] SOLARTERM 1 UTC+8 => 2025-02-03
+[2025-01-01] SOLARTERM 23 UTC+8 => 2025-01-05
+[2025-06-01] T > NEXT EQUINOX MAR => 2026-03-20
+[2025-06-01] T > PREV SOLSTICE DEC => 2024-12-21
+[2025-01-01] (EQUINOX MAR : 1M : SOLSTICE JUN) => 2025-03-20, 2025-04-20, 2025-05-20, 2025-06-20
+[2025-01-01] EQUINOX JUN => error
+[2025-01-01] SOLSTICE SEP => error
+[2025-01-01] SOLARTERM 25 => error
+[2025-01-01] SOLARTERM 0 UTC+8 => error
+[2025-01-01] EQUINOX => error
+EQUINOX MAR => error
 1 SHAWWAL => error
 
 # conditional dates

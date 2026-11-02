@@ -128,8 +128,17 @@ public final class ScheduleEvaluator {
             return ScheduleSemantics.nthWeekday(number(nth.getNumber()), nth.getWeekday().getText(), nth.getMonth().getText());
         } else if (node instanceof ALastAnnual last) {
             return ScheduleSemantics.lastWeekday(last.getWeekday().getText(), last.getMonth().getText());
+        } else if (node instanceof ASeasonAnnual season) {
+            return ScheduleSemantics.season(season.getSeason().getText(), season.getMonth().getText(), zone(season.getZone()));
+        } else if (node instanceof ASolarTermAnnual term) {
+            return ScheduleSemantics.solarTerm(number(term.getNumber()), zone(term.getZone()));
         }
         return ScheduleSemantics.EASTER;
+    }
+
+    /** UTC unless an offset follows */
+    static int zone(TZone zone) {
+        return zone == null ? 0 : ScheduleSemantics.zone(zone.getText());
     }
 
     static ScheduleSemantics.Expr date(PDate node) {

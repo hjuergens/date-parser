@@ -36,6 +36,9 @@ Tokens
 	easter = 'EASTER';   /* before pair: on a match of the same length the earlier token wins */
 	pair = upper upper upper upper upper upper;
 	event = '@' upper (upper | digit | '_')*;   /* a named event such as @FOMC; the sigil keeps it apart from keywords */
+	season = 'EQUINOX' | 'SOLSTICE';
+	solarterm = 'SOLARTERM';
+	zone = 'UTC' ('+' | '-') digit+;   /* the time zone of an equinox, solstice or solar term */
 	gt = '>';
 	l_brace = '{';
 	r_brace = '}';
@@ -103,6 +106,8 @@ Productions
 		= {month_day} number month
 		| {nth_weekday} number weekday month
 		| {last} last weekday month
-		| {easter} easter;
+		| {easter} easter
+		| {season} season month zone?
+		| {solar_term} solarterm number zone?;
 
 	period = number unit;

@@ -111,6 +111,12 @@ class Rules(Transformer):
     def easter(self):
         return semantics.easter
 
+    def season(self, kind, month, zone):
+        return semantics.season(str(kind), str(month), semantics.zone(zone and str(zone)))
+
+    def solar_term(self, term, zone):
+        return semantics.solar_term(int(term), semantics.zone(zone and str(zone)))
+
     def iso(self, y, m, d):
         value = date(int(y), int(m), int(d))
         return lambda context: value

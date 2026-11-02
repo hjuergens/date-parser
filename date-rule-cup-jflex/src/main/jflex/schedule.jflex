@@ -52,6 +52,12 @@ private Symbol symbol(int type, Object value) {
                 { return symbol(ScheduleSym.ROLL, yytext()); }
 /* the months above and EASTER come before the pair: on a match of the same length the earlier rule wins */
 "EASTER"        { return symbol(ScheduleSym.EASTER); }
+"EQUINOX" | "SOLSTICE"
+                { return symbol(ScheduleSym.SEASON, yytext()); }
+"SOLARTERM"     { return symbol(ScheduleSym.SOLARTERM); }
+/* the time zone of an equinox, solstice or solar term */
+"UTC" [+-] [0-9]+
+                { return symbol(ScheduleSym.ZONE, yytext()); }
 [A-Z]{6}        { return symbol(ScheduleSym.PAIR, yytext()); }
 /* a named event such as @FOMC; the value is the name without the sigil */
 "@" [A-Z] [A-Z0-9_]*

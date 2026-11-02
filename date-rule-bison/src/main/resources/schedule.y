@@ -44,6 +44,10 @@
 %token <String> WEEKDAY "weekday"
 %token <String> ROLL "roll convention"
 %token <String> EVENT "event"
+%token <String> SEASON "EQUINOX or SOLSTICE"
+%token SOLARTERM "SOLARTERM"
+%token <Integer> ZONE "time zone"
+%type <Integer> zone
 %type <Expr> item expr date
 %type <ArrayList<String>> weekdays
 %type <Annual> annual
@@ -126,6 +130,14 @@ annual:
 | NUM WEEKDAY MONTH                 { $$ = ScheduleSemantics.nthWeekday ($1, $2, $3); }
 | LAST WEEKDAY MONTH                { $$ = ScheduleSemantics.lastWeekday ($2, $3); }
 | EASTER                            { $$ = ScheduleSemantics.EASTER; }
+| SEASON MONTH zone                 { $$ = ScheduleSemantics.season ($1, $2, $3); }
+| SOLARTERM NUM zone                { $$ = ScheduleSemantics.solarTerm ($2, $3); }
+;
+
+/* the time zone of an equinox, solstice or solar term: UTC unless an offset follows */
+zone:
+  %empty                            { $$ = 0; }
+| ZONE                              { $$ = $1; }
 ;
 
 period:
@@ -206,6 +218,19 @@ class ScheduleLexer implements ScheduleParser.Lexer {
           return ROLL;
         if (word.equals ("EASTER"))   /* keywords (the months above too) before a word can be a pair */
           return EASTER;
+        if (word.equals ("EQUINOX") || word.equals ("SOLSTICE"))
+          return SEASON;
+        if (word.equals ("SOLARTERM"))
+          return SOLARTERM;
+        if (word.equals ("UTC") && pos + 1 < text.length () && "+-".indexOf (text.charAt (pos)) >= 0
+            && Character.isDigit (text.charAt (pos + 1)))
+          {   /* the time zone of an equinox, solstice or solar term: UTC+9 */
+            start = pos++;
+            while (pos < text.length () && Character.isDigit (text.charAt (pos)))
+              pos++;
+            value = ScheduleSemantics.zone ("UTC" + text.substring (start, pos));
+            return ZONE;
+          }
         if (word.length () == 6)
           return PAIR;   /* currency pair such as EURUSD */
         if (word.length () == 1 && "DWMQYB".contains (word))

@@ -68,13 +68,31 @@ function base(text) {
     if (/[,(]/.test(inner)) throw new Skip('a weekday relative to a span');
     return m[3] === 'after' ? `${inner} - 1D > NEXT ${wd}${days(7 * (n - 1))}` : `${inner} > PREV ${wd}${days(-7 * (n - 1))}`;
   }
-  if (/equinox|solstice/.test(text)) throw new Skip('equinox or solstice');
-  if (/solarterm/.test(text)) throw new Skip('a Chinese solar term');
+  // march equinox in +09:00, june solstice in America/Santiago: the day in that zone
+  if ((m = text.match(/^(march|june|september|december) (equinox|solstice)(?: in (\S+))?$/))) {
+    return `${m[2].toUpperCase()} ${MONTHS[MONTH_NAMES.indexOf(m[1])]}${zone(m[3], MONTH_NAMES.indexOf(m[1]))}`;
+  }
+  // chinese 5-01 solarterm: the first day of the fifth solar term (Qingming), in China (UTC+8) as date-chinese has it
+  if ((m = text.match(/^chinese (\d+)-(\d+) solarterm$/))) return `SOLARTERM ${+m[1]} UTC+8${days(+m[2] - 1)}`;
   if (/bengali/.test(text)) throw new Skip('the Bengali calendar');
   if (/farvardin|ordibehesht|khordad|\btir\b|mordad|shahrivar|mehr|aban|azar|\bdey\b|bahman|esfand/.test(text)) {
     throw new Skip('the Persian calendar');
   }
   throw new Skip('a date form the translator doesn\'t know');
+}
+
+// " UTC+9" for "+09:00" or a time zone with the same offset in every year at that time of year, "" for none
+function zone(name, month) {
+  if (!name) return '';
+  let m;
+  if ((m = name.match(/^([+-])(\d\d):00$/))) return ` UTC${m[1]}${+m[2]}`;
+  if (/^[+-]/.test(name)) throw new Skip('an offset that isn\'t whole hours');
+  const offsets = new Set(YEARS.map((year) => new Intl.DateTimeFormat('en', { timeZone: name, timeZoneName: 'shortOffset' })
+    .formatToParts(new Date(Date.UTC(year, month, 21, 12))).find((part) => part.type === 'timeZoneName').value));
+  if (offsets.size !== 1) throw new Skip('a time zone whose offset changes');
+  m = [...offsets][0].match(/^GMT(?:([+-]\d+))?$/);
+  if (!m) throw new Skip('an offset that isn\'t whole hours');
+  return m[1] ? ` UTC${m[1]}` : '';
 }
 
 function skip(reason) {
@@ -98,9 +116,11 @@ const step = (w, t, dir) => dir * (((dir * (t - w)) % 7 + 7) % 7 || 7);
 function translate(rule) {
   let text = rule.toLowerCase().trim();
   if (/\bis (\w+ )?holiday\b/.test(text)) throw new Skip('depends on other holidays');
-  if (/\d\d:\d\d|\bp\d*t|\bp\d+d\d|\bpt/.test(text) || /\bp\d+dt/.test(text)) throw new Skip('a time of day or a duration in hours');
+  if (/(?<![+-])\d\d:\d\d|\bp\d*t|\bp\d+d\d|\bpt/.test(text) || /\bp\d+dt/.test(text)) throw new Skip('a time of day or a duration in hours');
   // date-holidays reads "04-28 since 2022 and if sunday then next monday" as a move, not as both days
-  if (/ (since|prior to|in|every) .* and if /.test(text)) throw new Skip('a year condition before "and if"');
+  if (/ (since|prior to|every) .* and if | in (\d{4}|even|odd|leap|non-leap)\b.* and if /.test(text)) {
+    throw new Skip('a year condition before "and if"');
+  }
   // conditions on the year: date-holidays applies them, and cases are only written for the years it yields
   text = text.replace(/ (since|prior to) \d{4}(-\d\d-\d\d)?/g, '').replace(/ in (even|odd|leap|non-leap) years/g, '')
     .replace(/ every \d+ years since \d{4}/g, '').replace(/ in \d{4}(-\d{4})?/g, '').trim();

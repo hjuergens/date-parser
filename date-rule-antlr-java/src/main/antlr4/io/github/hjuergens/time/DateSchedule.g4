@@ -100,6 +100,15 @@ annual returns [Annual value]
     | NUM WEEKDAY MONTH             { $value = ScheduleSemantics.nthWeekday($NUM.int, $WEEKDAY.text, $MONTH.text); }
     | 'LAST' WEEKDAY MONTH          { $value = ScheduleSemantics.lastWeekday($WEEKDAY.text, $MONTH.text); }
     | 'EASTER'                      { $value = ScheduleSemantics.EASTER; }
+    | k=('EQUINOX' | 'SOLSTICE') MONTH zone
+                                    { $value = ScheduleSemantics.season($k.text, $MONTH.text, $zone.offset); }
+    | 'SOLARTERM' NUM zone          { $value = ScheduleSemantics.solarTerm($NUM.int, $zone.offset); }
+    ;
+
+// the time zone of an equinox, solstice or solar term: UTC unless an offset follows
+zone returns [int offset]
+    : (ZONE                         { $offset = ScheduleSemantics.zone($ZONE.text); }
+      )?
     ;
 
 period returns [java.time.temporal.TemporalAmount value]
@@ -107,6 +116,7 @@ period returns [java.time.temporal.TemporalAmount value]
     ;
 
 NUM  : [0-9]+ ;
+ZONE : 'UTC' [+-] [0-9]+ ;
 UNIT : [DWMQYB] ;
 // Gregorian, then Hijri (Umm al-Qura), Hebrew and Chinese months
 MONTH   : 'JAN' | 'FEB' | 'MAR' | 'APR' | 'MAY' | 'JUN' | 'JUL' | 'AUG' | 'SEP' | 'OCT' | 'NOV' | 'DEC'

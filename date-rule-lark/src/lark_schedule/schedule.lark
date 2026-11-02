@@ -46,10 +46,15 @@ annual: NUM MONTH           -> month_day
       | NUM WEEKDAY MONTH   -> nth_weekday
       | "LAST" WEEKDAY MONTH -> last_weekday
       | "EASTER"            -> easter
+      | SEASON MONTH [ZONE] -> season
+      | "SOLARTERM" NUM [ZONE] -> solar_term
 
 period: NUM UNIT
 
 NUM: /[0-9]+/
+SEASON: "EQUINOX" | "SOLSTICE"
+// the time zone of an equinox, solstice or solar term: UTC unless an offset follows
+ZONE: /UTC[+-][0-9]+/
 UNIT: /[DWMQYB]/
 // Gregorian, then Hijri (Umm al-Qura), Hebrew and Chinese months; ADARII before ADAR
 MONTH: "JAN" | "FEB" | "MAR" | "APR" | "MAY" | "JUN" | "JUL" | "AUG" | "SEP" | "OCT" | "NOV" | "DEC"

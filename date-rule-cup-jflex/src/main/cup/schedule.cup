@@ -14,8 +14,10 @@ import java.util.List;
 terminal            PLUS, MINUS, GT, IMM, SPOT, BASE, TOM, NEXT, PREV, BD, LAST, EASTER, IF;
 terminal            DOT, SLASH, COMMA, COLON, LPAREN, RPAREN, LBRACE, RBRACE;
 terminal Integer    NUM;
-terminal String     UNIT, PAIR, MONTH, WEEKDAY, ROLL, EVENT;
+terminal String     UNIT, PAIR, MONTH, WEEKDAY, ROLL, EVENT, SEASON, ZONE;
+terminal            SOLARTERM;
 
+non terminal Integer                              zone;
 non terminal ScheduleSemantics.Rule                schedule;
 non terminal ArrayList<ScheduleSemantics.Expr>     exprs;
 non terminal ScheduleSemantics.Expr                item, expr, date;
@@ -93,7 +95,14 @@ annual ::= NUM:d MONTH:m                  {: RESULT = ScheduleSemantics.monthDay
          | NUM:n WEEKDAY:w MONTH:m        {: RESULT = ScheduleSemantics.nthWeekday(n, w, m); :}
          | LAST WEEKDAY:w MONTH:m         {: RESULT = ScheduleSemantics.lastWeekday(w, m); :}
          | EASTER                         {: RESULT = ScheduleSemantics.EASTER; :}
+         | SEASON:k MONTH:m zone:z        {: RESULT = ScheduleSemantics.season(k, m, z); :}
+         | SOLARTERM NUM:n zone:z         {: RESULT = ScheduleSemantics.solarTerm(n, z); :}
          ;
+
+/* the time zone of an equinox, solstice or solar term: UTC unless an offset follows */
+zone ::= ZONE:z                           {: RESULT = ScheduleSemantics.zone(z); :}
+       |                                  {: RESULT = 0; :}
+       ;
 
 period ::= NUM:n UNIT:u                     {: RESULT = ScheduleSemantics.period(n, u); :}
          ;

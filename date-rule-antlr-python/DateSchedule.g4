@@ -65,6 +65,8 @@ annual
     | NUM WEEKDAY MONTH             # nthWeekday
     | 'LAST' WEEKDAY MONTH          # lastWeekday
     | 'EASTER'                      # easter
+    | k=('EQUINOX' | 'SOLSTICE') MONTH ZONE?   # season
+    | 'SOLARTERM' NUM ZONE?         # solarTerm
     ;
 
 period
@@ -72,6 +74,8 @@ period
     ;
 
 NUM  : [0-9]+ ;
+// the time zone of an equinox, solstice or solar term: UTC unless an offset follows
+ZONE : 'UTC' [+-] [0-9]+ ;
 UNIT : [DWMQYB] ;
 // Gregorian, then Hijri (Umm al-Qura), Hebrew and Chinese months
 MONTH   : 'JAN' | 'FEB' | 'MAR' | 'APR' | 'MAY' | 'JUN' | 'JUL' | 'AUG' | 'SEP' | 'OCT' | 'NOV' | 'DEC'

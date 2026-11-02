@@ -273,7 +273,9 @@ date     = "T" | "TOM" | "SPOT" [ PAIR ]
          | annual | EVENT .
 annual   = NUM MONTH                   <span class="c">(* 4 JUL     *)</span>
          | NUM WEEKDAY MONTH           <span class="c">(* 3 MON JAN *)</span>
-         | "LAST" WEEKDAY MONTH | "EASTER" .
+         | "LAST" WEEKDAY MONTH | "EASTER"
+         | ("EQUINOX" | "SOLSTICE") MONTH [ ZONE ]
+         | "SOLARTERM" NUM [ ZONE ] .  <span class="c">(* SOLARTERM 5 UTC+8 *)</span>
 period   = NUM ( "D" | "W" | "M"
                | "Q" | "Y" | "B" ) .
 ROLL     = "FOLLOWING" | "PRECEDING" | "MODFOLLOWING"
@@ -282,7 +284,8 @@ MONTH    = "JAN" | … | "DEC"           <span class="c">(* Gregorian *)</span>
          | "MUHARRAM" | … | "DHULHIJJAH"  <span class="c">(* Hijri *)</span>
          | "NISAN" | … | "ADARII"     <span class="c">(* Hebrew  *)</span>
          | "ZHENGYUE" | … | "LAYUE" . <span class="c">(* Chinese *)</span>
-EVENT    = "@" UPPER { UPPER | DIGIT | "_" } .  <span class="c">(* @FOMC *)</span></code></pre>
+EVENT    = "@" UPPER { UPPER | DIGIT | "_" } .  <span class="c">(* @FOMC *)</span>
+ZONE     = "UTC" ("+" | "-") NUM .     <span class="c">(* UTC+9, one token *)</span></code></pre>
     </div>
     <p class="note">
       In grammatical terms (after <a href="https://en.wikipedia.org/wiki/Grammatical_category">grammatical category</a>):
@@ -316,6 +319,9 @@ EVENT    = "@" UPPER { UPPER | DIGIT | "_" } .  <span class="c">(* @FOMC *)</spa
       and <code>&gt; FOLLOWING</code>, <code>&gt; PRECEDING</code> and <code>&gt; MODFOLLOWING</code> to a business day of the market.
       Hijri (Umm al-Qura), Hebrew and Chinese months are month names too: <code>1 SHAWWAL</code> is the day in the year of <code>T</code>,
       an error if it falls there twice or not at all. <code>24 DEC IF MON TUE WED THU</code> keeps a date only on these weekdays.
+      <code>EQUINOX MAR</code>, <code>SOLSTICE JUN</code>, <code>EQUINOX SEP</code> and <code>SOLSTICE DEC</code> are the days on which the sun
+      reaches 0, 90, 180 and 270 degrees, <code>SOLARTERM 5</code> is Qingming (the Chinese solar terms, counted from Lichun at 315 degrees),
+      in UTC or in the offset after it: <code>EQUINOX MAR UTC+9</code> is Japan's Vernal Equinox Day. Every tool computes them after Meeus.
     </p>
   </section>
 
@@ -336,6 +342,7 @@ EVENT    = "@" UPPER { UPPER | DIGIT | "_" } .  <span class="c">(* @FOMC *)</spa
         <li><button type="button" data-input="T &gt; IMM, TOM &gt; IMM, SPOT &gt; IMM, SPOT - 1D &gt; IMM">next IMM date</button></li>
         <li><button type="button" data-input="4 JUL {SAT - 1D, SUN + 1D}, 4 THU NOV, 25 DEC {SAT - 1D, SUN + 1D}">US holidays</button></li>
         <li><button type="button" data-input="EASTER - 2D, EASTER + 1D, 1 SHAWWAL, 10 TISHRI, 1 ZHENGYUE">Easter and lunar months</button></li>
+        <li><button type="button" data-input="EQUINOX MAR UTC+9, EQUINOX SEP UTC+9, SOLARTERM 5 UTC+8, SOLSTICE DEC">equinoxes and solar terms</button></li>
         <li><button type="button" data-input="12 MAY - 1D &gt; NEXT SAT + 20D &gt; PRECEDING" data-market="XFED">US employment report</button></li>
         <li><button type="button" data-input="@FOMC + 1B" data-base="2025-01-01" data-market="XNYS">after each FOMC decision</button></li>
         <li><button type="button" data-input="2015-06-09 + 3X">a syntax error</button></li>
@@ -416,7 +423,7 @@ EVENT    = "@" UPPER { UPPER | DIGIT | "_" } .  <span class="c">(* @FOMC *)</spa
         <p>2186 more cases come from a holiday rule catalog and from finance-date research, with the dates of that project's own engine. They showed that ICU's
           astronomical Chinese calendar, in ICU4J and in Node's <code>Intl</code>, puts Chinese New Year 2027 and 2030 a day off: the new moon falls
           within minutes of midnight in Beijing. The JVM modules and Peggy now take Chinese dates from 6tail's lunar library.
-          3319 further cases translate the rules of <a href="https://github.com/commenthol/date-holidays">date-holidays</a>
+          3347 further cases translate the rules of <a href="https://github.com/commenthol/date-holidays">date-holidays</a>
           (data CC BY 3.0) for 207 countries and their regions, with that library's own dates; where its Hijri or Hebrew
           calendar disagrees with Umm al-Qura or the Hebrew calendar, the year is left out and counted.</p></li>
     </ul>
@@ -427,7 +434,7 @@ EVENT    = "@" UPPER { UPPER | DIGIT | "_" } .  <span class="c">(* @FOMC *)</spa
     <p class="lead">
       From <a href="{{REPO}}examples/schedule.txt">examples/schedule.txt</a>. Each module has a test that reads this file,
       so adding a line here tests all eleven implementations. They also read 2186 cases in
-      <a href="{{REPO}}examples/catalog.txt">examples/catalog.txt</a>, generated from a holiday rule catalog, and 3319 in
+      <a href="{{REPO}}examples/catalog.txt">examples/catalog.txt</a>, generated from a holiday rule catalog, and 3347 in
       <a href="{{REPO}}examples/date-holidays.txt">examples/date-holidays.txt</a>, generated from date-holidays (neither listed here).
     </p>
     <div class="case-groups">

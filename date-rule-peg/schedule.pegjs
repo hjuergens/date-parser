@@ -200,6 +200,88 @@
     return date(year, Math.floor((h + l - 7 * m + 114) / 31), (h + l - 7 * m + 114) % 31 + 1);
   }
 
+  // EQUINOX MAR, SOLSTICE JUN, EQUINOX SEP, SOLSTICE DEC: the sun at 0, 90, 180, 270 degrees, in UTC + offset minutes
+  function season(kind, month, offset) {
+    const index = ['MAR', 'JUN', 'SEP', 'DEC'].indexOf(month);
+    return (year) => {
+      if (index < 0 || (index % 2 === 0) !== (kind === 'EQUINOX')) throw new RangeError(`no ${kind} in ${month}`);
+      return sunAt(90 * index, year, offset);
+    };
+  }
+
+  // SOLARTERM 1 to 24, counted from Lichun (315 degrees); SOLARTERM 5 is Qingming (15 degrees)
+  function solarTerm(term, offset) {
+    return (year) => {
+      if (term < 1 || term > 24) throw new RangeError(`no solar term ${term}`);
+      return sunAt((term + 20) % 24 * 15, year, offset);
+    };
+  }
+
+  // the terms of VSOP87D (Meeus, Astronomical Algorithms, appendix III) with A >= 100: A (1e-8 rad or AU), B, C
+  const EARTH_L = [
+    [[175347046, 0, 0], [3341656, 4.6692568, 6283.07585], [34894, 4.6261024, 12566.1517], [3418, 2.8288658, 3.5231183],
+      [3497, 2.744118, 5753.3848849], [3136, 3.6276704, 77713.7714681], [2676, 4.4180835, 7860.4193924],
+      [2343, 6.1351624, 3930.2096962], [1273, 2.0370966, 529.6909651], [1324, 0.7424636, 11506.7697698],
+      [902, 2.0450544, 26.2983198], [1199, 1.1096294, 1577.3435424], [857, 3.5084916, 398.1490034],
+      [780, 1.1788265, 5223.6939198], [990, 5.2326813, 5884.9268466], [753, 2.5333905, 5507.5532387],
+      [505, 4.5829256, 18849.22755], [492, 4.2050664, 775.5226113], [357, 2.9195412, 0.0673103],
+      [284, 1.8986903, 796.2980068], [243, 0.3448114, 5486.7778432], [317, 5.8490195, 11790.6290887],
+      [271, 0.3148861, 10977.0788047], [206, 4.8064661, 2544.3144199], [205, 1.8694781, 5573.1428014],
+      [202, 2.457678, 6069.7767546], [126, 1.0830263, 20.7753955], [156, 0.8330607, 213.2990954],
+      [115, 0.6454491, 0.9803211], [103, 0.6359985, 4694.0029547], [102, 4.2667982, 7.113547],
+      [132, 3.4111828, 2942.4634233], [102, 0.9756922, 15720.8387849]],
+    [[628331966747, 0, 0], [206059, 2.6782346, 6283.07585], [4303, 2.6351265, 12566.1517], [425, 1.5904698, 3.5231183],
+      [109, 2.96618, 1577.3435424], [119, 5.7955749, 26.2983198]],
+    [[52919, 0, 0], [8720, 1.0720967, 6283.07585], [309, 0.8672882, 12566.1517]],
+    [[289, 5.843842, 6283.07585]],
+    [[114, 3.1415927, 0]]];
+  const EARTH_R = [
+    [[100013989, 0, 0], [1670700, 3.0984635, 6283.07585], [13956, 3.0552461, 12566.1517]],
+    [[103019, 1.1074897, 6283.07585]]];
+
+  function vsop(series, tau) {
+    let sum = 0;
+    for (let n = series.length - 1; n >= 0; n--) {
+      sum = sum * tau + series[n].reduce((total, [a, b, c]) => total + a * Math.cos(b + c * tau), 0);
+    }
+    return sum * 1e-8;
+  }
+
+  const radians = (degrees) => degrees * Math.PI / 180;
+
+  // the apparent longitude of the sun in degrees (Meeus, chapter 25, with VSOP87, nutation and aberration)
+  function sunLongitude(jde) {
+    const tau = (jde - 2451545) / 365250, t = 10 * tau;
+    const omega = radians(125.04452 - 1934.136261 * t), sun = radians(280.4665 + 36000.7698 * t);
+    const moon = radians(218.3165 + 481267.8813 * t);
+    const nutation = -17.20 * Math.sin(omega) - 1.32 * Math.sin(2 * sun) - 0.23 * Math.sin(2 * moon) + 0.21 * Math.sin(2 * omega);
+    return vsop(EARTH_L, tau) * 180 / Math.PI + 180 + (nutation - 0.09033 - 20.4898 / vsop(EARTH_R, tau)) / 3600;
+  }
+
+  // TD - UT in seconds: Espenak and Meeus' polynomials for 1986 to 2150, their long-term formula outside
+  function deltaT(year) {
+    const t = year - 2000, u = (year - 1820) / 100, longTerm = -20 + 32 * u * u;
+    if (year >= 1986 && year < 2005) {
+      return 63.86 + 0.3345 * t - 0.060374 * t ** 2 + 0.0017275 * t ** 3 + 0.000651814 * t ** 4 + 0.00002373599 * t ** 5;
+    }
+    if (year >= 2005 && year < 2050) return 62.92 + 0.32217 * t + 0.005589 * t * t;
+    return year >= 2050 && year < 2150 ? longTerm - 0.5628 * (2150 - year) : longTerm;
+  }
+
+  // the day in the year on which the sun's apparent longitude reaches the degrees, in UTC + offset minutes
+  function sunAt(degrees, year, offset) {
+    let day = 79 + degrees * 365.2422 / 360;  // days after 1 January, from the March equinox on
+    if (day > 365.2422) day -= 365.2422;
+    let jde = Date.UTC(year, 0, 1) / 86400000 + 2440587.5 + day;
+    for (let i = 0; i < 50; i++) {
+      const step = 58 * Math.sin(radians(degrees - sunLongitude(jde)));
+      jde += step;
+      if (Math.abs(step) < 1e-7) break;
+    }
+    const local = new Date(Math.floor(jde - deltaT(year + day / 365.25) / 86400 + offset / 1440 - 2440587.5) * 86400000);
+    return date(local.getUTCFullYear(), local.getUTCMonth() + 1, local.getUTCDate());
+  }
+
   // anchors of > NEXT and > PREV: the first match strictly after (direction 1) or before (-1) d
   function annualAnchor(annual) {
     return (d, direction) => {
@@ -320,6 +402,12 @@ Annual
   / n:Number _ wd:Weekday _ month:Month { return nthWeekday(n, wd, month); }
   / "LAST" _ wd:Weekday _ month:Month { return lastWeekday(wd, month); }
   / "EASTER" { return easter; }
+  / kind:$("EQUINOX" / "SOLSTICE") _ month:Month offset:(_ @Zone)? { return season(kind, month, offset ?? 0); }
+  / "SOLARTERM" _ n:Number offset:(_ @Zone)? { return solarTerm(n, offset ?? 0); }
+
+// the time zone of an equinox, solstice or solar term in minutes: UTC unless an offset follows
+Zone
+  = "UTC" hours:$([+-] [0-9]+) { return parseInt(hours, 10) * 60; }
 
 // Gregorian, then Hijri (Umm al-Qura), Hebrew and Chinese months; ordered choice, so ADARII before ADAR
 Month

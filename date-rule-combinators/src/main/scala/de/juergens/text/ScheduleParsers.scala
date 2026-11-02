@@ -6,6 +6,7 @@ import java.time.{DateTimeException, DayOfWeek, LocalDate, Period}
 
 import com.ibm.icu.util.{Calendar, HebrewCalendar}
 import com.nlf.calendar.Solar
+import de.juergens.time.Season
 
 import scala.util.parsing.combinator.RegexParsers
 
@@ -36,7 +37,12 @@ class ScheduleParsers extends RegexParsers {
     | number ~ weekday ~ month ^^ { case n ~ w ~ m => nthWeekday(n, w, m) }
     | "LAST" ~> weekday ~ month ^^ { case w ~ m => (y: Int) =>
         LocalDate.of(y, months(m), 1).`with`(TemporalAdjusters.lastInMonth(weekdays(w))) }
-    | "EASTER" ^^^ (easter _))
+    | "EASTER" ^^^ (easter _)
+    | ("EQUINOX" | "SOLSTICE") ~ month ~ zone ^^ { case k ~ m ~ z => season(k, m, z) }
+    | "SOLARTERM" ~> number ~ zone ^^ { case n ~ z => solarTerm(n, z) })
+
+  /** the time zone of an equinox, solstice or solar term in minutes: UTC unless an offset follows */
+  def zone: Parser[Int] = opt("UTC[+-][0-9]+".r) ^^ (_.fold(0)(_.substring(3).toInt * 60))
 
   // "TOM" before "T": without a lexer, "T" would match the start of "TOM"
   def date: Parser[Context => LocalDate] = eventName ^^ event | "TOM" ^^^ ((c: Context) => plusBusinessDays(base(c), 1, c.market)) |
@@ -272,6 +278,19 @@ object ScheduleParsers {
     val date = LocalDate.of(year, months(month), 1).`with`(TemporalAdjusters.nextOrSame(weekdays(weekday))).plusWeeks(n - 1)
     if (n < 1 || date.getMonthValue != months(month)) throw new DateTimeException(s"no $n $weekday $month in $year")
     date
+  }
+
+  /** EQUINOX MAR, SOLSTICE JUN, EQUINOX SEP, SOLSTICE DEC: the sun at 0, 90, 180, 270 degrees, in UTC + offset minutes */
+  def season(kind: String, month: String, offset: Int): Annual = year => {
+    val index = Seq("MAR", "JUN", "SEP", "DEC").indexOf(month)
+    if (index < 0 || (index % 2 == 0) != (kind == "EQUINOX")) throw new DateTimeException(s"no $kind in $month")
+    Season.sunAt(90 * index, year, offset)
+  }
+
+  /** SOLARTERM 1 to 24, counted from Lichun (315 degrees); SOLARTERM 5 is Qingming (15 degrees) */
+  def solarTerm(term: Int, offset: Int): Annual = year => {
+    if (term < 1 || term > 24) throw new DateTimeException(s"no solar term $term")
+    Season.sunAt((term + 20) % 24 * 15, year, offset)
   }
 
   /** Western Easter Sunday (anonymous Gregorian algorithm) */

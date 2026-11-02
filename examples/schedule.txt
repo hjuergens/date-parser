@@ -342,6 +342,29 @@ market XFED = 1 JAN {SAT - 1D, SUN + 1D}, 3 MON JAN, 3 MON FEB, LAST MON MAY, 19
 [2026-01-01] 3 JAN > NEXT FRI => 2026-01-09
 [2019-01-01] 3 JAN > NEXT FRI => 2019-01-04
 
+# MaturityRule: the examples of another maturity rule language (selectors such as "lastday of month(5) of sp")
+# in this one; the comment gives the MaturityRule expression
+[2026-11-02] SPOT + 1W => 2026-11-11
+# lastday of month(5) of sp
+[2026-11-02] SPOT + 4M > EOM => 2027-03-31
+# wednesday(3) of month(3) of quarter(2) of sp, the second IMM date
+[2026-11-02] SPOT > IMM > IMM => 2027-03-17
+# here the two differ: quarter(2) counts calendar quarters and gives 2027-06-16, as spot is after the March IMM date
+[2027-03-22] SPOT > IMM > IMM => 2027-09-15
+# next(5, wednesday(3) of month(3) of every(quarter)) of sp
+[2026-11-02] SPOT > IMM > IMM > IMM > IMM > IMM => 2027-12-15
+# business(5) of january(1)
+[2027-01-01] 1 JAN - 1D + 5B => 2027-01-07
+# friday(3) from sp
+[2026-11-02] SPOT > NEXT FRI + 2W => 2026-11-20
+# firstday of month(2) of sp
+[2026-11-02] SPOT + 1M > BOM => 2026-12-01
+# lastday of month of sp
+[2026-11-02] SPOT > EOM => 2026-11-30
+# halfyear from sp, business(3) from sp
+[2026-11-02] SPOT + 6M => 2027-05-04
+[2026-11-02] SPOT + 3B => 2026-11-09
+
 # invalid dates
 2015-02-29 => error
 2015-13-01 => error

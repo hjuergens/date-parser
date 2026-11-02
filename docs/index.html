@@ -227,11 +227,11 @@
     <h1>Eleven parsers, one date language</h1>
     <p class="lead">
       The same small language for dates, periods and ranges, implemented with eleven parser generators and
-      parser libraries, from LL(1) to LALR(1), Earley, GLL and PEG. Every implementation passes the same 273 test cases.
+      parser libraries, from LL(1) to LALR(1), Earley, GLL and PEG. Every implementation passes the same 284 test cases.
     </p>
     <ul class="stats">
       <li><strong>11</strong><span>implementations, 5 languages</span></li>
-      <li><strong>273</strong><span>shared test cases</span></li>
+      <li><strong>284</strong><span>shared test cases</span></li>
       <li><strong>0</strong><span>grammar conflicts</span></li>
       <li><strong>1</strong><span>specification file</span></li>
     </ul>
@@ -1199,6 +1199,87 @@ observe  = WEEKDAY SIGN period</code></pre>
           <tr><td><code><span class="ctx">[2025-01-01]</span> 3 JAN &gt; NEXT FRI</code></td><td><span class="date">2025-01-10</span></td></tr>
           <tr><td><code><span class="ctx">[2026-01-01]</span> 3 JAN &gt; NEXT FRI</code></td><td><span class="date">2026-01-09</span></td></tr>
           <tr><td><code><span class="ctx">[2019-01-01]</span> 3 JAN &gt; NEXT FRI</code></td><td><span class="date">2019-01-04</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>in this one; the comment gives the MaturityRule expression</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> SPOT + 1W</code></td><td><span class="date">2026-11-11</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>lastday of month(5) of sp</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> SPOT + 4M &gt; EOM</code></td><td><span class="date">2027-03-31</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>wednesday(3) of month(3) of quarter(2) of sp, the second IMM date</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> SPOT &gt; IMM &gt; IMM</code></td><td><span class="date">2027-03-17</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>here the two differ: quarter(2) counts calendar quarters and gives 2027-06-16, as spot is after the March IMM date</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2027-03-22]</span> SPOT &gt; IMM &gt; IMM</code></td><td><span class="date">2027-09-15</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>next(5, wednesday(3) of month(3) of every(quarter)) of sp</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> SPOT &gt; IMM &gt; IMM &gt; IMM &gt; IMM &gt; IMM</code></td><td><span class="date">2027-12-15</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>business(5) of january(1)</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2027-01-01]</span> 1 JAN - 1D + 5B</code></td><td><span class="date">2027-01-07</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>friday(3) from sp</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> SPOT &gt; NEXT FRI + 2W</code></td><td><span class="date">2026-11-20</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>firstday of month(2) of sp</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> SPOT + 1M &gt; BOM</code></td><td><span class="date">2026-12-01</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>lastday of month of sp</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> SPOT &gt; EOM</code></td><td><span class="date">2026-11-30</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>halfyear from sp, business(3) from sp</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> SPOT + 6M</code></td><td><span class="date">2027-05-04</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> SPOT + 3B</code></td><td><span class="date">2026-11-09</span></td></tr>
         </tbody>
       </table>
       </section>

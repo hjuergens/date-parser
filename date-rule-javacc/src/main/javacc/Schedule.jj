@@ -40,7 +40,8 @@ SKIP : { " " | "\t" | "\r" | "\n" }
 
 TOKEN : {
   < NUM : (["0"-"9"])+ >
-| < UNIT : ["D", "W", "M", "Q", "Y", "B"] >
+| < ORDINAL : (["0"-"9"])+ ("ST" | "ND" | "RD" | "TH") >   // 1ST, 2ND, 3RD, 4TH; the longer match wins over NUM
+| < UNIT : ["D", "W", "M", "Q", "H", "Y", "B"] >
   // Gregorian, then Hijri (Umm al-Qura), Hebrew and Chinese months
 | < MONTH : "JAN" | "FEB" | "MAR" | "APR" | "MAY" | "JUN" | "JUL" | "AUG" | "SEP" | "OCT" | "NOV" | "DEC"
           | "MUHARRAM" | "SAFAR" | "RABIALAWWAL" | "RABIALTHANI" | "JUMADAALULA" | "JUMADAALAKHIRA" | "RAJAB" | "SHABAN"
@@ -50,7 +51,7 @@ TOKEN : {
           | "ZHENGYUE" | "ERYUE" | "SANYUE" | "SIYUE" | "WUYUE" | "LIUYUE" | "QIYUE" | "BAYUE" | "JIUYUE" | "SHIYUE"
           | "DONGYUE" | "LAYUE" >
 | < WEEKDAY : "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN" >
-| < ROLL : "FOLLOWING" | "PRECEDING" | "MODFOLLOWING" | "BOM" | "EOM" | "BOY" | "EOY" >
+| < ROLL : "FOLLOWING" | "PRECEDING" | "MODFOLLOWING" | "BOM" | "EOM" | "BOQ" | "EOQ" | "BOH" | "EOH" | "BOY" | "EOY" >
   // MONTH and EASTER are declared before PAIR: on a match of the same length the earlier token wins
 | < EASTER : "EASTER" >
 | < PAIR : (["A"-"Z"]){6} >   // currency pair such as EURUSD
@@ -102,8 +103,8 @@ ScheduleSemantics.Expr Expr() :
     ( "IMM" { d = ScheduleSemantics.nextImm(d); }
     | pair = Spot() { d = ScheduleSemantics.spot(d, pair); }
     | roll = <ROLL> { d = ScheduleSemantics.roll(d, roll.image); }
-    | "NEXT" a = Anchor() { d = ScheduleSemantics.next(d, a); }
-    | "PREV" a = Anchor() { d = ScheduleSemantics.previous(d, a); }
+    | "NEXT" a = Counted() { d = ScheduleSemantics.next(d, a); }
+    | "PREV" a = Counted() { d = ScheduleSemantics.previous(d, a); }
     )
   | { shifts = new ArrayList<ScheduleSemantics.Shift>(); }   // {SAT - 1D, SUN + 1D}
     "{" Shift(shifts) ( "," Shift(shifts) )* "}" { d = ScheduleSemantics.observe(d, shifts); }
@@ -124,7 +125,24 @@ void Shift(List<ScheduleSemantics.Shift> shifts) :
   { shifts.add(ScheduleSemantics.shift(w.image, p, sign)); }
 }
 
+/** NEXT 3RD FRI: the third Friday; an ordinal is a token of its own, so it doesn't clash with 3 FRI JAN */
+ScheduleSemantics.Anchor Counted() :
+{ Token o = null; ScheduleSemantics.Anchor a; }
+{
+  ( o = <ORDINAL> )? a = Anchor()
+  { return o == null ? a : ScheduleSemantics.times(ScheduleSemantics.ordinal(o.image), a); }
+}
+
+/** NEXT {MON, FRI}: the nearest of a set */
 ScheduleSemantics.Anchor Anchor() :
+{ ScheduleSemantics.Anchor a; List<ScheduleSemantics.Anchor> anchors = new ArrayList<ScheduleSemantics.Anchor>(); }
+{
+  a = Target() { return a; }
+| "{" a = Target() { anchors.add(a); } ( "," a = Target() { anchors.add(a); } )* "}"
+  { return ScheduleSemantics.anyOf(anchors); }
+}
+
+ScheduleSemantics.Anchor Target() :
 { Token w, e; ScheduleSemantics.Annual an; }
 {
   w = <WEEKDAY> { return ScheduleSemantics.weekday(w.image); }

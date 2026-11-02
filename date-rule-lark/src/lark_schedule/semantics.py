@@ -125,9 +125,10 @@ class Period:
 
 
 def period(count, unit):
-    """count times D (day), W (week), M (month), Q (quarter), Y (year) or B (business day)"""
+    """count times D (day), W (week), M (month), Q (quarter), H (half year), Y (year) or B (business day)"""
     return {"D": Period(days=count), "W": Period(days=7 * count), "M": Period(months=count),
-            "Q": Period(months=3 * count), "Y": Period(months=12 * count), "B": Period(business=count)}[unit]
+            "Q": Period(months=3 * count), "H": Period(months=6 * count), "Y": Period(months=12 * count),
+            "B": Period(business=count)}[unit]
 
 
 def plus(d, p, sign, market):
@@ -370,6 +371,36 @@ def weekday_anchor(weekday):
     return find
 
 
+def any_of(anchors):
+    """NEXT {MON, FRI}, NEXT {1 FEB, 1 MAY}: the nearest match of any of the anchors"""
+    def find(d, direction, context):
+        found = [anchor(d, direction, context) for anchor in anchors]
+        return min(found) if direction > 0 else max(found)
+    return find
+
+
+def ordinal(text):
+    """1ST, 2ND, 3RD, 4TH, 11TH, 21ST as a count; None (no ordinal) is 1"""
+    if text is None:
+        return 1
+    n = int(text[:-2])
+    suffix = "TH" if n % 100 in (11, 12, 13) else {1: "ST", 2: "ND", 3: "RD"}.get(n % 10, "TH")
+    if text[-2:] != suffix:
+        raise ValueError(f"not an ordinal: {text}")
+    return n
+
+
+def repeat(anchor, direction, count):
+    """NEXT 3RD FRI: the anchor found count times, each time from the one before"""
+    def shift(d, context):
+        if count < 1:
+            raise ValueError(f"count must be positive: {count}")
+        for _ in range(count):
+            d = anchor(d, direction, context)
+        return d
+    return shift
+
+
 def business_day_anchor(d, direction, context):
     return plus_business_days(d, direction, context.market)
 
@@ -391,7 +422,7 @@ def event_anchor(name):
 
 def roll(d, convention, market):
     """FOLLOWING, PRECEDING, MODFOLLOWING (following unless that leaves the month, then preceding);
-    BOM, EOM, BOY, EOY (first and last day of month and year)"""
+    BOM, EOM, BOQ, EOQ, BOH, EOH, BOY, EOY (first and last day of month, quarter, half year and year)"""
     if convention == "FOLLOWING":
         return d if market.is_business_day(d) else plus_business_days(d, 1, market)
     if convention == "PRECEDING":
@@ -403,6 +434,10 @@ def roll(d, convention, market):
         return d.replace(day=1)
     if convention == "EOM":
         return d.replace(day=calendar.monthrange(d.year, d.month)[1])
+    if convention in ("BOQ", "EOQ", "BOH", "EOH"):
+        months = 3 if convention[2] == "Q" else 6
+        first = date(d.year, (d.month - 1) // months * months + 1, 1)
+        return first if convention[0] == "B" else roll(first.replace(month=first.month + months - 1), "EOM", market)
     if convention == "BOY":
         return date(d.year, 1, 1)
     if convention == "EOY":

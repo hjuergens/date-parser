@@ -28,6 +28,7 @@
 }
 
 %token <Integer> NUM "number"
+%token <String> ORDINAL "ordinal"
 %token <String> UNIT "unit"
 %token IMM "IMM"
 %token SPOT "SPOT"
@@ -51,7 +52,8 @@
 %type <Expr> item expr date
 %type <ArrayList<String>> weekdays
 %type <Annual> annual
-%type <Anchor> anchor
+%type <Anchor> counted anchor target
+%type <ArrayList<Anchor>> targets
 %type <Shift> shift
 %type <ArrayList<Shift>> shifts
 %type <TemporalAmount> period
@@ -89,8 +91,8 @@ expr:
 | expr '>' SPOT                     { $$ = ScheduleSemantics.spot ($1, null); }
 | expr '>' SPOT PAIR                { $$ = ScheduleSemantics.spot ($1, $4); }
 | expr '>' ROLL                     { $$ = ScheduleSemantics.roll ($1, $3); }
-| expr '>' NEXT anchor              { $$ = ScheduleSemantics.next ($1, $4); }
-| expr '>' PREV anchor              { $$ = ScheduleSemantics.previous ($1, $4); }
+| expr '>' NEXT counted             { $$ = ScheduleSemantics.next ($1, $4); }
+| expr '>' PREV counted             { $$ = ScheduleSemantics.previous ($1, $4); }
 | expr '{' shifts '}'               { $$ = ScheduleSemantics.observe ($1, $3); }   /* {SAT - 1D, SUN + 1D} */
 ;
 
@@ -104,7 +106,24 @@ shift:
 | WEEKDAY '-' period                { $$ = ScheduleSemantics.shift ($1, $3, -1); }
 ;
 
+/* NEXT 3RD FRI: the third Friday; the scanner tells the ordinal from the number of 3 FRI JAN */
+counted:
+  anchor                            { $$ = $1; }
+| ORDINAL anchor                    { $$ = ScheduleSemantics.times (ScheduleSemantics.ordinal ($1), $2); }
+;
+
+/* NEXT {MON, FRI}: the nearest of a set */
 anchor:
+  target                            { $$ = $1; }
+| '{' targets '}'                   { $$ = ScheduleSemantics.anyOf ($2); }
+;
+
+targets:
+  target                            { ArrayList<Anchor> list = new ArrayList<> (); list.add ($1); $$ = list; }
+| targets ',' target                { $1.add ($3); $$ = $1; }
+;
+
+target:
   WEEKDAY                           { $$ = ScheduleSemantics.weekday ($1); }
 | BD                                { $$ = ScheduleSemantics.BUSINESS_DAY; }
 | IMM                               { $$ = ScheduleSemantics.IMM; }
@@ -177,6 +196,13 @@ class ScheduleLexer implements ScheduleParser.Lexer {
         int start = pos;
         while (pos < text.length () && text.charAt (pos) >= '0' && text.charAt (pos) <= '9')
           pos++;
+        /* 1ST, 2ND, 3RD, 4TH: an ordinal, not a number */
+        if (pos + 2 <= text.length () && text.substring (pos, pos + 2).matches ("ST|ND|RD|TH"))
+          {
+            pos += 2;
+            value = text.substring (start, pos);
+            return ORDINAL;
+          }
         value = Integer.valueOf (text.substring (start, pos));
         return NUM;
       }
@@ -214,7 +240,7 @@ class ScheduleLexer implements ScheduleParser.Lexer {
           return MONTH;
         if (word.matches ("MON|TUE|WED|THU|FRI|SAT|SUN"))
           return WEEKDAY;
-        if (word.matches ("FOLLOWING|PRECEDING|MODFOLLOWING|BOM|EOM|BOY|EOY"))
+        if (word.matches ("FOLLOWING|PRECEDING|MODFOLLOWING|BOM|EOM|BOQ|EOQ|BOH|EOH|BOY|EOY"))
           return ROLL;
         if (word.equals ("EASTER"))   /* keywords (the months above too) before a word can be a pair */
           return EASTER;
@@ -233,7 +259,7 @@ class ScheduleLexer implements ScheduleParser.Lexer {
           }
         if (word.length () == 6)
           return PAIR;   /* currency pair such as EURUSD */
-        if (word.length () == 1 && "DWMQYB".contains (word))
+        if (word.length () == 1 && "DWMQHYB".contains (word))
           return UNIT;
         return YYUNDEF;
       }

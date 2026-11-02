@@ -54,11 +54,12 @@ class ScheduleParsers extends RegexParsers {
     | ("/" ~> number) ~ ("/" ~> number) ^^ { case d ~ y => (m: Int) => LocalDate.of(y, m, d) }  // US
     ) ^^ { case first ~ toDate => val date = toDate(first); (_: Context) => date }
 
-  def period: Parser[TemporalAmount] = number ~ "[DWMQYB]".r ^^ {
+  def period: Parser[TemporalAmount] = number ~ "[DWMQHYB]".r ^^ {
     case n ~ "D" => Period.ofDays(n)
     case n ~ "W" => Period.ofWeeks(n)
     case n ~ "M" => Period.ofMonths(n)
     case n ~ "Q" => Period.ofMonths(3 * n)
+    case n ~ "H" => Period.ofMonths(6 * n)
     case n ~ "Y" => Period.ofYears(n)
     case n ~ "B" => BusinessDays(n)
   }
@@ -69,7 +70,23 @@ class ScheduleParsers extends RegexParsers {
   /** a named event such as @FOMC, without the sigil; the sigil keeps names apart from keywords and pairs */
   def eventName: Parser[String] = "@[A-Z][A-Z0-9_]*".r ^^ (_.tail)
 
-  def anchor: Parser[Anchor] = (weekday ^^ (w => (d: LocalDate, dir: Int, _: Context) =>
+  /** NEXT 3RD FRI: the third Friday; the ordinal is tried before the number of 3 FRI JAN could take the digits */
+  def counted: Parser[Anchor] = opt(ordinal) ~ anchor ^^ { case n ~ a => n.fold(a)(times(_, a)) }
+
+  /** 1ST, 2ND, 3RD, 4TH, 11TH, 21ST; the suffix must fit the number */
+  def ordinal: Parser[Int] = "[0-9]+(ST|ND|RD|TH)".r >> { text =>
+    val n = text.dropRight(2).toInt
+    val suffix = if (n % 100 >= 11 && n % 100 <= 13) "TH"
+      else n % 10 match { case 1 => "ST" case 2 => "ND" case 3 => "RD" case _ => "TH" }
+    if (text.endsWith(suffix)) success(n) else failure(s"not an ordinal: $text")
+  }
+
+  /** NEXT {MON, FRI}, NEXT {1 FEB, 1 MAY}: the nearest match of any of the anchors */
+  def anchor: Parser[Anchor] = "{" ~> rep1sep(target, ",") <~ "}" ^^ { anchors => (d: LocalDate, dir: Int, c: Context) =>
+        val found = anchors.map(_(d, dir, c))
+        if (dir > 0) found.minBy(_.toEpochDay) else found.maxBy(_.toEpochDay) } | target
+
+  def target: Parser[Anchor] = (weekday ^^ (w => (d: LocalDate, dir: Int, _: Context) =>
         d.`with`(if (dir > 0) TemporalAdjusters.next(weekdays(w)) else TemporalAdjusters.previous(weekdays(w))))
     | "BD" ^^^ ((d: LocalDate, dir: Int, c: Context) => plusBusinessDays(d, dir, c.market))
     | "IMM" ^^^ ((d: LocalDate, dir: Int, _: Context) => if (dir > 0) nextImm(d) else previousImm(d))
@@ -88,9 +105,9 @@ class ScheduleParsers extends RegexParsers {
     | "-" ~> period ^^ (p => (d: LocalDate, c: Context) => plus(d, p, -1, c.market))
     | ">" ~ "IMM" ^^^ ((d: LocalDate, _: Context) => nextImm(d))
     | ">" ~ "SPOT" ~> opt(pair) ^^ (p => (d: LocalDate, c: Context) => c.market.spot(d, p))
-    | ">" ~> "MODFOLLOWING|FOLLOWING|PRECEDING|BOM|EOM|BOY|EOY".r ^^ (r => (d: LocalDate, c: Context) => roll(d, r, c.market))
-    | ">" ~ "NEXT" ~> anchor ^^ (a => (d: LocalDate, c: Context) => a(d, 1, c))
-    | ">" ~ "PREV" ~> anchor ^^ (a => (d: LocalDate, c: Context) => a(d, -1, c))
+    | ">" ~> "MODFOLLOWING|FOLLOWING|PRECEDING|BOM|EOM|BOQ|EOQ|BOH|EOH|BOY|EOY".r ^^ (r => (d: LocalDate, c: Context) => roll(d, r, c.market))
+    | ">" ~ "NEXT" ~> counted ^^ (a => (d: LocalDate, c: Context) => a(d, 1, c))
+    | ">" ~ "PREV" ~> counted ^^ (a => (d: LocalDate, c: Context) => a(d, -1, c))
     | "{" ~> rep1sep(observe, ",") <~ "}" ^^ (shifts => (d: LocalDate, c: Context) =>
         shifts.find(_._1 == d.getDayOfWeek).fold(d) { case (_, p, sign) => plus(d, p, sign, c.market) }))
 
@@ -236,6 +253,12 @@ object ScheduleParsers {
   /** what > NEXT and > PREV look for: the first match strictly after (direction 1) or before (-1) the date */
   type Anchor = (LocalDate, Int, Context) => LocalDate
 
+  /** the anchor found n times, each time from the one before */
+  def times(n: Int, anchor: Anchor): Anchor = (d: LocalDate, dir: Int, c: Context) => {
+    if (n < 1) throw new IllegalArgumentException(s"count must be positive: $n")
+    (1 to n).foldLeft(d)((x, _) => anchor(x, dir, c))
+  }
+
   val months: Map[String, Int] =
     "JAN FEB MAR APR MAY JUN JUL AUG SEP OCT NOV DEC".split(" ").zipWithIndex.map { case (m, i) => m -> (i + 1) }.toMap
 
@@ -303,7 +326,7 @@ object ScheduleParsers {
     LocalDate.of(year, (h + l - 7 * m + 114) / 31, (h + l - 7 * m + 114) % 31 + 1)
   }
 
-  /** FOLLOWING, PRECEDING, MODFOLLOWING (following unless that leaves the month); BOM, EOM, BOY, EOY */
+  /** FOLLOWING, PRECEDING, MODFOLLOWING (following unless that leaves the month); BOM, EOM, BOQ, EOQ, BOH, EOH, BOY, EOY */
   def roll(date: LocalDate, convention: String, market: Market): LocalDate = convention match {
     case "FOLLOWING" => if (market.isBusinessDay(date)) date else plusBusinessDays(date, 1, market)
     case "PRECEDING" => if (market.isBusinessDay(date)) date else plusBusinessDays(date, -1, market)
@@ -312,6 +335,10 @@ object ScheduleParsers {
       if (following.getMonth == date.getMonth) following else roll(date, "PRECEDING", market)
     case "BOM" => date.withDayOfMonth(1)
     case "EOM" => date.`with`(TemporalAdjusters.lastDayOfMonth())
+    case "BOQ" => date.withDayOfMonth(1).withMonth((date.getMonthValue - 1) / 3 * 3 + 1)
+    case "EOQ" => roll(date, "BOQ", market).plusMonths(2).`with`(TemporalAdjusters.lastDayOfMonth())
+    case "BOH" => date.withDayOfMonth(1).withMonth((date.getMonthValue - 1) / 6 * 6 + 1)
+    case "EOH" => roll(date, "BOH", market).plusMonths(5).`with`(TemporalAdjusters.lastDayOfMonth())
     case "BOY" => date.withDayOfYear(1)
     case "EOY" => date.`with`(TemporalAdjusters.lastDayOfYear())
   }

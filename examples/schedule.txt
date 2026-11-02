@@ -31,7 +31,12 @@
 #
 # Rolling: "TOM" is T + 1B, "SPOT [PAIR]" is T > SPOT [PAIR]. "> NEXT x" and "> PREV x" move to the first x
 # strictly after or before the date; x is a weekday, BD (business day), IMM or an annual date such as 4 JUL.
-# "> BOM", "> EOM", "> BOY" and "> EOY" move to the first or last day of the month or year.
+# An ordinal counts: "> NEXT 3RD FRI" is the third Friday, the anchor found three times, each time from the one before
+# ("> NEXT 2ND IMM", "> PREV 2ND 4 JUL"); the suffix must fit the number (1ST, 2ND, 3RD, 4TH, 11TH, 21ST), and 0TH is an
+# error. "NEXT 3 FRI JAN" stays the annual date, the third Friday of January. A set is the nearest of its anchors:
+# "> NEXT {MON, FRI}" is the next Monday or Friday, "> NEXT {1 FEB, 1 MAY}" the next of the two dates.
+# "> BOM", "> EOM", "> BOQ", "> EOQ", "> BOH", "> EOH", "> BOY" and "> EOY" move to the first or last day of the month,
+# quarter, half year or year. H is a half year, 6M.
 #
 # Lunar months: "1 SHAWWAL" (Hijri, Umm al-Qura), "10 TISHRI" (Hebrew; ADAR is Adar I in a leap year, ADARII
 # Adar II) and "1 ZHENGYUE" (Chinese, without leap months) are the day of that month in the Gregorian year of the
@@ -342,6 +347,52 @@ market XFED = 1 JAN {SAT - 1D, SUN + 1D}, 3 MON JAN, 3 MON FEB, LAST MON MAY, 19
 [2026-01-01] 3 JAN > NEXT FRI => 2026-01-09
 [2019-01-01] 3 JAN > NEXT FRI => 2019-01-04
 
+# ordinals, sets, quarters and half years
+[2026-11-02] T > NEXT 3RD FRI => 2026-11-20
+[2026-11-06] T > NEXT 1ST FRI => 2026-11-13
+[2026-11-02] T > PREV 2ND FRI => 2026-10-23
+[2026-11-02] T > NEXT 11TH FRI => 2027-01-15
+[2026-11-02] T > NEXT 2ND BD => 2026-11-04
+[2026-11-02] SPOT > NEXT 2ND IMM => 2027-03-17
+[2026-11-02] T > NEXT 2ND 4 JUL => 2028-07-04
+[2026-11-02] T > PREV 2ND 4 JUL => 2025-07-04
+[2026-11-02] T > NEXT 3 FRI JAN => 2027-01-15
+[2026-11-02] T > NEXT 2ND 3 FRI JAN => 2028-01-21
+[2026-11-02] T > NEXT {MON, FRI} => 2026-11-06
+[2026-11-02] T > PREV {MON, FRI} => 2026-10-30
+[2026-11-02] T > NEXT {SAT, SUN, MON} => 2026-11-07
+[2026-11-02] T > NEXT {FRI} => 2026-11-06
+[2026-11-02] T > NEXT 7TH {MON, FRI} => 2026-11-27
+[2026-11-02] T > NEXT {MON, FRI} IF FRI => 2026-11-06
+[2026-11-02] T > NEXT {1 FEB, 1 MAY} => 2027-02-01
+[2027-02-10] T > NEXT {1 FEB, 1 MAY} => 2027-05-01
+[2026-11-02] T > PREV {1 FEB, 1 MAY} => 2026-05-01
+[2026-11-02] T > NEXT {IMM, 25 DEC} => 2026-12-16
+[2026-12-17] T > NEXT {IMM, 25 DEC} => 2026-12-25
+[2026-11-02] T > NEXT {25 DEC, EASTER} + 1D => 2026-12-26
+[2026-11-02] T > NEXT 0TH FRI => error
+[2026-11-02] T > NEXT 2ST FRI => error
+[2026-11-02] T > NEXT 3 FRI => error
+[2026-11-02] T > NEXT 3RD => error
+[2026-11-02] T > NEXT FRI 3RD => error
+[2026-11-02] T > NEXT MON FRI => error
+[2026-11-02] T > NEXT {MON FRI} => error
+[2026-11-02] T > NEXT {} => error
+[2026-11-02] T > NEXT {3RD FRI} => error
+[2026-11-02] T > BOQ => 2026-10-01
+[2026-11-02] T > EOQ => 2026-12-31
+[2026-02-14] T > EOQ => 2026-03-31
+[2026-05-15] T > BOH => 2026-01-01
+[2026-05-15] T > EOH => 2026-06-30
+[2026-08-15] T > BOH => 2026-07-01
+[2026-08-15] T > EOH => 2026-12-31
+[2026-11-02] T + 1H => 2027-05-02
+2026-08-31 + 1H => 2027-02-28
+2026-08-31 - 2H => 2025-08-31
+(2026-01-01 : 1H : 2027-12-31) => 2026-01-01, 2026-07-01, 2027-01-01, 2027-07-01
+[2026-11-02] T > BOM - 1D + 5B => 2026-11-06
+[2026-11-02] T + 2M > BOM - 1D > NEXT 3RD WED => 2027-01-20
+
 # MaturityRule: the examples of another maturity rule language (selectors such as "lastday of month(5) of sp")
 # in this one; the comment gives the MaturityRule expression
 [2026-11-02] SPOT + 1W => 2026-11-11
@@ -349,20 +400,32 @@ market XFED = 1 JAN {SAT - 1D, SUN + 1D}, 3 MON JAN, 3 MON FEB, LAST MON MAY, 19
 [2026-11-02] SPOT + 4M > EOM => 2027-03-31
 # wednesday(3) of month(3) of quarter(2) of sp, the second IMM date
 [2026-11-02] SPOT > IMM > IMM => 2027-03-17
-# here the two differ: quarter(2) counts calendar quarters and gives 2027-06-16, as spot is after the March IMM date
+# here the two differ: quarter(2) counts calendar quarters and gives 2027-06-16, as spot is after the March IMM date;
+# the IMM date after the end of spot's quarter is the same as quarter(2)
 [2027-03-22] SPOT > IMM > IMM => 2027-09-15
+[2027-03-22] SPOT > EOQ > IMM => 2027-06-16
+[2026-11-02] SPOT > EOQ > IMM => 2027-03-17
 # next(5, wednesday(3) of month(3) of every(quarter)) of sp
 [2026-11-02] SPOT > IMM > IMM > IMM > IMM > IMM => 2027-12-15
+[2026-11-02] SPOT > NEXT 5TH IMM => 2027-12-15
+# next(7, (monday or friday) of every(week)), from the day after today
+[2026-11-02] T > NEXT 7TH {MON, FRI} => 2026-11-27
+# wednesday(3) of month(3) of quarter(2) of sp with the month of the date: the third Wednesday of the month after spot's
+[2026-11-02] SPOT + 1M > BOM - 1D > NEXT 3RD WED => 2026-12-16
 # business(5) of january(1)
 [2027-01-01] 1 JAN - 1D + 5B => 2027-01-07
 # friday(3) from sp
 [2026-11-02] SPOT > NEXT FRI + 2W => 2026-11-20
+[2026-11-02] SPOT > NEXT 3RD FRI => 2026-11-20
 # firstday of month(2) of sp
 [2026-11-02] SPOT + 1M > BOM => 2026-12-01
 # lastday of month of sp
 [2026-11-02] SPOT > EOM => 2026-11-30
+# next(firstday of month(2 or 5) of every(year)) of sp
+[2026-11-02] SPOT > NEXT {1 FEB, 1 MAY} => 2027-02-01
 # halfyear from sp, business(3) from sp
 [2026-11-02] SPOT + 6M => 2027-05-04
+[2026-11-02] SPOT + 1H => 2027-05-04
 [2026-11-02] SPOT + 3B => 2026-11-09
 
 # invalid dates

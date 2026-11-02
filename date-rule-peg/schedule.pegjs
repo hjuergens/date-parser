@@ -304,7 +304,30 @@
     return (d, direction) => plusDays(d, direction * ((direction * (WEEKDAYS.indexOf(wd) - weekday(d)) % 7 + 7) % 7 || 7));
   }
 
-  // FOLLOWING, PRECEDING, MODFOLLOWING (following unless that leaves the month); BOM, EOM, BOY, EOY
+  // NEXT {MON, FRI}, NEXT {1 FEB, 1 MAY}: the nearest match of any of the anchors
+  function anyOf(anchors) {
+    return (d, direction, c) => anchors.map((anchor) => anchor(d, direction, c))
+      .reduce((a, b) => (direction * compare(b, a) < 0 ? b : a));
+  }
+
+  // 1ST, 2ND, 3RD, 4TH, 11TH, 21ST as a count; the suffix must fit the number
+  function ordinal(text) {
+    const n = parseInt(text.slice(0, -2), 10);
+    const suffix = n % 100 >= 11 && n % 100 <= 13 ? 'TH' : ({ 1: 'ST', 2: 'ND', 3: 'RD' })[n % 10] ?? 'TH';
+    if (!text.endsWith(suffix)) throw new Error(`not an ordinal: ${text}`);
+    return n;
+  }
+
+  // NEXT 3RD FRI: the anchor found n times, each time from the one before
+  function times(n, anchor) {
+    return (d, direction, c) => {
+      if (n < 1) throw new Error(`count must be positive: ${n}`);
+      for (let i = 0; i < n; i++) d = anchor(d, direction, c);
+      return d;
+    };
+  }
+
+  // FOLLOWING, PRECEDING, MODFOLLOWING (following unless that leaves the month); BOM, EOM, BOQ, EOQ, BOH, EOH, BOY, EOY
   function roll(d, convention, market) {
     switch (convention) {
       case 'FOLLOWING': return market.isBusinessDay(d) ? d : plusBusinessDays(d, 1, market);
@@ -315,6 +338,10 @@
       }
       case 'BOM': return { ...d, day: 1 };
       case 'EOM': return { ...d, day: daysInMonth(d.year, d.month) };
+      case 'BOQ': return { year: d.year, month: d.month - (d.month - 1) % 3, day: 1 };
+      case 'EOQ': return roll({ ...d, month: d.month - (d.month - 1) % 3 + 2, day: 1 }, 'EOM', market);
+      case 'BOH': return { year: d.year, month: d.month - (d.month - 1) % 6, day: 1 };
+      case 'EOH': return roll({ ...d, month: d.month - (d.month - 1) % 6 + 5, day: 1 }, 'EOM', market);
       case 'BOY': return { year: d.year, month: 1, day: 1 };
       case 'EOY': return { year: d.year, month: 12, day: 31 };
     }
@@ -367,11 +394,11 @@ Shift
   / "-" _ p:Period { return (d, c) => plus(d, p, -1, c.market); }
   / ">" _ "IMM" { return nextImm; }
   / ">" _ "SPOT" pair:(_ @Pair)? { return (d, c) => spot(d, pair, c.market); }
-  / ">" _ convention:$("FOLLOWING" / "PRECEDING" / "MODFOLLOWING" / "BOM" / "EOM" / "BOY" / "EOY") {
+  / ">" _ convention:$("FOLLOWING" / "PRECEDING" / "MODFOLLOWING" / "BOM" / "EOM" / "BOQ" / "EOQ" / "BOH" / "EOH" / "BOY" / "EOY") {
       return (d, c) => roll(d, convention, c.market);
     }
-  / ">" _ "NEXT" _ anchor:Anchor { return (d, c) => anchor(d, 1, c); }
-  / ">" _ "PREV" _ anchor:Anchor { return (d, c) => anchor(d, -1, c); }
+  / ">" _ "NEXT" _ anchor:Counted { return (d, c) => anchor(d, 1, c); }
+  / ">" _ "PREV" _ anchor:Counted { return (d, c) => anchor(d, -1, c); }
   / "{" _ head:Observe tail:(_ "," _ @Observe)* _ "}" {
       return (d, c) => observe(d, [head, ...tail], c.market);
     }
@@ -379,7 +406,17 @@ Shift
 Observe
   = weekday:Weekday _ sign:("+" / "-") _ period:Period { return { weekday, sign: sign === '+' ? 1 : -1, period }; }
 
+// NEXT 3RD FRI: the third Friday; the ordinal first, as the number of 3 FRI JAN would take its digits
+Counted
+  = text:$([0-9]+ ("ST" / "ND" / "RD" / "TH")) _ anchor:Anchor { return times(ordinal(text), anchor); }
+  / Anchor
+
+// NEXT {MON, FRI}: the nearest of a set
 Anchor
+  = "{" _ head:Target tail:(_ "," _ @Target)* _ "}" { return anyOf([head, ...tail]); }
+  / Target
+
+Target
   = wd:Weekday { return weekdayAnchor(wd); }
   / "BD" { return (d, direction, c) => plusBusinessDays(d, direction, c.market); }
   / "IMM" { return (d, direction) => direction > 0 ? nextImm(d) : previousImm(d); }
@@ -432,12 +469,13 @@ Pair
     pair:$[A-Z]|6| { return pair; }
 
 Period
-  = n:Number _ unit:[DWMQYB] {
+  = n:Number _ unit:[DWMQHYB] {
       switch (unit) {
         case 'D': return { months: 0, days: n, business: 0 };
         case 'W': return { months: 0, days: 7 * n, business: 0 };
         case 'M': return { months: n, days: 0, business: 0 };
         case 'Q': return { months: 3 * n, days: 0, business: 0 };
+        case 'H': return { months: 6 * n, days: 0, business: 0 };
         case 'Y': return { months: 12 * n, days: 0, business: 0 };
         case 'B': return { months: 0, days: 0, business: n };
       }

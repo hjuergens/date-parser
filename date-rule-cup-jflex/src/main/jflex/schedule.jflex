@@ -28,6 +28,9 @@ private Symbol symbol(int type, Object value) {
 %%
 
 [0-9]+          { return symbol(ScheduleSym.NUM, Integer.valueOf(yytext())); }
+/* 1ST, 2ND, 3RD, 4TH: the longest match wins over the number */
+[0-9]+ ("ST" | "ND" | "RD" | "TH")
+                { return symbol(ScheduleSym.ORDINAL, yytext()); }
 "IMM"           { return symbol(ScheduleSym.IMM); }
 "SPOT"          { return symbol(ScheduleSym.SPOT); }
 "T"             { return symbol(ScheduleSym.BASE); }
@@ -48,7 +51,7 @@ private Symbol symbol(int type, Object value) {
                 { return symbol(ScheduleSym.MONTH, yytext()); }
 "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN"
                 { return symbol(ScheduleSym.WEEKDAY, yytext()); }
-"FOLLOWING" | "PRECEDING" | "MODFOLLOWING" | "BOM" | "EOM" | "BOY" | "EOY"
+"FOLLOWING" | "PRECEDING" | "MODFOLLOWING" | "BOM" | "EOM" | "BOQ" | "EOQ" | "BOH" | "EOH" | "BOY" | "EOY"
                 { return symbol(ScheduleSym.ROLL, yytext()); }
 /* the months above and EASTER come before the pair: on a match of the same length the earlier rule wins */
 "EASTER"        { return symbol(ScheduleSym.EASTER); }
@@ -62,7 +65,7 @@ private Symbol symbol(int type, Object value) {
 /* a named event such as @FOMC; the value is the name without the sigil */
 "@" [A-Z] [A-Z0-9_]*
                 { return symbol(ScheduleSym.EVENT, yytext().substring(1)); }
-[DWMQYB]        { return symbol(ScheduleSym.UNIT, yytext()); }
+[DWMQHYB]       { return symbol(ScheduleSym.UNIT, yytext()); }
 "+"             { return symbol(ScheduleSym.PLUS); }
 "-"             { return symbol(ScheduleSym.MINUS); }
 ">"             { return symbol(ScheduleSym.GT); }

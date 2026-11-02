@@ -13,7 +13,8 @@ Helpers
 
 Tokens
 	number = digit+;
-	unit = 'D' | 'W' | 'M' | 'Q' | 'Y' | 'B';
+	ordinal = digit+ ('ST' | 'ND' | 'RD' | 'TH');   /* 1ST, 2ND, 3RD, 4TH; the longer match wins over number */
+	unit = 'D' | 'W' | 'M' | 'Q' | 'H' | 'Y' | 'B';
 	imm = 'IMM';
 	spot = 'SPOT';
 	base = 'T';
@@ -32,7 +33,7 @@ Tokens
 		| 'ZHENGYUE' | 'ERYUE' | 'SANYUE' | 'SIYUE' | 'WUYUE' | 'LIUYUE' | 'QIYUE' | 'BAYUE' | 'JIUYUE' | 'SHIYUE'
 		| 'DONGYUE' | 'LAYUE';
 	weekday = 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN';
-	roll = 'FOLLOWING' | 'PRECEDING' | 'MODFOLLOWING' | 'BOM' | 'EOM' | 'BOY' | 'EOY';
+	roll = 'FOLLOWING' | 'PRECEDING' | 'MODFOLLOWING' | 'BOM' | 'EOM' | 'BOQ' | 'EOQ' | 'BOH' | 'EOH' | 'BOY' | 'EOY';
 	easter = 'EASTER';   /* before pair: on a match of the same length the earlier token wins */
 	pair = upper upper upper upper upper upper;
 	event = '@' upper (upper | digit | '_')*;   /* a named event such as @FOMC; the sigil keeps it apart from keywords */
@@ -75,8 +76,8 @@ Productions
 		| {imm} gt imm
 		| {spot} gt spot pair?
 		| {roll} gt roll
-		| {next} gt next anchor
-		| {prev} gt prev anchor
+		| {next} gt next ordinal? anchor   /* NEXT 3RD FRI: the third Friday */
+		| {prev} gt prev ordinal? anchor
 		| {observance} l_brace observe more_observe* r_brace;
 
 	observe
@@ -85,7 +86,14 @@ Productions
 
 	more_observe = comma observe;
 
+	/* NEXT {MON, FRI}: the nearest of a set */
 	anchor
+		= {single} target
+		| {set} l_brace target more_target* r_brace;
+
+	more_target = comma target;
+
+	target
 		= {weekday} weekday
 		| {bd} bd
 		| {imm} imm

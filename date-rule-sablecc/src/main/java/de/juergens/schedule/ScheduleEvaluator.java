@@ -82,9 +82,9 @@ public final class ScheduleEvaluator {
             } else if (shift instanceof ARollShift roll) {
                 date = ScheduleSemantics.roll(date, roll.getRoll().getText());
             } else if (shift instanceof ANextShift next) {
-                date = ScheduleSemantics.next(date, anchor(next.getAnchor()));
+                date = ScheduleSemantics.next(date, count(next.getOrdinal()), anchor(next.getAnchor()));
             } else if (shift instanceof APrevShift prev) {
-                date = ScheduleSemantics.previous(date, anchor(prev.getAnchor()));
+                date = ScheduleSemantics.previous(date, count(prev.getOrdinal()), anchor(prev.getAnchor()));
             } else if (shift instanceof AObservanceShift observance) {
                 List<ScheduleSemantics.Shift> shifts = new ArrayList<>();
                 shifts.add(observe(observance.getObserve()));
@@ -107,17 +107,31 @@ public final class ScheduleEvaluator {
         return ScheduleSemantics.shift(minus.getWeekday().getText(), period(minus.getPeriod()), -1);
     }
 
+    /** NEXT {MON, FRI}: the nearest of a set */
     static ScheduleSemantics.Anchor anchor(PAnchor node) {
-        if (node instanceof AWeekdayAnchor weekday) {
+        if (node instanceof ASingleAnchor single) {
+            return target(single.getTarget());
+        }
+        ASetAnchor set = (ASetAnchor) node;
+        List<ScheduleSemantics.Anchor> anchors = new ArrayList<>();
+        anchors.add(target(set.getTarget()));
+        for (Object more : set.getMoreTarget()) {
+            anchors.add(target(((AMoreTarget) more).getTarget()));
+        }
+        return ScheduleSemantics.anyOf(anchors);
+    }
+
+    static ScheduleSemantics.Anchor target(PTarget node) {
+        if (node instanceof AWeekdayTarget weekday) {
             return ScheduleSemantics.weekday(weekday.getWeekday().getText());
-        } else if (node instanceof ABdAnchor) {
+        } else if (node instanceof ABdTarget) {
             return ScheduleSemantics.BUSINESS_DAY;
-        } else if (node instanceof AImmAnchor) {
+        } else if (node instanceof AImmTarget) {
             return ScheduleSemantics.IMM;
-        } else if (node instanceof AEventAnchor event) {
+        } else if (node instanceof AEventTarget event) {
             return ScheduleSemantics.eventAnchor(event.getEvent().getText().substring(1));
         }
-        return ScheduleSemantics.annual(annual(((AAnnualAnchor) node).getAnnual()));
+        return ScheduleSemantics.annual(annual(((AAnnualTarget) node).getAnnual()));
     }
 
     /** dates that recur every year */
@@ -164,6 +178,11 @@ public final class ScheduleEvaluator {
     static TemporalAmount period(PPeriod node) {
         APeriod period = (APeriod) node;
         return ScheduleSemantics.period(number(period.getNumber()), period.getUnit().getText());
+    }
+
+    /** NEXT FRI is NEXT 1ST FRI */
+    static int count(TOrdinal token) {
+        return token == null ? 1 : ScheduleSemantics.ordinal(token.getText());
     }
 
     static int number(TNumber token) {

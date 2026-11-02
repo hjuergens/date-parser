@@ -31,8 +31,8 @@ shift
     | '>' 'IMM'                     # imm
     | '>' 'SPOT' PAIR?              # spot
     | '>' ROLL                      # roll
-    | '>' 'NEXT' anchor             # next
-    | '>' 'PREV' anchor             # prev
+    | '>' 'NEXT' ORDINAL? anchor    # next
+    | '>' 'PREV' ORDINAL? anchor    # prev
     | '{' observe (',' observe)* '}' # observance
     ;
 
@@ -40,7 +40,13 @@ observe
     : WEEKDAY sign=('+' | '-') period
     ;
 
+// NEXT {MON, FRI}: the nearest of a set
 anchor
+    : target                        # singleAnchor
+    | '{' target (',' target)* '}'  # anyOf
+    ;
+
+target
     : WEEKDAY                       # weekdayAnchor
     | 'BD'                          # businessDayAnchor
     | 'IMM'                         # immAnchor
@@ -74,9 +80,11 @@ period
     ;
 
 NUM  : [0-9]+ ;
+// 1ST, 2ND, 3RD, 4TH: the longer match wins over NUM
+ORDINAL : [0-9]+ ('ST' | 'ND' | 'RD' | 'TH') ;
 // the time zone of an equinox, solstice or solar term: UTC unless an offset follows
 ZONE : 'UTC' [+-] [0-9]+ ;
-UNIT : [DWMQYB] ;
+UNIT : [DWMQHYB] ;
 // Gregorian, then Hijri (Umm al-Qura), Hebrew and Chinese months
 MONTH   : 'JAN' | 'FEB' | 'MAR' | 'APR' | 'MAY' | 'JUN' | 'JUL' | 'AUG' | 'SEP' | 'OCT' | 'NOV' | 'DEC'
         | 'MUHARRAM' | 'SAFAR' | 'RABIALAWWAL' | 'RABIALTHANI' | 'JUMADAALULA' | 'JUMADAALAKHIRA' | 'RAJAB' | 'SHABAN'
@@ -88,7 +96,7 @@ MONTH   : 'JAN' | 'FEB' | 'MAR' | 'APR' | 'MAY' | 'JUN' | 'JUL' | 'AUG' | 'SEP' 
 // a named event such as @FOMC; the sigil keeps names apart from keywords and pairs
 EVENT   : '@' [A-Z] [A-Z0-9_]* ;
 WEEKDAY : 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN' ;
-ROLL    : 'FOLLOWING' | 'PRECEDING' | 'MODFOLLOWING' | 'BOM' | 'EOM' | 'BOY' | 'EOY' ;
+ROLL    : 'FOLLOWING' | 'PRECEDING' | 'MODFOLLOWING' | 'BOM' | 'EOM' | 'BOQ' | 'EOQ' | 'BOH' | 'EOH' | 'BOY' | 'EOY' ;
 // currency pair such as EURUSD; six-letter keywords ('EASTER', 'TISHRI', ...) have the same length and win, as they are defined first
 PAIR : [A-Z] [A-Z] [A-Z] [A-Z] [A-Z] [A-Z] ;
 WS   : [ \t\r\n]+ -> skip ;

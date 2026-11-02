@@ -54,11 +54,11 @@ class Rules(Transformer):
     def roll(self, convention):
         return lambda d, context: semantics.roll(d, str(convention), context.market)
 
-    def next(self, anchor):
-        return lambda d, context: anchor(d, 1, context)
+    def next(self, ordinal, anchor):
+        return semantics.repeat(anchor, 1, semantics.ordinal(ordinal and str(ordinal)))
 
-    def prev(self, anchor):
-        return lambda d, context: anchor(d, -1, context)
+    def prev(self, ordinal, anchor):
+        return semantics.repeat(anchor, -1, semantics.ordinal(ordinal and str(ordinal)))
 
     def observance(self, *shifts):
         return lambda d, context: semantics.observe(d, shifts, context.market)
@@ -68,6 +68,9 @@ class Rules(Transformer):
 
     def observe_minus(self, weekday, period):
         return str(weekday), period, -1
+
+    def any_of(self, *anchors):
+        return semantics.any_of(anchors)
 
     def weekday(self, weekday):
         return semantics.weekday_anchor(str(weekday))

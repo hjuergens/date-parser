@@ -18,17 +18,17 @@ Planned additions are in [TODO.md](TODO.md).
 
 | Module | Technology | Parser type | Language | What works | Tests |
 |---|---|---|---|---|---|
-| [date-rule-antlr-java](date-rule-antlr-java/README.md) | ANTLR 4.13 | ALL(*) (adaptive LL) | Java grammars, Joda-Time | **Most complete.** Periods (`14M7W9D`), shifts and selectors (`+3M1W`, `>>>wednesday`, `>Q`), term structures, lists, ISO and other date formats, iCalendar | 5895 TestNG + 3 specs2 IT |
-| [date-rule-combinators](date-rule-combinators/README.md) | Scala parser combinators 2.x | Recursive descent with backtracking | Scala 2.13, `java.time` | **Natural language:** "next thursday", "three weeks ago", "last monday in month", "2 London business days prior to the 3rd Wednesday …", seasons, business days | 158 JUnit/TestNG + 5835 ScalaTest |
-| [date-rule-coco](date-rule-coco/README.md) | Coco/R | LL(1) | Java | Date lists in ISO, German, and US notation → `LocalDate` | 5823 TestNG |
-| [date-rule-javacc](date-rule-javacc/README.md) | JavaCC (ParserGeneratorCC) | LL(k) | Java | Brace-matching demo grammar, JUnit 4 experiments | 5828 JUnit (+5 ignored) |
-| [date-rule-sablecc](date-rule-sablecc/README.md) | SableCC 2 | LALR(1) with typed AST | Java | Arithmetic expressions, AST walker and evaluator | 5828 TestNG |
-| [date-rule-cup-jflex](date-rule-cup-jflex/README.md) | JFlex 1.9 + CUP 11b | LALR(1) | Java | Pascal-subset lexer (its CUP grammar is a skeleton); complete CUP parser for the shared example | 5824 TestNG |
-| [date-rule-bison](date-rule-bison/README.md) | GNU Bison 3 (Java skeleton) | LALR(1) | Java | Infix calculator with error recovery. **Requires `bison`**; the module is empty without it | 5825 TestNG |
-| [date-rule-peg](date-rule-peg/README.md) | Peggy (PEG.js successor) | PEG (packrat) | JavaScript | `(start:step:end)` range lists | 5822 `node:test` |
-| [date-rule-lark](date-rule-lark/README.md) | Lark 1.3 | Earley and LALR(1), one grammar | Python | The shared example, every case with both algorithms | 11634 pytest |
-| [date-rule-antlr-python](date-rule-antlr-python/README.md) | ANTLR 4.13, Python target | ALL(*) (adaptive LL) | Python | The shared example; grammar without actions, plus a visitor | 5817 pytest |
-| [date-rule-instaparse](date-rule-instaparse/README.md) | instaparse 1.5 | GLL (any context-free grammar) | Clojure 1.12 | The shared example; EBNF grammar read at run time, `insta/transform` onto the shared Java helper | 5817 TestNG |
+| [date-rule-antlr-java](date-rule-antlr-java/README.md) | ANTLR 4.13 | ALL(*) (adaptive LL) | Java grammars, Joda-Time | **Most complete.** Periods (`14M7W9D`), shifts and selectors (`+3M1W`, `>>>wednesday`, `>Q`), term structures, lists, ISO and other date formats, iCalendar | 5947 TestNG + 3 specs2 IT |
+| [date-rule-combinators](date-rule-combinators/README.md) | Scala parser combinators 2.x | Recursive descent with backtracking | Scala 2.13, `java.time` | **Natural language:** "next thursday", "three weeks ago", "last monday in month", "2 London business days prior to the 3rd Wednesday …", seasons, business days | 158 JUnit/TestNG + 5887 ScalaTest |
+| [date-rule-coco](date-rule-coco/README.md) | Coco/R | LL(1) | Java | Date lists in ISO, German, and US notation → `LocalDate` | 5875 TestNG |
+| [date-rule-javacc](date-rule-javacc/README.md) | JavaCC (ParserGeneratorCC) | LL(k) | Java | Brace-matching demo grammar, JUnit 4 experiments | 5880 JUnit (+5 ignored) |
+| [date-rule-sablecc](date-rule-sablecc/README.md) | SableCC 2 | LALR(1) with typed AST | Java | Arithmetic expressions, AST walker and evaluator | 5880 TestNG |
+| [date-rule-cup-jflex](date-rule-cup-jflex/README.md) | JFlex 1.9 + CUP 11b | LALR(1) | Java | Pascal-subset lexer (its CUP grammar is a skeleton); complete CUP parser for the shared example | 5876 TestNG |
+| [date-rule-bison](date-rule-bison/README.md) | GNU Bison 3 (Java skeleton) | LALR(1) | Java | Infix calculator with error recovery. **Requires `bison`**; the module is empty without it | 5877 TestNG |
+| [date-rule-peg](date-rule-peg/README.md) | Peggy (PEG.js successor) | PEG (packrat) | JavaScript | `(start:step:end)` range lists | 5874 `node:test` |
+| [date-rule-lark](date-rule-lark/README.md) | Lark 1.3 | Earley and LALR(1), one grammar | Python | The shared example, every case with both algorithms | 11738 pytest |
+| [date-rule-antlr-python](date-rule-antlr-python/README.md) | ANTLR 4.13, Python target | ALL(*) (adaptive LL) | Python | The shared example; grammar without actions, plus a visitor | 5869 pytest |
+| [date-rule-instaparse](date-rule-instaparse/README.md) | instaparse 1.5 | GLL (any context-free grammar) | Clojure 1.12 | The shared example; EBNF grammar read at run time, `insta/transform` onto the shared Java helper | 5869 TestNG |
 
 Each module also implements the [shared schedule example](#shared-example-schedule), so all eleven implementations
 can be compared on the same language. Each module README has a section on how its tool handles it.
@@ -53,6 +53,8 @@ T + 2B                              two business days after the base date, in th
 4 JUL {SAT - 1D, SUN + 1D}          Independence Day as observed by the NYSE, in the year of the base date
 3 FRI MAR > PRECEDING               the third Friday of March, or the business day before if it's a holiday
 T > NEXT 3 MON JAN                  the next Martin Luther King Day after the base date
+T > NEXT 7TH {MON, FRI}             the seventh Monday or Friday after the base date
+SPOT > EOQ > IMM                    the IMM date of the quarter after spot's
 SPOT + 1M > MODFOLLOWING            one month after spot, modified following
 24 DEC IF MON TUE WED THU           Christmas Eve, but only from Monday to Thursday (no date otherwise)
 1 SHAWWAL, 10 TISHRI, 1 ZHENGYUE    Eid al-Fitr, Yom Kippur, Chinese New Year: lunar months in the base date's year
@@ -65,24 +67,26 @@ schedule = range | item { "," item } .
 item     = expr [ "IF" WEEKDAY { WEEKDAY } ] .                               (* no date on other weekdays *)
 range    = "(" expr ":" period ":" expr ")" .
 expr     = date { ("+" | "-") period
-                | ">" ( "IMM" | "SPOT" [ PAIR ] | ROLL | ("NEXT" | "PREV") anchor )
+                | ">" ( "IMM" | "SPOT" [ PAIR ] | ROLL | ("NEXT" | "PREV") [ ORDINAL ] anchor )
                 | "{" shift { "," shift } "}" } .                            (* PAIR: six capital letters, e.g. EURUSD *)
 shift    = WEEKDAY ("+" | "-") period .                                      (* observance: {SAT - 1D, SUN + 1D} *)
-anchor   = WEEKDAY | "BD" | "IMM" | annual | EVENT .
+anchor   = target | "{" target { "," target } "}" .                    (* NEXT {MON, FRI}: the nearest *)
+target   = WEEKDAY | "BD" | "IMM" | annual | EVENT .
 date     = "T" | "TOM" | "SPOT" [ PAIR ]                                     (* base date, T + 1B, spot of T *)
          | NUM ( "-" NUM "-" NUM | "." NUM "." NUM | "/" NUM "/" NUM )       (* ISO, German, US *)
          | annual | EVENT .                                                (* EVENT: every date of the event in T's year *)
 annual   = NUM MONTH | NUM WEEKDAY MONTH | "LAST" WEEKDAY MONTH | "EASTER"   (* in the year of the base date *)
          | ("EQUINOX" | "SOLSTICE") MONTH [ ZONE ] | "SOLARTERM" NUM [ ZONE ] .
-period   = NUM ( "D" | "W" | "M" | "Q" | "Y" | "B" ) .                         (* B: business days *)
-ROLL     = "FOLLOWING" | "PRECEDING" | "MODFOLLOWING" | "BOM" | "EOM" | "BOY" | "EOY" .
+period   = NUM ( "D" | "W" | "M" | "Q" | "H" | "Y" | "B" ) .                   (* H: half year; B: business days *)
+ROLL     = "FOLLOWING" | "PRECEDING" | "MODFOLLOWING" | "BOM" | "EOM" | "BOQ" | "EOQ" | "BOH" | "EOH" | "BOY" | "EOY" .
 MONTH    = "JAN" | … | "DEC"                                                (* Gregorian *)
          | "MUHARRAM" | … | "SHAWWAL" | … | "DHULHIJJAH"                     (* Hijri, Umm al-Qura *)
          | "NISAN" | … | "TISHRI" | … | "ADAR" | "ADARII"                    (* Hebrew *)
          | "ZHENGYUE" | "ERYUE" | … | "LAYUE" .                             (* Chinese *)
 WEEKDAY  = "MON" | … | "SUN" .
 EVENT    = "@" UPPER { UPPER | DIGIT | "_" } .                              (* a named event such as @FOMC *)
-ZONE     = "UTC" ("+" | "-") NUM .                                         (* one token: UTC+9 *)
+ZONE     = "UTC" ("+" | "-") NUM .
+ORDINAL  = NUM ( "ST" | "ND" | "RD" | "TH" ) .                              (* one token: 3RD *)                                         (* one token: UTC+9 *)
 ```
 
 **In grammatical terms** (after [grammatical category](https://en.wikipedia.org/wiki/Grammatical_category)): the upper-case symbols
@@ -153,9 +157,14 @@ published instants, so a date can only differ when the event is that close to mi
 
 **Rolling**, seen from the base date: `TOM` is `T + 1B` and `SPOT [PAIR]` is `T > SPOT [PAIR]`. `> NEXT x` and `> PREV x` move to the
 first `x` strictly after or before the date, where `x` is a weekday, `BD` (business day), `IMM` or an annual date, so
-`T > NEXT 4 JUL` is this year's or next year's Independence Day. `> BOM`, `> EOM`, `> BOY` and `> EOY` move to the first or last day of
-the month or year; `> FOLLOWING`, `> PRECEDING` and `> MODFOLLOWING` (following unless that leaves the month) move to a business day of
-the market. `T > NEXT 1 ZHENGYUE` is the next Chinese New Year.
+`T > NEXT 4 JUL` is this year's or next year's Independence Day. An ordinal counts: `T > NEXT 3RD FRI` is the third Friday,
+`SPOT > NEXT 2ND IMM` the second IMM date, `T > PREV 2ND 4 JUL` the second 4 July before, while `T > NEXT 3 FRI JAN` stays the third
+Friday of January. A set is the nearest of its anchors: `T > NEXT {MON, FRI}` is the next Monday or Friday, `T > NEXT {1 FEB, 1 MAY}`
+the next of the two dates. `> BOM`, `> EOM`, `> BOQ`, `> EOQ`, `> BOH`, `> EOH`,
+`> BOY` and `> EOY` move to the first or last day of the month, quarter, half year or year, and `H` is a half year (`6M`);
+`> FOLLOWING`, `> PRECEDING` and `> MODFOLLOWING` (following unless that leaves the month) move to a business day of
+the market. `T > NEXT 1 ZHENGYUE` is the next Chinese New Year. With these, the examples of another maturity rule language, which
+nests selectors (`wednesday(3) of month(3) of quarter(2) of sp`), translate into this one; they are a section of the shared cases.
 
 **Named events** bring dates that an authority announces, such as FOMC decisions or AGMs, into the language as data, the way a
 market brings its holidays: the context maps a name to a rule, and `@FOMC` is every date of that event in the year of the base date,
@@ -165,7 +174,7 @@ that isn't declared is an error, and so is an event with several dates at the en
 once per date of its event: the event's date throws until the item binds it, which needs no change to how the eleven grammars build
 expressions.
 
-All implementations are tested against the same 284 cases in [examples/schedule.txt](examples/schedule.txt),
+All implementations are tested against the same 336 cases in [examples/schedule.txt](examples/schedule.txt),
 including invalid dates and syntax errors, 2186 cases in [examples/catalog.txt](examples/catalog.txt) and 3347 in
 [examples/date-holidays.txt](examples/date-holidays.txt). Each module has a test that reads all three files. The second one is generated by [scripts/catalog_cases.py](scripts/catalog_cases.py) from the holiday rule catalog of the
 holidays-events project: every rule the language can express (88 of 151) is translated into a schedule and evaluated for 2020 to 2030,

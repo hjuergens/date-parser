@@ -227,11 +227,11 @@
     <h1>Eleven parsers, one date language</h1>
     <p class="lead">
       The same small language for dates, periods and ranges, implemented with eleven parser generators and
-      parser libraries, from LL(1) to LALR(1), Earley, GLL and PEG. Every implementation passes the same 284 test cases.
+      parser libraries, from LL(1) to LALR(1), Earley, GLL and PEG. Every implementation passes the same 336 test cases.
     </p>
     <ul class="stats">
       <li><strong>11</strong><span>implementations, 5 languages</span></li>
-      <li><strong>284</strong><span>shared test cases</span></li>
+      <li><strong>336</strong><span>shared test cases</span></li>
       <li><strong>0</strong><span>grammar conflicts</span></li>
       <li><strong>1</strong><span>specification file</span></li>
     </ul>
@@ -262,10 +262,12 @@ item     = expr [ "IF" WEEKDAY { WEEKDAY } ] .
 range    = "(" expr ":" period ":" expr ")" .
 expr     = date { ("+" | "-") period
                | "&gt;" ( "IMM" | "SPOT" [ PAIR ] | ROLL
-                       | ("NEXT" | "PREV") anchor )
+                       | ("NEXT" | "PREV") [ ORDINAL ] anchor )
                | "{" shift { "," shift } "}" } .
 shift    = WEEKDAY ("+" | "-") period .
-anchor   = WEEKDAY | "BD" | "IMM" | annual | EVENT .
+anchor   = target                      <span class="c">(* NEXT 3RD FRI *)</span>
+         | "{" target { "," target } "}" .  <span class="c">(* NEXT {MON, FRI} *)</span>
+target   = WEEKDAY | "BD" | "IMM" | annual | EVENT .
 date     = "T" | "TOM" | "SPOT" [ PAIR ]
          | NUM ( "-" NUM "-" NUM       <span class="c">(* ISO    *)</span>
                | "." NUM "." NUM       <span class="c">(* German *)</span>
@@ -277,15 +279,17 @@ annual   = NUM MONTH                   <span class="c">(* 4 JUL     *)</span>
          | ("EQUINOX" | "SOLSTICE") MONTH [ ZONE ]
          | "SOLARTERM" NUM [ ZONE ] .  <span class="c">(* SOLARTERM 5 UTC+8 *)</span>
 period   = NUM ( "D" | "W" | "M"
-               | "Q" | "Y" | "B" ) .
+               | "Q" | "H" | "Y" | "B" ) .
 ROLL     = "FOLLOWING" | "PRECEDING" | "MODFOLLOWING"
-         | "BOM" | "EOM" | "BOY" | "EOY" .
+         | "BOM" | "EOM" | "BOQ" | "EOQ"
+         | "BOH" | "EOH" | "BOY" | "EOY" .
 MONTH    = "JAN" | … | "DEC"           <span class="c">(* Gregorian *)</span>
          | "MUHARRAM" | … | "DHULHIJJAH"  <span class="c">(* Hijri *)</span>
          | "NISAN" | … | "ADARII"     <span class="c">(* Hebrew  *)</span>
          | "ZHENGYUE" | … | "LAYUE" . <span class="c">(* Chinese *)</span>
 EVENT    = "@" UPPER { UPPER | DIGIT | "_" } .  <span class="c">(* @FOMC *)</span>
-ZONE     = "UTC" ("+" | "-") NUM .     <span class="c">(* UTC+9, one token *)</span></code></pre>
+ZONE     = "UTC" ("+" | "-") NUM .     <span class="c">(* UTC+9, one token *)</span>
+ORDINAL  = NUM ("ST" | "ND" | "RD" | "TH") .  <span class="c">(* 3RD, one token *)</span></code></pre>
     </div>
     <p class="note">
       In grammatical terms (after <a href="https://en.wikipedia.org/wiki/Grammatical_category">grammatical category</a>):
@@ -315,7 +319,9 @@ ZONE     = "UTC" ("+" | "-") NUM .     <span class="c">(* UTC+9, one token *)</s
       An observance <code>{SAT - 1D, SUN + 1D}</code> shifts a date by the first item for its weekday, so <code>4 JUL {SAT - 1D, SUN + 1D}</code>
       is Independence Day as the NYSE observes it. A market can be declared from such rules; the test markets in the case list below are.
       Rolling, seen from <code>T</code>: <code>TOM</code> and <code>SPOT</code> are dates; <code>&gt; NEXT FRI</code>, <code>&gt; PREV IMM</code> or
-      <code>&gt; NEXT 4 JUL</code> look strictly after or before the date; <code>&gt; EOM</code> and friends move to the edge of month or year,
+      <code>&gt; NEXT 4 JUL</code> look strictly after or before the date, an ordinal counts (<code>&gt; NEXT 3RD FRI</code>, <code>&gt; NEXT 2ND IMM</code>)
+      and a set is the nearest of its anchors (<code>&gt; NEXT {MON, FRI}</code>, <code>&gt; NEXT {1 FEB, 1 MAY}</code>); <code>&gt; EOM</code>, <code>&gt; EOQ</code> and friends move to the edge of
+      month, quarter, half year or year,
       and <code>&gt; FOLLOWING</code>, <code>&gt; PRECEDING</code> and <code>&gt; MODFOLLOWING</code> to a business day of the market.
       Hijri (Umm al-Qura), Hebrew and Chinese months are month names too: <code>1 SHAWWAL</code> is the day in the year of <code>T</code>,
       an error if it falls there twice or not at all. <code>24 DEC IF MON TUE WED THU</code> keeps a date only on these weekdays.
@@ -343,6 +349,7 @@ ZONE     = "UTC" ("+" | "-") NUM .     <span class="c">(* UTC+9, one token *)</s
         <li><button type="button" data-input="4 JUL {SAT - 1D, SUN + 1D}, 4 THU NOV, 25 DEC {SAT - 1D, SUN + 1D}">US holidays</button></li>
         <li><button type="button" data-input="EASTER - 2D, EASTER + 1D, 1 SHAWWAL, 10 TISHRI, 1 ZHENGYUE">Easter and lunar months</button></li>
         <li><button type="button" data-input="EQUINOX MAR UTC+9, EQUINOX SEP UTC+9, SOLARTERM 5 UTC+8, SOLSTICE DEC">equinoxes and solar terms</button></li>
+        <li><button type="button" data-input="T &gt; NEXT 3RD FRI, T &gt; NEXT 7TH {MON, FRI}, SPOT &gt; NEXT 2ND IMM, SPOT &gt; EOQ &gt; IMM">ordinals, sets and quarters</button></li>
         <li><button type="button" data-input="12 MAY - 1D &gt; NEXT SAT + 20D &gt; PRECEDING" data-market="XFED">US employment report</button></li>
         <li><button type="button" data-input="@FOMC + 1B" data-base="2025-01-01" data-market="XNYS">after each FOMC decision</button></li>
         <li><button type="button" data-input="2015-06-09 + 3X">a syntax error</button></li>
@@ -381,8 +388,8 @@ expr returns [Expr value]
       | &#x27;&gt;&#x27; &#x27;IMM&#x27;                   { $value = ScheduleSemantics.nextImm($value); }
       | &#x27;&gt;&#x27; spot                    { $value = ScheduleSemantics.spot($value, $spot.pair); }
       | &#x27;&gt;&#x27; ROLL                    { $value = ScheduleSemantics.roll($value, $ROLL.text); }
-      | &#x27;&gt;&#x27; &#x27;NEXT&#x27; anchor           { $value = ScheduleSemantics.next($value, $anchor.value); }
-      | &#x27;&gt;&#x27; &#x27;PREV&#x27; anchor           { $value = ScheduleSemantics.previous($value, $anchor.value); }
+      | &#x27;&gt;&#x27; &#x27;NEXT&#x27; ordinal anchor   { $value = ScheduleSemantics.next($value, $ordinal.n, $anchor.value); }
+      | &#x27;&gt;&#x27; &#x27;PREV&#x27; ordinal anchor   { $value = ScheduleSemantics.previous($value, $ordinal.n, $anchor.value); }
       | observance                  { $value = ScheduleSemantics.observe($value, $observance.shifts); }
       )*
     ;</code></pre>
@@ -457,8 +464,8 @@ def expr: Parser[Context =&gt; LocalDate] = date ~ rep(shift) ^^ {
     ( &quot;IMM&quot;                             (. d = ScheduleSemantics.nextImm(d); .)
     | Spot&lt;out code&gt;                    (. d = ScheduleSemantics.spot(d, code); .)
     | Roll&lt;out code&gt;                    (. d = ScheduleSemantics.roll(d, code); .)
-    | &quot;NEXT&quot; Anchor&lt;out a&gt;              (. d = ScheduleSemantics.next(d, a); .)
-    | &quot;PREV&quot; Anchor&lt;out a&gt;              (. d = ScheduleSemantics.previous(d, a); .)
+    | &quot;NEXT&quot; Counted&lt;out a&gt;             (. d = ScheduleSemantics.next(d, a); .)
+    | &quot;PREV&quot; Counted&lt;out a&gt;             (. d = ScheduleSemantics.previous(d, a); .)
     )
   | &quot;{&quot; Shift&lt;shifts&gt;                   <span class="c">/* {SAT - 1D, SUN + 1D} */</span>
     { &quot;,&quot; Shift&lt;shifts&gt; }
@@ -482,8 +489,8 @@ def expr: Parser[Context =&gt; LocalDate] = date ~ rep(shift) ^^ {
     ( &quot;IMM&quot; { d = ScheduleSemantics.nextImm(d); }
     | pair = Spot() { d = ScheduleSemantics.spot(d, pair); }
     | roll = &lt;ROLL&gt; { d = ScheduleSemantics.roll(d, roll.image); }
-    | &quot;NEXT&quot; a = Anchor() { d = ScheduleSemantics.next(d, a); }
-    | &quot;PREV&quot; a = Anchor() { d = ScheduleSemantics.previous(d, a); }
+    | &quot;NEXT&quot; a = Counted() { d = ScheduleSemantics.next(d, a); }
+    | &quot;PREV&quot; a = Counted() { d = ScheduleSemantics.previous(d, a); }
     )
   | { shifts = new ArrayList&lt;ScheduleSemantics.Shift&gt;(); }   <span class="c">// {SAT - 1D, SUN + 1D}</span>
     &quot;{&quot; Shift(shifts) ( &quot;,&quot; Shift(shifts) )* &quot;}&quot; { d = ScheduleSemantics.observe(d, shifts); }
@@ -505,8 +512,8 @@ shift
     | {imm} gt imm
     | {spot} gt spot pair?
     | {roll} gt roll
-    | {next} gt next anchor
-    | {prev} gt prev anchor
+    | {next} gt next ordinal? anchor   <span class="c">/* NEXT 3RD FRI: the third Friday */</span>
+    | {prev} gt prev ordinal? anchor
     | {observance} l_brace observe more_observe* r_brace;
 
 observe
@@ -515,7 +522,14 @@ observe
 
 more_observe = comma observe;
 
+<span class="c">/* NEXT {MON, FRI}: the nearest of a set */</span>
 anchor
+    = {single} target
+    | {set} l_brace target more_target* r_brace;
+
+more_target = comma target;
+
+target
     = {weekday} weekday
     | {bd} bd
     | {imm} imm
@@ -556,8 +570,8 @@ expr ::= date:d                     {: RESULT = d; :}
        | expr:e GT SPOT             {: RESULT = ScheduleSemantics.spot(e, null); :}
        | expr:e GT SPOT PAIR:p      {: RESULT = ScheduleSemantics.spot(e, p); :}
        | expr:e GT ROLL:r           {: RESULT = ScheduleSemantics.roll(e, r); :}
-       | expr:e GT NEXT anchor:a    {: RESULT = ScheduleSemantics.next(e, a); :}
-       | expr:e GT PREV anchor:a    {: RESULT = ScheduleSemantics.previous(e, a); :}
+       | expr:e GT NEXT counted:a   {: RESULT = ScheduleSemantics.next(e, a); :}
+       | expr:e GT PREV counted:a   {: RESULT = ScheduleSemantics.previous(e, a); :}
        | expr:e LBRACE shifts:s RBRACE {: RESULT = ScheduleSemantics.observe(e, s); :}   <span class="c">/* {SAT - 1D, SUN + 1D} */</span>
        ;</code></pre>
       <p class="pitfall"><strong>Pitfall.</strong> In the JFlex spec, <code>%cupsym</code> must come before <code>%cup</code>, or the EOF action refers to <code>sym</code>.</p>
@@ -576,8 +590,8 @@ expr:
 | expr &#x27;&gt;&#x27; SPOT                     { $$ = ScheduleSemantics.spot ($1, null); }
 | expr &#x27;&gt;&#x27; SPOT PAIR                { $$ = ScheduleSemantics.spot ($1, $4); }
 | expr &#x27;&gt;&#x27; ROLL                     { $$ = ScheduleSemantics.roll ($1, $3); }
-| expr &#x27;&gt;&#x27; NEXT anchor              { $$ = ScheduleSemantics.next ($1, $4); }
-| expr &#x27;&gt;&#x27; PREV anchor              { $$ = ScheduleSemantics.previous ($1, $4); }
+| expr &#x27;&gt;&#x27; NEXT counted             { $$ = ScheduleSemantics.next ($1, $4); }
+| expr &#x27;&gt;&#x27; PREV counted             { $$ = ScheduleSemantics.previous ($1, $4); }
 | expr &#x27;{&#x27; shifts &#x27;}&#x27;               { $$ = ScheduleSemantics.observe ($1, $3); }   <span class="c">/* {SAT - 1D, SUN + 1D} */</span>
 ;</code></pre>
       <p class="pitfall"><strong>Pitfall.</strong> In Bison's Java skeleton <code>$$</code> is a plain <code>Object</code>; only <code>$1</code>…<code>$n</code> are typed.</p>
@@ -596,11 +610,11 @@ Shift
   / &quot;-&quot; _ p:Period { return (d, c) =&gt; plus(d, p, -1, c.market); }
   / &quot;&gt;&quot; _ &quot;IMM&quot; { return nextImm; }
   / &quot;&gt;&quot; _ &quot;SPOT&quot; pair:(_ @Pair)? { return (d, c) =&gt; spot(d, pair, c.market); }
-  / &quot;&gt;&quot; _ convention:$(&quot;FOLLOWING&quot; / &quot;PRECEDING&quot; / &quot;MODFOLLOWING&quot; / &quot;BOM&quot; / &quot;EOM&quot; / &quot;BOY&quot; / &quot;EOY&quot;) {
+  / &quot;&gt;&quot; _ convention:$(&quot;FOLLOWING&quot; / &quot;PRECEDING&quot; / &quot;MODFOLLOWING&quot; / &quot;BOM&quot; / &quot;EOM&quot; / &quot;BOQ&quot; / &quot;EOQ&quot; / &quot;BOH&quot; / &quot;EOH&quot; / &quot;BOY&quot; / &quot;EOY&quot;) {
       return (d, c) =&gt; roll(d, convention, c.market);
     }
-  / &quot;&gt;&quot; _ &quot;NEXT&quot; _ anchor:Anchor { return (d, c) =&gt; anchor(d, 1, c); }
-  / &quot;&gt;&quot; _ &quot;PREV&quot; _ anchor:Anchor { return (d, c) =&gt; anchor(d, -1, c); }
+  / &quot;&gt;&quot; _ &quot;NEXT&quot; _ anchor:Counted { return (d, c) =&gt; anchor(d, 1, c); }
+  / &quot;&gt;&quot; _ &quot;PREV&quot; _ anchor:Counted { return (d, c) =&gt; anchor(d, -1, c); }
   / &quot;{&quot; _ head:Observe tail:(_ &quot;,&quot; _ @Observe)* _ &quot;}&quot; {
       return (d, c) =&gt; observe(d, [head, ...tail], c.market);
     }</code></pre>
@@ -619,14 +633,18 @@ shift: &quot;+&quot; period           -&gt; plus
      | &quot;&gt;&quot; &quot;IMM&quot;            -&gt; imm
      | &quot;&gt;&quot; &quot;SPOT&quot; [PAIR]    -&gt; spot
      | &quot;&gt;&quot; ROLL             -&gt; roll
-     | &quot;&gt;&quot; &quot;NEXT&quot; anchor    -&gt; next
-     | &quot;&gt;&quot; &quot;PREV&quot; anchor    -&gt; prev
+     | &quot;&gt;&quot; &quot;NEXT&quot; [ORDINAL] anchor -&gt; next
+     | &quot;&gt;&quot; &quot;PREV&quot; [ORDINAL] anchor -&gt; prev
      | &quot;{&quot; observe (&quot;,&quot; observe)* &quot;}&quot; -&gt; observance
 
 observe: WEEKDAY &quot;+&quot; period -&gt; observe_plus
        | WEEKDAY &quot;-&quot; period -&gt; observe_minus
 
-anchor: WEEKDAY             -&gt; weekday
+<span class="c">// NEXT 3RD FRI: the third Friday; NEXT {MON, FRI}: the first of a set</span>
+?anchor: target
+       | &quot;{&quot; target (&quot;,&quot; target)* &quot;}&quot; -&gt; any_of
+
+?target: WEEKDAY            -&gt; weekday
       | &quot;BD&quot;                -&gt; business_day
       | &quot;IMM&quot;               -&gt; imm_anchor
       | annual              -&gt; annual_anchor
@@ -665,10 +683,13 @@ minus    = &lt;&#x27;-&#x27;&gt; period
 imm      = &lt;&#x27;&gt;&#x27;&gt; &lt;&#x27;IMM&#x27;&gt;
 spot     = &lt;&#x27;&gt;&#x27;&gt; &lt;&#x27;SPOT&#x27;&gt; PAIR?
 roll     = &lt;&#x27;&gt;&#x27;&gt; ROLL
-next     = &lt;&#x27;&gt;&#x27;&gt; &lt;&#x27;NEXT&#x27;&gt; anchor
-prev     = &lt;&#x27;&gt;&#x27;&gt; &lt;&#x27;PREV&#x27;&gt; anchor
+<span class="c">(* NEXT 3RD FRI: the third Friday *)</span>
+next     = &lt;&#x27;&gt;&#x27;&gt; &lt;&#x27;NEXT&#x27;&gt; ORDINAL? anchor
+prev     = &lt;&#x27;&gt;&#x27;&gt; &lt;&#x27;PREV&#x27;&gt; ORDINAL? anchor
 observance = &lt;&#x27;{&#x27;&gt; observe (&lt;&#x27;,&#x27;&gt; observe)* &lt;&#x27;}&#x27;&gt;
-observe  = WEEKDAY SIGN period</code></pre>
+observe  = WEEKDAY SIGN period
+
+<span class="c">(* NEXT {MON, FRI}: the nearest of a set *)</span></code></pre>
       <p class="pitfall"><strong>Pitfall.</strong> Scannerless with <code>:auto-whitespace</code>: whitespace may come between any two tokens, so a name like <code>@FOMC</code> must be a single regex to keep <code>@ FOMC</code> out.</p>
     </div>
     </div>
@@ -1203,6 +1224,57 @@ observe  = WEEKDAY SIGN period</code></pre>
       </table>
       </section>
       <section>
+      <h3>ordinals, sets, quarters and half years</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 3RD FRI</code></td><td><span class="date">2026-11-20</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-06]</span> T &gt; NEXT 1ST FRI</code></td><td><span class="date">2026-11-13</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; PREV 2ND FRI</code></td><td><span class="date">2026-10-23</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 11TH FRI</code></td><td><span class="date">2027-01-15</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 2ND BD</code></td><td><span class="date">2026-11-04</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> SPOT &gt; NEXT 2ND IMM</code></td><td><span class="date">2027-03-17</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 2ND 4 JUL</code></td><td><span class="date">2028-07-04</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; PREV 2ND 4 JUL</code></td><td><span class="date">2025-07-04</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 3 FRI JAN</code></td><td><span class="date">2027-01-15</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 2ND 3 FRI JAN</code></td><td><span class="date">2028-01-21</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT {MON, FRI}</code></td><td><span class="date">2026-11-06</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; PREV {MON, FRI}</code></td><td><span class="date">2026-10-30</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT {SAT, SUN, MON}</code></td><td><span class="date">2026-11-07</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT {FRI}</code></td><td><span class="date">2026-11-06</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 7TH {MON, FRI}</code></td><td><span class="date">2026-11-27</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT {MON, FRI} IF FRI</code></td><td><span class="date">2026-11-06</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT {1 FEB, 1 MAY}</code></td><td><span class="date">2027-02-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2027-02-10]</span> T &gt; NEXT {1 FEB, 1 MAY}</code></td><td><span class="date">2027-05-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; PREV {1 FEB, 1 MAY}</code></td><td><span class="date">2026-05-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT {IMM, 25 DEC}</code></td><td><span class="date">2026-12-16</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-12-17]</span> T &gt; NEXT {IMM, 25 DEC}</code></td><td><span class="date">2026-12-25</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT {25 DEC, EASTER} + 1D</code></td><td><span class="date">2026-12-26</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 0TH FRI</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 2ST FRI</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 3 FRI</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 3RD</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT FRI 3RD</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT MON FRI</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT {MON FRI}</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT {}</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT {3RD FRI}</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; BOQ</code></td><td><span class="date">2026-10-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; EOQ</code></td><td><span class="date">2026-12-31</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-02-14]</span> T &gt; EOQ</code></td><td><span class="date">2026-03-31</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-05-15]</span> T &gt; BOH</code></td><td><span class="date">2026-01-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-05-15]</span> T &gt; EOH</code></td><td><span class="date">2026-06-30</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-08-15]</span> T &gt; BOH</code></td><td><span class="date">2026-07-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-08-15]</span> T &gt; EOH</code></td><td><span class="date">2026-12-31</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T + 1H</code></td><td><span class="date">2027-05-02</span></td></tr>
+          <tr><td><code>2026-08-31 + 1H</code></td><td><span class="date">2027-02-28</span></td></tr>
+          <tr><td><code>2026-08-31 - 2H</code></td><td><span class="date">2025-08-31</span></td></tr>
+          <tr><td><code>(2026-01-01 : 1H : 2027-12-31)</code></td><td><span class="date">2026-01-01</span>, <span class="date">2026-07-01</span>, <span class="date">2027-01-01</span>, <span class="date">2027-07-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; BOM - 1D + 5B</code></td><td><span class="date">2026-11-06</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T + 2M &gt; BOM - 1D &gt; NEXT 3RD WED</code></td><td><span class="date">2027-01-20</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
       <h3>in this one; the comment gives the MaturityRule expression</h3>
       <table class="cases">
         <tbody>
@@ -1227,10 +1299,12 @@ observe  = WEEKDAY SIGN period</code></pre>
       </table>
       </section>
       <section>
-      <h3>here the two differ: quarter(2) counts calendar quarters and gives 2027-06-16, as spot is after the March IMM date</h3>
+      <h3>the IMM date after the end of spot&#x27;s quarter is the same as quarter(2)</h3>
       <table class="cases">
         <tbody>
           <tr><td><code><span class="ctx">[2027-03-22]</span> SPOT &gt; IMM &gt; IMM</code></td><td><span class="date">2027-09-15</span></td></tr>
+          <tr><td><code><span class="ctx">[2027-03-22]</span> SPOT &gt; EOQ &gt; IMM</code></td><td><span class="date">2027-06-16</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> SPOT &gt; EOQ &gt; IMM</code></td><td><span class="date">2027-03-17</span></td></tr>
         </tbody>
       </table>
       </section>
@@ -1239,6 +1313,23 @@ observe  = WEEKDAY SIGN period</code></pre>
       <table class="cases">
         <tbody>
           <tr><td><code><span class="ctx">[2026-11-02]</span> SPOT &gt; IMM &gt; IMM &gt; IMM &gt; IMM &gt; IMM</code></td><td><span class="date">2027-12-15</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> SPOT &gt; NEXT 5TH IMM</code></td><td><span class="date">2027-12-15</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>next(7, (monday or friday) of every(week)), from the day after today</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 7TH {MON, FRI}</code></td><td><span class="date">2026-11-27</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>wednesday(3) of month(3) of quarter(2) of sp with the month of the date: the third Wednesday of the month after spot&#x27;s</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> SPOT + 1M &gt; BOM - 1D &gt; NEXT 3RD WED</code></td><td><span class="date">2026-12-16</span></td></tr>
         </tbody>
       </table>
       </section>
@@ -1255,6 +1346,7 @@ observe  = WEEKDAY SIGN period</code></pre>
       <table class="cases">
         <tbody>
           <tr><td><code><span class="ctx">[2026-11-02]</span> SPOT &gt; NEXT FRI + 2W</code></td><td><span class="date">2026-11-20</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> SPOT &gt; NEXT 3RD FRI</code></td><td><span class="date">2026-11-20</span></td></tr>
         </tbody>
       </table>
       </section>
@@ -1275,10 +1367,19 @@ observe  = WEEKDAY SIGN period</code></pre>
       </table>
       </section>
       <section>
+      <h3>next(firstday of month(2 or 5) of every(year)) of sp</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> SPOT &gt; NEXT {1 FEB, 1 MAY}</code></td><td><span class="date">2027-02-01</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
       <h3>halfyear from sp, business(3) from sp</h3>
       <table class="cases">
         <tbody>
           <tr><td><code><span class="ctx">[2026-11-02]</span> SPOT + 6M</code></td><td><span class="date">2027-05-04</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> SPOT + 1H</code></td><td><span class="date">2027-05-04</span></td></tr>
           <tr><td><code><span class="ctx">[2026-11-02]</span> SPOT + 3B</code></td><td><span class="date">2026-11-09</span></td></tr>
         </tbody>
       </table>
@@ -1686,7 +1787,30 @@ mvn -pl date-rule-coco test           <span class="c"># one module</span></code>
     return (d, direction) => plusDays(d, direction * ((direction * (WEEKDAYS.indexOf(wd) - weekday(d)) % 7 + 7) % 7 || 7));
   }
 
-  // FOLLOWING, PRECEDING, MODFOLLOWING (following unless that leaves the month); BOM, EOM, BOY, EOY
+  // NEXT {MON, FRI}, NEXT {1 FEB, 1 MAY}: the nearest match of any of the anchors
+  function anyOf(anchors) {
+    return (d, direction, c) => anchors.map((anchor) => anchor(d, direction, c))
+      .reduce((a, b) => (direction * compare(b, a) < 0 ? b : a));
+  }
+
+  // 1ST, 2ND, 3RD, 4TH, 11TH, 21ST as a count; the suffix must fit the number
+  function ordinal(text) {
+    const n = parseInt(text.slice(0, -2), 10);
+    const suffix = n % 100 >= 11 && n % 100 <= 13 ? 'TH' : ({ 1: 'ST', 2: 'ND', 3: 'RD' })[n % 10] ?? 'TH';
+    if (!text.endsWith(suffix)) throw new Error(`not an ordinal: ${text}`);
+    return n;
+  }
+
+  // NEXT 3RD FRI: the anchor found n times, each time from the one before
+  function times(n, anchor) {
+    return (d, direction, c) => {
+      if (n < 1) throw new Error(`count must be positive: ${n}`);
+      for (let i = 0; i < n; i++) d = anchor(d, direction, c);
+      return d;
+    };
+  }
+
+  // FOLLOWING, PRECEDING, MODFOLLOWING (following unless that leaves the month); BOM, EOM, BOQ, EOQ, BOH, EOH, BOY, EOY
   function roll(d, convention, market) {
     switch (convention) {
       case 'FOLLOWING': return market.isBusinessDay(d) ? d : plusBusinessDays(d, 1, market);
@@ -1697,6 +1821,10 @@ mvn -pl date-rule-coco test           <span class="c"># one module</span></code>
       }
       case 'BOM': return { ...d, day: 1 };
       case 'EOM': return { ...d, day: daysInMonth(d.year, d.month) };
+      case 'BOQ': return { year: d.year, month: d.month - (d.month - 1) % 3, day: 1 };
+      case 'EOQ': return roll({ ...d, month: d.month - (d.month - 1) % 3 + 2, day: 1 }, 'EOM', market);
+      case 'BOH': return { year: d.year, month: d.month - (d.month - 1) % 6, day: 1 };
+      case 'EOH': return roll({ ...d, month: d.month - (d.month - 1) % 6 + 5, day: 1 }, 'EOM', market);
       case 'BOY': return { year: d.year, month: 1, day: 1 };
       case 'EOY': return { year: d.year, month: 12, day: 31 };
     }
@@ -1749,11 +1877,11 @@ Shift
   / "-" _ p:Period { return (d, c) => plus(d, p, -1, c.market); }
   / ">" _ "IMM" { return nextImm; }
   / ">" _ "SPOT" pair:(_ @Pair)? { return (d, c) => spot(d, pair, c.market); }
-  / ">" _ convention:$("FOLLOWING" / "PRECEDING" / "MODFOLLOWING" / "BOM" / "EOM" / "BOY" / "EOY") {
+  / ">" _ convention:$("FOLLOWING" / "PRECEDING" / "MODFOLLOWING" / "BOM" / "EOM" / "BOQ" / "EOQ" / "BOH" / "EOH" / "BOY" / "EOY") {
       return (d, c) => roll(d, convention, c.market);
     }
-  / ">" _ "NEXT" _ anchor:Anchor { return (d, c) => anchor(d, 1, c); }
-  / ">" _ "PREV" _ anchor:Anchor { return (d, c) => anchor(d, -1, c); }
+  / ">" _ "NEXT" _ anchor:Counted { return (d, c) => anchor(d, 1, c); }
+  / ">" _ "PREV" _ anchor:Counted { return (d, c) => anchor(d, -1, c); }
   / "{" _ head:Observe tail:(_ "," _ @Observe)* _ "}" {
       return (d, c) => observe(d, [head, ...tail], c.market);
     }
@@ -1761,7 +1889,17 @@ Shift
 Observe
   = weekday:Weekday _ sign:("+" / "-") _ period:Period { return { weekday, sign: sign === '+' ? 1 : -1, period }; }
 
+// NEXT 3RD FRI: the third Friday; the ordinal first, as the number of 3 FRI JAN would take its digits
+Counted
+  = text:$([0-9]+ ("ST" / "ND" / "RD" / "TH")) _ anchor:Anchor { return times(ordinal(text), anchor); }
+  / Anchor
+
+// NEXT {MON, FRI}: the nearest of a set
 Anchor
+  = "{" _ head:Target tail:(_ "," _ @Target)* _ "}" { return anyOf([head, ...tail]); }
+  / Target
+
+Target
   = wd:Weekday { return weekdayAnchor(wd); }
   / "BD" { return (d, direction, c) => plusBusinessDays(d, direction, c.market); }
   / "IMM" { return (d, direction) => direction > 0 ? nextImm(d) : previousImm(d); }
@@ -1814,12 +1952,13 @@ Pair
     pair:$[A-Z]|6| { return pair; }
 
 Period
-  = n:Number _ unit:[DWMQYB] {
+  = n:Number _ unit:[DWMQHYB] {
       switch (unit) {
         case 'D': return { months: 0, days: n, business: 0 };
         case 'W': return { months: 0, days: 7 * n, business: 0 };
         case 'M': return { months: n, days: 0, business: 0 };
         case 'Q': return { months: 3 * n, days: 0, business: 0 };
+        case 'H': return { months: 6 * n, days: 0, business: 0 };
         case 'Y': return { months: 12 * n, days: 0, business: 0 };
         case 'B': return { months: 0, days: 0, business: n };
       }

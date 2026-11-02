@@ -67,11 +67,13 @@ ScheduleParsers.parse("T + 1W - 2D")(Context(Some(LocalDate.of(2015, 6, 9))))   
 Holiday rules and rolling are more parsers (`annual`, `anchor`, `observe`). Without a lexer, order matters (`"TOM"` before `"T"`),
 and the pair pattern `(?!EASTER|TISHRI|…)[A-Z]{6}` excludes the six-letter keywords, or `T > SPOT EASTER` would parse.
 Lunar month names extend the `month` regex, where `ADARII` must come before `ADAR`: a regex alternation takes the first match.
+Ordinals and sets (`> NEXT 3RD FRI`, `> NEXT {MON, FRI}`): `counted = opt(ordinal) ~ anchor`, where `ordinal` is the regex `[0-9]+(ST|ND|RD|TH)` and fails (`>>` with `failure`) when the suffix doesn't fit the number; a set is `"{" ~> rep1sep(target, ",") <~ "}"`.
+
 Named events: `eventName` is the regex `@[A-Z][A-Z0-9_]*`, tried first in `date` and last in `anchor`; a regex token can't contain the whitespace that `RegexParsers` skips, so `@ FOMC` is an error as with the lexers.
 
 ## Status
 
-- Working: 158 JUnit/TestNG tests and 5835 ScalaTest tests. One TestNG test is disabled (`firstDayOfNextMonthTest`).
+- Working: 158 JUnit/TestNG tests and 5887 ScalaTest tests. One TestNG test is disabled (`firstDayOfNextMonthTest`).
 - `QuarterAdjuster(n)` moves to another quarter **within the same year** (Q4 + 1 → Q1 of the same year).
 - Several rules in [high_sophisticated.txt](src/test/resources/complex/high_sophisticated.txt) are still commented out,
   for example "every friday the 13th of month" and "full moon next after the vernal equinox".

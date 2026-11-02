@@ -79,12 +79,16 @@ class Rules(DateScheduleVisitor):
         return lambda d, context: semantics.roll(d, convention, context.market)
 
     def visitNext(self, ctx):
-        anchor = self.visit(ctx.anchor())
-        return lambda d, context: anchor(d, 1, context)
+        return semantics.repeat(self.visit(ctx.anchor()), 1, semantics.ordinal(ctx.ORDINAL() and ctx.ORDINAL().getText()))
 
     def visitPrev(self, ctx):
-        anchor = self.visit(ctx.anchor())
-        return lambda d, context: anchor(d, -1, context)
+        return semantics.repeat(self.visit(ctx.anchor()), -1, semantics.ordinal(ctx.ORDINAL() and ctx.ORDINAL().getText()))
+
+    def visitSingleAnchor(self, ctx):
+        return self.visit(ctx.target())
+
+    def visitAnyOf(self, ctx):
+        return semantics.any_of([self.visit(target) for target in ctx.target()])
 
     def visitObservance(self, ctx):
         shifts = [self.visit(observe) for observe in ctx.observe()]

@@ -51,8 +51,8 @@ expr returns [Expr value]
       | '>' 'IMM'                   { $value = ScheduleSemantics.nextImm($value); }
       | '>' spot                    { $value = ScheduleSemantics.spot($value, $spot.pair); }
       | '>' ROLL                    { $value = ScheduleSemantics.roll($value, $ROLL.text); }
-      | '>' 'NEXT' anchor           { $value = ScheduleSemantics.next($value, $anchor.value); }
-      | '>' 'PREV' anchor           { $value = ScheduleSemantics.previous($value, $anchor.value); }
+      | '>' 'NEXT' ordinal anchor   { $value = ScheduleSemantics.next($value, $ordinal.n, $anchor.value); }
+      | '>' 'PREV' ordinal anchor   { $value = ScheduleSemantics.previous($value, $ordinal.n, $anchor.value); }
       | observance                  { $value = ScheduleSemantics.observe($value, $observance.shifts); }
       )*
     ;
@@ -69,7 +69,22 @@ shift returns [Shift value]
     | WEEKDAY '-' period            { $value = ScheduleSemantics.shift($WEEKDAY.text, $period.value, -1); }
     ;
 
+// NEXT 3RD FRI: the third Friday; a rule of its own for the same reason as spot below
+ordinal returns [int n = 1]
+    : (ORDINAL                      { $n = ScheduleSemantics.ordinal($ORDINAL.text); }
+      )?
+    ;
+
+// NEXT {MON, FRI}: the nearest of a set
 anchor returns [Anchor value]
+locals [List<Anchor> anchors = new ArrayList<>()]
+    : target                        { $value = $target.value; }
+    | '{' t=target                  { $anchors.add($t.value); }
+      (',' t=target                 { $anchors.add($t.value); }
+      )* '}'                        { $value = ScheduleSemantics.anyOf($anchors); }
+    ;
+
+target returns [Anchor value]
     : WEEKDAY                       { $value = ScheduleSemantics.weekday($WEEKDAY.text); }
     | 'BD'                          { $value = ScheduleSemantics.BUSINESS_DAY; }
     | 'IMM'                         { $value = ScheduleSemantics.IMM; }
@@ -117,7 +132,9 @@ period returns [java.time.temporal.TemporalAmount value]
 
 NUM  : [0-9]+ ;
 ZONE : 'UTC' [+-] [0-9]+ ;
-UNIT : [DWMQYB] ;
+// 1ST, 2ND, 3RD, 4TH: the longer match wins over NUM
+ORDINAL : [0-9]+ ('ST' | 'ND' | 'RD' | 'TH') ;
+UNIT : [DWMQHYB] ;
 // Gregorian, then Hijri (Umm al-Qura), Hebrew and Chinese months
 MONTH   : 'JAN' | 'FEB' | 'MAR' | 'APR' | 'MAY' | 'JUN' | 'JUL' | 'AUG' | 'SEP' | 'OCT' | 'NOV' | 'DEC'
         | 'MUHARRAM' | 'SAFAR' | 'RABIALAWWAL' | 'RABIALTHANI' | 'JUMADAALULA' | 'JUMADAALAKHIRA' | 'RAJAB' | 'SHABAN'
@@ -129,7 +146,7 @@ MONTH   : 'JAN' | 'FEB' | 'MAR' | 'APR' | 'MAY' | 'JUN' | 'JUL' | 'AUG' | 'SEP' 
 // a named event such as @FOMC; the sigil keeps names apart from keywords and pairs
 EVENT   : '@' [A-Z] [A-Z0-9_]* ;
 WEEKDAY : 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN' ;
-ROLL    : 'FOLLOWING' | 'PRECEDING' | 'MODFOLLOWING' | 'BOM' | 'EOM' | 'BOY' | 'EOY' ;
+ROLL    : 'FOLLOWING' | 'PRECEDING' | 'MODFOLLOWING' | 'BOM' | 'EOM' | 'BOQ' | 'EOQ' | 'BOH' | 'EOH' | 'BOY' | 'EOY' ;
 // currency pair such as EURUSD; six-letter keywords ('EASTER', 'TISHRI', ...) have the same length and win, as they are defined first
 PAIR : [A-Z] [A-Z] [A-Z] [A-Z] [A-Z] [A-Z] ;
 WS   : [ \t\r\n]+ -> skip ;

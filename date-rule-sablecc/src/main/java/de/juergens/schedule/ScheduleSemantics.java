@@ -389,6 +389,31 @@ public final class ScheduleSemantics {
                 ? TemporalAdjusters.next(dayOfWeek(weekday)) : TemporalAdjusters.previous(dayOfWeek(weekday)));
     }
 
+    /** NEXT {MON, FRI}, NEXT {1 FEB, 1 MAY}: the nearest match of any of the anchors */
+    public static Anchor anyOf(List<Anchor> anchors) {
+        return (date, direction, context) -> {
+            LocalDate nearest = null;
+            for (Anchor anchor : anchors) {
+                LocalDate found = anchor.from(date, direction, context);
+                if (nearest == null || Integer.signum(nearest.compareTo(found)) == direction) {
+                    nearest = found;
+                }
+            }
+            return nearest;
+        };
+    }
+
+    /** 1ST, 2ND, 3RD, 4TH, 11TH, 21ST as a count; the suffix must fit the number */
+    public static int ordinal(String text) {
+        int n = Integer.parseInt(text.substring(0, text.length() - 2));
+        String suffix = n % 100 >= 11 && n % 100 <= 13 ? "TH"
+                : n % 10 == 1 ? "ST" : n % 10 == 2 ? "ND" : n % 10 == 3 ? "RD" : "TH";
+        if (!text.endsWith(suffix)) {
+            throw new IllegalArgumentException("not an ordinal: " + text);
+        }
+        return n;
+    }
+
     public static final Anchor BUSINESS_DAY = (date, direction, context) ->
             plusBusinessDays(date, direction, context.market());
 
@@ -416,9 +441,30 @@ public final class ScheduleSemantics {
         return context -> anchor.from(expr.at(context), -1, context);
     }
 
+    public static Expr next(Expr expr, int count, Anchor anchor) {
+        return next(expr, times(count, anchor));
+    }
+
+    public static Expr previous(Expr expr, int count, Anchor anchor) {
+        return previous(expr, times(count, anchor));
+    }
+
+    /** NEXT 3RD FRI: the anchor found {@code count} times, each time from the one before */
+    public static Anchor times(int count, Anchor anchor) {
+        return (date, direction, context) -> {
+            if (count < 1) {
+                throw new IllegalArgumentException("count must be positive: " + count);
+            }
+            for (int i = 0; i < count; i++) {
+                date = anchor.from(date, direction, context);
+            }
+            return date;
+        };
+    }
+
     /**
      * FOLLOWING, PRECEDING, MODFOLLOWING (following unless that leaves the month, then preceding);
-     * BOM, EOM, BOY, EOY (first and last day of month and year)
+     * BOM, EOM, BOQ, EOQ, BOH, EOH, BOY, EOY (first and last day of month, quarter, half year and year)
      */
     public static Expr roll(Expr expr, String convention) {
         return context -> roll(expr.at(context), convention, context.market());
@@ -434,6 +480,10 @@ public final class ScheduleSemantics {
             }
             case "BOM": return date.withDayOfMonth(1);
             case "EOM": return date.with(TemporalAdjusters.lastDayOfMonth());
+            case "BOQ": return date.withDayOfMonth(1).withMonth((date.getMonthValue() - 1) / 3 * 3 + 1);
+            case "EOQ": return roll(roll(date, "BOQ", market).plusMonths(2), "EOM", market);
+            case "BOH": return date.withDayOfMonth(1).withMonth((date.getMonthValue() - 1) / 6 * 6 + 1);
+            case "EOH": return roll(roll(date, "BOH", market).plusMonths(5), "EOM", market);
             case "BOY": return date.withDayOfYear(1);
             case "EOY": return date.with(TemporalAdjusters.lastDayOfYear());
             default: throw new IllegalArgumentException("unknown convention: " + convention);
@@ -505,13 +555,14 @@ public final class ScheduleSemantics {
         return context -> range(single(first, context), step, single(last, context), context.market());
     }
 
-    /** {@code count} times D (day), W (week), M (month), Q (quarter), Y (year) or B (business day) */
+    /** {@code count} times D (day), W (week), M (month), Q (quarter), H (half year), Y (year) or B (business day) */
     public static TemporalAmount period(int count, String unit) {
         switch (unit) {
             case "D": return Period.ofDays(count);
             case "W": return Period.ofWeeks(count);
             case "M": return Period.ofMonths(count);
             case "Q": return Period.ofMonths(3 * count);
+            case "H": return Period.ofMonths(6 * count);
             case "Y": return Period.ofYears(count);
             case "B": return new BusinessDays(count);
             default: throw new IllegalArgumentException("unknown unit: " + unit);

@@ -262,10 +262,12 @@ item     = expr [ "IF" WEEKDAY { WEEKDAY } ] .
 range    = "(" expr ":" period ":" expr ")" .
 expr     = date { ("+" | "-") period
                | "&gt;" ( "IMM" | "SPOT" [ PAIR ] | ROLL
-                       | ("NEXT" | "PREV") anchor )
+                       | ("NEXT" | "PREV") [ ORDINAL ] anchor )
                | "{" shift { "," shift } "}" } .
 shift    = WEEKDAY ("+" | "-") period .
-anchor   = WEEKDAY | "BD" | "IMM" | annual | EVENT .
+anchor   = target                      <span class="c">(* NEXT 3RD FRI *)</span>
+         | "{" target { "," target } "}" .  <span class="c">(* NEXT {MON, FRI} *)</span>
+target   = WEEKDAY | "BD" | "IMM" | annual | EVENT .
 date     = "T" | "TOM" | "SPOT" [ PAIR ]
          | NUM ( "-" NUM "-" NUM       <span class="c">(* ISO    *)</span>
                | "." NUM "." NUM       <span class="c">(* German *)</span>
@@ -277,15 +279,17 @@ annual   = NUM MONTH                   <span class="c">(* 4 JUL     *)</span>
          | ("EQUINOX" | "SOLSTICE") MONTH [ ZONE ]
          | "SOLARTERM" NUM [ ZONE ] .  <span class="c">(* SOLARTERM 5 UTC+8 *)</span>
 period   = NUM ( "D" | "W" | "M"
-               | "Q" | "Y" | "B" ) .
+               | "Q" | "H" | "Y" | "B" ) .
 ROLL     = "FOLLOWING" | "PRECEDING" | "MODFOLLOWING"
-         | "BOM" | "EOM" | "BOY" | "EOY" .
+         | "BOM" | "EOM" | "BOQ" | "EOQ"
+         | "BOH" | "EOH" | "BOY" | "EOY" .
 MONTH    = "JAN" | … | "DEC"           <span class="c">(* Gregorian *)</span>
          | "MUHARRAM" | … | "DHULHIJJAH"  <span class="c">(* Hijri *)</span>
          | "NISAN" | … | "ADARII"     <span class="c">(* Hebrew  *)</span>
          | "ZHENGYUE" | … | "LAYUE" . <span class="c">(* Chinese *)</span>
 EVENT    = "@" UPPER { UPPER | DIGIT | "_" } .  <span class="c">(* @FOMC *)</span>
-ZONE     = "UTC" ("+" | "-") NUM .     <span class="c">(* UTC+9, one token *)</span></code></pre>
+ZONE     = "UTC" ("+" | "-") NUM .     <span class="c">(* UTC+9, one token *)</span>
+ORDINAL  = NUM ("ST" | "ND" | "RD" | "TH") .  <span class="c">(* 3RD, one token *)</span></code></pre>
     </div>
     <p class="note">
       In grammatical terms (after <a href="https://en.wikipedia.org/wiki/Grammatical_category">grammatical category</a>):
@@ -315,7 +319,9 @@ ZONE     = "UTC" ("+" | "-") NUM .     <span class="c">(* UTC+9, one token *)</s
       An observance <code>{SAT - 1D, SUN + 1D}</code> shifts a date by the first item for its weekday, so <code>4 JUL {SAT - 1D, SUN + 1D}</code>
       is Independence Day as the NYSE observes it. A market can be declared from such rules; the test markets in the case list below are.
       Rolling, seen from <code>T</code>: <code>TOM</code> and <code>SPOT</code> are dates; <code>&gt; NEXT FRI</code>, <code>&gt; PREV IMM</code> or
-      <code>&gt; NEXT 4 JUL</code> look strictly after or before the date; <code>&gt; EOM</code> and friends move to the edge of month or year,
+      <code>&gt; NEXT 4 JUL</code> look strictly after or before the date, an ordinal counts (<code>&gt; NEXT 3RD FRI</code>, <code>&gt; NEXT 2ND IMM</code>)
+      and a set is the nearest of its anchors (<code>&gt; NEXT {MON, FRI}</code>, <code>&gt; NEXT {1 FEB, 1 MAY}</code>); <code>&gt; EOM</code>, <code>&gt; EOQ</code> and friends move to the edge of
+      month, quarter, half year or year,
       and <code>&gt; FOLLOWING</code>, <code>&gt; PRECEDING</code> and <code>&gt; MODFOLLOWING</code> to a business day of the market.
       Hijri (Umm al-Qura), Hebrew and Chinese months are month names too: <code>1 SHAWWAL</code> is the day in the year of <code>T</code>,
       an error if it falls there twice or not at all. <code>24 DEC IF MON TUE WED THU</code> keeps a date only on these weekdays.
@@ -343,6 +349,7 @@ ZONE     = "UTC" ("+" | "-") NUM .     <span class="c">(* UTC+9, one token *)</s
         <li><button type="button" data-input="4 JUL {SAT - 1D, SUN + 1D}, 4 THU NOV, 25 DEC {SAT - 1D, SUN + 1D}">US holidays</button></li>
         <li><button type="button" data-input="EASTER - 2D, EASTER + 1D, 1 SHAWWAL, 10 TISHRI, 1 ZHENGYUE">Easter and lunar months</button></li>
         <li><button type="button" data-input="EQUINOX MAR UTC+9, EQUINOX SEP UTC+9, SOLARTERM 5 UTC+8, SOLSTICE DEC">equinoxes and solar terms</button></li>
+        <li><button type="button" data-input="T &gt; NEXT 3RD FRI, T &gt; NEXT 7TH {MON, FRI}, SPOT &gt; NEXT 2ND IMM, SPOT &gt; EOQ &gt; IMM">ordinals, sets and quarters</button></li>
         <li><button type="button" data-input="12 MAY - 1D &gt; NEXT SAT + 20D &gt; PRECEDING" data-market="XFED">US employment report</button></li>
         <li><button type="button" data-input="@FOMC + 1B" data-base="2025-01-01" data-market="XNYS">after each FOMC decision</button></li>
         <li><button type="button" data-input="2015-06-09 + 3X">a syntax error</button></li>

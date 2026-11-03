@@ -206,6 +206,14 @@
   .play-out pre { margin-top: 8px; padding: 8px 12px; }
   .play-out mark { background: color-mix(in srgb, var(--err) 25%, transparent); color: inherit; border-bottom: 2px solid var(--err); }
   .play-status { color: var(--muted); font-size: 0.9rem; margin: 0 0 6px; }
+  .play-tree { margin-top: 16px; }
+  .play-tree summary { cursor: pointer; color: var(--muted); font-size: 0.9rem; }
+  .play-tree .tree { overflow-x: auto; margin-top: 8px; }
+  .play-tree svg { display: block; }
+  .play-tree .cat { fill: var(--accent); font: 600 12px var(--sans); }
+  .play-tree .word { fill: var(--text); font: 13px var(--mono); }
+  .play-tree line { stroke: var(--muted); stroke-width: 1; }
+  .play-tree pre { white-space: pre-wrap; word-break: break-all; }
   .cases td:first-child code.try { cursor: pointer; }
   .cases td:first-child code.try:hover, .cases td:first-child code.try:focus-visible { color: var(--accent); outline: none; }
 
@@ -334,7 +342,9 @@ ORDINAL  = NUM ("ST" | "ND" | "RD" | "TH") .  <span class="c">(* 3RD, one token 
   <section aria-labelledby="try">
     <h2 id="try">Try it</h2>
     <p class="lead">The Peggy parser of this project, running in your browser: type a schedule, pick the base date <code>T</code> and a market,
-      and the dates appear as you type. The markets and events are the ones of the test cases; a click on a test case below loads it here.</p>
+      and the dates appear as you type, with the syntax tree the parser built: the categories are the rules of the grammar, the words
+      the input. Its bracket notation below the tree can be pasted into a syntax tree generator. The markets and events are the ones of the
+      test cases; a click on a test case below loads it here.</p>
     <div class="play" id="play">
       <label for="play-input">Schedule</label>
       <textarea id="play-input" class="play-input" spellcheck="false" autocapitalize="characters" autocomplete="off">T + 3M &gt; IMM, T &gt; SPOT USDCAD</textarea>
@@ -519,7 +529,10 @@ mvn -pl date-rule-coco test           <span class="c"># one module</span></code>
       return;
     }
     var options = { Solar: window.Solar };
-    var parser = peggy.generate(document.getElementById('peg-grammar').textContent);
+    var grammar = document.getElementById('peg-grammar').textContent;
+    var parser = peggy.generate(grammar);
+    // the same grammar with a tracer: its rule events give the syntax tree, without a change to the grammar
+    var tracing = peggy.generate(grammar, { trace: true });
     var declared = JSON.parse(document.getElementById('peg-context').textContent);
 
     // events and markets as in the tests: a market is weekends plus the dates its rule yields in the year and around it
@@ -556,6 +569,80 @@ mvn -pl date-rule-coco test           <span class="c"># one module</span></code>
       marketSelect.appendChild(option);
     });
 
+    // the syntax tree: a node per rule that matched, the input between its children as words
+    function syntaxTree(text) {
+      var stack = [{ children: [] }];
+      tracing.parse(text, { Solar: window.Solar, tracer: { trace: function (e) {
+        if (e.type === 'rule.enter') { stack.push({ rule: e.rule, children: [] }); return; }
+        var node = stack.pop();
+        if (e.type !== 'rule.match') return;
+        node.start = e.location.start.offset;
+        node.end = e.location.end.offset;
+        // siblings that overlap it come from an alternative that was tried and given up
+        var siblings = stack[stack.length - 1].children;
+        while (siblings.length && siblings[siblings.length - 1].end > node.start) siblings.pop();
+        siblings.push(node);
+      } } });
+      return shape(stack[0].children[0], text, true);
+    }
+    function shape(node, text, root) {
+      var parts = [], pos = node.start;
+      function words(from, to) {
+        text.slice(from, to).split(/\s+/).filter(Boolean).forEach(function (w) { parts.push({ word: w }); });
+      }
+      node.children.forEach(function (child) {
+        if (!text.slice(child.start, child.end).trim()) return;   // whitespace
+        if (child.start < pos || child.end > node.end) return;    // matched by an alternative given up
+        words(pos, child.start);
+        parts.push(shape(child, text, false));
+        pos = child.end;
+      });
+      words(pos, node.end);
+      // a rule that only passes another one on (Item → Expr) shows the inner one
+      if (!root && parts.length === 1 && parts[0].rule) return parts[0];
+      return { rule: node.rule, parts: parts };
+    }
+    function brackets(node) {
+      return node.word || '[' + node.rule + ' ' + node.parts.map(brackets).join(' ') + ']';
+    }
+    function svgTree(root) {
+      var LEVEL = 44, depth = 0, lines = '', labels = '';
+      function measure(n) {
+        if (n.word) return (n.w = n.word.length * 8 + 14);
+        var sum = n.parts.reduce(function (s, p) { return s + measure(p); }, 0);
+        return (n.w = Math.max(sum, n.rule.length * 7 + 14));
+      }
+      function place(n, x, level) {
+        depth = Math.max(depth, level);
+        n.y = level * LEVEL + 18;
+        if (n.word) { n.x = x + n.w / 2; return; }
+        var sum = n.parts.reduce(function (s, p) { return s + p.w; }, 0), cx = x + (n.w - sum) / 2;
+        n.parts.forEach(function (p) { place(p, cx, level + 1); cx += p.w; });
+        n.x = (n.parts[0].x + n.parts[n.parts.length - 1].x) / 2;
+      }
+      function draw(n) {
+        labels += '<text x="' + n.x + '" y="' + n.y + '" text-anchor="middle" class="' + (n.word ? 'word' : 'cat') + '">'
+          + escape(n.word || n.rule) + '</text>';
+        (n.parts || []).forEach(function (p) {
+          lines += '<line x1="' + n.x + '" y1="' + (n.y + 5) + '" x2="' + p.x + '" y2="' + (p.y - 14) + '"/>';
+          draw(p);
+        });
+      }
+      measure(root);
+      place(root, 0, 0);
+      draw(root);
+      return '<svg width="' + root.w + '" height="' + (depth * LEVEL + 28) + '" role="img" aria-label="syntax tree">'
+        + lines + labels + '</svg>';
+    }
+    var treeOpen = true;
+    function treeHtml(text) {
+      var tree;
+      try { tree = syntaxTree(text); } catch (e) { return ''; }
+      return '<details class="play-tree"' + (treeOpen ? ' open' : '') + '><summary>Syntax tree</summary><div class="tree">'
+        + svgTree(tree) + '</div><pre><code>' + escape(brackets(tree)) + '</code></pre></details>';
+    }
+    out.addEventListener('toggle', function (e) { if (e.target.classList.contains('play-tree')) treeOpen = e.target.open; }, true);
+
     function run() {
       var text = input.value;
       var base = baseInput.value ? baseInput.value.split('-').map(Number) : null;
@@ -579,6 +666,7 @@ mvn -pl date-rule-coco test           <span class="c"># one module</span></code>
       } catch (e) {
         out.innerHTML = '<p class="err">error: ' + escape(e.message || String(e)) + '</p>';
       }
+      out.insertAdjacentHTML('beforeend', treeHtml(text.trim()));
       if (history.replaceState) {
         var query = new URLSearchParams({ s: text });
         if (baseInput.value) query.set('t', baseInput.value);

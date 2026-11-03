@@ -37,6 +37,8 @@ can be compared on the same language. Each module README has a section on how it
 
 > A visual version of this comparison, with the rules of all eleven implementations side by side, is at [hjuergens.github.io/date-parser](https://hjuergens.github.io/date-parser/)
 > (source: [docs/index.html](docs/index.html), served by GitHub Pages from `/docs`; regenerate it with `python3 docs/generate.py`).
+> Its playground runs the Peggy parser in the browser and draws the syntax tree of each input; the tree comes from Peggy's
+> tracer, so the grammar needs no change for it, and its bracket notation can be pasted into a syntax tree generator.
 
 A small date language that every tool can handle (no left recursion is needed, and all decisions are LL(1)):
 

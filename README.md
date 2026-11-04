@@ -25,7 +25,7 @@ Planned additions are in [TODO.md](TODO.md).
 | [date-rule-sablecc](date-rule-sablecc/README.md) | SableCC 2 | LALR(1) with typed AST | Java | Arithmetic expressions, AST walker and evaluator | 5880 TestNG |
 | [date-rule-cup-jflex](date-rule-cup-jflex/README.md) | JFlex 1.9 + CUP 11b | LALR(1) | Java | Pascal-subset lexer (its CUP grammar is a skeleton); complete CUP parser for the shared example | 5876 TestNG |
 | [date-rule-bison](date-rule-bison/README.md) | GNU Bison 3 (Java skeleton) | LALR(1) | Java | Infix calculator with error recovery. **Requires `bison`**; the module is empty without it | 5877 TestNG |
-| [date-rule-flex-bison](date-rule-flex-bison/README.md) | Flex 2.6 + GNU Bison 3.8 (C skeleton) | LALR(1) | C11 | The shared example; reentrant scanner and pure parser, the actions build a syntax tree that a C evaluator walks. Builds in Docker | 5869 cases |
+| [date-rule-flex-bison](date-rule-flex-bison/README.md) | Flex 2.6 + GNU Bison 3.8 (C skeleton) | LALR(1) | C11, Go via SWIG | The shared example; reentrant scanner and pure parser, the actions build a syntax tree that a C evaluator walks. A SWIG binding runs it from Go. Builds in Docker | 5869 cases + 5869 Go subtests |
 | [date-rule-peg](date-rule-peg/README.md) | Peggy (PEG.js successor) | PEG (packrat) | JavaScript | `(start:step:end)` range lists | 5874 `node:test` |
 | [date-rule-lark](date-rule-lark/README.md) | Lark 1.3 | Earley and LALR(1), one grammar | Python | The shared example, every case with both algorithms | 11738 pytest |
 | [date-rule-antlr-python](date-rule-antlr-python/README.md) | ANTLR 4.13, Python target | ALL(*) (adaptive LL) | Python | The shared example; grammar without actions, plus a visitor | 5869 pytest |
@@ -240,7 +240,7 @@ Coco/R's LL(1) check also passes without warnings.
 
 ## How it fits together
 
-- [mise.toml](mise.toml) pins the toolchains (JDK, Maven, Node, Python, uv) and defines one task per module.
+- [mise.toml](mise.toml) pins the toolchains (JDK, Maven, Node, Python, uv, Go) and defines one task per module.
   Every module builds with its native tool: Maven for Java and Scala, npm for Peggy, uv for Python.
 - The parent [pom.xml](pom.xml) manages versions for the Java and Scala modules (Java 17 release, Scala 2.13, TestNG, JUnit Platform, SLF4J, plugins).
 - Each JVM module generates its parser in `generate-sources` into `target/generated-sources/<tool>`, then compiles and tests it.
@@ -254,15 +254,15 @@ Coco/R's LL(1) check also passes without warnings.
 
 | Tool | Needed for |
 |---|---|
-| [mise](https://mise.jdx.dev/) | everything: `mise install` installs the pinned JDK 17, Maven, Node, Python and uv |
+| [mise](https://mise.jdx.dev/) | everything: `mise install` installs the pinned JDK 17, Maven, Node, Python, uv and Go |
 | `bison` 3.x on `/usr/bin/bison` (`sudo apt install bison`) | optional; activates [date-rule-bison](date-rule-bison/README.md) |
-| a C compiler, make, `flex` and `bison`, or Docker | [date-rule-flex-bison](date-rule-flex-bison/README.md); its Dockerfile has them all |
+| a C compiler, make, `flex` and `bison` (plus Go and `swig` for its Go binding), or Docker | [date-rule-flex-bison](date-rule-flex-bison/README.md); its Dockerfile has them all |
 
 Without mise, install the tools from [mise.toml](mise.toml) yourself and run the commands of its tasks.
 
 ### Dev container
 
-[.devcontainer/](.devcontainer) needs only Docker: the image adds `bison`, `flex`, a C compiler and mise to a Debian base, and creating the
+[.devcontainer/](.devcontainer) needs only Docker: the image adds `bison`, `flex`, a C compiler, `swig` and mise to a Debian base, and creating the
 container runs `mise install`, so **every** module, both bison modules included, builds without installing anything on the host.
 In VS Code, run "Dev Containers: Reopen in Container", then `mise run test` in its terminal.
 Maven, mise and uv downloads are kept in Docker volumes (`date-parser-*`) and survive rebuilds of the container;

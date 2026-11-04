@@ -1,11 +1,11 @@
 # Development container for date-parser: system packages only.
-# The toolchains (JDK, Maven, Node, Python, uv) come from mise.toml via `mise install` (postCreateCommand),
+# The toolchains (JDK, Maven, Node, Python, uv, Go) come from mise.toml via `mise install` (postCreateCommand),
 # so their versions are pinned in one place.
 FROM mcr.microsoft.com/devcontainers/base:1-bookworm
 
-# bison (with m4) for date-rule-bison: /usr/bin/bison activates its Maven profile; flex and a C compiler for date-rule-flex-bison
+# bison (with m4) for date-rule-bison: /usr/bin/bison activates its Maven profile; flex, a C compiler and SWIG for date-rule-flex-bison (Go comes from mise)
 RUN apt-get update \
- && apt-get install -y --no-install-recommends bison flex gcc libc6-dev make \
+ && apt-get install -y --no-install-recommends bison flex gcc libc6-dev make swig \
  && rm -rf /var/lib/apt/lists/*
 
 # mise as a pinned release binary, checked against the release's SHASUMS256.txt

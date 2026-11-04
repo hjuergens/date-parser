@@ -1,4 +1,5 @@
 # make test: generate scanner and parser, build, run the shared cases. Needs gcc, flex and bison (see Dockerfile).
+# make test-go: the same cases from Go through the SWIG binding in go/; needs Go and SWIG as well.
 CC ?= cc
 CFLAGS ?= -O2
 WARNINGS = -std=c11 -D_DEFAULT_SOURCE -Wall -Wextra -Werror
@@ -6,7 +7,7 @@ EXAMPLES = ../examples/schedule.txt ../examples/catalog.txt ../examples/date-hol
 
 LIBRARY = build/parser.o build/scanner.o build/parse.o build/semantics.o
 
-all: build/schedule build/run_cases
+all: build/schedule build/run_cases build/libschedule.a
 
 build/parser.c build/parser.h: src/parser.y
 	@mkdir -p build
@@ -29,13 +30,20 @@ build/semantics.o: src/semantics.c src/ast.h src/lunar_tables.h
 
 build/schedule: src/main.c $(LIBRARY)
 	$(CC) $(CFLAGS) $(WARNINGS) -Isrc -o $@ $^ -lm
-build/run_cases: test/run_cases.c $(LIBRARY)
-	$(CC) $(CFLAGS) $(WARNINGS) -Isrc -o $@ $^ -lm
+build/run_cases: test/run_cases.c test/spec.c $(LIBRARY)
+	$(CC) $(CFLAGS) $(WARNINGS) -Isrc -Itest -o $@ $^ -lm
+
+# the library the Go binding links
+build/libschedule.a: $(LIBRARY)
+	ar rcs $@ $^
 
 test: build/run_cases
 	build/run_cases $(EXAMPLES)
 
+test-go: build/libschedule.a
+	cd go && go vet -unsafeptr=false ./... && go test ./...   # SWIG's wrapper converts uintptr to unsafe.Pointer
+
 clean:
 	rm -rf build
 
-.PHONY: all test clean
+.PHONY: all test test-go clean

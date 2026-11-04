@@ -1,0 +1,134 @@
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE
+#endif
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "spec.h"
+
+static char *strip(char *text) {
+    while (isspace((unsigned char) *text)) text++;
+    char *end = text + strlen(text);
+    while (end > text && isspace((unsigned char) end[-1])) *--end = 0;
+    return text;
+}
+
+static char *read_file(const char *path) {
+    FILE *file = fopen(path, "rb");
+    if (!file) return NULL;
+    fseek(file, 0, SEEK_END);
+    long size = ftell(file);
+    rewind(file);
+    char *text = malloc(size + 1);
+    if (!text || fread(text, 1, size, file) != (size_t) size) abort();
+    text[size] = 0;
+    fclose(file);
+    return text;
+}
+
+/* [base] text or [base market] text: 1 if the prefix is there */
+static int prefix(char *text, char **base, char **market, char **rest) {
+    if (text[0] != '[') return 0;
+    char *close = strchr(text, ']');
+    if (!close || close[1] != ' ' || close == text + 1) return 0;
+    *close = 0;
+    *base = text + 1;
+    char *space = strchr(*base, ' ');
+    *market = NULL;
+    if (space) {
+        *space = 0;
+        *market = space + 1;
+        if (!**market || strchr(*market, ' ')) return 0;
+    }
+    *rest = close + 2;
+    return 1;
+}
+
+static void declare(Spec *spec, char *line, int number, const char *path) {
+    char error[512];
+    int is_market = line[0] == 'm';
+    char *equals = strchr(line, '=');
+    if (!equals) return;
+    *equals = 0;
+    char *name = strip(line + (is_market ? 7 : 6));
+    Schedule *rule = schedule_parse(strip(equals + 1), error, sizeof error);
+    if (!rule) {
+        printf("FAIL %s:%d: %s: %s\n", path, number, name, error);
+        spec->broken++;
+    } else if (is_market) {
+        spec->markets = realloc(spec->markets, (spec->market_count + 1) * sizeof(Market *));
+        spec->names = realloc(spec->names, (spec->market_count + 1) * sizeof(char *));
+        spec->markets[spec->market_count] = market_new(rule);
+        spec->names[spec->market_count++] = strdup(name);
+    } else {
+        events_add(spec->events, name, rule);
+    }
+}
+
+static void add_case(Spec *spec, char *line, int number) {
+    char *text = strdup(line), *trimmed = strip(line), *arrow = NULL;
+    for (char *p = strstr(trimmed, "=>"); p; p = strstr(p + 1, "=>")) arrow = p;
+    if (!arrow) {
+        free(text);
+        return;
+    }
+    *arrow = 0;
+    Case c = { number, text, NULL, NULL, { 0, 0, NULL, spec->events }, NULL };
+    char *input = strip(trimmed), *base, *market, *rest;
+    c.expected = strdup(strip(arrow + 2));
+    if (prefix(input, &base, &market, &rest)) {
+        input = rest;
+        if (date_parse_iso(base, &c.context.base)) abort();
+        c.context.has_base = 1;
+        for (int m = 0; market && m < spec->market_count; m++)
+            if (!strcmp(spec->names[m], market)) c.context.market = spec->markets[m];
+        if (market && !c.context.market) c.missing_market = "missing";
+    }
+    c.input = strdup(input);
+    spec->cases = realloc(spec->cases, (spec->count + 1) * sizeof(Case));
+    spec->cases[spec->count++] = c;
+}
+
+int spec_load(const char *path, Spec *spec) {
+    *spec = (Spec) { 0 };
+    char *text = read_file(path);
+    if (!text) return -1;
+    spec->events = events_new();
+    for (int pass = 0; pass < 2; pass++) {
+        char *copy = strdup(text);
+        int number = 0;
+        for (char *line = copy, *next; line; line = next) {
+            next = strchr(line, '\n');
+            if (next) *next++ = 0;
+            number++;
+            int declaration = !strncmp(line, "market ", 7) || !strncmp(line, "event ", 6);
+            if (line[0] == '#' || declaration != !pass) continue;
+            char *check = line;
+            while (isspace((unsigned char) *check)) check++;
+            if (!*check) continue;
+            if (declaration) declare(spec, line, number, path);
+            else add_case(spec, line, number);
+        }
+        free(copy);
+    }
+    free(text);
+    return 0;
+}
+
+void spec_free(Spec *spec) {
+    for (int i = 0; i < spec->count; i++) {
+        free(spec->cases[i].text);
+        free(spec->cases[i].input);
+        free(spec->cases[i].expected);
+    }
+    free(spec->cases);
+    for (int m = 0; m < spec->market_count; m++) {
+        free(spec->names[m]);
+        market_free(spec->markets[m]);
+    }
+    free(spec->markets);
+    free(spec->names);
+    events_free(spec->events);
+    *spec = (Spec) { 0 };
+}

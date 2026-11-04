@@ -64,17 +64,18 @@ static int fixed(Parse *parse, long year, long month, long day, int *date) {
 }
 
 %token TODAY "T" TOM "TOM" SPOT "SPOT" IMM "IMM" NEXT "NEXT" PREV "PREV" BD "BD" LAST "LAST" EASTER "EASTER"
-%token SOLARTERM "SOLARTERM" IF "IF"
+%token SOLARTERM "SOLARTERM" IF "IF" IN "IN"
 %token <num> NUM ORDINAL ZONE
-%token <code> MONTH WEEKDAY ROLL UNIT SEASON
+%token <code> MONTH WEEKDAY ROLL UNIT SEASON PERIOD
 %token <text> PAIR EVENT
 
 %type <period> period
-%type <annual> annual
+%type <annual> annual fixed_annual
 %type <date> date
 %type <expr> expr
 %type <shift> shift
-%type <anchor> anchor target targets
+%type <anchor> anchor target targets select chosen
+%type <num> count
 %type <observe> observe observes
 %type <item> item items
 %type <code> weekdays
@@ -122,6 +123,14 @@ shift: '+' period               { $$ = shift(parse, S_PLUS); $$->period = $2; }
      | '>' NEXT ORDINAL anchor  { $$ = shift(parse, S_NEXT); $$->count = $3; $$->anchor = $4; }
      | '>' PREV anchor          { $$ = shift(parse, S_PREV); $$->count = 1; $$->anchor = $3; }
      | '>' PREV ORDINAL anchor  { $$ = shift(parse, S_PREV); $$->count = $3; $$->anchor = $4; }
+     | '>' count select IN PERIOD
+                                {
+                                    $$ = shift(parse, S_SELECT);
+                                    $$->count = $2 < 0 ? -$2 : $2;
+                                    $$->from_end = $2 < 0;
+                                    $$->anchor = $3;
+                                    $$->within = $5;
+                                }
      | '{' observes '}'         { $$ = shift(parse, S_OBSERVANCE); $$->observes = $2; }
      ;
 
@@ -138,6 +147,18 @@ observe: WEEKDAY '+' period     { $$ = NEW(Observe); $$->weekday = $1; $$->sign 
        | WEEKDAY '-' period     { $$ = NEW(Observe); $$->weekday = $1; $$->sign = -1; $$->period = $3; }
        ;
 
+/* > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH: the n-th match in the period of the date, from its start or its end;
+   counting from the end is a negative count (0 is an error anyway) */
+count: ORDINAL
+     | ORDINAL LAST             { $$ = -$1; }
+     | LAST                     { $$ = -1; }
+     ;
+
+/* the targets of NEXT; an annual date starting with LAST only in braces, as LAST also starts the count */
+select: chosen
+      | '{' targets '}'         { $$ = anchor(parse, AT_ANY_OF); $$->targets = $2; }
+      ;
+
 /* NEXT 3RD FRI: the third Friday; NEXT {MON, FRI}: the nearest of a set */
 anchor: target
       | '{' targets '}'         { $$ = anchor(parse, AT_ANY_OF); $$->targets = $2; }
@@ -147,10 +168,14 @@ targets: target
        | targets ',' target     { $$ = $1; APPEND(Anchor, $$, $3); }
        ;
 
-target: WEEKDAY                 { $$ = anchor(parse, AT_WEEKDAY); $$->weekday = $1; }
+target: chosen
+      | LAST WEEKDAY MONTH      { $$ = anchor(parse, AT_ANNUAL); $$->annual = annual(LAST_WEEKDAY, 0, $2, $3); }
+      ;
+
+chosen: WEEKDAY                 { $$ = anchor(parse, AT_WEEKDAY); $$->weekday = $1; }
       | BD                      { $$ = anchor(parse, AT_BUSINESS_DAY); }
       | IMM                     { $$ = anchor(parse, AT_IMM); }
-      | annual                  { $$ = anchor(parse, AT_ANNUAL); $$->annual = $1; }
+      | fixed_annual            { $$ = anchor(parse, AT_ANNUAL); $$->annual = $1; }
       | EVENT                   { $$ = anchor(parse, AT_EVENT); $$->event = $1; }
       ;
 
@@ -165,9 +190,12 @@ date: TODAY                     { $$ = (Date) { .kind = D_BASE }; }
     ;
 
 /* dates that recur every year, evaluated in the year of the base date */
-annual: NUM MONTH               { $$ = annual(MONTH_DAY, $1, 0, $2); }
-      | NUM WEEKDAY MONTH       { $$ = annual(NTH_WEEKDAY, $1, $2, $3); }
+annual: fixed_annual
       | LAST WEEKDAY MONTH      { $$ = annual(LAST_WEEKDAY, 0, $2, $3); }
+      ;
+
+fixed_annual: NUM MONTH         { $$ = annual(MONTH_DAY, $1, 0, $2); }
+      | NUM WEEKDAY MONTH       { $$ = annual(NTH_WEEKDAY, $1, $2, $3); }
       | EASTER                  { $$ = annual(EASTER_SUNDAY, 0, 0, 0); }
       | SEASON MONTH            { $$ = annual(SUN_AT, 0, 0, $2); $$.equinox = $1; }
       | SEASON MONTH ZONE       { $$ = annual(SUN_AT, 0, 0, $2); $$.equinox = $1; $$.offset = $3; }

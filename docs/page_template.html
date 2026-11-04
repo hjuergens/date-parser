@@ -263,6 +263,7 @@
           <tr><td>24 DEC IF MON TUE WED THU</td><td>Christmas Eve from Monday to Thursday, otherwise no date</td></tr>
           <tr><td>1 SHAWWAL, 1 ZHENGYUE</td><td>Eid al-Fitr and Chinese New Year in the year of <code>T</code></td></tr>
           <tr><td>@FOMC + 1B</td><td>the business day after each FOMC decision of that year (a named event)</td></tr>
+          <tr><td>T &gt; 2ND LAST BD IN MONTH</td><td>the second-to-last business day in the month of <code>T</code></td></tr>
         </tbody>
       </table>
       <pre><code>schedule = range | item { "," item } .
@@ -270,27 +271,34 @@ item     = expr [ "IF" WEEKDAY { WEEKDAY } ] .
 range    = "[" expr ":" period ":" expr "]" .
 expr     = date { ("+" | "-") period
                | "&gt;" ( "IMM" | "SPOT" [ PAIR ] | ROLL
-                       | ("NEXT" | "PREV") [ ORDINAL ] anchor )
+                       | ("NEXT" | "PREV") [ ORDINAL ] anchor
+                       | count select "IN" PERIOD )
                | "{" shift { "," shift } "}" } .
 shift    = WEEKDAY ("+" | "-") period .
 anchor   = target                      <span class="c">(* NEXT 3RD FRI *)</span>
          | "{" target { "," target } "}" .  <span class="c">(* NEXT {MON, FRI} *)</span>
-target   = WEEKDAY | "BD" | "IMM" | annual | EVENT .
+target   = chosen | "LAST" WEEKDAY MONTH .
+count    = ORDINAL [ "LAST" ] | "LAST" .  <span class="c">(* 2ND LAST *)</span>
+select   = chosen                      <span class="c">(* 3RD WED IN MONTH *)</span>
+         | "{" target { "," target } "}" .
+chosen   = WEEKDAY | "BD" | "IMM" | fixed | EVENT .
 date     = "T" | "TOM" | "SPOT" [ PAIR ]
          | NUM ( "-" NUM "-" NUM       <span class="c">(* ISO    *)</span>
                | "." NUM "." NUM       <span class="c">(* German *)</span>
                | "/" NUM "/" NUM )     <span class="c">(* US     *)</span>
          | annual | EVENT .
-annual   = NUM MONTH                   <span class="c">(* 4 JUL     *)</span>
+annual   = fixed | "LAST" WEEKDAY MONTH .
+fixed    = NUM MONTH                   <span class="c">(* 4 JUL     *)</span>
          | NUM WEEKDAY MONTH           <span class="c">(* 3 MON JAN *)</span>
-         | "LAST" WEEKDAY MONTH | "EASTER"
+         | "EASTER"
          | ("EQUINOX" | "SOLSTICE") MONTH [ ZONE ]
          | "SOLARTERM" NUM [ ZONE ] .  <span class="c">(* SOLARTERM 5 UTC+8 *)</span>
 period   = NUM ( "D" | "W" | "M"
                | "Q" | "H" | "Y" | "B" ) .
 ROLL     = "FOLLOWING" | "PRECEDING" | "MODFOLLOWING"
-         | "BOM" | "EOM" | "BOQ" | "EOQ"
+         | "BOW" | "EOW" | "BOM" | "EOM" | "BOQ" | "EOQ"
          | "BOH" | "EOH" | "BOY" | "EOY" .
+PERIOD   = "WEEK" | "MONTH" | "QUARTER" | "HALFYEAR" | "YEAR" .
 MONTH    = "JAN" | … | "DEC"           <span class="c">(* Gregorian *)</span>
          | "MUHARRAM" | … | "DHULHIJJAH"  <span class="c">(* Hijri *)</span>
          | "NISAN" | … | "ADARII"     <span class="c">(* Hebrew  *)</span>
@@ -360,6 +368,7 @@ ORDINAL  = NUM ("ST" | "ND" | "RD" | "TH") .  <span class="c">(* 3RD, one token 
         <li><button type="button" data-input="EASTER - 2D, EASTER + 1D, 1 SHAWWAL, 10 TISHRI, 1 ZHENGYUE">Easter and lunar months</button></li>
         <li><button type="button" data-input="EQUINOX MAR UTC+9, EQUINOX SEP UTC+9, SOLARTERM 5 UTC+8, SOLSTICE DEC">equinoxes and solar terms</button></li>
         <li><button type="button" data-input="T &gt; NEXT 3RD FRI, T &gt; NEXT 7TH {MON, FRI}, SPOT &gt; NEXT 2ND IMM, SPOT &gt; EOQ &gt; IMM">ordinals, sets and quarters</button></li>
+        <li><button type="button" data-input="T &gt; 3RD WED IN MONTH, T &gt; 5TH BD IN MONTH, T &gt; 2ND LAST BD IN MONTH, T &gt; EOW" data-market="XNYS">selection in a period</button></li>
         <li><button type="button" data-input="12 MAY - 1D &gt; NEXT SAT + 20D &gt; PRECEDING" data-market="XFED">US employment report</button></li>
         <li><button type="button" data-input="@FOMC + 1B" data-base="2025-01-01" data-market="XNYS">after each FOMC decision</button></li>
         <li><button type="button" data-input="2015-06-09 + 3X">a syntax error</button></li>

@@ -327,7 +327,20 @@
     };
   }
 
-  // FOLLOWING, PRECEDING, MODFOLLOWING (following unless that leaves the month); BOM, EOM, BOQ, EOQ, BOH, EOH, BOY, EOY
+  // > 3RD WED IN MONTH: the anchor found n times from the day before the period of d starts; > 2ND LAST BD IN MONTH
+  // (fromEnd): backwards from the day after it ends; an error if that leaves the period
+  function select(d, n, fromEnd, anchor, period, c) {
+    if (n < 1) throw new Error(`count must be positive: ${n}`);
+    const unit = period === 'HALFYEAR' ? 'H' : period[0];
+    const first = roll(d, 'BO' + unit, c.market), last = roll(d, 'EO' + unit, c.market);
+    let found = fromEnd ? plusDays(last, 1) : plusDays(first, -1);
+    for (let i = 0; i < n; i++) found = anchor(found, fromEnd ? -1 : 1, c);
+    if (compare(found, first) < 0 || compare(found, last) > 0) throw new Error(`no ${n}. match in the ${period.toLowerCase()}`);
+    return found;
+  }
+
+  // FOLLOWING, PRECEDING, MODFOLLOWING (following unless that leaves the month); BOW, EOW (Monday to Sunday), BOM, EOM,
+  // BOQ, EOQ, BOH, EOH, BOY, EOY
   function roll(d, convention, market) {
     switch (convention) {
       case 'FOLLOWING': return market.isBusinessDay(d) ? d : plusBusinessDays(d, 1, market);
@@ -336,6 +349,8 @@
         const following = roll(d, 'FOLLOWING', market);
         return following.month === d.month ? following : roll(d, 'PRECEDING', market);
       }
+      case 'BOW': return plusDays(d, -weekday(d));
+      case 'EOW': return plusDays(d, 6 - weekday(d));
       case 'BOM': return { ...d, day: 1 };
       case 'EOM': return { ...d, day: daysInMonth(d.year, d.month) };
       case 'BOQ': return { year: d.year, month: d.month - (d.month - 1) % 3, day: 1 };
@@ -394,11 +409,14 @@ Shift
   / "-" _ p:Period { return (d, c) => plus(d, p, -1, c.market); }
   / ">" _ "IMM" { return nextImm; }
   / ">" _ "SPOT" pair:(_ @Pair)? { return (d, c) => spot(d, pair, c.market); }
-  / ">" _ convention:$("FOLLOWING" / "PRECEDING" / "MODFOLLOWING" / "BOM" / "EOM" / "BOQ" / "EOQ" / "BOH" / "EOH" / "BOY" / "EOY") {
+  / ">" _ convention:$("FOLLOWING" / "PRECEDING" / "MODFOLLOWING" / "BOW" / "EOW" / "BOM" / "EOM" / "BOQ" / "EOQ" / "BOH" / "EOH" / "BOY" / "EOY") {
       return (d, c) => roll(d, convention, c.market);
     }
   / ">" _ "NEXT" _ anchor:Counted { return (d, c) => anchor(d, 1, c); }
   / ">" _ "PREV" _ anchor:Counted { return (d, c) => anchor(d, -1, c); }
+  / ">" _ count:Count _ anchor:Select _ "IN" _ period:$("WEEK" / "MONTH" / "QUARTER" / "HALFYEAR" / "YEAR") {
+      return (d, c) => select(d, count.n, count.fromEnd, anchor, period, c);
+    }
   / "{" _ head:Observe tail:(_ "," _ @Observe)* _ "}" {
       return (d, c) => observe(d, [head, ...tail], c.market);
     }
@@ -416,11 +434,25 @@ Anchor
   = "{" _ head:Target tail:(_ "," _ @Target)* _ "}" { return anyOf([head, ...tail]); }
   / Target
 
+// > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH: the n-th match in the period of the date, from its start or its end
+Count
+  = text:$([0-9]+ ("ST" / "ND" / "RD" / "TH")) last:(_ "LAST")? { return { n: ordinal(text), fromEnd: last !== null }; }
+  / "LAST" { return { n: 1, fromEnd: true }; }
+
+// the targets of NEXT; an annual date starting with LAST only in braces, as LAST also starts the count
+Select
+  = "{" _ head:Target tail:(_ "," _ @Target)* _ "}" { return anyOf([head, ...tail]); }
+  / Chosen
+
 Target
+  = Chosen
+  / annual:LastWeekday { return annualAnchor(annual); }
+
+Chosen
   = wd:Weekday { return weekdayAnchor(wd); }
   / "BD" { return (d, direction, c) => plusBusinessDays(d, direction, c.market); }
   / "IMM" { return (d, direction) => direction > 0 ? nextImm(d) : previousImm(d); }
-  / annual:Annual { return annualAnchor(annual); }
+  / annual:FixedAnnual { return annualAnchor(annual); }
   / name:Event { return eventAnchor(name); }
 
 Date
@@ -435,9 +467,15 @@ Date
 
 // dates that recur every year, evaluated in the year of the base date
 Annual
+  = FixedAnnual
+  / LastWeekday
+
+LastWeekday
+  = "LAST" _ wd:Weekday _ month:Month { return lastWeekday(wd, month); }
+
+FixedAnnual
   = day:Number _ month:Month { return monthDay(day, month, options.Solar); }
   / n:Number _ wd:Weekday _ month:Month { return nthWeekday(n, wd, month); }
-  / "LAST" _ wd:Weekday _ month:Month { return lastWeekday(wd, month); }
   / "EASTER" { return easter; }
   / kind:$("EQUINOX" / "SOLSTICE") _ month:Month offset:(_ @Zone)? { return season(kind, month, offset ?? 0); }
   / "SOLARTERM" _ n:Number offset:(_ @Zone)? { return solarTerm(n, offset ?? 0); }

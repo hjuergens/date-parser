@@ -1,6 +1,6 @@
 # Plan: the schedule language at least as expressive as MaturityRule
 
-Status: approved 2026-11-04, step 1 in progress. Builds on [intervals-and-series.md](intervals-and-series.md).
+Status: approved 2026-11-04; steps 1 (brackets, prefix) and 2 (selection, weeks) done, step 3 next. Builds on [intervals-and-series.md](intervals-and-series.md).
 
 ## Context
 The goal: the schedule language ("date-rule") to express every MaturityRule rule. The source is

@@ -3,7 +3,7 @@
 The [shared schedule example](../README.md#shared-example-schedule) in C, with a [Flex](https://github.com/westes/flex)
 scanner and a [GNU Bison](https://www.gnu.org/software/bison/) parser (C skeleton, LALR(1)). Both are reentrant, so
 nothing is global. It is tested against all three spec files: [schedule.txt](../examples/schedule.txt),
-[catalog.txt](../examples/catalog.txt) and [date-holidays.txt](../examples/date-holidays.txt), 5870 cases.
+[catalog.txt](../examples/catalog.txt) and [date-holidays.txt](../examples/date-holidays.txt), 5907 cases.
 A [Go binding](#go-via-swig), generated with [SWIG](https://www.swig.org/), runs the same cases from Go.
 
 ## Files
@@ -68,7 +68,7 @@ dates, err := rule.Evaluate(schedule.Context{Base: &base})   // [2025-06-27 00:0
 ```
 
 `NewMarket(rule)` and `(*Events).Add(name, rule)` take the rule over, as in C. A market caches holidays, so don't share it
-between goroutines. `make test-go` builds `build/libschedule.a` and runs `go vet` and `go test`: 5870 subtests over the
+between goroutines. `make test-go` builds `build/libschedule.a` and runs `go vet` and `go test`: 5907 subtests over the
 spec files, as in [schedule_test.go](go/schedule_test.go), plus an ownership test and the example above. You need Go 1.24
 or newer and SWIG 4; the Dockerfile has both.
 
@@ -93,7 +93,8 @@ or newer and SWIG 4; the Dockerfile has both.
 - **Typed values.** Unlike the Java skeleton, the C skeleton types `$$` through `%union` and `%type`, so the actions need no casts.
   Small values (`Period`, `Annual`, `Date`) are kept in the union as structs; lists are linked and appended in place.
 - **Name clashes.** Token names become C enumerators in `parser.h`, so a token `SEASON` and an enumerator `SEASON` of the tree
-  can't both exist; the tree's kinds are named differently.
+  can't both exist; the tree's kinds are named differently. The same goes for members: `Shift` already had
+  a `period`, so the period of a selection (`> 3RD WED IN MONTH`) is `within`.
 - **The tree is the rule.** The parser builds a tree, and [semantics.c](src/semantics.c) walks it with the context. This is the
   SableCC approach rather than closures, which C doesn't have.
 - **Errors in the evaluation** unwind with `longjmp` to `schedule_evaluate`. Every list the evaluation allocates is registered

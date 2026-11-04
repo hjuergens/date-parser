@@ -401,6 +401,33 @@ def repeat(anchor, direction, count):
     return shift
 
 
+def period_of(d, period):
+    """the first and last day of the WEEK (Monday to Sunday), MONTH, QUARTER, HALFYEAR or YEAR of d"""
+    if period == "WEEK":
+        first = d - timedelta(days=d.weekday())
+        return first, first + timedelta(days=6)
+    months = {"MONTH": 1, "QUARTER": 3, "HALFYEAR": 6, "YEAR": 12}[period]
+    first = date(d.year, (d.month - 1) // months * months + 1, 1)
+    last_month = first.month + months - 1
+    return first, date(d.year, last_month, calendar.monthrange(d.year, last_month)[1])
+
+
+def select(anchor, count, from_end, period):
+    """> 3RD WED IN MONTH: the anchor found count times from the day before the period starts;
+    > 2ND LAST BD IN MONTH: count times backwards from the day after it ends; an error if that leaves the period"""
+    def shift(d, context):
+        if count < 1:
+            raise ValueError(f"count must be positive: {count}")
+        first, last = period_of(d, period)
+        found = last + timedelta(days=1) if from_end else first - timedelta(days=1)
+        for _ in range(count):
+            found = anchor(found, -1 if from_end else 1, context)
+        if not first <= found <= last:
+            raise ValueError(f"no {count}. match in the {period.lower()} of {d}")
+        return found
+    return shift
+
+
 def business_day_anchor(d, direction, context):
     return plus_business_days(d, direction, context.market)
 
@@ -422,7 +449,8 @@ def event_anchor(name):
 
 def roll(d, convention, market):
     """FOLLOWING, PRECEDING, MODFOLLOWING (following unless that leaves the month, then preceding);
-    BOM, EOM, BOQ, EOQ, BOH, EOH, BOY, EOY (first and last day of month, quarter, half year and year)"""
+    BOW, EOW, BOM, EOM, BOQ, EOQ, BOH, EOH, BOY, EOY (first and last day of week (Monday to Sunday), month, quarter,
+    half year and year)"""
     if convention == "FOLLOWING":
         return d if market.is_business_day(d) else plus_business_days(d, 1, market)
     if convention == "PRECEDING":
@@ -430,6 +458,8 @@ def roll(d, convention, market):
     if convention == "MODFOLLOWING":
         following = roll(d, "FOLLOWING", market)
         return following if following.month == d.month else roll(d, "PRECEDING", market)
+    if convention in ("BOW", "EOW"):
+        return period_of(d, "WEEK")[convention == "EOW"]
     if convention == "BOM":
         return d.replace(day=1)
     if convention == "EOM":

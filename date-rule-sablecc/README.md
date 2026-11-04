@@ -34,7 +34,7 @@ mvn -pl date-rule-sablecc verify
 ```
 
 `sablecc-maven-plugin` 2.2 (the latest release, from 2008) generates the sources into `target/generated-sources/sablecc`.
-There are 5881 TestNG tests.
+There are 5918 TestNG tests.
 
 ## Shared example
 
@@ -54,6 +54,7 @@ Lunar month names (`1 SHAWWAL`, `10 TISHRI`, `1 ZHENGYUE`) are more alternatives
 `month` comes before `pair`); `item = expr condition?` with `condition = if weekday+` adds `24 DEC IF MON TUE WED THU`.
 The token `easter` is declared before `pair`: on a match of the same length the earlier token wins.
 Ordinals and sets (`> NEXT 3RD FRI`, `> NEXT {MON, FRI}`): the token `ordinal = digit+ ('ST' | 'ND' | 'RD' | 'TH')`, `{next} gt next ordinal? anchor` and `anchor = {single} target | {set} l_brace target more_target* r_brace`; `getOrdinal()` is `null` without a count, and the evaluator gets `ASingleAnchor`, `ASetAnchor` and the `A…Target` classes.
+Selection (`> 3RD WED IN MONTH`): `{select} gt count select in period_word`. Splitting `annual` into `{fixed} fixed_annual | {last} …` (an annual date starting with `LAST` only in braces, as `LAST` also starts the count) renames the generated classes, e.g. `AMonthDayAnnual` becomes `AMonthDayFixedAnnual`; the evaluator follows.
 
 Named events: the token `event = '@' upper (upper | digit | '_')*` adds the alternatives `{event}` to `date` and `target`, so the evaluator gets the node classes `AEventDate` and `AEventTarget`.
 

@@ -84,6 +84,23 @@ class Rules(DateScheduleVisitor):
     def visitPrev(self, ctx):
         return semantics.repeat(self.visit(ctx.anchor()), -1, semantics.ordinal(ctx.ORDINAL() and ctx.ORDINAL().getText()))
 
+    def visitSelectIn(self, ctx):
+        count = ctx.count()
+        n = semantics.ordinal(count.ORDINAL().getText()) if count.ORDINAL() else 1
+        return semantics.select(self.visit(ctx.select()), n, count.last is not None, ctx.PERIOD().getText())
+
+    def visitSingleSelect(self, ctx):
+        return self.visit(ctx.chosen())
+
+    def visitAnySelect(self, ctx):
+        return semantics.any_of([self.visit(target) for target in ctx.target()])
+
+    def visitChosenTarget(self, ctx):
+        return self.visit(ctx.chosen())
+
+    def visitLastWeekdayAnchor(self, ctx):
+        return semantics.annual_anchor(semantics.last_weekday(ctx.WEEKDAY().getText(), ctx.MONTH().getText()))
+
     def visitSingleAnchor(self, ctx):
         return self.visit(ctx.target())
 
@@ -107,7 +124,7 @@ class Rules(DateScheduleVisitor):
         return semantics.imm_anchor
 
     def visitAnnualAnchor(self, ctx):
-        return semantics.annual_anchor(self.visit(ctx.annual()))
+        return semantics.annual_anchor(self.visit(ctx.fixedAnnual()))
 
     def visitEventAnchor(self, ctx):
         return semantics.event_anchor(ctx.EVENT().getText()[1:])
@@ -127,6 +144,9 @@ class Rules(DateScheduleVisitor):
 
     def visitEvent(self, ctx):
         return semantics.event(ctx.EVENT().getText()[1:])
+
+    def visitFixed(self, ctx):
+        return self.visit(ctx.fixedAnnual())
 
     def visitMonthDay(self, ctx):
         return semantics.month_day(int(ctx.NUM().getText()), ctx.MONTH().getText())

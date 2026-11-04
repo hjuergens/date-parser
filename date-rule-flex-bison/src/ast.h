@@ -39,17 +39,21 @@ typedef struct Observe {
     struct Observe *next;
 } Observe;
 
-typedef enum { S_PLUS, S_MINUS, S_IMM, S_SPOT, S_ROLL, S_NEXT, S_PREV, S_OBSERVANCE } ShiftKind;
+typedef enum { S_PLUS, S_MINUS, S_IMM, S_SPOT, S_ROLL, S_NEXT, S_PREV, S_SELECT, S_OBSERVANCE } ShiftKind;
 
 /* the conventions of > ROLL */
-enum { FOLLOWING, PRECEDING, MODFOLLOWING, BOM, EOM, BOQ, EOQ, BOH, EOH, BOY, EOY };
+enum { FOLLOWING, PRECEDING, MODFOLLOWING, BOW, EOW, BOM, EOM, BOQ, EOQ, BOH, EOH, BOY, EOY };
+
+/* the periods of a selection (> 3RD WED IN MONTH) */
+enum { P_WEEK, P_MONTH, P_QUARTER, P_HALFYEAR, P_YEAR };
 
 typedef struct Shift {
     ShiftKind kind;
     Period period;
     const char *pair;      /* S_SPOT, may be NULL */
     int roll;
-    long count;            /* S_NEXT, S_PREV: the ordinal, 1 without one */
+    long count;            /* S_NEXT, S_PREV, S_SELECT: the ordinal, 1 without one */
+    int from_end, within;  /* S_SELECT: counted back from the end of the period; the period, a P_ code */
     Anchor *anchor;
     Observe *observes;
     struct Shift *next;

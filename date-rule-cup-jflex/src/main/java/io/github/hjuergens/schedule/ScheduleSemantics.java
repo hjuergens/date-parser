@@ -463,8 +463,33 @@ public final class ScheduleSemantics {
     }
 
     /**
+     * > 3RD WED IN MONTH: the anchor found {@code count} times from the day before the period of the date starts;
+     * > 2ND LAST BD IN MONTH ({@code fromEnd}): backwards from the day after it ends; an error if that leaves the period
+     */
+    public static Expr select(Expr expr, int count, boolean fromEnd, Anchor anchor, String period) {
+        return context -> {
+            if (count < 1) {
+                throw new IllegalArgumentException("count must be positive: " + count);
+            }
+            LocalDate date = expr.at(context);
+            String unit = period.equals("HALFYEAR") ? "H" : period.substring(0, 1);   // WEEK, MONTH, QUARTER, YEAR
+            LocalDate first = roll(date, "BO" + unit, context.market());
+            LocalDate last = roll(date, "EO" + unit, context.market());
+            LocalDate found = fromEnd ? last.plusDays(1) : first.minusDays(1);
+            for (int i = 0; i < count; i++) {
+                found = anchor.from(found, fromEnd ? -1 : 1, context);
+            }
+            if (found.isBefore(first) || found.isAfter(last)) {
+                throw new IllegalArgumentException("no " + count + ". match in the " + period.toLowerCase() + " of " + date);
+            }
+            return found;
+        };
+    }
+
+    /**
      * FOLLOWING, PRECEDING, MODFOLLOWING (following unless that leaves the month, then preceding);
-     * BOM, EOM, BOQ, EOQ, BOH, EOH, BOY, EOY (first and last day of month, quarter, half year and year)
+     * BOW, EOW, BOM, EOM, BOQ, EOQ, BOH, EOH, BOY, EOY (first and last day of week (Monday to Sunday), month, quarter,
+     * half year and year)
      */
     public static Expr roll(Expr expr, String convention) {
         return context -> roll(expr.at(context), convention, context.market());
@@ -478,6 +503,8 @@ public final class ScheduleSemantics {
                 LocalDate following = roll(date, "FOLLOWING", market);
                 return following.getMonth() == date.getMonth() ? following : roll(date, "PRECEDING", market);
             }
+            case "BOW": return date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            case "EOW": return date.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
             case "BOM": return date.withDayOfMonth(1);
             case "EOM": return date.with(TemporalAdjusters.lastDayOfMonth());
             case "BOQ": return date.withDayOfMonth(1).withMonth((date.getMonthValue() - 1) / 3 * 3 + 1);

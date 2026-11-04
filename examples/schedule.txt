@@ -35,8 +35,12 @@
 # ("> NEXT 2ND IMM", "> PREV 2ND 4 JUL"); the suffix must fit the number (1ST, 2ND, 3RD, 4TH, 11TH, 21ST), and 0TH is an
 # error. "NEXT 3 FRI JAN" stays the annual date, the third Friday of January. A set is the nearest of its anchors:
 # "> NEXT {MON, FRI}" is the next Monday or Friday, "> NEXT {1 FEB, 1 MAY}" the next of the two dates.
-# "> BOM", "> EOM", "> BOQ", "> EOQ", "> BOH", "> EOH", "> BOY" and "> EOY" move to the first or last day of the month,
-# quarter, half year or year. H is a half year, 6M.
+# "> BOW", "> EOW", "> BOM", "> EOM", "> BOQ", "> EOQ", "> BOH", "> EOH", "> BOY" and "> EOY" move to the first or last day
+# of the week (Monday to Sunday), month, quarter, half year or year. H is a half year, 6M.
+# Selection in a period: "> 3RD WED IN MONTH" is the third Wednesday in the month of the date, counted from the day before
+# the month starts; "> 2ND LAST BD IN MONTH" counts back from the day after it ends, "LAST" alone is "1ST LAST". The
+# periods are WEEK, MONTH, QUARTER, HALFYEAR and YEAR; the targets are those of NEXT, an annual date starting with LAST only
+# in braces ("> 1ST {LAST MON MAY} IN YEAR"). An error if the match falls outside the period.
 #
 # Lunar months: "1 SHAWWAL" (Hijri, Umm al-Qura), "10 TISHRI" (Hebrew; ADAR is Adar I in a leap year, ADARII
 # Adar II) and "1 ZHENGYUE" (Chinese, without leap months) are the day of that month in the Gregorian year of the
@@ -393,6 +397,45 @@ market XFED = 1 JAN {SAT - 1D, SUN + 1D}, 3 MON JAN, 3 MON FEB, LAST MON MAY, 19
 [2026-01-01 : 1H : 2027-12-31] => 2026-01-01, 2026-07-01, 2027-01-01, 2027-07-01
 [2026-11-02] T > BOM - 1D + 5B => 2026-11-06
 [2026-11-02] T + 2M > BOM - 1D > NEXT 3RD WED => 2027-01-20
+
+# selection in a period
+[2026-11-02] T > 3RD WED IN MONTH => 2026-11-18
+[2026-11-02] T > 3RD WED IN MONTH + 1D => 2026-11-19
+[2026-11-02] T > LAST FRI IN MONTH => 2026-11-27
+[2026-11-02] T > 5TH BD IN MONTH => 2026-11-06
+[2027-01-01] T > 1ST BD IN MONTH => 2027-01-01
+[2027-01-01 XNYS] T > 1ST BD IN MONTH => 2027-01-04
+[2026-11-02] T > 2ND LAST BD IN MONTH => 2026-11-27
+[2026-11-02] T > 4TH LAST BD IN MONTH => 2026-11-25
+[2026-11-02 XNYS] T > 4TH LAST BD IN MONTH => 2026-11-24
+[2027-05-03] T > LAST BD IN MONTH => 2027-05-31
+[2027-05-03 XNYS] T > LAST BD IN MONTH => 2027-05-28
+[2027-05-03 XNYS] T > EOM > PRECEDING => 2027-05-28
+[2026-11-04] T > 1ST {MON, FRI} IN WEEK => 2026-11-02
+[2026-11-08] T > LAST {MON, FRI} IN WEEK => 2026-11-06
+[2026-11-04] T > 2ND IMM IN YEAR => 2026-06-17
+[2025-04-01] T > 1ST @FOMC IN QUARTER => 2025-05-07
+[2025-04-01] T > LAST @FOMC IN HALFYEAR => 2025-06-18
+[2026-11-02] T > LAST BD IN HALFYEAR => 2026-12-31
+[2026-11-02] T > 1ST 4 JUL IN YEAR => 2026-07-04
+[2026-12-10] T > 1ST {MON, 25 DEC} IN MONTH => 2026-12-07
+[2026-11-02] T > 1ST {LAST MON MAY} IN YEAR => 2026-05-25
+[2026-11-04] T > BOW => 2026-11-02
+[2026-11-04] T > EOW => 2026-11-08
+[2026-11-08] T > BOW => 2026-11-02
+[2026-12-31] T > EOW => 2027-01-03
+[2027-03-22] SPOT + 1Q > EOQ > 3RD WED IN MONTH => 2027-06-16
+[2026-11-02] T > 5TH WED IN MONTH => error
+[2026-11-02] T > 2ND 4 JUL IN YEAR => error
+[2026-11-02] T > 0TH WED IN MONTH => error
+[2026-11-02] T > 2ST WED IN MONTH => error
+[2026-11-02] T > LAST MON MAY IN YEAR => error
+[2026-11-02] T > 3RD WED IN => error
+[2026-11-02] T > 3RD WED IN DAY => error
+[2026-11-02] T > 3RD IN MONTH => error
+[2026-11-02] T > LAST LAST FRI IN MONTH => error
+[2026-11-02] T > 3RD WED MONTH => error
+4 JUL > 1ST WED IN MONTH => error
 
 # MaturityRule: the examples of another maturity rule language (selectors such as "lastday of month(5) of sp")
 # in this one; the comment gives the MaturityRule expression

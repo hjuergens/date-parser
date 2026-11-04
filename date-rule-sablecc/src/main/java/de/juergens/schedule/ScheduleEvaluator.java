@@ -85,6 +85,12 @@ public final class ScheduleEvaluator {
                 date = ScheduleSemantics.next(date, count(next.getOrdinal()), anchor(next.getAnchor()));
             } else if (shift instanceof APrevShift prev) {
                 date = ScheduleSemantics.previous(date, count(prev.getOrdinal()), anchor(prev.getAnchor()));
+            } else if (shift instanceof ASelectShift select) {
+                PCount count = select.getCount();
+                boolean fromEnd = !(count instanceof AFromStartCount);
+                int n = count instanceof AFromStartCount start ? count(start.getOrdinal())
+                        : count instanceof AFromEndCount end ? count(end.getOrdinal()) : 1;
+                date = ScheduleSemantics.select(date, n, fromEnd, select(select.getSelect()), select.getPeriodWord().getText());
             } else if (shift instanceof AObservanceShift observance) {
                 List<ScheduleSemantics.Shift> shifts = new ArrayList<>();
                 shifts.add(observe(observance.getObserve()));
@@ -121,30 +127,57 @@ public final class ScheduleEvaluator {
         return ScheduleSemantics.anyOf(anchors);
     }
 
+    /** the targets of NEXT; an annual date starting with LAST only in braces */
+    static ScheduleSemantics.Anchor select(PSelect node) {
+        if (node instanceof ASingleSelect single) {
+            return chosen(single.getChosen());
+        }
+        ASetSelect set = (ASetSelect) node;
+        List<ScheduleSemantics.Anchor> anchors = new ArrayList<>();
+        anchors.add(target(set.getTarget()));
+        for (Object more : set.getMoreTarget()) {
+            anchors.add(target(((AMoreTarget) more).getTarget()));
+        }
+        return ScheduleSemantics.anyOf(anchors);
+    }
+
     static ScheduleSemantics.Anchor target(PTarget node) {
-        if (node instanceof AWeekdayTarget weekday) {
+        if (node instanceof AChosenTarget chosen) {
+            return chosen(chosen.getChosen());
+        }
+        ALastTarget last = (ALastTarget) node;
+        return ScheduleSemantics.annual(ScheduleSemantics.lastWeekday(last.getWeekday().getText(), last.getMonth().getText()));
+    }
+
+    static ScheduleSemantics.Anchor chosen(PChosen node) {
+        if (node instanceof AWeekdayChosen weekday) {
             return ScheduleSemantics.weekday(weekday.getWeekday().getText());
-        } else if (node instanceof ABdTarget) {
+        } else if (node instanceof ABdChosen) {
             return ScheduleSemantics.BUSINESS_DAY;
-        } else if (node instanceof AImmTarget) {
+        } else if (node instanceof AImmChosen) {
             return ScheduleSemantics.IMM;
-        } else if (node instanceof AEventTarget event) {
+        } else if (node instanceof AEventChosen event) {
             return ScheduleSemantics.eventAnchor(event.getEvent().getText().substring(1));
         }
-        return ScheduleSemantics.annual(annual(((AAnnualTarget) node).getAnnual()));
+        return ScheduleSemantics.annual(fixedAnnual(((AAnnualChosen) node).getFixedAnnual()));
     }
 
     /** dates that recur every year */
     static ScheduleSemantics.Annual annual(PAnnual node) {
-        if (node instanceof AMonthDayAnnual monthDay) {
-            return ScheduleSemantics.monthDay(number(monthDay.getNumber()), monthDay.getMonth().getText());
-        } else if (node instanceof ANthWeekdayAnnual nth) {
-            return ScheduleSemantics.nthWeekday(number(nth.getNumber()), nth.getWeekday().getText(), nth.getMonth().getText());
-        } else if (node instanceof ALastAnnual last) {
+        if (node instanceof ALastAnnual last) {
             return ScheduleSemantics.lastWeekday(last.getWeekday().getText(), last.getMonth().getText());
-        } else if (node instanceof ASeasonAnnual season) {
+        }
+        return fixedAnnual(((AFixedAnnual) node).getFixedAnnual());
+    }
+
+    static ScheduleSemantics.Annual fixedAnnual(PFixedAnnual node) {
+        if (node instanceof AMonthDayFixedAnnual monthDay) {
+            return ScheduleSemantics.monthDay(number(monthDay.getNumber()), monthDay.getMonth().getText());
+        } else if (node instanceof ANthWeekdayFixedAnnual nth) {
+            return ScheduleSemantics.nthWeekday(number(nth.getNumber()), nth.getWeekday().getText(), nth.getMonth().getText());
+        } else if (node instanceof ASeasonFixedAnnual season) {
             return ScheduleSemantics.season(season.getSeason().getText(), season.getMonth().getText(), zone(season.getZone()));
-        } else if (node instanceof ASolarTermAnnual term) {
+        } else if (node instanceof ASolarTermFixedAnnual term) {
             return ScheduleSemantics.solarTerm(number(term.getNumber()), zone(term.getZone()));
         }
         return ScheduleSemantics.EASTER;

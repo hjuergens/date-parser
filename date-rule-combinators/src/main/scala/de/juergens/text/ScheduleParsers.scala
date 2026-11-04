@@ -32,11 +32,15 @@ class ScheduleParsers extends RegexParsers {
   def weekday: Parser[String] = "MON|TUE|WED|THU|FRI|SAT|SUN".r
 
   /** dates that recur every year, such as 3 MON JAN */
-  def annual: Parser[Annual] = (number ~ month ^^ { case d ~ m => (y: Int) =>
+  def annual: Parser[Annual] = fixedAnnual | lastWeekday
+
+  def lastWeekday: Parser[Annual] = "LAST" ~> weekday ~ month ^^ { case w ~ m => (y: Int) =>
+        LocalDate.of(y, months(m), 1).`with`(TemporalAdjusters.lastInMonth(weekdays(w))) }
+
+  /** the annual dates that don't start with LAST, which also starts the count of a selection */
+  def fixedAnnual: Parser[Annual] = (number ~ month ^^ { case d ~ m => (y: Int) =>
         if (months.contains(m)) LocalDate.of(y, months(m), d) else lunar(d, m, y) }
     | number ~ weekday ~ month ^^ { case n ~ w ~ m => nthWeekday(n, w, m) }
-    | "LAST" ~> weekday ~ month ^^ { case w ~ m => (y: Int) =>
-        LocalDate.of(y, months(m), 1).`with`(TemporalAdjusters.lastInMonth(weekdays(w))) }
     | "EASTER" ^^^ (easter _)
     | ("EQUINOX" | "SOLSTICE") ~ month ~ zone ^^ { case k ~ m ~ z => season(k, m, z) }
     | "SOLARTERM" ~> number ~ zone ^^ { case n ~ z => solarTerm(n, z) })
@@ -82,19 +86,34 @@ class ScheduleParsers extends RegexParsers {
   }
 
   /** NEXT {MON, FRI}, NEXT {1 FEB, 1 MAY}: the nearest match of any of the anchors */
-  def anchor: Parser[Anchor] = "{" ~> rep1sep(target, ",") <~ "}" ^^ { anchors => (d: LocalDate, dir: Int, c: Context) =>
-        val found = anchors.map(_(d, dir, c))
-        if (dir > 0) found.minBy(_.toEpochDay) else found.maxBy(_.toEpochDay) } | target
+  def anchor: Parser[Anchor] = "{" ~> rep1sep(target, ",") <~ "}" ^^ anyOf | target
 
-  def target: Parser[Anchor] = (weekday ^^ (w => (d: LocalDate, dir: Int, _: Context) =>
+  def anyOf(anchors: List[Anchor]): Anchor = (d: LocalDate, dir: Int, c: Context) => {
+    val found = anchors.map(_(d, dir, c))
+    if (dir > 0) found.minBy(_.toEpochDay) else found.maxBy(_.toEpochDay)
+  }
+
+  def target: Parser[Anchor] = chosen | lastWeekday ^^ annualAnchor
+
+  def chosen: Parser[Anchor] = (weekday ^^ (w => (d: LocalDate, dir: Int, _: Context) =>
         d.`with`(if (dir > 0) TemporalAdjusters.next(weekdays(w)) else TemporalAdjusters.previous(weekdays(w))))
     | "BD" ^^^ ((d: LocalDate, dir: Int, c: Context) => plusBusinessDays(d, dir, c.market))
     | "IMM" ^^^ ((d: LocalDate, dir: Int, _: Context) => if (dir > 0) nextImm(d) else previousImm(d))
-    | annual ^^ (a => (d: LocalDate, dir: Int, _: Context) => {
-        val matched = a(d.getYear)
-        if (matched.compareTo(d).sign == dir) matched else a(d.getYear + dir)
-      })
+    | fixedAnnual ^^ annualAnchor
     | eventName ^^ eventAnchor)
+
+  def annualAnchor(a: Annual): Anchor = (d: LocalDate, dir: Int, _: Context) => {
+    val matched = a(d.getYear)
+    if (matched.compareTo(d).sign == dir) matched else a(d.getYear + dir)
+  }
+
+  /** > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH: the n-th match in the period of the date, from its start or its end;
+   *  the targets of NEXT, an annual date starting with LAST only in braces */
+  def selection: Parser[(LocalDate, Context) => LocalDate] =
+    (ordinal ~ opt("LAST") ^^ { case n ~ last => (n, last.isDefined) } | "LAST" ^^^ ((1, true))) ~
+      ("{" ~> rep1sep(target, ",") <~ "}" ^^ anyOf | chosen) ~ ("IN" ~> "WEEK|MONTH|QUARTER|HALFYEAR|YEAR".r) ^^ {
+        case (count, fromEnd) ~ anchor ~ period => (d: LocalDate, c: Context) => select(d, count, fromEnd, anchor, period, c)
+      }
 
   def observe: Parser[(DayOfWeek, TemporalAmount, Int)] = weekday ~ ("+" ^^^ 1 | "-" ^^^ -1) ~ period ^^ {
     case w ~ sign ~ p => (weekdays(w), p, sign)
@@ -105,7 +124,8 @@ class ScheduleParsers extends RegexParsers {
     | "-" ~> period ^^ (p => (d: LocalDate, c: Context) => plus(d, p, -1, c.market))
     | ">" ~ "IMM" ^^^ ((d: LocalDate, _: Context) => nextImm(d))
     | ">" ~ "SPOT" ~> opt(pair) ^^ (p => (d: LocalDate, c: Context) => c.market.spot(d, p))
-    | ">" ~> "MODFOLLOWING|FOLLOWING|PRECEDING|BOM|EOM|BOQ|EOQ|BOH|EOH|BOY|EOY".r ^^ (r => (d: LocalDate, c: Context) => roll(d, r, c.market))
+    | ">" ~> "MODFOLLOWING|FOLLOWING|PRECEDING|BOW|EOW|BOM|EOM|BOQ|EOQ|BOH|EOH|BOY|EOY".r ^^ (r => (d: LocalDate, c: Context) => roll(d, r, c.market))
+    | ">" ~> selection
     | ">" ~ "NEXT" ~> counted ^^ (a => (d: LocalDate, c: Context) => a(d, 1, c))
     | ">" ~ "PREV" ~> counted ^^ (a => (d: LocalDate, c: Context) => a(d, -1, c))
     | "{" ~> rep1sep(observe, ",") <~ "}" ^^ (shifts => (d: LocalDate, c: Context) =>
@@ -326,13 +346,29 @@ object ScheduleParsers {
     LocalDate.of(year, (h + l - 7 * m + 114) / 31, (h + l - 7 * m + 114) % 31 + 1)
   }
 
-  /** FOLLOWING, PRECEDING, MODFOLLOWING (following unless that leaves the month); BOM, EOM, BOQ, EOQ, BOH, EOH, BOY, EOY */
+  /** the anchor found count times from the day before the period of the date starts, or backwards from the day after it
+   *  ends; an error if that leaves the period */
+  def select(date: LocalDate, count: Int, fromEnd: Boolean, anchor: Anchor, period: String, c: Context): LocalDate = {
+    if (count < 1) throw new IllegalArgumentException(s"count must be positive: $count")
+    val unit = if (period == "HALFYEAR") "H" else period.take(1)
+    val (first, last) = (roll(date, "BO" + unit, c.market), roll(date, "EO" + unit, c.market))
+    val found = (1 to count).foldLeft(if (fromEnd) last.plusDays(1) else first.minusDays(1))((d, _) =>
+      anchor(d, if (fromEnd) -1 else 1, c))
+    if (found.isBefore(first) || found.isAfter(last))
+      throw new IllegalArgumentException(s"no $count. match in the ${period.toLowerCase} of $date")
+    found
+  }
+
+  /** FOLLOWING, PRECEDING, MODFOLLOWING (following unless that leaves the month); BOW, EOW (Monday to Sunday), BOM, EOM,
+   *  BOQ, EOQ, BOH, EOH, BOY, EOY */
   def roll(date: LocalDate, convention: String, market: Market): LocalDate = convention match {
     case "FOLLOWING" => if (market.isBusinessDay(date)) date else plusBusinessDays(date, 1, market)
     case "PRECEDING" => if (market.isBusinessDay(date)) date else plusBusinessDays(date, -1, market)
     case "MODFOLLOWING" =>
       val following = roll(date, "FOLLOWING", market)
       if (following.getMonth == date.getMonth) following else roll(date, "PRECEDING", market)
+    case "BOW" => date.`with`(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+    case "EOW" => date.`with`(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY))
     case "BOM" => date.withDayOfMonth(1)
     case "EOM" => date.`with`(TemporalAdjusters.lastDayOfMonth())
     case "BOQ" => date.withDayOfMonth(1).withMonth((date.getMonthValue - 1) / 3 * 3 + 1)

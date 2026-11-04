@@ -11,20 +11,20 @@ import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
 import java.util.List;
 
-terminal            PLUS, MINUS, GT, IMM, SPOT, BASE, TOM, NEXT, PREV, BD, LAST, EASTER, IF;
+terminal            PLUS, MINUS, GT, IMM, SPOT, BASE, TOM, NEXT, PREV, BD, LAST, EASTER, IF, IN;
 terminal            DOT, SLASH, COMMA, COLON, LBRACKET, RBRACKET, LBRACE, RBRACE;
 terminal Integer    NUM;
-terminal String     UNIT, PAIR, MONTH, WEEKDAY, ROLL, EVENT, SEASON, ZONE, ORDINAL;
+terminal String     UNIT, PAIR, MONTH, WEEKDAY, ROLL, EVENT, SEASON, ZONE, ORDINAL, PERIOD;
 terminal            SOLARTERM;
 
-non terminal Integer                              zone;
+non terminal Integer                              zone, count;
 non terminal ScheduleSemantics.Rule                schedule;
 non terminal ArrayList<ScheduleSemantics.Expr>     exprs;
 non terminal ScheduleSemantics.Expr                item, expr, date;
 non terminal ArrayList<String>                     weekdays;
 non terminal TemporalAmount                        period;
-non terminal ScheduleSemantics.Annual              annual;
-non terminal ScheduleSemantics.Anchor              counted, anchor, target;
+non terminal ScheduleSemantics.Annual              annual, fixed_annual;
+non terminal ScheduleSemantics.Anchor              counted, anchor, target, select, chosen;
 non terminal ArrayList<ScheduleSemantics.Anchor>   targets;
 non terminal ArrayList<ScheduleSemantics.Shift>    shifts;
 non terminal ScheduleSemantics.Shift               shift;
@@ -62,6 +62,8 @@ expr ::= date:d                     {: RESULT = d; :}
        | expr:e GT ROLL:r           {: RESULT = ScheduleSemantics.roll(e, r); :}
        | expr:e GT NEXT counted:a   {: RESULT = ScheduleSemantics.next(e, a); :}
        | expr:e GT PREV counted:a   {: RESULT = ScheduleSemantics.previous(e, a); :}
+       | expr:e GT count:n select:a IN PERIOD:p
+                                    {: RESULT = ScheduleSemantics.select(e, Math.abs(n), n < 0, a, p); :}
        | expr:e LBRACE shifts:s RBRACE {: RESULT = ScheduleSemantics.observe(e, s); :}   /* {SAT - 1D, SUN + 1D} */
        ;
 
@@ -78,6 +80,18 @@ counted ::= anchor:a                {: RESULT = a; :}
           | ORDINAL:o anchor:a      {: RESULT = ScheduleSemantics.times(ScheduleSemantics.ordinal(o), a); :}
           ;
 
+/* > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH: the n-th match in the period of the date, from its start or its end;
+   counting from the end is a negative count (0 is an error anyway) */
+count ::= ORDINAL:o                 {: RESULT = ScheduleSemantics.ordinal(o); :}
+        | ORDINAL:o LAST            {: RESULT = -ScheduleSemantics.ordinal(o); :}
+        | LAST                      {: RESULT = -1; :}
+        ;
+
+/* the targets of NEXT; an annual date starting with LAST only in braces, as LAST also starts the count */
+select ::= chosen:a                 {: RESULT = a; :}
+         | LBRACE targets:list RBRACE {: RESULT = ScheduleSemantics.anyOf(list); :}
+         ;
+
 /* NEXT {MON, FRI}: the nearest of a set */
 anchor ::= target:a                 {: RESULT = a; :}
          | LBRACE targets:list RBRACE {: RESULT = ScheduleSemantics.anyOf(list); :}
@@ -87,10 +101,14 @@ targets ::= target:a                {: RESULT = new ArrayList<>(); RESULT.add(a)
           | targets:list COMMA target:a {: list.add(a); RESULT = list; :}
           ;
 
-target ::= WEEKDAY:w                {: RESULT = ScheduleSemantics.weekday(w); :}
+target ::= chosen:a                 {: RESULT = a; :}
+         | LAST WEEKDAY:w MONTH:m   {: RESULT = ScheduleSemantics.annual(ScheduleSemantics.lastWeekday(w, m)); :}
+         ;
+
+chosen ::= WEEKDAY:w                {: RESULT = ScheduleSemantics.weekday(w); :}
          | BD                       {: RESULT = ScheduleSemantics.BUSINESS_DAY; :}
          | IMM                      {: RESULT = ScheduleSemantics.IMM; :}
-         | annual:a                 {: RESULT = ScheduleSemantics.annual(a); :}
+         | fixed_annual:a           {: RESULT = ScheduleSemantics.annual(a); :}
          | EVENT:n                  {: RESULT = ScheduleSemantics.eventAnchor(n); :}
          ;
 
@@ -106,9 +124,12 @@ date ::= BASE                             {: RESULT = ScheduleSemantics.BASE; :}
        ;
 
 /* dates that recur every year, evaluated in the year of the base date */
-annual ::= NUM:d MONTH:m                  {: RESULT = ScheduleSemantics.monthDay(d, m); :}
-         | NUM:n WEEKDAY:w MONTH:m        {: RESULT = ScheduleSemantics.nthWeekday(n, w, m); :}
+annual ::= fixed_annual:a                 {: RESULT = a; :}
          | LAST WEEKDAY:w MONTH:m         {: RESULT = ScheduleSemantics.lastWeekday(w, m); :}
+         ;
+
+fixed_annual ::= NUM:d MONTH:m            {: RESULT = ScheduleSemantics.monthDay(d, m); :}
+         | NUM:n WEEKDAY:w MONTH:m        {: RESULT = ScheduleSemantics.nthWeekday(n, w, m); :}
          | EASTER                         {: RESULT = ScheduleSemantics.EASTER; :}
          | SEASON:k MONTH:m zone:z        {: RESULT = ScheduleSemantics.season(k, m, z); :}
          | SOLARTERM NUM:n zone:z         {: RESULT = ScheduleSemantics.solarTerm(n, z); :}

@@ -40,6 +40,8 @@
 %token LAST "LAST"
 %token EASTER "EASTER"
 %token IF "IF"
+%token IN "IN"
+%token <String> PERIOD "period"
 %token <String> PAIR "currency pair"
 %token <String> MONTH "month"
 %token <String> WEEKDAY "weekday"
@@ -48,11 +50,11 @@
 %token <String> SEASON "EQUINOX or SOLSTICE"
 %token SOLARTERM "SOLARTERM"
 %token <Integer> ZONE "time zone"
-%type <Integer> zone
+%type <Integer> zone count
 %type <Expr> item expr date
 %type <ArrayList<String>> weekdays
-%type <Annual> annual
-%type <Anchor> counted anchor target
+%type <Annual> annual fixed_annual
+%type <Anchor> counted anchor target select chosen
 %type <ArrayList<Anchor>> targets
 %type <Shift> shift
 %type <ArrayList<Shift>> shifts
@@ -93,6 +95,7 @@ expr:
 | expr '>' ROLL                     { $$ = ScheduleSemantics.roll ($1, $3); }
 | expr '>' NEXT counted             { $$ = ScheduleSemantics.next ($1, $4); }
 | expr '>' PREV counted             { $$ = ScheduleSemantics.previous ($1, $4); }
+| expr '>' count select IN PERIOD   { $$ = ScheduleSemantics.select ($1, Math.abs ($3), $3 < 0, $4, $6); }
 | expr '{' shifts '}'               { $$ = ScheduleSemantics.observe ($1, $3); }   /* {SAT - 1D, SUN + 1D} */
 ;
 
@@ -112,6 +115,20 @@ counted:
 | ORDINAL anchor                    { $$ = ScheduleSemantics.times (ScheduleSemantics.ordinal ($1), $2); }
 ;
 
+/* > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH: the n-th match in the period of the date, from its start or its end;
+   counting from the end is a negative count (0 is an error anyway) */
+count:
+  ORDINAL                           { $$ = ScheduleSemantics.ordinal ($1); }
+| ORDINAL LAST                      { $$ = -ScheduleSemantics.ordinal ($1); }
+| LAST                              { $$ = -1; }
+;
+
+/* the targets of NEXT; an annual date starting with LAST only in braces, as LAST also starts the count */
+select:
+  chosen                            { $$ = $1; }
+| '{' targets '}'                   { $$ = ScheduleSemantics.anyOf ($2); }
+;
+
 /* NEXT {MON, FRI}: the nearest of a set */
 anchor:
   target                            { $$ = $1; }
@@ -124,10 +141,15 @@ targets:
 ;
 
 target:
+  chosen                            { $$ = $1; }
+| LAST WEEKDAY MONTH                { $$ = ScheduleSemantics.annual (ScheduleSemantics.lastWeekday ($2, $3)); }
+;
+
+chosen:
   WEEKDAY                           { $$ = ScheduleSemantics.weekday ($1); }
 | BD                                { $$ = ScheduleSemantics.BUSINESS_DAY; }
 | IMM                               { $$ = ScheduleSemantics.IMM; }
-| annual                            { $$ = ScheduleSemantics.annual ($1); }
+| fixed_annual                      { $$ = ScheduleSemantics.annual ($1); }
 | EVENT                             { $$ = ScheduleSemantics.eventAnchor ($1); }
 ;
 
@@ -145,9 +167,13 @@ date:
 
 /* dates that recur every year, evaluated in the year of the base date */
 annual:
+  fixed_annual                      { $$ = $1; }
+| LAST WEEKDAY MONTH                { $$ = ScheduleSemantics.lastWeekday ($2, $3); }
+;
+
+fixed_annual:
   NUM MONTH                         { $$ = ScheduleSemantics.monthDay ($1, $2); }
 | NUM WEEKDAY MONTH                 { $$ = ScheduleSemantics.nthWeekday ($1, $2, $3); }
-| LAST WEEKDAY MONTH                { $$ = ScheduleSemantics.lastWeekday ($2, $3); }
 | EASTER                            { $$ = ScheduleSemantics.EASTER; }
 | SEASON MONTH zone                 { $$ = ScheduleSemantics.season ($1, $2, $3); }
 | SOLARTERM NUM zone                { $$ = ScheduleSemantics.solarTerm ($2, $3); }
@@ -231,6 +257,10 @@ class ScheduleLexer implements ScheduleParser.Lexer {
           return LAST;
         if (word.equals ("IF"))
           return IF;
+        if (word.equals ("IN"))
+          return IN;
+        if (word.matches ("WEEK|MONTH|QUARTER|HALFYEAR|YEAR"))   /* the periods of a selection */
+          return PERIOD;
         /* Gregorian, then Hijri (Umm al-Qura), Hebrew and Chinese months */
         if (word.matches ("JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC"
                           + "|MUHARRAM|SAFAR|RABIALAWWAL|RABIALTHANI|JUMADAALULA|JUMADAALAKHIRA|RAJAB|SHABAN"
@@ -240,7 +270,7 @@ class ScheduleLexer implements ScheduleParser.Lexer {
           return MONTH;
         if (word.matches ("MON|TUE|WED|THU|FRI|SAT|SUN"))
           return WEEKDAY;
-        if (word.matches ("FOLLOWING|PRECEDING|MODFOLLOWING|BOM|EOM|BOQ|EOQ|BOH|EOH|BOY|EOY"))
+        if (word.matches ("FOLLOWING|PRECEDING|MODFOLLOWING|BOW|EOW|BOM|EOM|BOQ|EOQ|BOH|EOH|BOY|EOY"))
           return ROLL;
         if (word.equals ("EASTER"))   /* keywords (the months above too) before a word can be a pair */
           return EASTER;

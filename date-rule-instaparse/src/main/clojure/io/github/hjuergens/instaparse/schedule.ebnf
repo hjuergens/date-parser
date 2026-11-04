@@ -1,5 +1,5 @@
 (* Shared "schedule" example (see examples/schedule.txt in the project root):
-     2015-06-09 + 3M, 09.06.2015, (2015-01-15 : 1Q : 2015-12-31)
+     2015-06-09 + 3M, 09.06.2015, [2015-01-15 : 1Q : 2015-12-31]
    instaparse reads this EBNF at run time and parses with GLL; whitespace between tokens comes from
    :auto-whitespace. <...> hides a rule or token from the tree, so the transform only sees what carries meaning. *)
 
@@ -13,7 +13,7 @@ range    = <'['> expr <':'> period <':'> expr <']'>
 
 (* shifts are applied from left to right *)
 expr     = date shift*
-<shift>  = plus | minus | imm | spot | roll | next | prev | observance
+<shift>  = plus | minus | imm | spot | roll | next | prev | select | observance
 plus     = <'+'> period
 minus    = <'-'> period
 imm      = <'>'> <'IMM'>
@@ -22,6 +22,12 @@ roll     = <'>'> ROLL
 (* NEXT 3RD FRI: the third Friday *)
 next     = <'>'> <'NEXT'> ORDINAL? anchor
 prev     = <'>'> <'PREV'> ORDINAL? anchor
+(* > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH: the n-th match in the period of the date, from its start or its end *)
+select   = <'>'> count (chosen | any-of) <'IN'> PERIOD
+<count>  = from-start | from-end | last
+from-start = ORDINAL
+from-end = ORDINAL <'LAST'>
+last     = <'LAST'>
 observance = <'{'> observe (<','> observe)* <'}'>
 observe  = WEEKDAY SIGN period
 
@@ -29,6 +35,9 @@ observe  = WEEKDAY SIGN period
 <anchor> = target | any-of
 any-of   = <'{'> target (<','> target)* <'}'>
 <target> = weekday-anchor | bd-anchor | imm-anchor | annual-anchor | event-anchor
+(* the targets of a selection; an annual date starting with LAST only in braces, as LAST also starts the count *)
+<chosen> = weekday-anchor | bd-anchor | imm-anchor | fixed-anchor | event-anchor
+fixed-anchor   = fixed-annual
 weekday-anchor = WEEKDAY
 bd-anchor      = <'BD'>
 imm-anchor     = <'IMM'>
@@ -46,7 +55,8 @@ in-year  = annual
 event    = EVENT
 
 (* dates that recur every year, evaluated in the year of the base date *)
-<annual> = month-day | nth-weekday | last-weekday | easter | season | solar-term
+<annual> = fixed-annual | last-weekday
+<fixed-annual> = month-day | nth-weekday | easter | season | solar-term
 month-day    = NUM MONTH
 nth-weekday  = NUM WEEKDAY MONTH
 last-weekday = <'LAST'> WEEKDAY MONTH
@@ -66,7 +76,9 @@ period   = NUM UNIT
 (* the time zone of an equinox, solstice or solar term: UTC unless an offset follows *)
 <ZONE>    = #'UTC[+-][0-9]+'
 <WEEKDAY> = #'MON|TUE|WED|THU|FRI|SAT|SUN'
-<ROLL>    = #'MODFOLLOWING|FOLLOWING|PRECEDING|BOM|EOM|BOQ|EOQ|BOH|EOH|BOY|EOY'
+<ROLL>    = #'MODFOLLOWING|FOLLOWING|PRECEDING|BOW|EOW|BOM|EOM|BOQ|EOQ|BOH|EOH|BOY|EOY'
+(* the periods of a selection; WEEK is Monday to Sunday *)
+<PERIOD>  = #'WEEK|MONTH|QUARTER|HALFYEAR|YEAR'
 (* currency pair such as EURUSD; without a lexer nothing reserves the six-letter keywords, so a lookahead excludes them *)
 <PAIR>    = !('EASTER' | 'SHABAN' | 'TAMMUZ' | 'TISHRI' | 'KISLEV' | 'SHEVAT' | 'ADARII' | 'SANYUE' | 'LIUYUE' | 'JIUYUE' | 'SHIYUE') #'[A-Z]{6}'
 (* a named event such as @FOMC; one regex, so there is no whitespace inside *)

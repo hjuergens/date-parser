@@ -51,7 +51,8 @@ TOKEN : {
           | "ZHENGYUE" | "ERYUE" | "SANYUE" | "SIYUE" | "WUYUE" | "LIUYUE" | "QIYUE" | "BAYUE" | "JIUYUE" | "SHIYUE"
           | "DONGYUE" | "LAYUE" >
 | < WEEKDAY : "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN" >
-| < ROLL : "FOLLOWING" | "PRECEDING" | "MODFOLLOWING" | "BOM" | "EOM" | "BOQ" | "EOQ" | "BOH" | "EOH" | "BOY" | "EOY" >
+| < ROLL : "FOLLOWING" | "PRECEDING" | "MODFOLLOWING" | "BOW" | "EOW" | "BOM" | "EOM" | "BOQ" | "EOQ" | "BOH" | "EOH" | "BOY" | "EOY" >
+| < PERIOD : "WEEK" | "MONTH" | "QUARTER" | "HALFYEAR" | "YEAR" >   // the periods of a selection; WEEK is Monday to Sunday
   // MONTH and EASTER are declared before PAIR: on a match of the same length the earlier token wins
 | < EASTER : "EASTER" >
 | < PAIR : (["A"-"Z"]){6} >   // currency pair such as EURUSD
@@ -93,8 +94,8 @@ Rule Range() :
 
 /** periods are applied from left to right */
 ScheduleSemantics.Expr Expr() :
-{ ScheduleSemantics.Expr d; TemporalAmount p; String pair; Token roll; ScheduleSemantics.Anchor a;
-  List<ScheduleSemantics.Shift> shifts; }
+{ ScheduleSemantics.Expr d; TemporalAmount p; String pair; Token roll, o, period; ScheduleSemantics.Anchor a;
+  List<ScheduleSemantics.Shift> shifts; boolean fromEnd; }
 {
   d = Date()
   ( "+" p = Period() { d = ScheduleSemantics.plus(d, p); }
@@ -105,6 +106,11 @@ ScheduleSemantics.Expr Expr() :
     | roll = <ROLL> { d = ScheduleSemantics.roll(d, roll.image); }
     | "NEXT" a = Counted() { d = ScheduleSemantics.next(d, a); }
     | "PREV" a = Counted() { d = ScheduleSemantics.previous(d, a); }
+      // > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH: the n-th match in the period of the date, from its start or its end
+    | { o = null; fromEnd = false; }
+      ( o = <ORDINAL> ( "LAST" { fromEnd = true; } )? | "LAST" { fromEnd = true; } )
+      a = Select() "IN" period = <PERIOD>
+      { d = ScheduleSemantics.select(d, o == null ? 1 : ScheduleSemantics.ordinal(o.image), fromEnd, a, period.image); }
     )
   | { shifts = new ArrayList<ScheduleSemantics.Shift>(); }   // {SAT - 1D, SUN + 1D}
     "{" Shift(shifts) ( "," Shift(shifts) )* "}" { d = ScheduleSemantics.observe(d, shifts); }
@@ -142,13 +148,30 @@ ScheduleSemantics.Anchor Anchor() :
   { return ScheduleSemantics.anyOf(anchors); }
 }
 
+/** the targets of NEXT; an annual date starting with LAST only in braces, as LAST also starts the count */
+ScheduleSemantics.Anchor Select() :
+{ ScheduleSemantics.Anchor a; List<ScheduleSemantics.Anchor> anchors = new ArrayList<ScheduleSemantics.Anchor>(); }
+{
+  a = Chosen() { return a; }
+| "{" a = Target() { anchors.add(a); } ( "," a = Target() { anchors.add(a); } )* "}"
+  { return ScheduleSemantics.anyOf(anchors); }
+}
+
 ScheduleSemantics.Anchor Target() :
-{ Token w, e; ScheduleSemantics.Annual an; }
+{ Token w, m; ScheduleSemantics.Anchor a; }
+{
+  a = Chosen() { return a; }
+| "LAST" w = <WEEKDAY> m = <MONTH> { return ScheduleSemantics.annual(ScheduleSemantics.lastWeekday(w.image, m.image)); }
+}
+
+ScheduleSemantics.Anchor Chosen() :
+{ Token w, e; int n; ScheduleSemantics.Annual an; }
 {
   w = <WEEKDAY> { return ScheduleSemantics.weekday(w.image); }
 | "BD" { return ScheduleSemantics.BUSINESS_DAY; }
 | "IMM" { return ScheduleSemantics.IMM; }
-| an = Annual() { return ScheduleSemantics.annual(an); }
+| n = Number() an = AnnualTail(n) { return ScheduleSemantics.annual(an); }
+| an = FixedWord() { return ScheduleSemantics.annual(an); }
 | e = <EVENT> { return ScheduleSemantics.eventAnchor(e.image.substring(1)); }
 }
 
@@ -168,14 +191,6 @@ ScheduleSemantics.Expr Date() :
 | e = <EVENT> { return ScheduleSemantics.event(e.image.substring(1)); }
 }
 
-/** dates that recur every year; Date() reads the number itself, as it also starts a date such as 2015-06-09 */
-ScheduleSemantics.Annual Annual() :
-{ int n; ScheduleSemantics.Annual an; }
-{
-  n = Number() an = AnnualTail(n) { return an; }
-| an = AnnualWord() { return an; }
-}
-
 ScheduleSemantics.Annual AnnualTail(int n) :
 { Token w, m; }
 {
@@ -183,11 +198,18 @@ ScheduleSemantics.Annual AnnualTail(int n) :
 | w = <WEEKDAY> m = <MONTH> { return ScheduleSemantics.nthWeekday(n, w.image, m.image); }
 }
 
+/** dates that recur every year; Date() and Chosen() read the number themselves, as it also starts a date such as 2015-06-09 */
 ScheduleSemantics.Annual AnnualWord() :
-{ Token w, m, k; int n, z; }
+{ Token w, m; ScheduleSemantics.Annual an; }
 {
   "LAST" w = <WEEKDAY> m = <MONTH> { return ScheduleSemantics.lastWeekday(w.image, m.image); }
-| <EASTER> { return ScheduleSemantics.EASTER; }
+| an = FixedWord() { return an; }
+}
+
+ScheduleSemantics.Annual FixedWord() :
+{ Token m, k; int n, z; }
+{
+  <EASTER> { return ScheduleSemantics.EASTER; }
 | ( k = "EQUINOX" | k = "SOLSTICE" ) m = <MONTH> z = Zone() { return ScheduleSemantics.season(k.image, m.image, z); }
 | "SOLARTERM" n = Number() z = Zone() { return ScheduleSemantics.solarTerm(n, z); }
 }

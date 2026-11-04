@@ -21,10 +21,26 @@ shift: "+" period           -> plus
      | ">" ROLL             -> roll
      | ">" "NEXT" [ORDINAL] anchor -> next
      | ">" "PREV" [ORDINAL] anchor -> prev
+     | ">" count select "IN" PERIOD -> select
      | "{" observe ("," observe)* "}" -> observance
 
 observe: WEEKDAY "+" period -> observe_plus
        | WEEKDAY "-" period -> observe_minus
+
+// > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH: the n-th match in the period of the date, from its start or its end
+count: ORDINAL              -> from_start
+     | "LAST"               -> last
+     | ORDINAL "LAST"       -> from_end
+
+// the targets of NEXT; an annual date starting with LAST only in braces, as LAST also starts the count
+?select: chosen
+       | "{" target ("," target)* "}" -> any_of
+
+?chosen: WEEKDAY            -> weekday
+       | "BD"               -> business_day
+       | "IMM"              -> imm_anchor
+       | fixed_annual       -> annual_anchor
+       | EVENT              -> event_anchor
 
 // NEXT 3RD FRI: the third Friday; NEXT {MON, FRI}: the first of a set
 ?anchor: target
@@ -46,9 +62,11 @@ date: "T"                   -> base
     | EVENT                 -> event
 
 // dates that recur every year, evaluated in the year of the base date
-annual: NUM MONTH           -> month_day
+?annual: fixed_annual
+       | "LAST" WEEKDAY MONTH -> last_weekday
+
+?fixed_annual: NUM MONTH    -> month_day
       | NUM WEEKDAY MONTH   -> nth_weekday
-      | "LAST" WEEKDAY MONTH -> last_weekday
       | "EASTER"            -> easter
       | SEASON MONTH [ZONE] -> season
       | "SOLARTERM" NUM [ZONE] -> solar_term
@@ -73,7 +91,9 @@ MONTH: "JAN" | "FEB" | "MAR" | "APR" | "MAY" | "JUN" | "JUL" | "AUG" | "SEP" | "
 // a named event such as @FOMC, declared with the context; the sigil keeps names apart from keywords and pairs
 EVENT: /@[A-Z][A-Z0-9_]*/
 WEEKDAY: "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN"
-ROLL: "FOLLOWING" | "PRECEDING" | "MODFOLLOWING" | "BOM" | "EOM" | "BOQ" | "EOQ" | "BOH" | "EOH" | "BOY" | "EOY"
+ROLL: "FOLLOWING" | "PRECEDING" | "MODFOLLOWING" | "BOW" | "EOW" | "BOM" | "EOM" | "BOQ" | "EOQ" | "BOH" | "EOH" | "BOY" | "EOY"
+// the periods of a selection; WEEK is Monday to Sunday
+PERIOD: "WEEK" | "MONTH" | "QUARTER" | "HALFYEAR" | "YEAR"
 // currency pair such as EURUSD; the contextual lexer would also take a six-letter keyword after SPOT
 PAIR: /(?!EASTER|SHABAN|TAMMUZ|TISHRI|KISLEV|SHEVAT|ADARII|SANYUE|LIUYUE|JIUYUE|SHIYUE)[A-Z]{6}/
 

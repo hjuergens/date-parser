@@ -544,7 +544,8 @@ static int find(Eval *eval, const Anchor *anchor, int date, int direction, const
 }
 
 /* FOLLOWING, PRECEDING, MODFOLLOWING (following unless that leaves the month, then preceding);
- * BOM, EOM, BOQ, EOQ, BOH, EOH, BOY, EOY (first and last day of month, quarter, half year and year) */
+ * BOW, EOW, BOM, EOM, BOQ, EOQ, BOH, EOH, BOY, EOY (first and last day of week (Monday to Sunday), month, quarter,
+ * half year and year) */
 static int roll(Eval *eval, int date, int convention, Market *market) {
     int year, month, day;
     date_split(date, &year, &month, &day);
@@ -557,6 +558,8 @@ static int roll(Eval *eval, int date, int convention, Market *market) {
         int following = roll(eval, date, FOLLOWING, market);
         return month_of(following) == month ? following : roll(eval, date, PRECEDING, market);
     }
+    case BOW: return date - weekday_of(date);
+    case EOW: return date + 6 - weekday_of(date);
     case BOM: return date_of(year, month, 1);
     case EOM: return date_of(year, month, month_length(year, month));
     case BOQ: case EOQ: case BOH: case EOH: {
@@ -568,6 +571,18 @@ static int roll(Eval *eval, int date, int convention, Market *market) {
     case BOY: return date_of(year, 1, 1);
     default: return date_of(year, 12, 31);
     }
+}
+
+/* > 3RD WED IN MONTH: the anchor found count times from the day before the period of the date starts;
+ * > 2ND LAST BD IN MONTH (from_end): backwards from the day after it ends; an error if that leaves the period */
+static int select_in(Eval *eval, const Shift *s, int date, const Ctx *ctx) {
+    static const int FIRST[] = { BOW, BOM, BOQ, BOH, BOY }, LAST[] = { EOW, EOM, EOQ, EOH, EOY };
+    if (s->count < 1) fail(eval, "count must be positive: %ld", s->count);
+    int first = roll(eval, date, FIRST[s->within], ctx->market), last = roll(eval, date, LAST[s->within], ctx->market);
+    int found = s->from_end ? add_days(eval, last, 1) : add_days(eval, first, -1);
+    for (long i = 0; i < s->count; i++) found = find(eval, s->anchor, found, s->from_end ? -1 : 1, ctx);
+    if (found < first || found > last) fail(eval, "no %ld. match in the period", s->count);
+    return found;
 }
 
 /* ---- expressions ---- */
@@ -600,6 +615,7 @@ static int expr_at(Eval *eval, const Expr *expr, const Ctx *ctx) {
             if (s->count < 1) fail(eval, "count must be positive: %ld", s->count);
             for (long i = 0; i < s->count; i++) date = find(eval, s->anchor, date, s->kind == S_NEXT ? 1 : -1, ctx);
             break;
+        case S_SELECT: date = select_in(eval, s, date, ctx); break;
         case S_OBSERVANCE:
             /* {SAT - 1D, SUN + 1D}: the first item for the weekday of the date applies, items don't chain */
             for (const Observe *o = s->observes; o; o = o->next)

@@ -40,6 +40,10 @@ private Symbol symbol(int type, Object value) {
 "BD"            { return symbol(ScheduleSym.BD); }
 "LAST"          { return symbol(ScheduleSym.LAST); }
 "IF"            { return symbol(ScheduleSym.IF); }
+"IN"            { return symbol(ScheduleSym.IN); }
+/* the periods of a selection; WEEK is Monday to Sunday */
+"WEEK" | "MONTH" | "QUARTER" | "HALFYEAR" | "YEAR"
+                { return symbol(ScheduleSym.PERIOD, yytext()); }
 /* Gregorian, then Hijri (Umm al-Qura), Hebrew and Chinese months */
 "JAN" | "FEB" | "MAR" | "APR" | "MAY" | "JUN" | "JUL" | "AUG" | "SEP" | "OCT" | "NOV" | "DEC"
   | "MUHARRAM" | "SAFAR" | "RABIALAWWAL" | "RABIALTHANI" | "JUMADAALULA" | "JUMADAALAKHIRA" | "RAJAB" | "SHABAN"
@@ -51,7 +55,7 @@ private Symbol symbol(int type, Object value) {
                 { return symbol(ScheduleSym.MONTH, yytext()); }
 "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN"
                 { return symbol(ScheduleSym.WEEKDAY, yytext()); }
-"FOLLOWING" | "PRECEDING" | "MODFOLLOWING" | "BOM" | "EOM" | "BOQ" | "EOQ" | "BOH" | "EOH" | "BOY" | "EOY"
+"FOLLOWING" | "PRECEDING" | "MODFOLLOWING" | "BOW" | "EOW" | "BOM" | "EOM" | "BOQ" | "EOQ" | "BOH" | "EOH" | "BOY" | "EOY"
                 { return symbol(ScheduleSym.ROLL, yytext()); }
 /* the months above and EASTER come before the pair: on a match of the same length the earlier rule wins */
 "EASTER"        { return symbol(ScheduleSym.EASTER); }

@@ -60,6 +60,19 @@ class Rules(Transformer):
     def prev(self, ordinal, anchor):
         return semantics.repeat(anchor, -1, semantics.ordinal(ordinal and str(ordinal)))
 
+    def select(self, count, anchor, period):
+        n, from_end = count
+        return semantics.select(anchor, n, from_end, str(period))
+
+    def from_start(self, ordinal):
+        return semantics.ordinal(str(ordinal)), False
+
+    def last(self):
+        return 1, True
+
+    def from_end(self, ordinal):
+        return semantics.ordinal(str(ordinal)), True
+
     def observance(self, *shifts):
         return lambda d, context: semantics.observe(d, shifts, context.market)
 

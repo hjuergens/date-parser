@@ -57,11 +57,12 @@ static const char *const MONTH_NAMES[MONTHS] = {
 };
 static const char *const WEEKDAY_NAMES[] = { "MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN", NULL };
 static const char *const ROLL_NAMES[] = {
-    "FOLLOWING", "PRECEDING", "MODFOLLOWING", "BOM", "EOM", "BOQ", "EOQ", "BOH", "EOH", "BOY", "EOY", NULL,
+    "FOLLOWING", "PRECEDING", "MODFOLLOWING", "BOW", "EOW", "BOM", "EOM", "BOQ", "EOQ", "BOH", "EOH", "BOY", "EOY", NULL,
 };
+static const char *const PERIOD_NAMES[] = { "WEEK", "MONTH", "QUARTER", "HALFYEAR", "YEAR", NULL };
 static const struct { const char *name; int token; } KEYWORDS[] = {
     { "T", TODAY }, { "TOM", TOM }, { "SPOT", SPOT }, { "IMM", IMM }, { "NEXT", NEXT }, { "PREV", PREV },
-    { "BD", BD }, { "LAST", LAST }, { "EASTER", EASTER }, { "SOLARTERM", SOLARTERM }, { "IF", IF },
+    { "BD", BD }, { "LAST", LAST }, { "EASTER", EASTER }, { "SOLARTERM", SOLARTERM }, { "IF", IF }, { "IN", IN },
     { NULL, 0 },
 };
 
@@ -83,6 +84,7 @@ static int word(const char *text, YYSTYPE *value, Parse *parse) {
     if ((value->code = month_code(text)) >= 0) return MONTH;
     if ((value->code = find(WEEKDAY_NAMES, text)) >= 0) return WEEKDAY;
     if ((value->code = find(ROLL_NAMES, text)) >= 0) return ROLL;
+    if ((value->code = find(PERIOD_NAMES, text)) >= 0) return PERIOD;
     if (!strcmp(text, "EQUINOX") || !strcmp(text, "SOLSTICE")) {
         value->code = text[0] == 'E';
         return SEASON;

@@ -53,6 +53,8 @@ expr returns [Expr value]
       | '>' ROLL                    { $value = ScheduleSemantics.roll($value, $ROLL.text); }
       | '>' 'NEXT' ordinal anchor   { $value = ScheduleSemantics.next($value, $ordinal.n, $anchor.value); }
       | '>' 'PREV' ordinal anchor   { $value = ScheduleSemantics.previous($value, $ordinal.n, $anchor.value); }
+      | '>' count select 'IN' PERIOD
+                                    { $value = ScheduleSemantics.select($value, $count.n, $count.fromEnd, $select.value, $PERIOD.text); }
       | observance                  { $value = ScheduleSemantics.observe($value, $observance.shifts); }
       )*
     ;
@@ -75,6 +77,23 @@ ordinal returns [int n = 1]
       )?
     ;
 
+// > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH: the n-th match in the period of the date, from its start or its end
+count returns [int n = 1, boolean fromEnd]
+    : ORDINAL                       { $n = ScheduleSemantics.ordinal($ORDINAL.text); }
+      ('LAST'                       { $fromEnd = true; }
+      )?
+    | 'LAST'                        { $fromEnd = true; }
+    ;
+
+// the targets of NEXT; an annual date starting with LAST only in braces, as LAST also starts the count
+select returns [Anchor value]
+locals [List<Anchor> anchors = new ArrayList<>()]
+    : chosen                        { $value = $chosen.value; }
+    | '{' t=target                  { $anchors.add($t.value); }
+      (',' t=target                 { $anchors.add($t.value); }
+      )* '}'                        { $value = ScheduleSemantics.anyOf($anchors); }
+    ;
+
 // NEXT {MON, FRI}: the nearest of a set
 anchor returns [Anchor value]
 locals [List<Anchor> anchors = new ArrayList<>()]
@@ -85,10 +104,15 @@ locals [List<Anchor> anchors = new ArrayList<>()]
     ;
 
 target returns [Anchor value]
+    : chosen                        { $value = $chosen.value; }
+    | 'LAST' WEEKDAY MONTH          { $value = ScheduleSemantics.annual(ScheduleSemantics.lastWeekday($WEEKDAY.text, $MONTH.text)); }
+    ;
+
+chosen returns [Anchor value]
     : WEEKDAY                       { $value = ScheduleSemantics.weekday($WEEKDAY.text); }
     | 'BD'                          { $value = ScheduleSemantics.BUSINESS_DAY; }
     | 'IMM'                         { $value = ScheduleSemantics.IMM; }
-    | annual                        { $value = ScheduleSemantics.annual($annual.value); }
+    | fixedAnnual                   { $value = ScheduleSemantics.annual($fixedAnnual.value); }
     | EVENT                         { $value = ScheduleSemantics.eventAnchor($EVENT.text.substring(1)); }
     ;
 
@@ -111,9 +135,13 @@ date returns [Expr value]
 
 // dates that recur every year, evaluated in the year of the base date
 annual returns [Annual value]
+    : fixedAnnual                   { $value = $fixedAnnual.value; }
+    | 'LAST' WEEKDAY MONTH          { $value = ScheduleSemantics.lastWeekday($WEEKDAY.text, $MONTH.text); }
+    ;
+
+fixedAnnual returns [Annual value]
     : NUM MONTH                     { $value = ScheduleSemantics.monthDay($NUM.int, $MONTH.text); }
     | NUM WEEKDAY MONTH             { $value = ScheduleSemantics.nthWeekday($NUM.int, $WEEKDAY.text, $MONTH.text); }
-    | 'LAST' WEEKDAY MONTH          { $value = ScheduleSemantics.lastWeekday($WEEKDAY.text, $MONTH.text); }
     | 'EASTER'                      { $value = ScheduleSemantics.EASTER; }
     | k=('EQUINOX' | 'SOLSTICE') MONTH zone
                                     { $value = ScheduleSemantics.season($k.text, $MONTH.text, $zone.offset); }
@@ -146,7 +174,9 @@ MONTH   : 'JAN' | 'FEB' | 'MAR' | 'APR' | 'MAY' | 'JUN' | 'JUL' | 'AUG' | 'SEP' 
 // a named event such as @FOMC; the sigil keeps names apart from keywords and pairs
 EVENT   : '@' [A-Z] [A-Z0-9_]* ;
 WEEKDAY : 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN' ;
-ROLL    : 'FOLLOWING' | 'PRECEDING' | 'MODFOLLOWING' | 'BOM' | 'EOM' | 'BOQ' | 'EOQ' | 'BOH' | 'EOH' | 'BOY' | 'EOY' ;
+ROLL    : 'FOLLOWING' | 'PRECEDING' | 'MODFOLLOWING' | 'BOW' | 'EOW' | 'BOM' | 'EOM' | 'BOQ' | 'EOQ' | 'BOH' | 'EOH' | 'BOY' | 'EOY' ;
+// the periods of a selection; WEEK is Monday to Sunday
+PERIOD  : 'WEEK' | 'MONTH' | 'QUARTER' | 'HALFYEAR' | 'YEAR' ;
 // currency pair such as EURUSD; six-letter keywords ('EASTER', 'TISHRI', ...) have the same length and win, as they are defined first
 PAIR : [A-Z] [A-Z] [A-Z] [A-Z] [A-Z] [A-Z] ;
 WS   : [ \t\r\n]+ -> skip ;

@@ -3,9 +3,9 @@
 # so their versions are pinned in one place.
 FROM mcr.microsoft.com/devcontainers/base:1-bookworm
 
-# bison (with m4) for date-rule-bison: /usr/bin/bison activates its Maven profile
+# bison (with m4) for date-rule-bison: /usr/bin/bison activates its Maven profile; flex and a C compiler for date-rule-flex-bison
 RUN apt-get update \
- && apt-get install -y --no-install-recommends bison \
+ && apt-get install -y --no-install-recommends bison flex gcc libc6-dev make \
  && rm -rf /var/lib/apt/lists/*
 
 # mise as a pinned release binary, checked against the release's SHASUMS256.txt

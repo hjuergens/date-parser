@@ -10,7 +10,7 @@ uv = "0.13.5"
 
 [tasks.test]
 description = "Test all modules (the tasks below run in parallel)"
-depends = ["test:jvm", "test:peg", "test:lark", "test:antlr-python"]
+depends = ["test:jvm", "test:peg", "test:lark", "test:antlr-python", "test:flex-bison"]
 
 [tasks."test:jvm"]
 description = "Java and Scala modules; date-rule-bison only if /usr/bin/bison exists"
@@ -38,6 +38,11 @@ description = "ANTLR 4, Python target"
 dir = "{{config_root}}/date-rule-antlr-python"
 depends = ["generate:antlr-python"]
 run = "uv run pytest"
+
+[tasks."test:flex-bison"]
+description = "Flex + Bison (C); skipped without cc, flex and bison (the module's Dockerfile has them)"
+dir = "{{config_root}}/date-rule-flex-bison"
+run = "if command -v cc && command -v flex && command -v bison; then make test; else echo 'skipped: needs cc, flex and bison'; fi"
 
 [tasks.docs]
 description = "Regenerate docs/index.html"

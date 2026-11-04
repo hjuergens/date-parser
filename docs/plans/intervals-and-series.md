@@ -1,7 +1,7 @@
 # Plan: intervals, series and selection in the schedule language
 
 Status: proposal, nothing implemented. Sets (`> NEXT {MON, FRI}`) and ordinals (`> NEXT 3RD FRI`) are implemented in all
-eleven modules already. `> NEXT 3 FRI` stays an error: the number after `NEXT` only starts an annual date (`3 FRI JAN`),
+twelve modules already. `> NEXT 3 FRI` stays an error: the number after `NEXT` only starts an annual date (`3 FRI JAN`),
 and "the next three Fridays" would be a reading of its own.
 
 ## Context
@@ -124,7 +124,7 @@ can only be evaluated with a pick in front of the item:
   at all.
 
 ## 6. The test prefix
-The cases start with `[<base> <market>]`, which a series at the start of an expression would clash with. All eleven
+The cases start with `[<base> <market>]`, which a series at the start of an expression would clash with. All twelve
 harnesses narrow the prefix to an ISO date and an optional market name, `\[(\d{4}-\d{2}-\d{2})(?: ([A-Z0-9]+))?\] `.
 A series always contains a `:`, so `[2026-01-01 : 2026-01-31]` can't be taken for the prefix, and every existing case
 stays as it is.
@@ -144,7 +144,7 @@ stays as it is.
 - Every expected date is checked in Python before the tools run, as before.
 
 ## 8. Order
-1. The prefix regex in the eleven harnesses, and the range moved to `[…]` (spec, generators, docs, playground).
+1. The prefix regex in the twelve harnesses, and the range moved to `[…]` (spec, generators, docs, playground).
    A commit of its own; the case counts don't change.
 2. Selection (section 1): Lark first, then the shared semantics (Java, Python, Scala, Peggy), then the grammars;
    a full run on both machines; a commit.

@@ -3,24 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Eleven Parsers, One Language</title>
-<meta name="description" content="The same small date language implemented with ANTLR (Java and Python), Scala parser combinators, Coco/R, JavaCC, SableCC, JFlex + CUP, GNU Bison, Peggy, Lark and instaparse (Clojure), tested against one shared set of cases.">
+<title>Twelve Parsers, One Language</title>
+<meta name="description" content="The same small date language implemented with ANTLR (Java and Python), Scala parser combinators, Coco/R, JavaCC, SableCC, JFlex + CUP, GNU Bison (Java and C with Flex), Peggy, Lark and instaparse (Clojure), tested against one shared set of cases.">
 <link rel="canonical" href="https://hjuergens.github.io/date-parser/">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Eleven Parsers, One Language">
-<meta property="og:description" content="ANTLR, JavaCC, Bison, JFlex + CUP, SableCC, Coco/R, Peggy, Lark, instaparse and Scala parser combinators implement the same date language, side by side.">
+<meta property="og:title" content="Twelve Parsers, One Language">
+<meta property="og:description" content="ANTLR, JavaCC, Bison, Flex + Bison in C, JFlex + CUP, SableCC, Coco/R, Peggy, Lark, instaparse and Scala parser combinators implement the same date language, side by side.">
 <meta property="og:url" content="https://hjuergens.github.io/date-parser/">
 <meta name="twitter:card" content="summary">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "SoftwareSourceCode",
-  "name": "date-parser: eleven parsers, one language",
-  "description": "One date-schedule language implemented with ANTLR (Java and Python), JavaCC, GNU Bison, JFlex + CUP, SableCC, Coco/R, Peggy, Lark, instaparse and Scala parser combinators, tested against one shared set of cases.",
+  "name": "date-parser: twelve parsers, one language",
+  "description": "One date-schedule language implemented with ANTLR (Java and Python), JavaCC, GNU Bison (Java and C with Flex), JFlex + CUP, SableCC, Coco/R, Peggy, Lark, instaparse and Scala parser combinators, tested against one shared set of cases.",
   "url": "https://hjuergens.github.io/date-parser/",
   "codeRepository": "https://github.com/hjuergens/date-parser",
   "programmingLanguage": ["Java", "Scala", "JavaScript", "Python", "Clojure"],
-  "keywords": "parser generator, ANTLR, JavaCC, Bison, JFlex, CUP, SableCC, Coco/R, PEG, Peggy, Lark, Earley, instaparse, GLL, Clojure, parser combinators, grammar, LL, LALR",
+  "keywords": "parser generator, ANTLR, JavaCC, Bison, Flex, C, JFlex, CUP, SableCC, Coco/R, PEG, Peggy, Lark, Earley, instaparse, GLL, Clojure, parser combinators, grammar, LL, LALR",
   "license": "https://www.apache.org/licenses/LICENSE-2.0"
 }
 </script>
@@ -232,9 +232,9 @@
 <main>
   <header>
     <p class="eyebrow">date-parser · parser technology comparison</p>
-    <h1>Eleven parsers, one date language</h1>
+    <h1>Twelve parsers, one date language</h1>
     <p class="lead">
-      The same small language for dates, periods and ranges, implemented with eleven parser generators and
+      The same small language for dates, periods and ranges, implemented with twelve parser generators and
       parser libraries, from LL(1) to LALR(1), Earley, GLL and PEG. Every implementation passes the same {{CASE_COUNT}} test cases.
     </p>
     <ul class="stats">
@@ -398,9 +398,10 @@ ORDINAL  = NUM ("ST" | "ND" | "RD" | "TH") .  <span class="c">(* 3RD, one token 
     <h2 id="lessons">What the comparison shows</h2>
     <ul class="lessons">
       <li><strong>Top-down needs right recursion, bottom-up likes left recursion.</strong>
-        <p>The LL tools and Peggy write <code>date { ("+" | "-") period }</code> as a loop. CUP and Bison write <code>expr '+' period</code>, which is natural for LALR(1).</p></li>
+        <p>The LL tools and Peggy write <code>date { ("+" | "-") period }</code> as a loop. CUP and both Bison modules write <code>expr '+' period</code>, which is natural for LALR(1).</p></li>
       <li><strong>Separating syntax from semantics is a choice.</strong>
-        <p>SableCC's grammar contains no code at all; a separate tree walker computes the dates. Every other tool interleaves actions with the rules.</p></li>
+        <p>SableCC's grammar contains no code at all; a separate tree walker computes the dates. Every other tool interleaves actions with the rules.
+          In C, without closures, the Bison actions build a syntax tree as well, and an evaluator walks it like SableCC's.</p></li>
       <li><strong>Compute while parsing, or build a rule first.</strong>
         <p>Because the market only arrives at evaluation, no tool can compute the dates while parsing. The action-based tools (ANTLR, Coco/R, JavaCC, CUP, Bison, Peggy)
           now build functions in their actions; in SableCC the syntax tree already is the rule, and the visitor, transformer and combinator versions only gained a parameter.
@@ -426,7 +427,7 @@ ORDINAL  = NUM ("ST" | "ND" | "RD" | "TH") .  <span class="c">(* 3RD, one token 
       <li><strong>Six capitals: keyword or currency pair?</strong>
         <p><code>EASTER</code> has six capital letters, like <code>EURUSD</code>. The tools with a lexer decide by order:
           ANTLR's implicit keywords come first, JFlex, JavaCC and SableCC take the rule declared first, Coco/R checks its keyword table,
-          and Bison's hand-written scanner tests the keywords before the length. Without a lexer, or with a contextual one,
+          and both Bison scanners (hand-written in Java, Flex in C) test the keywords before the length. Without a lexer, or with a contextual one,
           the pattern itself must exclude the keyword (<code>!"EASTER"</code> in Peggy, <code>!('EASTER' | …)</code> in instaparse, <code>(?!EASTER)</code> in Scala and Lark),
           otherwise <code>T &gt; SPOT EASTER</code> would read a pair. Lunar month names such as <code>TISHRI</code> joined the list.
           Event names avoid the race altogether: the sigil in <code>@EASTER</code> makes it a name in every tool.</p></li>
@@ -450,7 +451,7 @@ ORDINAL  = NUM ("ST" | "ND" | "RD" | "TH") .  <span class="c">(* 3RD, one token 
     <h2 id="cases">The shared test cases</h2>
     <p class="lead">
       From <a href="{{REPO}}examples/schedule.txt">examples/schedule.txt</a>. Each module has a test that reads this file,
-      so adding a line here tests all eleven implementations. They also read 2186 cases in
+      so adding a line here tests all twelve implementations. They also read 2186 cases in
       <a href="{{REPO}}examples/catalog.txt">examples/catalog.txt</a>, generated from a holiday rule catalog, and 3347 in
       <a href="{{REPO}}examples/date-holidays.txt">examples/date-holidays.txt</a>, generated from date-holidays (neither listed here).
     </p>
@@ -461,11 +462,14 @@ ORDINAL  = NUM ("ST" | "ND" | "RD" | "TH") .  <span class="c">(* 3RD, one token 
 
   <section aria-labelledby="run">
     <h2 id="run">Run it yourself</h2>
-    <p class="lead">You need JDK 17 and Maven 3.9. Bison is optional: without it the Bison module builds empty. The Peggy module downloads its own Node.js.</p>
+    <p class="lead">You need JDK 17 and Maven 3.9. Bison is optional: without it the Bison module builds empty. The Peggy module downloads its own Node.js.
+      The C module needs a compiler, Flex and Bison, or Docker.</p>
     <pre><code>git clone https://github.com/hjuergens/date-parser.git
 cd date-parser
 mvn clean verify                      <span class="c"># all modules</span>
-mvn -pl date-rule-coco test           <span class="c"># one module</span></code></pre>
+mvn -pl date-rule-coco test           <span class="c"># one module</span>
+docker build -t date-rule-flex-bison date-rule-flex-bison
+docker run --rm -v "$PWD:/work" -w /work/date-rule-flex-bison date-rule-flex-bison make test   <span class="c"># C</span></code></pre>
   </section>
 </main>
 

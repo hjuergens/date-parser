@@ -1,9 +1,9 @@
-# date-parser: eleven parsers, one language
+# date-parser: twelve parsers, one language
 
-The same date-schedule language implemented with **ANTLR 4 (Java and Python targets), JavaCC, GNU Bison, JFlex + CUP, SableCC,
-Coco/R, Peggy (PEG), Lark (Earley and LALR), instaparse (GLL, Clojure) and Scala parser combinators**, all tested against one
-shared set of cases. It is a hands-on comparison of LL, LALR, Earley, GLL, PEG and combinator parsing in Java, Scala, JavaScript,
-Python and Clojure.
+The same date-schedule language implemented with **ANTLR 4 (Java and Python targets), JavaCC, GNU Bison (Java and C, with Flex),
+JFlex + CUP, SableCC, Coco/R, Peggy (PEG), Lark (Earley and LALR), instaparse (GLL, Clojure) and Scala parser combinators**, all
+tested against one shared set of cases. It is a hands-on comparison of LL, LALR, Earley, GLL, PEG and combinator parsing in Java,
+Scala, JavaScript, Python, Clojure and C.
 
 **[See the side-by-side comparison →](https://hjuergens.github.io/date-parser/)**
 
@@ -25,17 +25,18 @@ Planned additions are in [TODO.md](TODO.md).
 | [date-rule-sablecc](date-rule-sablecc/README.md) | SableCC 2 | LALR(1) with typed AST | Java | Arithmetic expressions, AST walker and evaluator | 5880 TestNG |
 | [date-rule-cup-jflex](date-rule-cup-jflex/README.md) | JFlex 1.9 + CUP 11b | LALR(1) | Java | Pascal-subset lexer (its CUP grammar is a skeleton); complete CUP parser for the shared example | 5876 TestNG |
 | [date-rule-bison](date-rule-bison/README.md) | GNU Bison 3 (Java skeleton) | LALR(1) | Java | Infix calculator with error recovery. **Requires `bison`**; the module is empty without it | 5877 TestNG |
+| [date-rule-flex-bison](date-rule-flex-bison/README.md) | Flex 2.6 + GNU Bison 3.8 (C skeleton) | LALR(1) | C11 | The shared example; reentrant scanner and pure parser, the actions build a syntax tree that a C evaluator walks. Builds in Docker | 5869 cases |
 | [date-rule-peg](date-rule-peg/README.md) | Peggy (PEG.js successor) | PEG (packrat) | JavaScript | `(start:step:end)` range lists | 5874 `node:test` |
 | [date-rule-lark](date-rule-lark/README.md) | Lark 1.3 | Earley and LALR(1), one grammar | Python | The shared example, every case with both algorithms | 11738 pytest |
 | [date-rule-antlr-python](date-rule-antlr-python/README.md) | ANTLR 4.13, Python target | ALL(*) (adaptive LL) | Python | The shared example; grammar without actions, plus a visitor | 5869 pytest |
 | [date-rule-instaparse](date-rule-instaparse/README.md) | instaparse 1.5 | GLL (any context-free grammar) | Clojure 1.12 | The shared example; EBNF grammar read at run time, `insta/transform` onto the shared Java helper | 5869 TestNG |
 
-Each module also implements the [shared schedule example](#shared-example-schedule), so all eleven implementations
+Each module also implements the [shared schedule example](#shared-example-schedule), so all twelve implementations
 can be compared on the same language. Each module README has a section on how its tool handles it.
 
 ## Shared example: schedule
 
-> A visual version of this comparison, with the rules of all eleven implementations side by side, is at [hjuergens.github.io/date-parser](https://hjuergens.github.io/date-parser/)
+> A visual version of this comparison, with the rules of all twelve implementations side by side, is at [hjuergens.github.io/date-parser](https://hjuergens.github.io/date-parser/)
 > (source: [docs/index.html](docs/index.html), served by GitHub Pages from `/docs`; regenerate it with `python3 docs/generate.py`).
 > Its playground runs the Peggy parser in the browser and draws the syntax tree of each input; the tree comes from Peggy's
 > tracer, so the grammar needs no change for it, and its bracket notation can be pasted into a syntax tree generator.
@@ -173,7 +174,7 @@ market brings its holidays: the context maps a name to a rule, and `@FOMC` is ev
 each shifted by the rest of the expression (`@FOMC + 21D`, `@FOMC + 1B`, `@FOMC IF WED`). `T > NEXT @FOMC` and `T > PREV @FOMC`
 move to the next or previous one. An event's rule is any schedule, so `event THANKSGIVING = 4 THU NOV` names a rule as well. A name
 that isn't declared is an error, and so is an event with several dates at the end of a range. The implementations evaluate an item
-once per date of its event: the event's date throws until the item binds it, which needs no change to how the eleven grammars build
+once per date of its event: the event's date throws until the item binds it, which needs no change to how the twelve grammars build
 expressions.
 
 All implementations are tested against the same 336 cases in [examples/schedule.txt](examples/schedule.txt),
@@ -217,6 +218,7 @@ The tools with a lexer get this from their rule order; Peggy, the Scala combinat
 | sablecc | [schedule.grammar](date-rule-sablecc/src/main/sablecc/schedule.grammar) + [ScheduleEvaluator](date-rule-sablecc/src/main/java/de/juergens/schedule/ScheduleEvaluator.java) | 88 + 131 | the typed AST is the rule; an evaluator walks it with the context | `ParserException`, `LexerException` | grammar without code; repeated elements need names |
 | cup-jflex | [schedule.cup](date-rule-cup-jflex/src/main/cup/schedule.cup) + [schedule.jflex](date-rule-cup-jflex/src/main/jflex/schedule.jflex) | 75 + 59 | `{: … :}` actions build functions, left recursion | `Exception` from `parse()` | `%cupsym` must precede `%cup` |
 | bison | [schedule.y](date-rule-bison/src/main/resources/schedule.y) | 198² | `{ … }` actions build functions, left recursion | `parse()` returns `false` | `$$` is untyped in Java; hand-written lexer |
+| flex-bison | [parser.y](date-rule-flex-bison/src/parser.y) + [scanner.l](date-rule-flex-bison/src/scanner.l) | 160 + 94 | `{ … }` actions build a syntax tree; [semantics.c](date-rule-flex-bison/src/semantics.c) evaluates it | `yyparse()` returns non-zero; the scanner returns `YYerror` with its own message | reentrant (`api.pure`, `bison-bridge`); `$$` is typed through `%union`; token names are C enumerators, so they must not clash with the tree's |
 | peg | [schedule.pegjs](date-rule-peg/schedule.pegjs) | 275³ | action blocks return functions, ordered choice | `SyntaxError` | `range()` is built into Peggy actions; date arithmetic hand-written |
 | lark | [schedule.lark](date-rule-lark/src/lark_schedule/schedule.lark) + [Transformer](date-rule-lark/src/lark_schedule/__init__.py) | 47 + 89 | `Transformer` returns closures, one method per rule alias | `UnexpectedInput`; `VisitError` unwrapped | the same grammar runs as Earley and as LALR(1); the contextual lexer accepts `>SPOTUSDCAD` |
 | antlr-python | [DateSchedule.g4](date-rule-antlr-python/DateSchedule.g4) + [visitor](date-rule-antlr-python/src/antlr_schedule/__init__.py) | 67 + 104 | visitor over the parse tree returns closures | raising error listener | Java actions can't be generated into Python; `range` becomes `range_()` |
@@ -226,13 +228,14 @@ The tools with a lexer get this from their rule order; Peggy, the Scala combinat
   business days, IMM and spot dates, ranges, annual dates, lunar months, rolling, named events); `java.time.Period` can't express business days, so `B`
   is a small `TemporalAmount` of its own. The Python modules share a 231-line `semantics.py` (copied, like the Java helper).
   Lunar months come from libraries: in Java `java.time`'s Hijrah calendar, ICU4J (Hebrew) and 6tail's lunar (Chinese), in Python
-  hijridate, pyluach and lunardate, in JavaScript `Intl` and lunar-javascript. ICU's astronomical Chinese calendar puts Chinese New Year
+  hijridate, pyluach and lunardate, in JavaScript `Intl` and lunar-javascript. The C module computes the Hebrew calendar and takes
+  Umm al-Qura and Chinese months from a table generated from hijridate and lunardate; its 594-line `semantics.c` ports the rest. ICU's astronomical Chinese calendar puts Chinese New Year
   2027 and 2030 a day off (the new moon falls within minutes of midnight in Beijing), which the generated cases caught.
 ² Including the hand-written scanner (about 75 lines).
 ³ Including JavaScript date arithmetic that reproduces `java.time` (about 175 lines with markets, business days, IMM and spot dates,
   annual dates, lunar months and rolling).
 
-LALR tools (bison, CUP, SableCC) build the generators with conflict checking, and none of the three grammars has conflicts.
+LALR tools (bison, flex-bison, CUP, SableCC) build the generators with conflict checking, and none of the four grammars has conflicts.
 Coco/R's LL(1) check also passes without warnings.
 
 ## How it fits together
@@ -253,13 +256,14 @@ Coco/R's LL(1) check also passes without warnings.
 |---|---|
 | [mise](https://mise.jdx.dev/) | everything: `mise install` installs the pinned JDK 17, Maven, Node, Python and uv |
 | `bison` 3.x on `/usr/bin/bison` (`sudo apt install bison`) | optional; activates [date-rule-bison](date-rule-bison/README.md) |
+| a C compiler, make, `flex` and `bison`, or Docker | [date-rule-flex-bison](date-rule-flex-bison/README.md); its Dockerfile has them all |
 
 Without mise, install the tools from [mise.toml](mise.toml) yourself and run the commands of its tasks.
 
 ### Dev container
 
-[.devcontainer/](.devcontainer) needs only Docker: the image adds `bison` and mise to a Debian base, and creating the
-container runs `mise install`, so **every** module, bison included, builds without installing anything on the host.
+[.devcontainer/](.devcontainer) needs only Docker: the image adds `bison`, `flex`, a C compiler and mise to a Debian base, and creating the
+container runs `mise install`, so **every** module, both bison modules included, builds without installing anything on the host.
 In VS Code, run "Dev Containers: Reopen in Container", then `mise run test` in its terminal.
 Maven, mise and uv downloads are kept in Docker volumes (`date-parser-*`) and survive rebuilds of the container;
 the Python virtual environments of the container are volumes as well, separate from the host's `.venv`.
@@ -272,6 +276,8 @@ mise run test                          # all modules; the module tasks run in pa
 mise tasks                             # list the tasks, e.g. test:lark, test:peg, docs
 mvn -pl date-rule-antlr-java test           # a single JVM module, directly with Maven
 mvn -pl date-rule-bison -Pbison -Dbison.executable=/opt/bison/bin/bison verify   # bison outside /usr/bin
+docker build -t date-rule-flex-bison date-rule-flex-bison   # the C module without local flex and bison
+docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/work" -w /work/date-rule-flex-bison date-rule-flex-bison make test
 ```
 
 The first build downloads all dependencies; the JVM build then takes several minutes, mostly in the antlr and combinators modules.

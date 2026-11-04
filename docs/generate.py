@@ -82,6 +82,12 @@ TOOLS = [
          values="<code>{ … }</code> actions, left-recursive rules",
          errors="<code>parse()</code> returns <code>false</code>",
          pitfall="In Bison's Java skeleton <code>$$</code> is a plain <code>Object</code>; only <code>$1</code>…<code>$n</code> are typed."),
+    dict(id="flex-bison", name="Flex + Bison · C", kind="LALR(1)", lang="C",
+         file="date-rule-flex-bison/src/parser.y",
+         snippet=lambda f: between(f, r"^/\* shifts are applied", r"^/\* \{SAT"),
+         values="<code>{ … }</code> actions build a syntax tree, which a C evaluator walks with the context",
+         errors="<code>yyparse()</code> returns non-zero; the scanner returns <code>YYerror</code> with its own message",
+         pitfall="Token names become C enumerators in <code>parser.h</code>: a token <code>SEASON</code> and an enumerator <code>SEASON</code> of the tree can't both exist."),
     dict(id="peg", name="Peggy", kind="PEG · ordered choice", lang="JavaScript",
          file="date-rule-peg/schedule.pegjs",
          snippet=lambda f: between(f, r"^// periods are applied", r"^Observe$"),
@@ -103,9 +109,9 @@ TOOLS = [
 ]
 
 LINES = {"antlr-java": "99", "combinators": "215", "coco": "132", "javacc": "143", "sablecc": "88 + 131",
-         "cup": "75 + 59", "bison": "198", "peg": "275", "lark": "47 + 89", "antlr-python": "67 + 104",
+         "cup": "75 + 59", "bison": "198", "flex-bison": "160 + 94", "peg": "275", "lark": "47 + 89", "antlr-python": "67 + 104",
          "instaparse": "44 + 48"}
-LINE_NOTES = {"sablecc": "grammar + evaluator", "cup": "parser + lexer", "bison": "incl. hand-written scanner",
+LINE_NOTES = {"sablecc": "grammar + evaluator", "cup": "parser + lexer", "bison": "incl. hand-written scanner", "flex-bison": "parser + scanner",
               "peg": "incl. date arithmetic", "lark": "grammar + transformer", "antlr-python": "grammar + visitor",
               "instaparse": "grammar + transform"}
 

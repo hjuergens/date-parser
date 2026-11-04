@@ -380,7 +380,7 @@ Item
   / Expr
 
 Range
-  = "(" _ first:Expr _ ":" _ step:Period _ ":" _ last:Expr _ ")" {
+  = "[" _ first:Expr _ ":" _ step:Period _ ":" _ last:Expr _ "]" {
       if (step.months <= 0 && step.days <= 0 && step.business <= 0) throw new RangeError('step must be positive');
       return (c) => expand(single(first, c), step, single(last, c), c.market);
     }

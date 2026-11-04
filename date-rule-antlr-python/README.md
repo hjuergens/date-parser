@@ -21,7 +21,7 @@ from datetime import date
 from antlr_schedule import parse
 from antlr_schedule.semantics import Context
 
-parse("(T : 1B : T + 3B)")(Context(date(2015, 6, 11)))   # [2015-06-11, 2015-06-12, 2015-06-15, 2015-06-16]
+parse("[T : 1B : T + 3B]")(Context(date(2015, 6, 11)))   # [2015-06-11, 2015-06-12, 2015-06-15, 2015-06-16]
 ```
 
 ## Build and test
@@ -41,7 +41,7 @@ uv run pytest
   so generating a Python parser still needs a JDK (mise provides one). Without `java` on the `PATH` it asks to install a JRE.
 - The runtime `antlr4-python3-runtime` must have exactly the tool's version (4.13.2).
 - The generated sources in `src/antlr_schedule/generated` are not checked in.
-- There are 5869 tests (pytest), one per case of [examples/schedule.txt](../examples/schedule.txt), [examples/catalog.txt](../examples/catalog.txt) and [examples/date-holidays.txt](../examples/date-holidays.txt).
+- There are 5870 tests (pytest), one per case of [examples/schedule.txt](../examples/schedule.txt), [examples/catalog.txt](../examples/catalog.txt) and [examples/date-holidays.txt](../examples/date-holidays.txt).
 
 ## Shared example
 

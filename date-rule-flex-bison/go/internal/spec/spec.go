@@ -35,7 +35,7 @@ type Spec struct {
 	events  *schedule.Events
 }
 
-var prefix = regexp.MustCompile(`^\[(\S+)(?: (\S+))?\] (.*)$`) // [base] or [base market]
+var prefix = regexp.MustCompile(`^\[(\d{4}-\d{2}-\d{2})(?: ([A-Z0-9_]+))?\] (.*)$`) // [base] or [base market]
 
 // Load reads a spec file; close it when done.
 func Load(path string) (*Spec, error) {

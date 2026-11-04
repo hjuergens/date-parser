@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 terminal            PLUS, MINUS, GT, IMM, SPOT, BASE, TOM, NEXT, PREV, BD, LAST, EASTER, IF;
-terminal            DOT, SLASH, COMMA, COLON, LPAREN, RPAREN, LBRACE, RBRACE;
+terminal            DOT, SLASH, COMMA, COLON, LBRACKET, RBRACKET, LBRACE, RBRACE;
 terminal Integer    NUM;
 terminal String     UNIT, PAIR, MONTH, WEEKDAY, ROLL, EVENT, SEASON, ZONE, ORDINAL;
 terminal            SOLARTERM;
@@ -31,7 +31,7 @@ non terminal ScheduleSemantics.Shift               shift;
 
 start with schedule;
 
-schedule ::= LPAREN expr:first COLON period:step COLON expr:last RPAREN
+schedule ::= LBRACKET expr:first COLON period:step COLON expr:last RBRACKET
                 {: RESULT = ScheduleSemantics.range(first, step, last); :}
            | exprs:list
                 {: RESULT = ScheduleSemantics.list(list); :}

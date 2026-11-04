@@ -11,7 +11,7 @@ or an **LALR(1)** parser from it. This module runs every shared test case with b
 | Input | Result |
 |---|---|
 | `2015-06-09 + 3M, 09.06.2015` | `[2015-09-09, 2015-06-09]` |
-| `(2015-01-15 : 1Q : 2015-12-31)` | `[2015-01-15, 2015-04-15, 2015-07-15, 2015-10-15]` |
+| `[2015-01-15 : 1Q : 2015-12-31]` | `[2015-01-15, 2015-04-15, 2015-07-15, 2015-10-15]` |
 | `2015-06-12 > SPOT USDCAD + 2B` | `[2015-06-17]` |
 | `2015-06-09 + 3X` | `lark.exceptions.UnexpectedCharacters` |
 
@@ -34,7 +34,7 @@ mise run test:lark        # or, inside this directory:
 uv run pytest             # uv installs Lark and pytest into .venv (versions in uv.lock)
 ```
 
-There are 11738 tests (pytest): the 336 cases of [examples/schedule.txt](../examples/schedule.txt), the 2186 of
+There are 11740 tests (pytest): the 337 cases of [examples/schedule.txt](../examples/schedule.txt), the 2186 of
 [examples/catalog.txt](../examples/catalog.txt) and the 3347 of [examples/date-holidays.txt](../examples/date-holidays.txt), each with
 `lalr` and `earley`.
 

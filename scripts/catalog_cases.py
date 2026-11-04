@@ -57,7 +57,7 @@ def days(n):
 
 def span(expr, n):
     """span_days: the first day and the n - 1 days after it"""
-    return expr if n == 1 else f"({expr} : 1D : {expr} + {n - 1}D)"
+    return expr if n == 1 else f"[{expr} : 1D : {expr} + {n - 1}D]"
 
 
 def translate(rule_type, p, engine, rule):
@@ -84,13 +84,13 @@ def translate(rule_type, p, engine, rule):
             return span(f"{p['hijri_day']} {HIJRI[p['hijri_month'] - 1]}", n), None
         case "hebrew":
             d = f"{p['hebrew_day']} {HEBREW[p['hebrew_month'] - 1]}"
-            return (f"({d} - 1D : 1D : {d})" if p.get("eve_closed") else span(d, n)), None
+            return (f"[{d} - 1D : 1D : {d}]" if p.get("eve_closed") else span(d, n)), None
         case "chinese_lunisolar":
             return span(f"{p['lunar_day']} {CHINESE[p['lunar_month'] - 1]}{days(p.get('offset_days', 0))}", n), None
         case "duration_span":
             start, _ = translate(p["start"]["rule_type"], p["start"]["params"], engine, rule)
             end, _ = translate(p["end"]["rule_type"], p["end"]["params"], engine, rule)
-            return f"({start} : 1D : {end})", None
+            return f"[{start} : 1D : {end}]", None
         case "conditional":
             probe = p["condition"]["weekday_of"]
             then, _ = translate(p["then"]["rule_type"], p["then"]["params"], engine, rule)
@@ -120,7 +120,7 @@ def translate(rule_type, p, engine, rule):
                 expr, scope = "@" + event_name(anchor.key), None
             else:
                 expr, scope = translate(versions[0].rule_type, versions[0].params, engine, anchor)
-            if "," in expr or "(" in expr:
+            if "," in expr or "[" in expr:
                 raise Skip("anchored to a rule with several dates")
             if (n := p.get("offset_business_days")) is not None:
                 return f"{expr} {'-' if n < 0 else '+'} {abs(n)}B", rule.scope
@@ -136,7 +136,7 @@ def market_name(scope):
 
 def hijri_or_lunar_twice(expr, year):
     """a lunar date that occurs twice in the Gregorian year (Hijri months: about every 33 years) is an error"""
-    words = expr.replace("(", " ").replace(")", " ").split()
+    words = expr.replace("[", " ").replace("]", " ").split()
     for i, w in enumerate(words):
         if w in HIJRI:
             day, month = int(words[i - 1]), HIJRI.index(w) + 1

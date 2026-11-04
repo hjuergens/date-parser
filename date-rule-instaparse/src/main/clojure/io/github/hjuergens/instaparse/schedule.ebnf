@@ -9,7 +9,7 @@ items    = item (<','> item)*
 (* 24 DEC IF MON TUE WED THU: the date only on these weekdays *)
 item     = expr (<'IF'> WEEKDAY+)?
 
-range    = <'('> expr <':'> period <':'> expr <')'>
+range    = <'['> expr <':'> period <':'> expr <']'>
 
 (* shifts are applied from left to right *)
 expr     = date shift*

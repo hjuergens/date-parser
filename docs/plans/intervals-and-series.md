@@ -1,6 +1,7 @@
 # Plan: intervals, series and selection in the schedule language
 
-Status: proposal, nothing implemented. Sets (`> NEXT {MON, FRI}`) and ordinals (`> NEXT 3RD FRI`) are implemented in all
+Status: proposal, nothing implemented; carried out as part of [maturity-rule-parity.md](maturity-rule-parity.md), which makes picks
+(section 5) required and adds weeks and a fixing calendar. Sets (`> NEXT {MON, FRI}`) and ordinals (`> NEXT 3RD FRI`) are implemented in all
 twelve modules already. `> NEXT 3 FRI` stays an error: the number after `NEXT` only starts an annual date (`3 FRI JAN`),
 and "the next three Fridays" would be a reading of its own.
 

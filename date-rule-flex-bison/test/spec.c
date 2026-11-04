@@ -27,21 +27,25 @@ static char *read_file(const char *path) {
     return text;
 }
 
-/* [base] text or [base market] text: 1 if the prefix is there */
-static int prefix(char *text, char **base, char **market, char **rest) {
-    if (text[0] != '[') return 0;
-    char *close = strchr(text, ']');
-    if (!close || close[1] != ' ' || close == text + 1) return 0;
-    *close = 0;
-    *base = text + 1;
-    char *space = strchr(*base, ' ');
+/* [base] text or [base market] text, base an ISO date and market of capitals, digits and _: 1 if the prefix is there
+ * (then it is cut off); a series such as [2026-01-01 : 2026-01-31] is no prefix */
+static int prefix(char *text, int *base, char **market, char **rest) {
+    char date[11];
+    if (text[0] != '[' || strlen(text) < 13) return 0;
+    memcpy(date, text + 1, 10);
+    date[10] = 0;
+    if (date_parse_iso(date, base)) return 0;
+    char *p = text + 11;
     *market = NULL;
-    if (space) {
-        *space = 0;
-        *market = space + 1;
-        if (!**market || strchr(*market, ' ')) return 0;
+    if (*p == ' ' && p[1] != ']') {
+        char *name = ++p;
+        while ((*p >= 'A' && *p <= 'Z') || (*p >= '0' && *p <= '9') || *p == '_') p++;
+        if (p == name) return 0;
+        *market = name;
     }
-    *rest = close + 2;
+    if (p[0] != ']' || p[1] != ' ') return 0;
+    *p = 0;
+    *rest = p + 2;
     return 1;
 }
 
@@ -75,11 +79,10 @@ static void add_case(Spec *spec, char *line, int number) {
     }
     *arrow = 0;
     Case c = { number, text, NULL, NULL, { 0, 0, NULL, spec->events }, NULL };
-    char *input = strip(trimmed), *base, *market, *rest;
+    char *input = strip(trimmed), *market, *rest;
     c.expected = strdup(strip(arrow + 2));
-    if (prefix(input, &base, &market, &rest)) {
+    if (prefix(input, &c.context.base, &market, &rest)) {
         input = rest;
-        if (date_parse_iso(base, &c.context.base)) abort();
         c.context.has_base = 1;
         for (int m = 0; market && m < spec->market_count; m++)
             if (!strcmp(spec->names[m], market)) c.context.market = spec->markets[m];

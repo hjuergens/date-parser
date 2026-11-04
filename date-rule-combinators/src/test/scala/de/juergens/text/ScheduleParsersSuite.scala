@@ -15,7 +15,7 @@ import scala.jdk.CollectionConverters._
  */
 class ScheduleParsersSuite extends AnyFunSuite {
 
-  private val Prefix = """\[(\S+)(?: (\S+))?] (.*)""".r   // [base] or [base market]
+  private val Prefix = """\[(\d{4}-\d{2}-\d{2})(?: ([A-Z0-9_]+))?] (.*)""".r   // [base] or [base market]
 
   private val cases: Seq[(String, Context, Option[List[LocalDate]])] = {
     val markets = mutable.Map.empty[String, Market]

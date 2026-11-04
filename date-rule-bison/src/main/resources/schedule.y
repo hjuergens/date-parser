@@ -62,7 +62,7 @@
 %%
 
 schedule:
-  '(' expr ':' period ':' expr ')'  { rule = ScheduleSemantics.range ($2, $4, $6); }
+  '[' expr ':' period ':' expr ']'  { rule = ScheduleSemantics.range ($2, $4, $6); }
 | exprs                             { rule = ScheduleSemantics.list ($1); }
 ;
 
@@ -273,7 +273,7 @@ class ScheduleLexer implements ScheduleParser.Lexer {
         return EVENT;
       }
     pos++;
-    if ("+-./,:()>{}".indexOf (c) >= 0)
+    if ("+-./,:[]>{}".indexOf (c) >= 0)
       return c;
     return YYUNDEF;   /* unknown character: a syntax error for the parser */
   }

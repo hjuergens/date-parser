@@ -39,7 +39,7 @@ item returns [Expr value]
     ;
 
 range returns [Rule result]
-    : '(' first=expr ':' step=period ':' last=expr ')'
+    : '[' first=expr ':' step=period ':' last=expr ']'
       { $result = ScheduleSemantics.range($first.value, $step.value, $last.value); }
     ;
 

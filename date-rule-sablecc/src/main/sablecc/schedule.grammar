@@ -49,8 +49,8 @@ Tokens
 	slash = '/';
 	comma = ',';
 	colon = ':';
-	l_par = '(';
-	r_par = ')';
+	l_bracket = '[';
+	r_bracket = ']';
 	blank = (' ' | 9 | 10 | 13)+;
 
 Ignored Tokens
@@ -58,7 +58,7 @@ Ignored Tokens
 
 Productions
 	schedule
-		= {range} l_par [first]:expr [c1]:colon period [c2]:colon [last]:expr r_par
+		= {range} l_bracket [first]:expr [c1]:colon period [c2]:colon [last]:expr r_bracket
 		| {list} item more_item*;
 
 	more_item = comma item;

@@ -26,7 +26,7 @@ import static org.junit.Assert.assertThrows;
 @RunWith(Parameterized.class)
 public class ScheduleTest {
 
-    private static final Pattern CONTEXT = Pattern.compile("\\[(\\S+)(?: (\\S+))?] (.*)");
+    private static final Pattern CONTEXT = Pattern.compile("\\[(\\d{4}-\\d{2}-\\d{2})(?: ([A-Z0-9_]+))?] (.*)");
 
     @Parameterized.Parameters(name = "{index}: {0} => {2}")
     public static List<Object[]> examples() throws Exception {

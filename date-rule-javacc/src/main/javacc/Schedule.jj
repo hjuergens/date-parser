@@ -87,7 +87,7 @@ ScheduleSemantics.Expr Item() :
 Rule Range() :
 { ScheduleSemantics.Expr first, last; TemporalAmount step; }
 {
-  "(" first = Expr() ":" step = Period() ":" last = Expr() ")"
+  "[" first = Expr() ":" step = Period() ":" last = Expr() "]"
   { return ScheduleSemantics.range(first, step, last); }
 }
 

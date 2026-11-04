@@ -13,7 +13,7 @@ from datetime import date
 from antlr_schedule import parse
 from antlr_schedule.semantics import WEEKENDS, Context, RuleMarket
 
-PREFIX = re.compile(r"\[(\S+)(?: (\S+))?\] (.*)")  # [base] or [base market]
+PREFIX = re.compile(r"\[(\d{4}-\d{2}-\d{2})(?: ([A-Z0-9_]+))?\] (.*)")  # [base] or [base market]
 EPOCH = date(1970, 1, 1)
 
 

@@ -10,7 +10,7 @@ from lark_schedule import parse
 from lark_schedule.semantics import WEEKENDS, Context, RuleMarket
 
 EXAMPLES = Path(__file__).resolve().parents[2] / "examples"
-PREFIX = re.compile(r"\[(\S+)(?: (\S+))?\] (.*)")  # [base] or [base market]
+PREFIX = re.compile(r"\[(\d{4}-\d{2}-\d{2})(?: ([A-Z0-9_]+))?\] (.*)")  # [base] or [base market]
 
 
 def cases(file):

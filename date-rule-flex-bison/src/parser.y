@@ -83,7 +83,7 @@ static int fixed(Parse *parse, long year, long month, long day, int *date) {
 %%
 
 start: items                    { parse->schedule->items = $1; }
-     | '(' expr ':' period ':' expr ')'
+     | '[' expr ':' period ':' expr ']'
                                 {
                                     if ($4.months <= 0 && $4.days <= 0 && $4.business <= 0) {
                                         snprintf(parse->error, parse->size, "step must be positive");

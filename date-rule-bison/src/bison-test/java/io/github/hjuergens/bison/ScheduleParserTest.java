@@ -26,7 +26,7 @@ import static org.testng.Assert.expectThrows;
  */
 public class ScheduleParserTest {
 
-    private static final Pattern CONTEXT = Pattern.compile("\\[(\\S+)(?: (\\S+))?] (.*)");
+    private static final Pattern CONTEXT = Pattern.compile("\\[(\\d{4}-\\d{2}-\\d{2})(?: ([A-Z0-9_]+))?] (.*)");
 
     /** the rule, or IllegalArgumentException with bison's message on a syntax error */
     static ScheduleSemantics.Rule parse(String text) {

@@ -235,11 +235,11 @@
     <h1>Twelve parsers, one date language</h1>
     <p class="lead">
       The same small language for dates, periods and ranges, implemented with twelve parser generators and
-      parser libraries, from LL(1) to LALR(1), Earley, GLL and PEG. Every implementation passes the same 336 test cases.
+      parser libraries, from LL(1) to LALR(1), Earley, GLL and PEG. Every implementation passes the same 337 test cases.
     </p>
     <ul class="stats">
       <li><strong>12</strong><span>implementations, 6 languages</span></li>
-      <li><strong>336</strong><span>shared test cases</span></li>
+      <li><strong>337</strong><span>shared test cases</span></li>
       <li><strong>0</strong><span>grammar conflicts</span></li>
       <li><strong>1</strong><span>specification file</span></li>
     </ul>
@@ -255,7 +255,7 @@
           <tr><td>09.06.2015 + 3M</td><td>2015-09-09 (German notation)</td></tr>
           <tr><td>06/09/2015 + 1W - 2D</td><td>2015-06-14 (US notation, left to right)</td></tr>
           <tr><td>2015-06-09, 1.1.2000 + 1Y</td><td>2015-06-09, 2001-01-01</td></tr>
-          <tr><td>(2015-01-15 : 1Q : 2015-12-31)</td><td>2015-01-15, -04-15, -07-15, -10-15</td></tr>
+          <tr><td>[2015-01-15 : 1Q : 2015-12-31]</td><td>2015-01-15, -04-15, -07-15, -10-15</td></tr>
           <tr><td>2015-06-12 + 1B</td><td>2015-06-15 (business days)</td></tr>
           <tr><td>2015-06-09 + 3M &gt; IMM</td><td>2015-09-16 (next IMM date)</td></tr>
           <tr><td>2015-06-12 &gt; SPOT USDCAD</td><td>2015-06-15 (FX spot, T+1)</td></tr>
@@ -267,7 +267,7 @@
       </table>
       <pre><code>schedule = range | item { "," item } .
 item     = expr [ "IF" WEEKDAY { WEEKDAY } ] .
-range    = "(" expr ":" period ":" expr ")" .
+range    = "[" expr ":" period ":" expr "]" .
 expr     = date { ("+" | "-") period
                | "&gt;" ( "IMM" | "SPOT" [ PAIR ] | ROLL
                        | ("NEXT" | "PREV") [ ORDINAL ] anchor )
@@ -353,7 +353,7 @@ ORDINAL  = NUM ("ST" | "ND" | "RD" | "TH") .  <span class="c">(* 3RD, one token 
         <div><label for="play-market">Market</label><select id="play-market"><option value="">Saturdays and Sundays only</option></select></div>
       </div>
       <ul class="chips" aria-label="Examples">
-        <li><button type="button" data-input="2015-06-09 + 3M, 09.06.2015, (2015-01-15 : 1Q : 2015-12-31)">notations and a range</button></li>
+        <li><button type="button" data-input="2015-06-09 + 3M, 09.06.2015, [2015-01-15 : 1Q : 2015-12-31]">notations and a range</button></li>
         <li><button type="button" data-input="T + 2B, TOM, SPOT EURUSD, SPOT USDCAD" data-market="XNYS">business days and spot</button></li>
         <li><button type="button" data-input="T &gt; IMM, TOM &gt; IMM, SPOT &gt; IMM, SPOT - 1D &gt; IMM">next IMM date</button></li>
         <li><button type="button" data-input="4 JUL {SAT - 1D, SUN + 1D}, 4 THU NOV, 25 DEC {SAT - 1D, SUN + 1D}">US holidays</button></li>
@@ -941,11 +941,12 @@ observe  = WEEKDAY SIGN period
       <h3>ranges</h3>
       <table class="cases">
         <tbody>
-          <tr><td><code>(2015-01-15 : 1Q : 2015-12-31)</code></td><td><span class="date">2015-01-15</span>, <span class="date">2015-04-15</span>, <span class="date">2015-07-15</span>, <span class="date">2015-10-15</span></td></tr>
-          <tr><td><code>(2016-01-31 : 1M : 2016-04-30)</code></td><td><span class="date">2016-01-31</span>, <span class="date">2016-02-29</span>, <span class="date">2016-03-31</span>, <span class="date">2016-04-30</span></td></tr>
-          <tr><td><code>(2015-06-09 : 1W : 2015-06-09 + 2W)</code></td><td><span class="date">2015-06-09</span>, <span class="date">2015-06-16</span>, <span class="date">2015-06-23</span></td></tr>
-          <tr><td><code>(2015-06-09 : 1D : 2015-06-09)</code></td><td><span class="date">2015-06-09</span></td></tr>
-          <tr><td><code>(2015-06-09 : 1D : 2015-06-08)</code></td><td><span class="none">empty list</span></td></tr>
+          <tr><td><code>[2015-01-15 : 1Q : 2015-12-31]</code></td><td><span class="date">2015-01-15</span>, <span class="date">2015-04-15</span>, <span class="date">2015-07-15</span>, <span class="date">2015-10-15</span></td></tr>
+          <tr><td><code>[2016-01-31 : 1M : 2016-04-30]</code></td><td><span class="date">2016-01-31</span>, <span class="date">2016-02-29</span>, <span class="date">2016-03-31</span>, <span class="date">2016-04-30</span></td></tr>
+          <tr><td><code>[2015-06-09 : 1W : 2015-06-09 + 2W]</code></td><td><span class="date">2015-06-09</span>, <span class="date">2015-06-16</span>, <span class="date">2015-06-23</span></td></tr>
+          <tr><td><code>[2015-06-09 : 1D : 2015-06-09]</code></td><td><span class="date">2015-06-09</span></td></tr>
+          <tr><td><code>[2015-06-09 : 1D : 2015-06-08]</code></td><td><span class="none">empty list</span></td></tr>
+          <tr><td><code>(2015-01-15 : 1Q : 2015-12-31)</code></td><td><span class="err">error</span></td></tr>
         </tbody>
       </table>
       </section>
@@ -963,8 +964,8 @@ observe  = WEEKDAY SIGN period
           <tr><td><code>2015-06-13 + 0B</code></td><td><span class="date">2015-06-13</span></td></tr>
           <tr><td><code>2015-06-11 + 1M + 1B</code></td><td><span class="date">2015-07-13</span></td></tr>
           <tr><td><code>2015-06-09 &gt; SPOT + 3B</code></td><td><span class="date">2015-06-16</span></td></tr>
-          <tr><td><code>(2015-06-11 : 1B : 2015-06-16)</code></td><td><span class="date">2015-06-11</span>, <span class="date">2015-06-12</span>, <span class="date">2015-06-15</span>, <span class="date">2015-06-16</span></td></tr>
-          <tr><td><code>(2015-06-13 : 2B : 2015-06-19)</code></td><td><span class="date">2015-06-13</span>, <span class="date">2015-06-16</span>, <span class="date">2015-06-18</span></td></tr>
+          <tr><td><code>[2015-06-11 : 1B : 2015-06-16]</code></td><td><span class="date">2015-06-11</span>, <span class="date">2015-06-12</span>, <span class="date">2015-06-15</span>, <span class="date">2015-06-16</span></td></tr>
+          <tr><td><code>[2015-06-13 : 2B : 2015-06-19]</code></td><td><span class="date">2015-06-13</span>, <span class="date">2015-06-16</span>, <span class="date">2015-06-18</span></td></tr>
         </tbody>
       </table>
       </section>
@@ -981,7 +982,7 @@ observe  = WEEKDAY SIGN period
           <tr><td><code>2015-06-09 &gt; IMM &gt; IMM</code></td><td><span class="date">2015-09-16</span></td></tr>
           <tr><td><code>2015-06-09 + 3M &gt; IMM</code></td><td><span class="date">2015-09-16</span></td></tr>
           <tr><td><code>2015-06-09 &gt; IMM + 1D</code></td><td><span class="date">2015-06-18</span></td></tr>
-          <tr><td><code>(2015-01-01 &gt; IMM : 1W : 2015-04-01)</code></td><td><span class="date">2015-03-18</span>, <span class="date">2015-03-25</span>, <span class="date">2015-04-01</span></td></tr>
+          <tr><td><code>[2015-01-01 &gt; IMM : 1W : 2015-04-01]</code></td><td><span class="date">2015-03-18</span>, <span class="date">2015-03-25</span>, <span class="date">2015-04-01</span></td></tr>
         </tbody>
       </table>
       </section>
@@ -1003,7 +1004,7 @@ observe  = WEEKDAY SIGN period
           <tr><td><code>2015-06-12 &gt; SPOT USDCAD &gt; SPOT</code></td><td><span class="date">2015-06-17</span></td></tr>
           <tr><td><code>2015-06-09 &gt; SPOT + 1W</code></td><td><span class="date">2015-06-18</span></td></tr>
           <tr><td><code>2015-06-09 &gt; SPOT &gt; IMM</code></td><td><span class="date">2015-06-17</span></td></tr>
-          <tr><td><code>(2015-06-09 &gt; SPOT : 1W : 2015-06-30)</code></td><td><span class="date">2015-06-11</span>, <span class="date">2015-06-18</span>, <span class="date">2015-06-25</span></td></tr>
+          <tr><td><code>[2015-06-09 &gt; SPOT : 1W : 2015-06-30]</code></td><td><span class="date">2015-06-11</span>, <span class="date">2015-06-18</span>, <span class="date">2015-06-25</span></td></tr>
         </tbody>
       </table>
       </section>
@@ -1016,7 +1017,7 @@ observe  = WEEKDAY SIGN period
           <tr><td><code><span class="ctx">[2015-06-09]</span> T + 1M</code></td><td><span class="date">2015-07-09</span></td></tr>
           <tr><td><code><span class="ctx">[2015-06-09]</span> T &gt; IMM</code></td><td><span class="date">2015-06-17</span></td></tr>
           <tr><td><code><span class="ctx">[2015-06-09]</span> T, 2015-01-01</code></td><td><span class="date">2015-06-09</span>, <span class="date">2015-01-01</span></td></tr>
-          <tr><td><code><span class="ctx">[2015-06-09]</span> (T : 1W : T + 2W)</code></td><td><span class="date">2015-06-09</span>, <span class="date">2015-06-16</span>, <span class="date">2015-06-23</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09]</span> [T : 1W : T + 2W]</code></td><td><span class="date">2015-06-09</span>, <span class="date">2015-06-16</span>, <span class="date">2015-06-23</span></td></tr>
           <tr><td><code><span class="ctx">[2015-06-09]</span> T + 2B</code></td><td><span class="date">2015-06-11</span></td></tr>
           <tr><td><code><span class="ctx">[2015-06-09 XTEST]</span> T + 2B</code></td><td><span class="date">2015-06-12</span></td></tr>
           <tr><td><code><span class="ctx">[2015-06-09 XTEST]</span> T + 1B</code></td><td><span class="date">2015-06-11</span></td></tr>
@@ -1026,7 +1027,7 @@ observe  = WEEKDAY SIGN period
           <tr><td><code><span class="ctx">[2015-06-09 XTEST]</span> T &gt; SPOT</code></td><td><span class="date">2015-06-12</span></td></tr>
           <tr><td><code><span class="ctx">[2015-06-09 XTEST]</span> T &gt; SPOT USDCAD</code></td><td><span class="date">2015-06-11</span></td></tr>
           <tr><td><code><span class="ctx">[2015-12-24 XTEST]</span> T &gt; SPOT</code></td><td><span class="date">2015-12-29</span></td></tr>
-          <tr><td><code><span class="ctx">[2015-06-09 XTEST]</span> (T : 1B : T + 3B)</code></td><td><span class="date">2015-06-09</span>, <span class="date">2015-06-11</span>, <span class="date">2015-06-12</span>, <span class="date">2015-06-15</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09 XTEST]</span> [T : 1B : T + 3B]</code></td><td><span class="date">2015-06-09</span>, <span class="date">2015-06-11</span>, <span class="date">2015-06-12</span>, <span class="date">2015-06-15</span></td></tr>
           <tr><td><code><span class="ctx">[2015-06-09 XTEST]</span> T + 1M</code></td><td><span class="date">2015-07-09</span></td></tr>
           <tr><td><code>T</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code>T + 1D</code></td><td><span class="err">error</span></td></tr>
@@ -1055,7 +1056,7 @@ observe  = WEEKDAY SIGN period
           <tr><td><code><span class="ctx">[2022-06-09]</span> 25 DEC {SAT - 1D, SUN + 1D}</code></td><td><span class="date">2022-12-26</span></td></tr>
           <tr><td><code><span class="ctx">[2024-06-09]</span> 1 JUN {SAT + 1D, SUN + 1D}</code></td><td><span class="date">2024-06-02</span></td></tr>
           <tr><td><code><span class="ctx">[2025-06-09]</span> 4 JUL, 25 DEC</code></td><td><span class="date">2025-07-04</span>, <span class="date">2025-12-25</span></td></tr>
-          <tr><td><code><span class="ctx">[2025-06-09]</span> (15 JAN : 1Q : 31 DEC)</code></td><td><span class="date">2025-01-15</span>, <span class="date">2025-04-15</span>, <span class="date">2025-07-15</span>, <span class="date">2025-10-15</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-09]</span> [15 JAN : 1Q : 31 DEC]</code></td><td><span class="date">2025-01-15</span>, <span class="date">2025-04-15</span>, <span class="date">2025-07-15</span>, <span class="date">2025-10-15</span></td></tr>
           <tr><td><code><span class="ctx">[2024-06-09]</span> 29 FEB</code></td><td><span class="date">2024-02-29</span></td></tr>
           <tr><td><code><span class="ctx">[2025-06-09]</span> 29 FEB</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code><span class="ctx">[2025-06-09]</span> 31 APR</code></td><td><span class="err">error</span></td></tr>
@@ -1160,7 +1161,7 @@ observe  = WEEKDAY SIGN period
       <table class="cases">
         <tbody>
           <tr><td><code><span class="ctx">[2025-01-01]</span> 1 SHAWWAL</code></td><td><span class="date">2025-03-30</span></td></tr>
-          <tr><td><code><span class="ctx">[2025-01-01]</span> (29 RAMADAN : 1D : 3 SHAWWAL)</code></td><td><span class="date">2025-03-29</span>, <span class="date">2025-03-30</span>, <span class="date">2025-03-31</span>, <span class="date">2025-04-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> [29 RAMADAN : 1D : 3 SHAWWAL]</code></td><td><span class="date">2025-03-29</span>, <span class="date">2025-03-30</span>, <span class="date">2025-03-31</span>, <span class="date">2025-04-01</span></td></tr>
           <tr><td><code><span class="ctx">[2030-01-01]</span> 1 RAMADAN</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code><span class="ctx">[2025-01-01]</span> 10 TISHRI</code></td><td><span class="date">2025-10-02</span></td></tr>
           <tr><td><code><span class="ctx">[2025-01-01]</span> 10 TISHRI - 1D</code></td><td><span class="date">2025-10-01</span></td></tr>
@@ -1198,7 +1199,7 @@ observe  = WEEKDAY SIGN period
           <tr><td><code><span class="ctx">[2025-01-01]</span> SOLARTERM 23 UTC+8</code></td><td><span class="date">2025-01-05</span></td></tr>
           <tr><td><code><span class="ctx">[2025-06-01]</span> T &gt; NEXT EQUINOX MAR</code></td><td><span class="date">2026-03-20</span></td></tr>
           <tr><td><code><span class="ctx">[2025-06-01]</span> T &gt; PREV SOLSTICE DEC</code></td><td><span class="date">2024-12-21</span></td></tr>
-          <tr><td><code><span class="ctx">[2025-01-01]</span> (EQUINOX MAR : 1M : SOLSTICE JUN)</code></td><td><span class="date">2025-03-20</span>, <span class="date">2025-04-20</span>, <span class="date">2025-05-20</span>, <span class="date">2025-06-20</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> [EQUINOX MAR : 1M : SOLSTICE JUN]</code></td><td><span class="date">2025-03-20</span>, <span class="date">2025-04-20</span>, <span class="date">2025-05-20</span>, <span class="date">2025-06-20</span></td></tr>
           <tr><td><code><span class="ctx">[2025-01-01]</span> EQUINOX JUN</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code><span class="ctx">[2025-01-01]</span> SOLSTICE SEP</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code><span class="ctx">[2025-01-01]</span> SOLARTERM 25</code></td><td><span class="err">error</span></td></tr>
@@ -1218,7 +1219,7 @@ observe  = WEEKDAY SIGN period
           <tr><td><code><span class="ctx">[2025-01-01]</span> 3 JUL IF MON TUE WED THU, 24 DEC IF FRI</code></td><td><span class="date">2025-07-03</span></td></tr>
           <tr><td><code><span class="ctx">[2025-01-01]</span> 24 DEC IF WED, 25 DEC</code></td><td><span class="date">2025-12-24</span>, <span class="date">2025-12-25</span></td></tr>
           <tr><td><code><span class="ctx">[2025-01-01]</span> 24 DEC IF</code></td><td><span class="err">error</span></td></tr>
-          <tr><td><code><span class="ctx">[2025-01-01]</span> (24 DEC : 1D : 26 DEC) IF WED</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> [24 DEC : 1D : 26 DEC] IF WED</code></td><td><span class="err">error</span></td></tr>
         </tbody>
       </table>
       </section>
@@ -1233,7 +1234,7 @@ observe  = WEEKDAY SIGN period
           <tr><td><code><span class="ctx">[2025-06-30]</span> @FOMC + 3W</code></td><td><span class="date">2025-02-19</span>, <span class="date">2025-04-09</span>, <span class="date">2025-05-28</span>, <span class="date">2025-07-09</span>, <span class="date">2025-08-20</span>, <span class="date">2025-10-08</span>, <span class="date">2025-11-19</span>, <span class="date">2025-12-31</span></td></tr>
           <tr><td><code><span class="ctx">[2025-01-01 XNYS]</span> @FOMC + 1B</code></td><td><span class="date">2025-01-30</span>, <span class="date">2025-03-20</span>, <span class="date">2025-05-08</span>, <span class="date">2025-06-20</span>, <span class="date">2025-07-31</span>, <span class="date">2025-09-18</span>, <span class="date">2025-10-30</span>, <span class="date">2025-12-11</span></td></tr>
           <tr><td><code><span class="ctx">[2025-01-01]</span> @THANKSGIVING + 1D, @FOMC IF FRI</code></td><td><span class="date">2025-11-28</span></td></tr>
-          <tr><td><code><span class="ctx">[2025-01-01]</span> (@THANKSGIVING : 1D : @THANKSGIVING + 3D)</code></td><td><span class="date">2025-11-27</span>, <span class="date">2025-11-28</span>, <span class="date">2025-11-29</span>, <span class="date">2025-11-30</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> [@THANKSGIVING : 1D : @THANKSGIVING + 3D]</code></td><td><span class="date">2025-11-27</span>, <span class="date">2025-11-28</span>, <span class="date">2025-11-29</span>, <span class="date">2025-11-30</span></td></tr>
           <tr><td><code><span class="ctx">[2025-02-01]</span> T &gt; NEXT @FOMC</code></td><td><span class="date">2025-03-19</span></td></tr>
           <tr><td><code><span class="ctx">[2025-03-19]</span> T &gt; NEXT @FOMC</code></td><td><span class="date">2025-05-07</span></td></tr>
           <tr><td><code><span class="ctx">[2025-03-19]</span> T &gt; PREV @FOMC</code></td><td><span class="date">2025-01-29</span></td></tr>
@@ -1241,7 +1242,7 @@ observe  = WEEKDAY SIGN period
           <tr><td><code><span class="ctx">[2024-01-01]</span> @FOMC</code></td><td><span class="none">empty list</span></td></tr>
           <tr><td><code><span class="ctx">[2022-01-01]</span> @NEWYEAR</code></td><td><span class="none">empty list</span></td></tr>
           <tr><td><code><span class="ctx">[2025-12-15]</span> T &gt; NEXT @FOMC</code></td><td><span class="err">error</span></td></tr>
-          <tr><td><code><span class="ctx">[2025-01-01]</span> (@FOMC : 1D : 31 DEC)</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> [@FOMC : 1D : 31 DEC]</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code><span class="ctx">[2025-01-01]</span> @NOPE</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code>@FOMC</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code><span class="ctx">[2025-01-01]</span> @EASTER</code></td><td><span class="err">error</span></td></tr>
@@ -1314,7 +1315,7 @@ observe  = WEEKDAY SIGN period
           <tr><td><code><span class="ctx">[2026-11-02]</span> T + 1H</code></td><td><span class="date">2027-05-02</span></td></tr>
           <tr><td><code>2026-08-31 + 1H</code></td><td><span class="date">2027-02-28</span></td></tr>
           <tr><td><code>2026-08-31 - 2H</code></td><td><span class="date">2025-08-31</span></td></tr>
-          <tr><td><code>(2026-01-01 : 1H : 2027-12-31)</code></td><td><span class="date">2026-01-01</span>, <span class="date">2026-07-01</span>, <span class="date">2027-01-01</span>, <span class="date">2027-07-01</span></td></tr>
+          <tr><td><code>[2026-01-01 : 1H : 2027-12-31]</code></td><td><span class="date">2026-01-01</span>, <span class="date">2026-07-01</span>, <span class="date">2027-01-01</span>, <span class="date">2027-07-01</span></td></tr>
           <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; BOM - 1D + 5B</code></td><td><span class="date">2026-11-06</span></td></tr>
           <tr><td><code><span class="ctx">[2026-11-02]</span> T + 2M &gt; BOM - 1D &gt; NEXT 3RD WED</code></td><td><span class="date">2027-01-20</span></td></tr>
         </tbody>
@@ -1452,7 +1453,7 @@ observe  = WEEKDAY SIGN period
           <tr><td><code>2015-06-09 ,</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code>2015-06-09 2015-06-10</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code>2015-06.09</code></td><td><span class="err">error</span></td></tr>
-          <tr><td><code>(2015-01-01 : 1M)</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>[2015-01-01 : 1M]</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code>2015-06-09 &gt;</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code>2015-06-09 IMM</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code>2015-06-09 &gt; 3M</code></td><td><span class="err">error</span></td></tr>
@@ -1467,7 +1468,7 @@ observe  = WEEKDAY SIGN period
           <tr><td><code><span class="ctx">[2015-06-09]</span> T T</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code>2015-06-09 + 2b</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code>2015-06-09 &gt; 2B</code></td><td><span class="err">error</span></td></tr>
-          <tr><td><code>(2015-01-01 : 1M : 2015-02-01), 2015-03-01</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>[2015-01-01 : 1M : 2015-02-01], 2015-03-01</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code><em>(empty input)</em></code></td><td><span class="err">error</span></td></tr>
         </tbody>
       </table>
@@ -1476,8 +1477,8 @@ observe  = WEEKDAY SIGN period
       <h3>step of a range must be positive</h3>
       <table class="cases">
         <tbody>
-          <tr><td><code>(2015-01-01 : 0D : 2015-02-01)</code></td><td><span class="err">error</span></td></tr>
-          <tr><td><code>(2015-06-01 : 0B : 2015-06-05)</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>[2015-01-01 : 0D : 2015-02-01]</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>[2015-06-01 : 0B : 2015-06-05]</code></td><td><span class="err">error</span></td></tr>
         </tbody>
       </table>
       </section>
@@ -1912,7 +1913,7 @@ Item
   / Expr
 
 Range
-  = "(" _ first:Expr _ ":" _ step:Period _ ":" _ last:Expr _ ")" {
+  = "[" _ first:Expr _ ":" _ step:Period _ ":" _ last:Expr _ "]" {
       if (step.months <= 0 && step.days <= 0 && step.business <= 0) throw new RangeError('step must be positive');
       return (c) => expand(single(first, c), step, single(last, c), c.market);
     }

@@ -61,7 +61,7 @@ PRODUCTIONS
   .
 
   Range                                   (. ScheduleSemantics.Expr first, last; TemporalAmount step; .)
-  = "(" Expr<out first> ":" Period<out step> ":" Expr<out last> ")"
+  = "[" Expr<out first> ":" Period<out step> ":" Expr<out last> "]"
                                           (. if (errors.count > 0) return;
                                              if (!ScheduleSemantics.isPositive(step)) SemErr("step must be positive: " + step);
                                              else rule = ScheduleSemantics.range(first, step, last); .)

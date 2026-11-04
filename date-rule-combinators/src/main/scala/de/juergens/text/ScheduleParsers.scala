@@ -116,7 +116,7 @@ class ScheduleParsers extends RegexParsers {
     case start ~ shifts => (c: Context) => shifts.foldLeft(start(c))((d, f) => f(d, c))
   }
 
-  def range: Parser[Context => List[LocalDate]] = ("(" ~> expr) ~ (":" ~> period) ~ (":" ~> expr <~ ")") ^^ {
+  def range: Parser[Context => List[LocalDate]] = ("[" ~> expr) ~ (":" ~> period) ~ (":" ~> expr <~ "]") ^^ {
     case first ~ step ~ last =>
       val positive = step match {
         case p: Period => !p.isZero && !p.isNegative

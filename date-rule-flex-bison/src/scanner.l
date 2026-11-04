@@ -41,7 +41,7 @@ UTC[+-][0-9]+               {
                             }
 @[A-Z][A-Z0-9_]*            { yylval->text = arena_strdup(yyextra->schedule, yytext + 1); return EVENT; }
 [A-Z]+                      { return word(yytext, yylval, yyextra); }
-[-+>{},:()./]               { return yytext[0]; }
+[-+>{},:\[\]./]             { return yytext[0]; }
 .                           { return YYUNDEF; }
 
 %%

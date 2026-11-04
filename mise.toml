@@ -48,6 +48,7 @@ run = "if command -v cc && command -v flex && command -v bison; then make test; 
 [tasks."test:flex-bison-go"]
 description = "The C library from Go through SWIG; skipped without cc, flex, bison and swig"
 dir = "{{config_root}}/date-rule-flex-bison"
+depends = ["test:flex-bison"]   # both build in build/; in parallel, ar could pack a half-written object
 run = "if command -v cc && command -v flex && command -v bison && command -v swig; then make test-go; else echo 'skipped: needs cc, flex, bison and swig'; fi"
 
 [tasks.docs]

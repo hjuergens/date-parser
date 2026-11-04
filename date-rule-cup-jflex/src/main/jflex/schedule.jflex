@@ -75,7 +75,7 @@ private Symbol symbol(int type, Object value) {
 "/"             { return symbol(ScheduleSym.SLASH); }
 ","             { return symbol(ScheduleSym.COMMA); }
 ":"             { return symbol(ScheduleSym.COLON); }
-"("             { return symbol(ScheduleSym.LPAREN); }
-")"             { return symbol(ScheduleSym.RPAREN); }
+"["             { return symbol(ScheduleSym.LBRACKET); }
+"]"             { return symbol(ScheduleSym.RBRACKET); }
 [ \t\r\n]+      { /* ignore */ }
 [^]             { throw new IllegalArgumentException("illegal character '" + yytext() + "' at column " + yycolumn); }

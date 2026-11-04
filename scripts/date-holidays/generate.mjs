@@ -147,7 +147,7 @@ function translate(rule) {
     text = text.slice(0, m.index);
   }
   const date = base(text.trim());
-  const range = (d) => (span === 1 ? d : `(${d} : 1D : ${d}${days(span - 1)})`);
+  const range = (d) => (span === 1 ? d : `[${d} : 1D : ${d}${days(span - 1)}]`);
   if (span > 1 && (conditions.length || weekdays)) throw new Skip('a span with conditions');
   const only = (d, list) => `${d} IF ${list.map((w) => WD[w]).join(' ')}`;
   if (weekdays) {
@@ -218,7 +218,7 @@ for (const place of places) {
   }
 }
 
-// the calendar and day of the first lunar month name in a schedule such as "10 TISHRI" or "(30 RAMADAN : 1D : …)"
+// the calendar and day of the first lunar month name in a schedule such as "10 TISHRI" or "[30 RAMADAN : 1D : …]"
 function lunarMonth(schedule) {
   const m = schedule.match(/(\d+) ([A-Z]+)/);
   if (!m) return null;

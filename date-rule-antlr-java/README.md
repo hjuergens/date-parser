@@ -18,7 +18,7 @@ This is the most complete module of the project.
 | `ISO8601dates.g4` | `2015-06-09` | parse tree (syntax only, no calendar check) |
 | `AmbiguousDates.g4` | `32 May 1980 12h` | day and time parts as strings |
 | `ICalendar.g4` | iCalendar (RFC 5545) `VEVENT` | parse tree |
-| `DateSchedule.g4` | `2015-06-09 + 3M, 09.06.2015`, `(2015-01-15 : 1Q : 2015-12-31)`, `2015-06-09 > IMM`, `2015-06-12 > SPOT USDCAD + 2B` | `List<java.time.LocalDate>` |
+| `DateSchedule.g4` | `2015-06-09 + 3M, 09.06.2015`, `[2015-01-15 : 1Q : 2015-12-31]`, `2015-06-09 > IMM`, `2015-06-12 > SPOT USDCAD + 2B` | `List<java.time.LocalDate>` |
 | `Cardinal.g4`, `Unit.g4`, `SimpleCalc.g4`, `DateRule.g4`, `Schedule.g4`, `NewDate.g4` | small building blocks and experiments | |
 
 In `PeriodTerm`, `>` means "next", `<` means "previous", and a trailing `=` means "or this one".
@@ -66,7 +66,7 @@ Implements the [shared schedule example](../README.md#shared-example-schedule) a
 - The same rules without actions run on ANTLR's Python target in [date-rule-antlr-python](../date-rule-antlr-python/README.md).
 
 ```java
-Rule rule = DateSchedules.parse("(T : 1Q : T + 11M)");    // a function of base date and market
+Rule rule = DateSchedules.parse("[T : 1Q : T + 11M]");    // a function of base date and market
 rule.evaluate(new Context(LocalDate.of(2015, 1, 15), null));  // [2015-01-15, 2015-04-15, 2015-07-15, 2015-10-15]
 ```
 

@@ -17,7 +17,7 @@ item
     ;
 
 range
-    : '(' first=expr ':' step=period ':' last=expr ')'
+    : '[' first=expr ':' step=period ':' last=expr ']'
     ;
 
 // shifts are applied from left to right

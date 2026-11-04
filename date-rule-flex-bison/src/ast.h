@@ -59,7 +59,7 @@ typedef struct Shift {
     struct Shift *next;
 } Shift;
 
-typedef enum { D_BASE, D_TOM, D_SPOT, D_FIXED, D_ANNUAL, D_EVENT } DateKind;
+typedef enum { D_BASE, D_TOM, D_SPOT, D_FIXED, D_ANNUAL, D_EVENT, D_SERIES } DateKind;
 
 typedef struct {
     DateKind kind;
@@ -67,9 +67,12 @@ typedef struct {
     int fixed;             /* D_FIXED */
     Annual annual;
     const char *event;
+    struct Expr *first, *last;  /* D_SERIES: [first : step : last], like an event a date with several values */
+    Period step;
+    int start_out, end_out;     /* "]" at the start, "[" at the end: that endpoint is left out */
 } Date;
 
-typedef struct {
+typedef struct Expr {
     Date date;
     Shift *shifts;
 } Expr;
@@ -84,9 +87,7 @@ typedef struct Block Block;
 
 struct Schedule {
     Block *arena;
-    Item *items;           /* a list, or ... */
-    Expr *first, *last;    /* ... a range */
-    Period step;
+    Item *items;
 };
 
 void *arena_alloc(Schedule *schedule, size_t size);

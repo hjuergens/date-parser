@@ -37,6 +37,16 @@ static Annual annual(AnnualKind kind, long n, int weekday, int month) {
     return a;
 }
 
+/* a series date; an error if the step isn't positive */
+static int series(Parse *parse, Date *date, int start_out, Expr *first, Period step, Expr *last, int end_out) {
+    if (step.months <= 0 && step.days <= 0 && step.business <= 0) {
+        snprintf(parse->error, parse->size, "step must be positive");
+        return -1;
+    }
+    *date = (Date) { .kind = D_SERIES, .first = first, .last = last, .step = step, .start_out = start_out, .end_out = end_out };
+    return 0;
+}
+
 /* NUM - NUM - NUM: an error if it is no date */
 static int fixed(Parse *parse, long year, long month, long day, int *date) {
     char text[64];
@@ -71,43 +81,54 @@ static int fixed(Parse *parse, long year, long month, long day, int *date) {
 
 %type <period> period
 %type <annual> annual fixed_annual
-%type <date> date
+%type <date> date series
 %type <expr> expr
 %type <shift> shift
 %type <anchor> anchor target targets select chosen
 %type <num> count
 %type <observe> observe observes
 %type <item> item items
-%type <code> weekdays
+%type <code> weekdays weekday_set start_out end_out
 %type <text> pair
 
 %%
 
 start: items                    { parse->schedule->items = $1; }
-     | '[' expr ':' period ':' expr ']'
-                                {
-                                    if ($4.months <= 0 && $4.days <= 0 && $4.business <= 0) {
-                                        snprintf(parse->error, parse->size, "step must be positive");
-                                        YYERROR;
-                                    }
-                                    parse->schedule->first = $2;
-                                    parse->schedule->step = $4;
-                                    parse->schedule->last = $6;
-                                }
      ;
 
 items: item
      | items ',' item           { $$ = $1; APPEND(Item, $$, $3); }
      ;
 
-/* 24 DEC IF MON TUE WED THU: the date only on these weekdays */
+/* 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays */
 item: expr                      { $$ = NEW(Item); $$->expr = $1; }
     | expr IF weekdays          { $$ = NEW(Item); $$->expr = $1; $$->weekdays = $3; }
+    | expr IF '{' weekday_set '}' { $$ = NEW(Item); $$->expr = $1; $$->weekdays = $4; }
     ;
 
 weekdays: WEEKDAY               { $$ = 1 << $1; }
         | weekdays WEEKDAY      { $$ = $1 | 1 << $2; }
         ;
+
+weekday_set: WEEKDAY            { $$ = 1 << $1; }
+           | weekday_set ',' WEEKDAY { $$ = $1 | 1 << $3; }
+           ;
+
+/* [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out. A series is
+   a date with several values, like an event: the shifts after it apply to each element */
+series: start_out expr ':' period ':' expr end_out
+                                { if (series(parse, &$$, $1, $2, $4, $6, $7)) YYERROR; }
+      | start_out expr ':' expr end_out
+                                { if (series(parse, &$$, $1, $2, (Period) { 0, 1, 0 }, $4, $5)) YYERROR; }
+      ;
+
+start_out: '['                  { $$ = 0; }
+         | ']'                  { $$ = 1; }
+         ;
+
+end_out: ']'                    { $$ = 0; }
+       | '['                    { $$ = 1; }
+       ;
 
 /* shifts are applied from left to right */
 expr: date                      { $$ = NEW(Expr); $$->date = $1; }
@@ -187,6 +208,7 @@ date: TODAY                     { $$ = (Date) { .kind = D_BASE }; }
     | NUM '/' NUM '/' NUM       { $$ = (Date) { .kind = D_FIXED }; if (fixed(parse, $5, $1, $3, &$$.fixed)) YYERROR; }
     | annual                    { $$ = (Date) { .kind = D_ANNUAL, .annual = $1 }; }
     | EVENT                     { $$ = (Date) { .kind = D_EVENT, .event = $1 }; }
+    | series
     ;
 
 /* dates that recur every year, evaluated in the year of the base date */

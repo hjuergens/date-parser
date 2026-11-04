@@ -20,7 +20,12 @@
 (def ^:private transforms
   {:schedule       identity
    :items          (fn [& exprs] (ScheduleSemantics/list (vec exprs)))
-   :range          (fn [first step last] (ScheduleSemantics/range first step last))
+   :series         (fn ([start-out first last end-out] (ScheduleSemantics/series first nil last start-out end-out))
+                     ([start-out first step last end-out] (ScheduleSemantics/series first step last start-out end-out)))
+   :closed-start   (fn [] false)
+   :open-start     (fn [] true)
+   :closed-end     (fn [] false)
+   :open-end       (fn [] true)
    :item           (fn [expr & weekdays] (if weekdays (ScheduleSemantics/onlyOn expr (vec weekdays)) expr))
    :expr           (fn [date & shifts] (reduce (fn [expr shift] (shift expr)) date shifts))
    :plus           (fn [period] #(ScheduleSemantics/plus % period))

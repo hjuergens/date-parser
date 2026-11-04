@@ -49,7 +49,7 @@ class ScheduleParsers extends RegexParsers {
   def zone: Parser[Int] = opt("UTC[+-][0-9]+".r) ^^ (_.fold(0)(_.substring(3).toInt * 60))
 
   // "TOM" before "T": without a lexer, "T" would match the start of "TOM"
-  def date: Parser[Context => LocalDate] = eventName ^^ event | "TOM" ^^^ ((c: Context) => plusBusinessDays(base(c), 1, c.market)) |
+  def date: Parser[Context => LocalDate] = series | eventName ^^ event | "TOM" ^^^ ((c: Context) => plusBusinessDays(base(c), 1, c.market)) |
     "T" ^^^ base |
     "SPOT" ~> opt(pair) ^^ (p => (c: Context) => c.market.spot(base(c), p)) |
     annual ^^ (a => (c: Context) => a(base(c).getYear)) | number ~ (
@@ -136,31 +136,37 @@ class ScheduleParsers extends RegexParsers {
     case start ~ shifts => (c: Context) => shifts.foldLeft(start(c))((d, f) => f(d, c))
   }
 
-  def range: Parser[Context => List[LocalDate]] = ("[" ~> expr) ~ (":" ~> period) ~ (":" ~> expr <~ "]") ^^ {
-    case first ~ step ~ last =>
-      val positive = step match {
-        case p: Period => !p.isZero && !p.isNegative
-        case BusinessDays(n) => n > 0
-      }
-      require(positive, s"step must be positive: $step")
-      def times(k: Int): TemporalAmount = step match {
-        case p: Period => p.multipliedBy(k)
-        case BusinessDays(n) => BusinessDays(k * n)
-      }
-      (c: Context) => {
-        val (start, end) = (single(first, c), single(last, c))
-        Iterator.from(0).map(k => plus(start, times(k), 1, c.market)).takeWhile(!_.isAfter(end)).toList
-      }
-  }
+  /** [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out. A series
+   *  is a date with several values, like an event: the shifts after it apply to each element */
+  def series: Parser[Context => LocalDate] =
+    ("[" ^^^ false | "]" ^^^ true) ~ expr ~ (":" ~> opt(period <~ ":")) ~ expr ~ ("]" ^^^ false | "[" ^^^ true) ^^ {
+      case startOut ~ first ~ step ~ last ~ endOut =>
+        val every = step.getOrElse(Period.ofDays(1))
+        val positive = every match {
+          case p: Period => !p.isZero && !p.isNegative
+          case BusinessDays(n) => n > 0
+        }
+        require(positive, s"step must be positive: $every")
+        def times(k: Int): TemporalAmount = every match {
+          case p: Period => p.multipliedBy(k)
+          case BusinessDays(n) => BusinessDays(k * n)
+        }
+        (c: Context) => c.occurrence.getOrElse(throw new Unbound(c => {
+          val (start, end) = (single(first, c), single(last, c))
+          Iterator.from(0).map(k => plus(start, times(k), 1, c.market)).takeWhile(!_.isAfter(end))
+            .filterNot(d => startOut && !d.isAfter(start) || endOut && !d.isBefore(end)).toList
+        }))
+    }
 
-  /** 24 DEC IF MON TUE WED THU: the date only on these weekdays */
-  def item: Parser[Context => Option[LocalDate]] = expr ~ opt("IF" ~> rep1(weekday)) ^^ {
+  /** 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays */
+  def item: Parser[Context => Option[LocalDate]] =
+    expr ~ opt("IF" ~> (rep1(weekday) | "{" ~> rep1sep(weekday, ",") <~ "}")) ^^ {
     case e ~ None => (c: Context) => Some(e(c))
     case e ~ Some(days) => (c: Context) => Some(e(c)).filter(d => days.map(weekdays).contains(d.getDayOfWeek))
   }
 
   def schedule: Parser[Context => List[LocalDate]] =
-    range | rep1sep(item, ",") ^^ (items => (c: Context) => items.flatMap(values(_, c).flatten))
+    rep1sep(item, ",") ^^ (items => (c: Context) => items.flatMap(values(_, c).flatten))
 }
 
 object ScheduleParsers {
@@ -201,10 +207,13 @@ object ScheduleParsers {
   val base: Context => LocalDate = _.base.getOrElse(throw new IllegalStateException("no base date"))
 
   /** thrown by an event date that is not bound to one occurrence yet; values() catches it */
-  private class Unbound(val name: String) extends RuntimeException(s"unbound event $name", null, false, false)
+  /** thrown by a date with several values (an event, a series) that is not bound to one of them yet; values() catches
+   *  it and evaluates the expression once per date of dates */
+  private class Unbound(val dates: Context => List[LocalDate]) extends RuntimeException("unbound", null, false, false)
 
   /** @NAME: one occurrence of the event, bound by values() */
-  def event(name: String): Context => LocalDate = _.occurrence.getOrElse(throw new Unbound(name))
+  def event(name: String): Context => LocalDate =
+    _.occurrence.getOrElse(throw new Unbound(c => occurrences(name, base(c).getYear, c)))
 
   /** the dates of the event in the year: its rule evaluated with the first of January as base date */
   def occurrences(name: String, year: Int, c: Context): List[LocalDate] = {
@@ -212,12 +221,12 @@ object ScheduleParsers {
     rule(Context(Some(LocalDate.of(year, 1, 1)), c.market, c.events)).filter(_.getYear == year).sortWith(_.isBefore(_))
   }
 
-  /** the values of an expression: one, or one per occurrence in the base year if it starts with an event */
+  /** the values of an expression: one, or one per date if it starts with an event (its occurrences in the base year)
+   *  or a series (its elements) */
   def values[A](expr: Context => A, c: Context): List[A] =
     try List(expr(c))
     catch {
-      case unbound: Unbound =>
-        occurrences(unbound.name, base(c).getYear, c).map(d => expr(c.copy(occurrence = Some(d))))
+      case unbound: Unbound => unbound.dates(c).map(d => expr(c.copy(occurrence = Some(d))))
     }
 
   /** the date of an expression that must have exactly one, such as the end of a range */

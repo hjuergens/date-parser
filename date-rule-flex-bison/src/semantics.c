@@ -594,8 +594,8 @@ static int date_at(Eval *eval, const Date *date, const Ctx *ctx) {
     case D_SPOT: return spot(eval, base(eval, ctx), date->pair, ctx->market);
     case D_FIXED: return date->fixed;
     case D_ANNUAL: return annual_in(eval, &date->annual, year_of(base(eval, ctx)));
-    case D_EVENT:
-        if (!ctx->has_occurrence) fail(eval, "@%s is not bound to an occurrence", date->event);
+    case D_EVENT: case D_SERIES:
+        if (!ctx->has_occurrence) fail(eval, "a date with several values is not bound");
         return ctx->occurrence;
     }
     fail(eval, "unknown date");
@@ -629,10 +629,26 @@ static int expr_at(Eval *eval, const Expr *expr, const Ctx *ctx) {
     return date;
 }
 
-/* the dates of an item: one, or one per occurrence in the base year if it starts with an event; IF drops dates */
+static int single(Eval *eval, const Expr *expr, const Ctx *ctx);
+
+/* [first : step : last]: first + k * step for k = 0, 1, ... while not after last, without the endpoints left out */
+static DateList *elements(Eval *eval, const Date *series, const Ctx *ctx) {
+    int first = single(eval, series->first, ctx), last = single(eval, series->last, ctx);
+    DateList *dates = temp(eval);
+    for (long long k = 0;; k++) {
+        Period step = { k * series->step.months, k * series->step.days, k * series->step.business };
+        int date = plus(eval, first, step, 1, ctx->market);
+        if (date > last) return dates;
+        if (!(series->start_out && date <= first) && !(series->end_out && date >= last)) datelist_push(dates, date);
+    }
+}
+
+/* the dates of an item: one, or one per date if it starts with an event (its occurrences in the base year) or a series
+ * (its elements); IF drops dates */
 static void values(Eval *eval, const Expr *expr, int weekdays, const Ctx *ctx, DateList *out) {
-    if (expr->date.kind == D_EVENT && !ctx->has_occurrence) {
-        DateList *found = occurrences(eval, expr->date.event, year_of(base(eval, ctx)), ctx);
+    if ((expr->date.kind == D_EVENT || expr->date.kind == D_SERIES) && !ctx->has_occurrence) {
+        DateList *found = expr->date.kind == D_EVENT ? occurrences(eval, expr->date.event, year_of(base(eval, ctx)), ctx)
+                                                      : elements(eval, &expr->date, ctx);
         for (int i = 0; i < found->count; i++) {
             Ctx bound = *ctx;
             bound.has_occurrence = 1, bound.occurrence = found->dates[i];
@@ -653,16 +669,6 @@ static int single(Eval *eval, const Expr *expr, const Ctx *ctx) {
 }
 
 static void evaluate_into(Eval *eval, const Schedule *schedule, const Ctx *ctx, DateList *out) {
-    if (schedule->first) {
-        /* first + k * step for k = 0, 1, ... while not after last */
-        int first = single(eval, schedule->first, ctx), last = single(eval, schedule->last, ctx);
-        for (long long k = 0;; k++) {
-            Period step = { k * schedule->step.months, k * schedule->step.days, k * schedule->step.business };
-            int date = plus(eval, first, step, 1, ctx->market);
-            if (date > last) return;
-            datelist_push(out, date);
-        }
-    }
     for (const Item *item = schedule->items; item; item = item->next) values(eval, item->expr, item->weekdays, ctx, out);
 }
 

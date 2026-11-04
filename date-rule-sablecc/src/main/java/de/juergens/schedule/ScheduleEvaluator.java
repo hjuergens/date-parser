@@ -42,11 +42,7 @@ public final class ScheduleEvaluator {
      * @throws IllegalArgumentException on a range without positive step
      */
     static List<LocalDate> schedule(PSchedule node, Context context) {
-        if (node instanceof ARangeSchedule range) {
-            return ScheduleSemantics.range(expr(range.getFirst()), period(range.getPeriod()), expr(range.getLast()))
-                    .evaluate(context);
-        }
-        AListSchedule list = (AListSchedule) node;
+        ASchedule list = (ASchedule) node;
         List<ScheduleSemantics.Expr> items = new ArrayList<>();
         items.add(item(list.getItem()));
         for (Object more : list.getMoreItem()) {
@@ -55,17 +51,33 @@ public final class ScheduleEvaluator {
         return ScheduleSemantics.list(items).evaluate(context);
     }
 
-    /** 24 DEC IF MON TUE WED THU: the date only on these weekdays */
+    /** 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays */
     static ScheduleSemantics.Expr item(PItem node) {
         AItem item = (AItem) node;
         if (item.getCondition() == null) {
             return expr(item.getExpr());
         }
         List<String> weekdays = new ArrayList<>();
-        for (Object weekday : ((ACondition) item.getCondition()).getWeekday()) {
-            weekdays.add(((TWeekday) weekday).getText());
+        if (item.getCondition() instanceof APlainCondition plain) {
+            for (Object weekday : plain.getWeekday()) {
+                weekdays.add(((TWeekday) weekday).getText());
+            }
+        } else {
+            ASetCondition set = (ASetCondition) item.getCondition();
+            weekdays.add(set.getWeekday().getText());
+            for (Object more : set.getMoreWeekday()) {
+                weekdays.add(((AMoreWeekday) more).getWeekday().getText());
+            }
         }
         return ScheduleSemantics.onlyOn(expr(item.getExpr()), weekdays);
+    }
+
+    /** [a : step : b]: a date with several values, the shifts after it apply to each element */
+    static ScheduleSemantics.Expr series(PSeries node) {
+        ASeries series = (ASeries) node;
+        TemporalAmount step = series.getStep() == null ? null : period(((AStep) series.getStep()).getPeriod());
+        return ScheduleSemantics.series(expr(series.getFirst()), step, expr(series.getLast()),
+                series.getStartBracket() instanceof AOpenStartBracket, series.getEndBracket() instanceof AOpenEndBracket);
     }
 
     /** periods are applied from left to right */
@@ -199,6 +211,8 @@ public final class ScheduleEvaluator {
             return ScheduleSemantics.inYear(annual(annual.getAnnual()));
         } else if (node instanceof AEventDate event) {
             return ScheduleSemantics.event(event.getEvent().getText().substring(1));
+        } else if (node instanceof ASeriesDate series) {
+            return series(series.getSeries());
         } else if (node instanceof AIsoDate iso) {
             return ScheduleSemantics.literal(LocalDate.of(number(iso.getYear()), number(iso.getMonth()), number(iso.getDay())));
         } else if (node instanceof AGermanDate german) {

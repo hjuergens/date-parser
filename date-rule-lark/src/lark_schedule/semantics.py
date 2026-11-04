@@ -66,14 +66,28 @@ class Context:
 
 
 class Unbound(Exception):
-    """raised by an event date that is not bound to one occurrence yet; values() catches it"""
+    """raised by a date with several values (an event, a series) that is not bound to one of them yet; values() catches
+    it and evaluates the expression once per date of dates(context)"""
+
+    def __init__(self, dates):
+        super().__init__("unbound")
+        self.dates = dates
 
 
 def event(name):
     """@NAME: one occurrence of the event, bound by values()"""
     def at(context):
         if context.occurrence is None:
-            raise Unbound(name)
+            raise Unbound(lambda c: occurrences(name, base(c).year, c))
+        return context.occurrence
+    return at
+
+
+def series_date(first, step, last, start_out, end_out):
+    """[first : step : last]: one element of the series, bound by values(), so the shifts after it apply to each"""
+    def at(context):
+        if context.occurrence is None:
+            raise Unbound(lambda c: series(single(first, c), step, single(last, c), start_out, end_out, c.market))
         return context.occurrence
     return at
 
@@ -87,12 +101,12 @@ def occurrences(name, year, context):
 
 
 def values(expr, context):
-    """the dates of an expression: one, or one per occurrence in the base year if it starts with an event"""
+    """the dates of an expression: one, or one per date if it starts with an event (its occurrences in the base year)
+    or a series (its elements)"""
     try:
         return [expr(context)]
     except Unbound as unbound:
-        name = unbound.args[0]
-        return [expr(replace(context, occurrence=d)) for d in occurrences(name, base(context).year, context)]
+        return [expr(replace(context, occurrence=d)) for d in unbound.dates(context)]
 
 
 def single(expr, context):
@@ -171,6 +185,11 @@ def expand(first, step, last, market):
         if d > last:
             return dates
         dates.append(d)
+
+
+def series(first, step, last, start_out, end_out, market):
+    """[first : step : last]: first + k * step while not after last; start_out and end_out leave out an endpoint"""
+    return [d for d in expand(first, step, last, market) if not (start_out and d <= first or end_out and d >= last)]
 
 
 def previous_imm(d):

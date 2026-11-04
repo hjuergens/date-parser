@@ -20,8 +20,9 @@ terminal            SOLARTERM;
 non terminal Integer                              zone, count;
 non terminal ScheduleSemantics.Rule                schedule;
 non terminal ArrayList<ScheduleSemantics.Expr>     exprs;
-non terminal ScheduleSemantics.Expr                item, expr, date;
-non terminal ArrayList<String>                     weekdays;
+non terminal ScheduleSemantics.Expr                item, expr, date, series;
+non terminal Boolean                              start_out, end_out;
+non terminal ArrayList<String>                     weekdays, weekday_set;
 non terminal TemporalAmount                        period;
 non terminal ScheduleSemantics.Annual              annual, fixed_annual;
 non terminal ScheduleSemantics.Anchor              counted, anchor, target, select, chosen;
@@ -31,9 +32,7 @@ non terminal ScheduleSemantics.Shift               shift;
 
 start with schedule;
 
-schedule ::= LBRACKET expr:first COLON period:step COLON expr:last RBRACKET
-                {: RESULT = ScheduleSemantics.range(first, step, last); :}
-           | exprs:list
+schedule ::= exprs:list
                 {: RESULT = ScheduleSemantics.list(list); :}
            ;
 
@@ -43,14 +42,35 @@ exprs ::= item:e
                 {: list.add(e); RESULT = list; :}
         ;
 
-/* 24 DEC IF MON TUE WED THU: the date only on these weekdays */
+/* 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays */
 item ::= expr:e                     {: RESULT = e; :}
        | expr:e IF weekdays:w       {: RESULT = ScheduleSemantics.onlyOn(e, w); :}
+       | expr:e IF LBRACE weekday_set:w RBRACE {: RESULT = ScheduleSemantics.onlyOn(e, w); :}
        ;
 
 weekdays ::= WEEKDAY:w              {: RESULT = new ArrayList<>(); RESULT.add(w); :}
            | weekdays:list WEEKDAY:w {: list.add(w); RESULT = list; :}
            ;
+
+weekday_set ::= WEEKDAY:w           {: RESULT = new ArrayList<>(); RESULT.add(w); :}
+           | weekday_set:list COMMA WEEKDAY:w {: list.add(w); RESULT = list; :}
+           ;
+
+/* [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out. A series is
+   a date with several values, like an event: the shifts after it apply to each element */
+series ::= start_out:s expr:first COLON period:step COLON expr:last end_out:e
+                {: RESULT = ScheduleSemantics.series(first, step, last, s, e); :}
+         | start_out:s expr:first COLON expr:last end_out:e
+                {: RESULT = ScheduleSemantics.series(first, null, last, s, e); :}
+         ;
+
+start_out ::= LBRACKET              {: RESULT = false; :}
+            | RBRACKET              {: RESULT = true; :}
+            ;
+
+end_out ::= RBRACKET                {: RESULT = false; :}
+          | LBRACKET                {: RESULT = true; :}
+          ;
 
 /* periods are applied from left to right */
 expr ::= date:d                     {: RESULT = d; :}
@@ -118,6 +138,7 @@ date ::= BASE                             {: RESULT = ScheduleSemantics.BASE; :}
        | SPOT PAIR:p                      {: RESULT = ScheduleSemantics.spot(ScheduleSemantics.BASE, p); :}
        | annual:a                         {: RESULT = ScheduleSemantics.inYear(a); :}
        | EVENT:n                          {: RESULT = ScheduleSemantics.event(n); :}             /* @FOMC */
+       | series:s                         {: RESULT = s; :}
        | NUM:y MINUS NUM:m MINUS NUM:d      {: RESULT = ScheduleSemantics.literal(LocalDate.of(y, m, d)); :}   /* ISO */
        | NUM:d DOT NUM:m DOT NUM:y          {: RESULT = ScheduleSemantics.literal(LocalDate.of(y, m, d)); :}   /* German */
        | NUM:m SLASH NUM:d SLASH NUM:y      {: RESULT = ScheduleSemantics.literal(LocalDate.of(y, m, d)); :}   /* US */

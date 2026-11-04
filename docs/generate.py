@@ -45,7 +45,7 @@ TOOLS = [
          snippet=lambda f: between(f, r"# shifts are applied", r"def visitNext"),
          values="Visitor over the parse tree; the grammar has no actions",
          errors="Error listener on lexer and parser that raises",
-         pitfall="Java actions can't be generated into Python, so the grammar is copied without them. The Python target also renames the rule <code>range</code> to <code>range_()</code>."),
+         pitfall="Java actions can't be generated into Python, so the grammar is copied without them. An alternative label may not repeat a rule's name, so <code>&gt; 3RD WED IN MONTH</code> is <code># selectIn</code>, not <code># select</code>."),
     dict(id="combinators", name="Scala combinators", kind="Recursive descent with backtracking", lang="Scala 2.13",
          file="date-rule-combinators/src/main/scala/de/juergens/text/ScheduleParsers.scala",
          snippet=lambda f: between(f, r"def date:", r"def period:") + "\n\n" + between(f, r"def expr:", r"^  }$", True),

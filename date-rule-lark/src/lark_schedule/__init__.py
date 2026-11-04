@@ -19,17 +19,33 @@ class Rules(Transformer):
     def exprs(self, *items):
         return lambda context: [d for item in items for d in semantics.values(item, context) if d is not None]
 
+
     def item(self, expr, *weekdays):
         if not weekdays:
             return expr
         keep = semantics.only_on({str(w) for w in weekdays})
         return lambda context: keep(expr(context))
 
-    def range(self, first, step, last):
+    def series(self, start_out, first, step, last, end_out):
+        step = step or semantics.period(1, "D")
         if not step.is_positive():
             raise ValueError(f"step must be positive: {step}")
-        return lambda context: semantics.expand(semantics.single(first, context), step,
-                                                semantics.single(last, context), context.market)
+        return semantics.series_date(first, step, last, start_out, end_out)
+
+    def element(self, series):
+        return series
+
+    def start_in(self):
+        return False
+
+    def start_out(self):
+        return True
+
+    def end_in(self):
+        return False
+
+    def end_out(self):
+        return True
 
     def expr(self, start, *shifts):
         def at(context):

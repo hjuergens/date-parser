@@ -29,16 +29,32 @@
   }
 
   // thrown by an event date that is not bound to one occurrence yet; values() catches it
+  // thrown by a date with several values (an event, a series) that is not bound to one of them yet; values() catches
+  // it and evaluates the expression once per date of dates(c)
   class Unbound {
-    constructor(name) {
-      this.name = name;
+    constructor(dates) {
+      this.dates = dates;
     }
   }
 
   // @NAME: one occurrence of the event, bound by values()
   function event(name) {
     return (c) => {
-      if (!c.occurrence) throw new Unbound(name);
+      if (!c.occurrence) throw new Unbound((c) => occurrences(name, base(c).year, c));
+      return c.occurrence;
+    };
+  }
+
+  // [first : step : last]: one element of the series, bound by values(), so the shifts after it apply to each
+  function series(first, step, last, startOut, endOut) {
+    return (c) => {
+      if (!c.occurrence) {
+        throw new Unbound((c) => {
+          const start = single(first, c), end = single(last, c);
+          return expand(start, step, end, c.market)
+            .filter((d) => !(startOut && compare(d, start) <= 0 || endOut && compare(d, end) >= 0));
+        });
+      }
       return c.occurrence;
     };
   }
@@ -50,13 +66,14 @@
       .filter((d) => d.year === year).sort(compare);
   }
 
-  // the dates of an expression: one, or one per occurrence in the base year if it starts with an event
+  // the dates of an expression: one, or one per date if it starts with an event (its occurrences in the base year) or
+  // a series (its elements)
   function values(expr, c) {
     try {
       return [expr(c)];
     } catch (e) {
       if (!(e instanceof Unbound)) throw e;
-      return occurrences(e.name, base(c).year, c).map((d) => expr({ ...c, occurrence: d }));
+      return e.dates(c).map((d) => expr({ ...c, occurrence: d }));
     }
   }
 
@@ -384,20 +401,27 @@
 }}
 
 Schedule
-  = _ r:Range _ { return rule(r); }
-  / _ head:Item tail:(_ "," _ @Item)* _ { return rule((c) => [head, ...tail].flatMap((item) => values(item, c)).filter((d) => d !== null)); }
+  = _ head:Item tail:(_ "," _ @Item)* _ { return rule((c) => [head, ...tail].flatMap((item) => values(item, c)).filter((d) => d !== null)); }
 
 // 24 DEC IF MON TUE WED THU: the date only on these weekdays
+// 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays
 Item
-  = expr:Expr _ "IF" days:(_ @Weekday)+ {
+  = expr:Expr _ "IF" days:Weekdays {
       return (c) => { const d = expr(c); return days.includes(WEEKDAYS[weekday(d)]) ? d : null; };
     }
   / Expr
 
-Range
-  = "[" _ first:Expr _ ":" _ step:Period _ ":" _ last:Expr _ "]" {
+Weekdays
+  = _ "{" _ head:Weekday tail:(_ "," _ @Weekday)* _ "}" { return [head, ...tail]; }
+  / (_ @Weekday)+
+
+// [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out. A series is
+// a date with several values, like an event: the shifts after it apply to each element
+Series
+  = open:("[" / "]") _ first:Expr _ ":" _ step:(@Period _ ":" _)? last:Expr _ close:("]" / "[") {
+      step ??= { months: 0, days: 1, business: 0 };
       if (step.months <= 0 && step.days <= 0 && step.business <= 0) throw new RangeError('step must be positive');
-      return (c) => expand(single(first, c), step, single(last, c), c.market);
+      return series(first, step, last, open === ']', close === '[');
     }
 
 // periods are applied from left to right
@@ -464,6 +488,7 @@ Date
   / m:Number _ "/" _ d:Number _ "/" _ y:Number { const value = date(y, m, d); return () => value; }  // US
   / annual:Annual { return (c) => annual(base(c).year); }
   / name:Event { return event(name); }
+  / Series
 
 // dates that recur every year, evaluated in the year of the base date
 Annual

@@ -2,14 +2,22 @@
 //   2015-06-09 + 3M, 09.06.2015, [2015-01-15 : 1Q : 2015-12-31]
 // The same grammar runs with parser="lalr" and parser="earley".
 
-?start: range | exprs
+?start: exprs
 
 exprs: item ("," item)*
 
-// 24 DEC IF MON TUE WED THU: the date only on these weekdays
-item: expr ("IF" WEEKDAY+)?
+// 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays
+item: expr _if?
 
-range: "[" expr ":" period ":" expr "]"
+_if: "IF" (WEEKDAY+ | "{" WEEKDAY ("," WEEKDAY)* "}")
+
+// [a : step : b] is start + k * step up to b, every day without a step; "]" at the start or "[" at the end leaves
+// that endpoint out (ISO 80000-2); the shifts after a series apply to each element
+series: start_bracket expr ":" [period ":"] expr end_bracket
+start_bracket: "[" -> start_in
+             | "]" -> start_out
+end_bracket: "]"   -> end_in
+           | "["   -> end_out
 
 // shifts are applied from left to right
 expr: date shift*
@@ -60,6 +68,7 @@ date: "T"                   -> base
     | NUM "/" NUM "/" NUM   -> us
     | annual                -> in_year
     | EVENT                 -> event
+    | series                -> element
 
 // dates that recur every year, evaluated in the year of the base date
 ?annual: fixed_annual

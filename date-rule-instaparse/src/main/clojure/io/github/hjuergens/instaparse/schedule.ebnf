@@ -3,13 +3,19 @@
    instaparse reads this EBNF at run time and parses with GLL; whitespace between tokens comes from
    :auto-whitespace. <...> hides a rule or token from the tree, so the transform only sees what carries meaning. *)
 
-schedule = range | items
+schedule = items
 items    = item (<','> item)*
 
-(* 24 DEC IF MON TUE WED THU: the date only on these weekdays *)
-item     = expr (<'IF'> WEEKDAY+)?
+(* 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays *)
+item     = expr (<'IF'> (WEEKDAY+ | <'{'> WEEKDAY (<','> WEEKDAY)* <'}'>))?
 
-range    = <'['> expr <':'> period <':'> expr <']'>
+(* [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out. A series is
+   a date with several values, like an event: the shifts after it apply to each element *)
+series   = (closed-start | open-start) expr <':'> (period <':'>)? expr (closed-end | open-end)
+closed-start = <'['>
+open-start   = <']'>
+closed-end   = <']'>
+open-end     = <'['>
 
 (* shifts are applied from left to right *)
 expr     = date shift*
@@ -44,7 +50,7 @@ imm-anchor     = <'IMM'>
 annual-anchor  = annual
 event-anchor   = EVENT
 
-<date>   = base | tom | spot-date | iso | german | us | in-year | event
+<date>   = base | tom | spot-date | iso | german | us | in-year | event | series
 base     = <'T'>
 tom      = <'TOM'>
 spot-date = <'SPOT'> PAIR?

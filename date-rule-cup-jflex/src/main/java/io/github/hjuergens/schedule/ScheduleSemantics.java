@@ -131,13 +131,16 @@ public final class ScheduleSemantics {
         return context -> context.market().spot(expr.at(context), pair);
     }
 
-    /** thrown by an event date that is not bound to one occurrence yet; values() catches it */
+    /**
+     * thrown by a date with several values (an event, a series) that is not bound to one of them yet; values() catches
+     * it and evaluates the expression once per date of {@code dates}
+     */
     private static final class Unbound extends RuntimeException {
-        private final String name;
+        private final java.util.function.Function<Context, List<LocalDate>> dates;
 
-        private Unbound(String name) {
-            super("unbound event " + name, null, false, false);
-            this.name = name;
+        private Unbound(java.util.function.Function<Context, List<LocalDate>> dates) {
+            super("unbound", null, false, false);
+            this.dates = dates;
         }
     }
 
@@ -145,7 +148,28 @@ public final class ScheduleSemantics {
     public static Expr event(String name) {
         return context -> {
             if (context.occurrence() == null) {
-                throw new Unbound(name);
+                throw new Unbound(c -> occurrences(name, BASE.at(c).getYear(), c));
+            }
+            return context.occurrence();
+        };
+    }
+
+    /**
+     * [first : step : last]: one element of the series, bound by values(), so the shifts after it apply to each;
+     * {@code startOut} and {@code endOut} leave an endpoint out (]a : b], [a : b[), a null step is every day
+     */
+    public static Expr series(Expr first, TemporalAmount step, Expr last, boolean startOut, boolean endOut) {
+        TemporalAmount every = step == null ? Period.ofDays(1) : step;
+        if (!isPositive(every)) {
+            throw new IllegalArgumentException("step must be positive: " + every);
+        }
+        return context -> {
+            if (context.occurrence() == null) {
+                throw new Unbound(c -> {
+                    LocalDate start = single(first, c), end = single(last, c);
+                    return range(start, every, end, c.market()).stream()
+                            .filter(date -> !(startOut && !date.isAfter(start) || endOut && !date.isBefore(end))).toList();
+                });
             }
             return context.occurrence();
         };
@@ -161,12 +185,15 @@ public final class ScheduleSemantics {
                 .filter(date -> date.getYear() == year).sorted().toList();
     }
 
-    /** the dates of an expression: one, or one per occurrence in the base year if it starts with an event */
+    /**
+     * the dates of an expression: one, or one per date if it starts with an event (its occurrences in the base year)
+     * or a series (its elements)
+     */
     private static List<LocalDate> values(Expr expr, Context context) {
         try {
             return Collections.singletonList(expr.at(context));
         } catch (Unbound unbound) {
-            return occurrences(unbound.name, BASE.at(context).getYear(), context).stream()
+            return unbound.dates.apply(context).stream()
                     .map(date -> expr.at(new Context(context.base(), context.market(), context.events(), date)))
                     .toList();
         }
@@ -572,14 +599,6 @@ public final class ScheduleSemantics {
             LocalDate date = expr.at(context);
             return days.contains(date.getDayOfWeek()) ? date : null;
         };
-    }
-
-    /** first + k * step for k = 0, 1, ... while not after last */
-    public static Rule range(Expr first, TemporalAmount step, Expr last) {
-        if (!isPositive(step)) {
-            throw new IllegalArgumentException("step must be positive: " + step);
-        }
-        return context -> range(single(first, context), step, single(last, context), context.market());
     }
 
     /** {@code count} times D (day), W (week), M (month), Q (quarter), H (half year), Y (year) or B (business day) */

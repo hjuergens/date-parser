@@ -7,17 +7,18 @@
 grammar DateSchedule;
 
 schedule
-    : range EOF
-    | item (',' item)* EOF
+    : item (',' item)* EOF
     ;
 
-// 24 DEC IF MON TUE WED THU: the date only on these weekdays
+// 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays
 item
-    : expr ('IF' WEEKDAY+)?
+    : expr ('IF' (WEEKDAY+ | '{' WEEKDAY (',' WEEKDAY)* '}'))?
     ;
 
-range
-    : '[' first=expr ':' step=period ':' last=expr ']'
+// [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out (ISO 80000-2).
+// A series is a date with several values, like an event: the shifts after it apply to each element
+series
+    : left=('[' | ']') first=expr ':' (step=period ':')? last=expr right=(']' | '[')
     ;
 
 // shifts are applied from left to right
@@ -81,6 +82,7 @@ date
     | m=NUM '/' d=NUM '/' y=NUM     # us
     | annual                        # inYear
     | EVENT                         # event
+    | series                        # seriesDate
     ;
 
 // dates that recur every year, evaluated in the year of the base date

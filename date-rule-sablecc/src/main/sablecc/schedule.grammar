@@ -59,16 +59,32 @@ Ignored Tokens
 	blank;
 
 Productions
-	schedule
-		= {range} l_bracket [first]:expr [c1]:colon period [c2]:colon [last]:expr r_bracket
-		| {list} item more_item*;
+	schedule = item more_item*;
 
 	more_item = comma item;
 
-	/* 24 DEC IF MON TUE WED THU: the date only on these weekdays */
+	/* 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays */
 	item = expr condition?;
 
-	condition = if weekday+;
+	condition
+		= {plain} if weekday+
+		| {set} if l_brace weekday more_weekday* r_brace;
+
+	more_weekday = comma weekday;
+
+	/* [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out. A series
+	   is a date with several values, like an event: the shifts after it apply to each element */
+	series = start_bracket [first]:expr colon step? [last]:expr end_bracket;
+
+	step = period colon;
+
+	start_bracket
+		= {closed} l_bracket
+		| {open} r_bracket;
+
+	end_bracket
+		= {closed} r_bracket
+		| {open} l_bracket;
 
 	expr = date shift*;
 
@@ -124,6 +140,7 @@ Productions
 		| {spot} spot pair?
 		| {annual} annual
 		| {event} event
+		| {series} series
 		| {iso} [year]:number [s1]:minus [month]:number [s2]:minus [day]:number
 		| {german} [day]:number [s1]:dot [month]:number [s2]:dot [year]:number
 		| {us} [month]:number [s1]:slash [day]:number [s2]:slash [year]:number;

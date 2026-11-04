@@ -235,11 +235,11 @@
     <h1>Twelve parsers, one date language</h1>
     <p class="lead">
       The same small language for dates, periods and ranges, implemented with twelve parser generators and
-      parser libraries, from LL(1) to LALR(1), Earley, GLL and PEG. Every implementation passes the same 374 test cases.
+      parser libraries, from LL(1) to LALR(1), Earley, GLL and PEG. Every implementation passes the same 401 test cases.
     </p>
     <ul class="stats">
       <li><strong>12</strong><span>implementations, 6 languages</span></li>
-      <li><strong>374</strong><span>shared test cases</span></li>
+      <li><strong>401</strong><span>shared test cases</span></li>
       <li><strong>0</strong><span>grammar conflicts</span></li>
       <li><strong>1</strong><span>specification file</span></li>
     </ul>
@@ -256,6 +256,7 @@
           <tr><td>06/09/2015 + 1W - 2D</td><td>2015-06-14 (US notation, left to right)</td></tr>
           <tr><td>2015-06-09, 1.1.2000 + 1Y</td><td>2015-06-09, 2001-01-01</td></tr>
           <tr><td>[2015-01-15 : 1Q : 2015-12-31]</td><td>2015-01-15, -04-15, -07-15, -10-15</td></tr>
+          <tr><td>[2026-01-01 : 3M : 2026-12-31] &gt; EOQ &gt; 3RD WED IN MONTH</td><td>the IMM dates of 2026: shifts apply to each element</td></tr>
           <tr><td>2015-06-12 + 1B</td><td>2015-06-15 (business days)</td></tr>
           <tr><td>2015-06-09 + 3M &gt; IMM</td><td>2015-09-16 (next IMM date)</td></tr>
           <tr><td>2015-06-12 &gt; SPOT USDCAD</td><td>2015-06-15 (FX spot, T+1)</td></tr>
@@ -266,9 +267,11 @@
           <tr><td>T &gt; 2ND LAST BD IN MONTH</td><td>the second-to-last business day in the month of <code>T</code></td></tr>
         </tbody>
       </table>
-      <pre><code>schedule = range | item { "," item } .
-item     = expr [ "IF" WEEKDAY { WEEKDAY } ] .
-range    = "[" expr ":" period ":" expr "]" .
+      <pre><code>schedule = item { "," item } .
+item     = expr [ "IF" ( WEEKDAY { WEEKDAY }
+                       | "{" WEEKDAY { "," WEEKDAY } "}" ) ] .
+series   = ( "[" | "]" ) expr ":" [ period ":" ] expr
+           ( "]" | "[" ) .             <span class="c">(* ]a, b[: endpoint left out *)</span>
 expr     = date { ("+" | "-") period
                | "&gt;" ( "IMM" | "SPOT" [ PAIR ] | ROLL
                        | ("NEXT" | "PREV") [ ORDINAL ] anchor
@@ -286,7 +289,7 @@ date     = "T" | "TOM" | "SPOT" [ PAIR ]
          | NUM ( "-" NUM "-" NUM       <span class="c">(* ISO    *)</span>
                | "." NUM "." NUM       <span class="c">(* German *)</span>
                | "/" NUM "/" NUM )     <span class="c">(* US     *)</span>
-         | annual | EVENT .
+         | annual | EVENT | series .
 annual   = fixed | "LAST" WEEKDAY MONTH .
 fixed    = NUM MONTH                   <span class="c">(* 4 JUL     *)</span>
          | NUM WEEKDAY MONTH           <span class="c">(* 3 MON JAN *)</span>
@@ -451,14 +454,14 @@ def visitSpot(self, ctx):
 def visitRoll(self, ctx):
     convention = ctx.ROLL().getText()
     return lambda d, context: semantics.roll(d, convention, context.market)</code></pre>
-      <p class="pitfall"><strong>Pitfall.</strong> Java actions can't be generated into Python, so the grammar is copied without them. The Python target also renames the rule <code>range</code> to <code>range_()</code>.</p>
+      <p class="pitfall"><strong>Pitfall.</strong> Java actions can't be generated into Python, so the grammar is copied without them. An alternative label may not repeat a rule's name, so <code>&gt; 3RD WED IN MONTH</code> is <code># selectIn</code>, not <code># select</code>.</p>
     </div>
     <div role="tabpanel" id="panel-combinators" aria-labelledby="tab-combinators" hidden>
       <div class="panel-head">
         <span class="kind">Recursive descent with backtracking</span><span class="lang">Scala 2.13</span>
         <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-combinators/src/main/scala/de/juergens/text/ScheduleParsers.scala">ScheduleParsers.scala ↗</a>
       </div>
-      <pre><code>def date: Parser[Context =&gt; LocalDate] = eventName ^^ event | &quot;TOM&quot; ^^^ ((c: Context) =&gt; plusBusinessDays(base(c), 1, c.market)) |
+      <pre><code>def date: Parser[Context =&gt; LocalDate] = series | eventName ^^ event | &quot;TOM&quot; ^^^ ((c: Context) =&gt; plusBusinessDays(base(c), 1, c.market)) |
   &quot;T&quot; ^^^ base |
   &quot;SPOT&quot; ~&gt; opt(pair) ^^ (p =&gt; (c: Context) =&gt; c.market.spot(base(c), p)) |
   annual ^^ (a =&gt; (c: Context) =&gt; a(base(c).getYear)) | number ~ (
@@ -587,6 +590,7 @@ date
     | {spot} spot pair?
     | {annual} annual
     | {event} event
+    | {series} series
     | {iso} [year]:number [s1]:minus [month]:number [s2]:minus [day]:number
     | {german} [day]:number [s1]:dot [month]:number [s2]:dot [year]:number
     | {us} [month]:number [s1]:slash [day]:number [s2]:slash [year]:number;
@@ -763,6 +767,7 @@ date: &quot;T&quot;                   -&gt; base
     | NUM &quot;/&quot; NUM &quot;/&quot; NUM   -&gt; us
     | annual                -&gt; in_year
     | EVENT                 -&gt; event
+    | series                -&gt; element
 
 <span class="c">// dates that recur every year, evaluated in the year of the base date</span>
 ?annual: fixed_annual
@@ -1294,7 +1299,7 @@ observe  = WEEKDAY SIGN period
           <tr><td><code><span class="ctx">[2025-01-01]</span> 3 JUL IF MON TUE WED THU, 24 DEC IF FRI</code></td><td><span class="date">2025-07-03</span></td></tr>
           <tr><td><code><span class="ctx">[2025-01-01]</span> 24 DEC IF WED, 25 DEC</code></td><td><span class="date">2025-12-24</span>, <span class="date">2025-12-25</span></td></tr>
           <tr><td><code><span class="ctx">[2025-01-01]</span> 24 DEC IF</code></td><td><span class="err">error</span></td></tr>
-          <tr><td><code><span class="ctx">[2025-01-01]</span> [24 DEC : 1D : 26 DEC] IF WED</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> [24 DEC : 1D : 26 DEC] IF WED</code></td><td><span class="date">2025-12-24</span></td></tr>
         </tbody>
       </table>
       </section>
@@ -1437,6 +1442,40 @@ observe  = WEEKDAY SIGN period
           <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; LAST LAST FRI IN MONTH</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; 3RD WED MONTH</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code>4 JUL &gt; 1ST WED IN MONTH</code></td><td><span class="err">error</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>series and intervals</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code>[2026-01-30 : 2026-02-02]</code></td><td><span class="date">2026-01-30</span>, <span class="date">2026-01-31</span>, <span class="date">2026-02-01</span>, <span class="date">2026-02-02</span></td></tr>
+          <tr><td><code>]2026-01-30 : 2026-02-02]</code></td><td><span class="date">2026-01-31</span>, <span class="date">2026-02-01</span>, <span class="date">2026-02-02</span></td></tr>
+          <tr><td><code>[2026-01-30 : 2026-02-02[</code></td><td><span class="date">2026-01-30</span>, <span class="date">2026-01-31</span>, <span class="date">2026-02-01</span></td></tr>
+          <tr><td><code>]2026-01-30 : 2026-02-02[</code></td><td><span class="date">2026-01-31</span>, <span class="date">2026-02-01</span></td></tr>
+          <tr><td><code>[2026-01-01 : 1W : 2026-01-29[</code></td><td><span class="date">2026-01-01</span>, <span class="date">2026-01-08</span>, <span class="date">2026-01-15</span>, <span class="date">2026-01-22</span></td></tr>
+          <tr><td><code>]2026-01-01 : 1W : 2026-01-29]</code></td><td><span class="date">2026-01-08</span>, <span class="date">2026-01-15</span>, <span class="date">2026-01-22</span>, <span class="date">2026-01-29</span></td></tr>
+          <tr><td><code>]2026-01-01 : 2026-01-01]</code></td><td><span class="none">empty list</span></td></tr>
+          <tr><td><code>[2026-01-01 : 2026-01-01[</code></td><td><span class="none">empty list</span></td></tr>
+          <tr><td><code>[2026-01-01 : 2026-01-01]</code></td><td><span class="date">2026-01-01</span></td></tr>
+          <tr><td><code>[2026-01-02 : 2026-01-01]</code></td><td><span class="none">empty list</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01 : 3M : 2026-12-31]</span> &gt; EOQ &gt; 3RD WED IN MONTH</code></td><td><span class="date">2026-03-18</span>, <span class="date">2026-06-17</span>, <span class="date">2026-09-16</span>, <span class="date">2026-12-16</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01 : 1M : 2026-03-31]</span> &gt; EOQ</code></td><td><span class="date">2026-03-31</span>, <span class="date">2026-03-31</span>, <span class="date">2026-03-31</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01 XNYS]</span> [T : 1D : T + 2D] + 1B</code></td><td><span class="date">2026-01-02</span>, <span class="date">2026-01-05</span>, <span class="date">2026-01-05</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01 XNYS]</span> [T : 1M : T + 5M] &gt; EOM &gt; PRECEDING</code></td><td><span class="date">2026-01-30</span>, <span class="date">2026-02-27</span>, <span class="date">2026-03-31</span>, <span class="date">2026-04-30</span>, <span class="date">2026-05-29</span>, <span class="date">2026-06-30</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01]</span> [T : T + 30D] IF MON, 25 DEC</code></td><td><span class="date">2026-01-05</span>, <span class="date">2026-01-12</span>, <span class="date">2026-01-19</span>, <span class="date">2026-01-26</span>, <span class="date">2026-12-25</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01]</span> [T : T + 9D] IF {SAT, SUN}</code></td><td><span class="date">2026-01-03</span>, <span class="date">2026-01-04</span>, <span class="date">2026-01-10</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01]</span> 24 DEC IF {MON, TUE, WED, THU}</code></td><td><span class="date">2026-12-24</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01]</span> 26 DEC IF {MON, TUE, WED, THU}</code></td><td><span class="none">empty list</span></td></tr>
+          <tr><td><code>2026-01-01, [2026-01-05 : 2026-01-06], 2026-01-02</code></td><td><span class="date">2026-01-01</span>, <span class="date">2026-01-05</span>, <span class="date">2026-01-06</span>, <span class="date">2026-01-02</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> [@THANKSGIVING : @THANKSGIVING + 3D] IF {FRI}</code></td><td><span class="date">2025-11-28</span></td></tr>
+          <tr><td><code>[2026-01-01 : 2026-01-05</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>[2026-01-01 : : 2026-01-05]</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01 : 1D : 2026-01-05]</span> + 4 JUL</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01]</span> 24 DEC IF {}</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01]</span> 24 DEC IF {MON TUE}</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>[2026-01-01 : 1M]</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01 : 2026-01-05]</span> [2026-01-06 : 2026-01-07]</code></td><td><span class="err">error</span></td></tr>
         </tbody>
       </table>
       </section>
@@ -1587,7 +1626,7 @@ observe  = WEEKDAY SIGN period
           <tr><td><code><span class="ctx">[2015-06-09]</span> T T</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code>2015-06-09 + 2b</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code>2015-06-09 &gt; 2B</code></td><td><span class="err">error</span></td></tr>
-          <tr><td><code>[2015-01-01 : 1M : 2015-02-01], 2015-03-01</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code>[2015-01-01 : 1M : 2015-02-01], 2015-03-01</code></td><td><span class="date">2015-01-01</span>, <span class="date">2015-02-01</span>, <span class="date">2015-03-01</span></td></tr>
           <tr><td><code><em>(empty input)</em></code></td><td><span class="err">error</span></td></tr>
         </tbody>
       </table>
@@ -1681,16 +1720,32 @@ docker run --rm -v "$PWD:/work" -w /work/date-rule-flex-bison date-rule-flex-bis
   }
 
   // thrown by an event date that is not bound to one occurrence yet; values() catches it
+  // thrown by a date with several values (an event, a series) that is not bound to one of them yet; values() catches
+  // it and evaluates the expression once per date of dates(c)
   class Unbound {
-    constructor(name) {
-      this.name = name;
+    constructor(dates) {
+      this.dates = dates;
     }
   }
 
   // @NAME: one occurrence of the event, bound by values()
   function event(name) {
     return (c) => {
-      if (!c.occurrence) throw new Unbound(name);
+      if (!c.occurrence) throw new Unbound((c) => occurrences(name, base(c).year, c));
+      return c.occurrence;
+    };
+  }
+
+  // [first : step : last]: one element of the series, bound by values(), so the shifts after it apply to each
+  function series(first, step, last, startOut, endOut) {
+    return (c) => {
+      if (!c.occurrence) {
+        throw new Unbound((c) => {
+          const start = single(first, c), end = single(last, c);
+          return expand(start, step, end, c.market)
+            .filter((d) => !(startOut && compare(d, start) <= 0 || endOut && compare(d, end) >= 0));
+        });
+      }
       return c.occurrence;
     };
   }
@@ -1702,13 +1757,14 @@ docker run --rm -v "$PWD:/work" -w /work/date-rule-flex-bison date-rule-flex-bis
       .filter((d) => d.year === year).sort(compare);
   }
 
-  // the dates of an expression: one, or one per occurrence in the base year if it starts with an event
+  // the dates of an expression: one, or one per date if it starts with an event (its occurrences in the base year) or
+  // a series (its elements)
   function values(expr, c) {
     try {
       return [expr(c)];
     } catch (e) {
       if (!(e instanceof Unbound)) throw e;
-      return occurrences(e.name, base(c).year, c).map((d) => expr({ ...c, occurrence: d }));
+      return e.dates(c).map((d) => expr({ ...c, occurrence: d }));
     }
   }
 
@@ -2036,20 +2092,27 @@ docker run --rm -v "$PWD:/work" -w /work/date-rule-flex-bison date-rule-flex-bis
 }}
 
 Schedule
-  = _ r:Range _ { return rule(r); }
-  / _ head:Item tail:(_ "," _ @Item)* _ { return rule((c) => [head, ...tail].flatMap((item) => values(item, c)).filter((d) => d !== null)); }
+  = _ head:Item tail:(_ "," _ @Item)* _ { return rule((c) => [head, ...tail].flatMap((item) => values(item, c)).filter((d) => d !== null)); }
 
 // 24 DEC IF MON TUE WED THU: the date only on these weekdays
+// 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays
 Item
-  = expr:Expr _ "IF" days:(_ @Weekday)+ {
+  = expr:Expr _ "IF" days:Weekdays {
       return (c) => { const d = expr(c); return days.includes(WEEKDAYS[weekday(d)]) ? d : null; };
     }
   / Expr
 
-Range
-  = "[" _ first:Expr _ ":" _ step:Period _ ":" _ last:Expr _ "]" {
+Weekdays
+  = _ "{" _ head:Weekday tail:(_ "," _ @Weekday)* _ "}" { return [head, ...tail]; }
+  / (_ @Weekday)+
+
+// [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out. A series is
+// a date with several values, like an event: the shifts after it apply to each element
+Series
+  = open:("[" / "]") _ first:Expr _ ":" _ step:(@Period _ ":" _)? last:Expr _ close:("]" / "[") {
+      step ??= { months: 0, days: 1, business: 0 };
       if (step.months <= 0 && step.days <= 0 && step.business <= 0) throw new RangeError('step must be positive');
-      return (c) => expand(single(first, c), step, single(last, c), c.market);
+      return series(first, step, last, open === ']', close === '[');
     }
 
 // periods are applied from left to right
@@ -2116,6 +2179,7 @@ Date
   / m:Number _ "/" _ d:Number _ "/" _ y:Number { const value = date(y, m, d); return () => value; }  // US
   / annual:Annual { return (c) => annual(base(c).year); }
   / name:Event { return event(name); }
+  / Series
 
 // dates that recur every year, evaluated in the year of the base date
 Annual

@@ -28,9 +28,6 @@ class Rules(DateScheduleVisitor):
     """builds the rule top-down: each visit returns a function of the context (shifts: of date and context)"""
 
     def visitSchedule(self, ctx):
-        # Python target: the rule "range" becomes range_(), it would shadow the builtin
-        if ctx.range_():
-            return self.visit(ctx.range_())
         items = [self.visit(item) for item in ctx.item()]
         return lambda context: [d for item in items for d in semantics.values(item, context) if d is not None]
 
@@ -41,12 +38,15 @@ class Rules(DateScheduleVisitor):
         keep = semantics.only_on({w.getText() for w in ctx.WEEKDAY()})
         return lambda context: keep(expr(context))
 
-    def visitRange(self, ctx):
-        first, step, last = self.visit(ctx.first), self.visit(ctx.step), self.visit(ctx.last)
+    def visitSeriesDate(self, ctx):
+        return self.visit(ctx.series())
+
+    def visitSeries(self, ctx):
+        step = self.visit(ctx.step) if ctx.step else semantics.period(1, "D")
         if not step.is_positive():
             raise ValueError(f"step must be positive: {step}")
-        return lambda context: semantics.expand(semantics.single(first, context), step,
-                                                semantics.single(last, context), context.market)
+        return semantics.series_date(self.visit(ctx.first), step, self.visit(ctx.last),
+                                     ctx.left.text == "]", ctx.right.text == "[")
 
     # shifts are applied from left to right
     def visitExpr(self, ctx):

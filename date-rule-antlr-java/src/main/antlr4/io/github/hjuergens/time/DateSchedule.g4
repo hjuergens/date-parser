@@ -17,8 +17,7 @@ grammar DateSchedule;
 }
 
 schedule returns [Rule result]
-    : range EOF                     { $result = $range.result; }
-    | e+=item (',' e+=item)* EOF
+    : e+=item (',' e+=item)* EOF
       {
           List<Expr> exprs = new ArrayList<>();
           for (ItemContext item : $e) exprs.add(item.value);
@@ -26,10 +25,10 @@ schedule returns [Rule result]
       }
     ;
 
-// 24 DEC IF MON TUE WED THU: the date only on these weekdays
+// 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays
 item returns [Expr value]
     : expr                          { $value = $expr.value; }
-      ( 'IF' (w+=WEEKDAY)+
+      ( 'IF' ((w+=WEEKDAY)+ | '{' w+=WEEKDAY (',' w+=WEEKDAY)* '}')
         {
             List<String> weekdays = new ArrayList<>();
             for (Token weekday : $w) weekdays.add(weekday.getText());
@@ -38,9 +37,15 @@ item returns [Expr value]
       )?
     ;
 
-range returns [Rule result]
-    : '[' first=expr ':' step=period ':' last=expr ']'
-      { $result = ScheduleSemantics.range($first.value, $step.value, $last.value); }
+// [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out (ISO 80000-2).
+// A series is a date with several values, like an event: the shifts after it apply to each element
+series returns [Expr value]
+locals [boolean startOut, boolean endOut]
+    : ('[' | ']'                    { $startOut = true; }
+      ) first=expr ':' (step=period ':')? last=expr
+      (']' | '['                    { $endOut = true; }
+      )                             { $value = ScheduleSemantics.series($first.value, $step.ctx == null ? null : $step.value,
+                                                                        $last.value, $startOut, $endOut); }
     ;
 
 // periods are applied from left to right
@@ -128,6 +133,7 @@ date returns [Expr value]
     | spot                          { $value = ScheduleSemantics.spot(ScheduleSemantics.BASE, $spot.pair); }
     | annual                        { $value = ScheduleSemantics.inYear($annual.value); }
     | EVENT                         { $value = ScheduleSemantics.event($EVENT.text.substring(1)); }
+    | series                        { $value = $series.value; }
     | y=NUM '-' m=NUM '-' d=NUM     { $value = ScheduleSemantics.literal(LocalDate.of($y.int, $m.int, $d.int)); }  // ISO
     | d=NUM '.' m=NUM '.' y=NUM     { $value = ScheduleSemantics.literal(LocalDate.of($y.int, $m.int, $d.int)); }  // German
     | m=NUM '/' d=NUM '/' y=NUM     { $value = ScheduleSemantics.literal(LocalDate.of($y.int, $m.int, $d.int)); }  // US

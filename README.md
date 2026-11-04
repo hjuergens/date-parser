@@ -18,18 +18,18 @@ Planned additions are in [TODO.md](TODO.md).
 
 | Module | Technology | Parser type | Language | What works | Tests |
 |---|---|---|---|---|---|
-| [date-rule-antlr-java](date-rule-antlr-java/README.md) | ANTLR 4.13 | ALL(*) (adaptive LL) | Java grammars, Joda-Time | **Most complete.** Periods (`14M7W9D`), shifts and selectors (`+3M1W`, `>>>wednesday`, `>Q`), term structures, lists, ISO and other date formats, iCalendar | 5985 TestNG + 3 specs2 IT |
-| [date-rule-combinators](date-rule-combinators/README.md) | Scala parser combinators 2.x | Recursive descent with backtracking | Scala 2.13, `java.time` | **Natural language:** "next thursday", "three weeks ago", "last monday in month", "2 London business days prior to the 3rd Wednesday …", seasons, business days | 158 JUnit/TestNG + 5925 ScalaTest |
-| [date-rule-coco](date-rule-coco/README.md) | Coco/R | LL(1) | Java | Date lists in ISO, German, and US notation → `LocalDate` | 5913 TestNG |
-| [date-rule-javacc](date-rule-javacc/README.md) | JavaCC (ParserGeneratorCC) | LL(k) | Java | Brace-matching demo grammar, JUnit 4 experiments | 5918 JUnit (+5 ignored) |
-| [date-rule-sablecc](date-rule-sablecc/README.md) | SableCC 2 | LALR(1) with typed AST | Java | Arithmetic expressions, AST walker and evaluator | 5918 TestNG |
-| [date-rule-cup-jflex](date-rule-cup-jflex/README.md) | JFlex 1.9 + CUP 11b | LALR(1) | Java | Pascal-subset lexer (its CUP grammar is a skeleton); complete CUP parser for the shared example | 5914 TestNG |
-| [date-rule-bison](date-rule-bison/README.md) | GNU Bison 3 (Java skeleton) | LALR(1) | Java | Infix calculator with error recovery. **Requires `bison`**; the module is empty without it | 5915 TestNG |
-| [date-rule-flex-bison](date-rule-flex-bison/README.md) | Flex 2.6 + GNU Bison 3.8 (C skeleton) | LALR(1) | C11, Go via SWIG | The shared example; reentrant scanner and pure parser, the actions build a syntax tree that a C evaluator walks. A SWIG binding runs it from Go. Builds in Docker | 5907 cases + 5907 Go subtests |
-| [date-rule-peg](date-rule-peg/README.md) | Peggy (PEG.js successor) | PEG (packrat) | JavaScript | `(start:step:end)` range lists | 5912 `node:test` |
-| [date-rule-lark](date-rule-lark/README.md) | Lark 1.3 | Earley and LALR(1), one grammar | Python | The shared example, every case with both algorithms | 11814 pytest |
-| [date-rule-antlr-python](date-rule-antlr-python/README.md) | ANTLR 4.13, Python target | ALL(*) (adaptive LL) | Python | The shared example; grammar without actions, plus a visitor | 5907 pytest |
-| [date-rule-instaparse](date-rule-instaparse/README.md) | instaparse 1.5 | GLL (any context-free grammar) | Clojure 1.12 | The shared example; EBNF grammar read at run time, `insta/transform` onto the shared Java helper | 5907 TestNG |
+| [date-rule-antlr-java](date-rule-antlr-java/README.md) | ANTLR 4.13 | ALL(*) (adaptive LL) | Java grammars, Joda-Time | **Most complete.** Periods (`14M7W9D`), shifts and selectors (`+3M1W`, `>>>wednesday`, `>Q`), term structures, lists, ISO and other date formats, iCalendar | 6012 TestNG + 3 specs2 IT |
+| [date-rule-combinators](date-rule-combinators/README.md) | Scala parser combinators 2.x | Recursive descent with backtracking | Scala 2.13, `java.time` | **Natural language:** "next thursday", "three weeks ago", "last monday in month", "2 London business days prior to the 3rd Wednesday …", seasons, business days | 158 JUnit/TestNG + 5952 ScalaTest |
+| [date-rule-coco](date-rule-coco/README.md) | Coco/R | LL(1) | Java | Date lists in ISO, German, and US notation → `LocalDate` | 5940 TestNG |
+| [date-rule-javacc](date-rule-javacc/README.md) | JavaCC (ParserGeneratorCC) | LL(k) | Java | Brace-matching demo grammar, JUnit 4 experiments | 5945 JUnit (+5 ignored) |
+| [date-rule-sablecc](date-rule-sablecc/README.md) | SableCC 2 | LALR(1) with typed AST | Java | Arithmetic expressions, AST walker and evaluator | 5945 TestNG |
+| [date-rule-cup-jflex](date-rule-cup-jflex/README.md) | JFlex 1.9 + CUP 11b | LALR(1) | Java | Pascal-subset lexer (its CUP grammar is a skeleton); complete CUP parser for the shared example | 5941 TestNG |
+| [date-rule-bison](date-rule-bison/README.md) | GNU Bison 3 (Java skeleton) | LALR(1) | Java | Infix calculator with error recovery. **Requires `bison`**; the module is empty without it | 5942 TestNG |
+| [date-rule-flex-bison](date-rule-flex-bison/README.md) | Flex 2.6 + GNU Bison 3.8 (C skeleton) | LALR(1) | C11, Go via SWIG | The shared example; reentrant scanner and pure parser, the actions build a syntax tree that a C evaluator walks. A SWIG binding runs it from Go. Builds in Docker | 5934 cases + 5934 Go subtests |
+| [date-rule-peg](date-rule-peg/README.md) | Peggy (PEG.js successor) | PEG (packrat) | JavaScript | `(start:step:end)` range lists | 5939 `node:test` |
+| [date-rule-lark](date-rule-lark/README.md) | Lark 1.3 | Earley and LALR(1), one grammar | Python | The shared example, every case with both algorithms | 11868 pytest |
+| [date-rule-antlr-python](date-rule-antlr-python/README.md) | ANTLR 4.13, Python target | ALL(*) (adaptive LL) | Python | The shared example; grammar without actions, plus a visitor | 5934 pytest |
+| [date-rule-instaparse](date-rule-instaparse/README.md) | instaparse 1.5 | GLL (any context-free grammar) | Clojure 1.12 | The shared example; EBNF grammar read at run time, `insta/transform` onto the shared Java helper | 5934 TestNG |
 
 Each module also implements the [shared schedule example](#shared-example-schedule), so all twelve implementations
 can be compared on the same language. Each module README has a section on how its tool handles it.
@@ -49,7 +49,9 @@ A small date language that every tool can handle (no left recursion is needed, a
 06/09/2015 + 1W - 2D                periods applied left to right (US notation)
 2015-06-12 + 1B                     business days: 2015-06-15, the Monday after
 2015-06-09, 01.01.2000 + 1Y         a list of expressions
-[2015-01-15 : 1Q : 2015-12-31]      range: start, step, end
+[2015-01-15 : 1Q : 2015-12-31]      series: start, step, end
+[2026-01-30 : 2026-02-02[           every day, the end left out ("]" at the start leaves the start out)
+[2026-01-01 : 3M : 2026-12-31] > EOQ > 3RD WED IN MONTH   shifts apply to each element: the IMM dates of 2026
 2015-06-09 + 3M > IMM               next IMM date (third Wednesday of Mar/Jun/Sep/Dec)
 2015-06-12 > SPOT USDCAD            FX spot date (T+1 for USD/CAD, otherwise T+2)
 T + 2B                              two business days after the base date, in the market of the evaluation
@@ -68,9 +70,9 @@ EQUINOX MAR UTC+9, SOLARTERM 5 UTC+8  Japan's Vernal Equinox Day, Qingming: the 
 ```
 
 ```
-schedule = range | item { "," item } .
-item     = expr [ "IF" WEEKDAY { WEEKDAY } ] .                               (* no date on other weekdays *)
-range    = "[" expr ":" period ":" expr "]" .
+schedule = item { "," item } .
+item     = expr [ "IF" ( WEEKDAY { WEEKDAY } | "{" WEEKDAY { "," WEEKDAY } "}" ) ] .   (* no date on other weekdays *)
+series   = ( "[" | "]" ) expr ":" [ period ":" ] expr ( "]" | "[" ) .        (* "]a" and "b[" leave out the endpoint *)
 expr     = date { ("+" | "-") period
                 | ">" ( "IMM" | "SPOT" [ PAIR ] | ROLL | ("NEXT" | "PREV") [ ORDINAL ] anchor
                       | count select "IN" PERIOD )                           (* > 3RD WED IN MONTH *)
@@ -83,7 +85,7 @@ select   = chosen | "{" target { "," target } "}" .                    (* LAST M
 chosen   = WEEKDAY | "BD" | "IMM" | fixed | EVENT .
 date     = "T" | "TOM" | "SPOT" [ PAIR ]                                     (* base date, T + 1B, spot of T *)
          | NUM ( "-" NUM "-" NUM | "." NUM "." NUM | "/" NUM "/" NUM )       (* ISO, German, US *)
-         | annual | EVENT .                                                (* EVENT: every date of the event in T's year *)
+         | annual | EVENT | series .                                     (* EVENT, series: one value per date *)
 annual   = fixed | "LAST" WEEKDAY MONTH .                                   (* in the year of the base date *)
 fixed    = NUM MONTH | NUM WEEKDAY MONTH | "EASTER"
          | ("EQUINOX" | "SOLSTICE") MONTH [ ZONE ] | "SOLARTERM" NUM [ ZONE ] .
@@ -116,7 +118,8 @@ As with an inflection, a category the language has must be marked: a period alwa
 
 Periods follow `java.time`: months first (with the day clamped to the end of the month, so `2016-01-31 + 1M` is `2016-02-29`), then days.
 `B` counts business days, Monday to Friday; `- 1B` counts backwards and `+ 0B` leaves even a Saturday as it is.
-A range yields `start + k * step` while the date isn't after the end.
+A series yields `start + k * step` while the date isn't after the end, every day without a step; like an event it is a date
+with several values, so the shifts after it apply to each element.
 `> IMM` moves to the next IMM date strictly after the date (QuantLib's `IMM::nextDate` convention), so `2015-06-17 > IMM` is `2015-09-16`.
 `> SPOT` moves to the FX spot date: `+ 1B` for USD against CAD, TRY, PHP or RUB, `+ 2B` for every other pair
 or without a pair.
@@ -186,7 +189,7 @@ that isn't declared is an error, and so is an event with several dates at the en
 once per date of its event: the event's date throws until the item binds it, which needs no change to how the twelve grammars build
 expressions.
 
-All implementations are tested against the same 374 cases in [examples/schedule.txt](examples/schedule.txt),
+All implementations are tested against the same 401 cases in [examples/schedule.txt](examples/schedule.txt),
 including invalid dates and syntax errors, 2186 cases in [examples/catalog.txt](examples/catalog.txt) and 3347 in
 [examples/date-holidays.txt](examples/date-holidays.txt). Each module has a test that reads all three files. The second one is generated by [scripts/catalog_cases.py](scripts/catalog_cases.py) from the holiday rule catalog of the
 holidays-events project: every rule the language can express (88 of 151) is translated into a schedule and evaluated for 2020 to 2030,

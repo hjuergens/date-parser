@@ -64,7 +64,7 @@ TOKEN : {
 Rule Input() :
 { Rule rule; }
 {
-  ( rule = Range() | rule = Exprs() ) <EOF>
+  rule = Exprs() <EOF>
   { return rule; }
 }
 
@@ -76,20 +76,32 @@ Rule Exprs() :
   { return ScheduleSemantics.list(exprs); }
 }
 
-/** 24 DEC IF MON TUE WED THU: the date only on these weekdays */
+/** 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays */
 ScheduleSemantics.Expr Item() :
 { ScheduleSemantics.Expr d; Token w; List<String> weekdays = new ArrayList<String>(); }
 {
   d = Expr()
-  ( "IF" ( w = <WEEKDAY> { weekdays.add(w.image); } )+ { d = ScheduleSemantics.onlyOn(d, weekdays); } )?
+  ( "IF"
+    ( ( w = <WEEKDAY> { weekdays.add(w.image); } )+
+    | "{" w = <WEEKDAY> { weekdays.add(w.image); } ( "," w = <WEEKDAY> { weekdays.add(w.image); } )* "}"
+    )
+    { d = ScheduleSemantics.onlyOn(d, weekdays); }
+  )?
   { return d; }
 }
 
-Rule Range() :
-{ ScheduleSemantics.Expr first, last; TemporalAmount step; }
+/**
+ * [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out. A series is a
+ * date with several values, like an event: the shifts after it apply to each element. After the first ":" a number
+ * starts the step (1D) or the end (3 MAR), so the step needs a lookahead of two tokens.
+ */
+ScheduleSemantics.Expr Series() :
+{ ScheduleSemantics.Expr first, last; TemporalAmount step = null; boolean startOut = false, endOut = false; }
 {
-  "[" first = Expr() ":" step = Period() ":" last = Expr() "]"
-  { return ScheduleSemantics.range(first, step, last); }
+  ( "[" | "]" { startOut = true; } )
+  first = Expr() ":" ( LOOKAHEAD(2) step = Period() ":" )? last = Expr()
+  ( "]" | "[" { endOut = true; } )
+  { return ScheduleSemantics.series(first, step, last, startOut, endOut); }
 }
 
 /** periods are applied from left to right */
@@ -176,7 +188,7 @@ ScheduleSemantics.Anchor Chosen() :
 }
 
 ScheduleSemantics.Expr Date() :
-{ int a, b, c; String pair; ScheduleSemantics.Annual an; Token e; }
+{ int a, b, c; String pair; ScheduleSemantics.Annual an; Token e; ScheduleSemantics.Expr d; }
 {
   "T" { return ScheduleSemantics.BASE; }   // the base date
 | "TOM" { return ScheduleSemantics.plus(ScheduleSemantics.BASE, ScheduleSemantics.period(1, "B")); }
@@ -189,6 +201,7 @@ ScheduleSemantics.Expr Date() :
   )
 | an = AnnualWord() { return ScheduleSemantics.inYear(an); }
 | e = <EVENT> { return ScheduleSemantics.event(e.image.substring(1)); }
+| d = Series() { return d; }
 }
 
 ScheduleSemantics.Annual AnnualTail(int n) :

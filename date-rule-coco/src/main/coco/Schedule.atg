@@ -18,6 +18,14 @@ COMPILER Schedule
 
   private final List<ScheduleSemantics.Expr> exprs = new ArrayList<>();
 
+  // [a : 1D : b] or [a : b]: after the first ":" a number starts the step (1D) or the end (3 MAR, 2026-03-31); LL(1)
+  // can't tell, so this resolver looks at the token after the number
+  private boolean isStep() {
+    scanner.ResetPeek();
+    Token next = scanner.Peek();
+    return la.kind == _number && next.val.length() == 1 && "DWMQHYB".contains(next.val);
+  }
+
   // error recovery may still run semantic actions, so they must not fail on garbage
   private ScheduleSemantics.Expr date(int year, int month, int day) {
     try {
@@ -45,26 +53,36 @@ IGNORE '\t' + '\r' + '\n'
 PRODUCTIONS
 
   Schedule                                (. ScheduleSemantics.Expr d; .)
-  = Range
-  | Item<out d>                           (. exprs.add(d); .)
+  = Item<out d>                           (. exprs.add(d); .)
     { "," Item<out d>                     (. exprs.add(d); .)
     }                                     (. rule = ScheduleSemantics.list(exprs); .)
   .
 
-  /* 24 DEC IF MON TUE WED THU: the date only on these weekdays */
+  /* 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays */
   Item<out ScheduleSemantics.Expr d>      (. String w; List<String> weekdays = new ArrayList<>(); .)
   = Expr<out d>
-    [ "IF" Weekday<out w>                 (. weekdays.add(w); .)
-      { Weekday<out w>                    (. weekdays.add(w); .)
-      }                                   (. d = ScheduleSemantics.onlyOn(d, weekdays); .)
+    [ "IF"
+      ( Weekday<out w>                    (. weekdays.add(w); .)
+        { Weekday<out w>                  (. weekdays.add(w); .)
+        }
+      | "{" Weekday<out w>                (. weekdays.add(w); .)
+        { "," Weekday<out w>              (. weekdays.add(w); .)
+        } "}"
+      )                                   (. d = ScheduleSemantics.onlyOn(d, weekdays); .)
     ]
   .
 
-  Range                                   (. ScheduleSemantics.Expr first, last; TemporalAmount step; .)
-  = "[" Expr<out first> ":" Period<out step> ":" Expr<out last> "]"
-                                          (. if (errors.count > 0) return;
-                                             if (!ScheduleSemantics.isPositive(step)) SemErr("step must be positive: " + step);
-                                             else rule = ScheduleSemantics.range(first, step, last); .)
+  /* [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out. A series is
+     a date with several values, like an event: the shifts after it apply to each element */
+  Series<out ScheduleSemantics.Expr d>    (. ScheduleSemantics.Expr first, last; TemporalAmount step = null;
+                                             boolean startOut = false, endOut = false; d = ScheduleSemantics.BASE; .)
+  = ( "[" | "]"                           (. startOut = true; .)
+    ) Expr<out first> ":"
+    [ IF(isStep()) Period<out step> ":" ]
+    Expr<out last>
+    ( "]" | "["                           (. endOut = true; .)
+    )                                     (. try { d = ScheduleSemantics.series(first, step, last, startOut, endOut); }
+                                             catch (IllegalArgumentException e) { SemErr(e.getMessage()); } .)
   .
 
   Expr<out ScheduleSemantics.Expr d>      (. TemporalAmount p; String code; ScheduleSemantics.Anchor a; int n;
@@ -165,6 +183,7 @@ PRODUCTIONS
     )
   | AnnualWord<out an>                    (. d = ScheduleSemantics.inYear(an); .)
   | event                                 (. d = ScheduleSemantics.event(t.val.substring(1)); .)
+  | Series<out d>
   .
 
   AnnualTail<out ScheduleSemantics.Annual an, int n> (. String w, m; an = ScheduleSemantics.EASTER; .)

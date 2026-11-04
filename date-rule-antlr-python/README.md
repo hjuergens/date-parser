@@ -41,19 +41,19 @@ uv run pytest
   so generating a Python parser still needs a JDK (mise provides one). Without `java` on the `PATH` it asks to install a JRE.
 - The runtime `antlr4-python3-runtime` must have exactly the tool's version (4.13.2).
 - The generated sources in `src/antlr_schedule/generated` are not checked in.
-- There are 5907 tests (pytest), one per case of [examples/schedule.txt](../examples/schedule.txt), [examples/catalog.txt](../examples/catalog.txt) and [examples/date-holidays.txt](../examples/date-holidays.txt).
+- There are 5934 tests (pytest), one per case of [examples/schedule.txt](../examples/schedule.txt), [examples/catalog.txt](../examples/catalog.txt) and [examples/date-holidays.txt](../examples/date-holidays.txt).
 
 ## Shared example
 
 - [`__init__.py`](src/antlr_schedule/__init__.py): `Rules(DateScheduleVisitor)` returns a function of the context from every visit;
   labeled alternatives (`# plus`, `# spot`, `# iso`, …) give one `visit…` method each.
 - An error listener on lexer and parser raises `ScheduleSyntaxError`; the default one only prints and recovers.
-- The Python target renames the rule `range` to `range_()`, because it would shadow the builtin.
 - [semantics.py](src/antlr_schedule/semantics.py) is a copy of the Lark module's file (modules stay independent).
 - Holiday rules and rolling: the date alternative `annual # inYear` and the anchor `annual # annualAnchor` share one rule; `MONTH`, `WEEKDAY` and `ROLL` are lexer rules. The keyword `'EASTER'` wins over the six-letter `PAIR`, as ANTLR defines implicit literals first.
 - Lunar months and conditional dates: Lunar month names (`1 SHAWWAL`, `10 TISHRI`, `1 ZHENGYUE`) are more alternatives of `MONTH`, defined before `PAIR` like `'EASTER'`; `item : expr ('IF' WEEKDAY+)?` wraps each list item, and the visitor leaves out the items without a date.
 - Ordinals and sets (`> NEXT 3RD FRI`, `> NEXT {MON, FRI}`): the lexer rule `ORDINAL : [0-9]+ ('ST' | 'ND' | 'RD' | 'TH')` wins over `NUM` by the longer match; `'NEXT' ORDINAL? anchor`, and `anchor` is `# singleAnchor` or `# anyOf`.
 - Selection (`> 3RD WED IN MONTH`): the alternative label can't be `# select`, the name of a rule (error 124), so it is `# selectIn`.
+- Series (`[a : step : b]`): the target renames labels that shadow a Python builtin (`open` becomes `open_`), as it did with the old rule `range`, so the brackets are labelled `left` and `right`.
 - Named events: the lexer rule `EVENT : '@' [A-Z] [A-Z0-9_]*` is one more alternative of `date` (`# event`) and `anchor` (`# eventAnchor`); shifts now receive the whole context, as `> NEXT @FOMC` needs the events.
 
 ## Status

@@ -51,8 +51,9 @@
 %token SOLARTERM "SOLARTERM"
 %token <Integer> ZONE "time zone"
 %type <Integer> zone count
-%type <Expr> item expr date
-%type <ArrayList<String>> weekdays
+%type <Expr> item expr date series
+%type <Boolean> start_out end_out
+%type <ArrayList<String>> weekdays weekday_set
 %type <Annual> annual fixed_annual
 %type <Anchor> counted anchor target select chosen
 %type <ArrayList<Anchor>> targets
@@ -64,8 +65,7 @@
 %%
 
 schedule:
-  '[' expr ':' period ':' expr ']'  { rule = ScheduleSemantics.range ($2, $4, $6); }
-| exprs                             { rule = ScheduleSemantics.list ($1); }
+  exprs                             { rule = ScheduleSemantics.list ($1); }
 ;
 
 exprs:
@@ -73,10 +73,33 @@ exprs:
 | exprs ',' item                    { $1.add ($3); $$ = $1; }   /* $$ is untyped in Java, $1 is not */
 ;
 
-/* 24 DEC IF MON TUE WED THU: the date only on these weekdays */
+/* 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays */
 item:
   expr                              { $$ = $1; }
 | expr IF weekdays                  { $$ = ScheduleSemantics.onlyOn ($1, $3); }
+| expr IF '{' weekday_set '}'       { $$ = ScheduleSemantics.onlyOn ($1, $4); }
+;
+
+weekday_set:
+  WEEKDAY                           { ArrayList<String> list = new ArrayList<> (); list.add ($1); $$ = list; }
+| weekday_set ',' WEEKDAY           { $1.add ($3); $$ = $1; }
+;
+
+/* [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out. A series is
+   a date with several values, like an event: the shifts after it apply to each element */
+series:
+  start_out expr ':' period ':' expr end_out   { $$ = ScheduleSemantics.series ($2, $4, $6, $1, $7); }
+| start_out expr ':' expr end_out              { $$ = ScheduleSemantics.series ($2, null, $4, $1, $5); }
+;
+
+start_out:
+  '['                               { $$ = false; }
+| ']'                               { $$ = true; }
+;
+
+end_out:
+  ']'                               { $$ = false; }
+| '['                               { $$ = true; }
 ;
 
 weekdays:
@@ -160,6 +183,7 @@ date:
 | SPOT PAIR                         { $$ = ScheduleSemantics.spot (ScheduleSemantics.BASE, $2); }
 | annual                            { $$ = ScheduleSemantics.inYear ($1); }
 | EVENT                             { $$ = ScheduleSemantics.event ($1); }   /* @FOMC */
+| series                            { $$ = $1; }
 | NUM '-' NUM '-' NUM               { $$ = ScheduleSemantics.literal (LocalDate.of ($1, $3, $5)); }   /* ISO */
 | NUM '.' NUM '.' NUM               { $$ = ScheduleSemantics.literal (LocalDate.of ($5, $3, $1)); }   /* German */
 | NUM '/' NUM '/' NUM               { $$ = ScheduleSemantics.literal (LocalDate.of ($5, $1, $3)); }   /* US */

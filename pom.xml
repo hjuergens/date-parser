@@ -17,6 +17,8 @@
         <module>date-rule-bison</module>
         <!-- https://github.com/Engelberg/instaparse (Clojure) -->
         <module>date-rule-instaparse</module>
+        <!-- rules in the schedule language, changed at run time (on top of date-rule-antlr-java) -->
+        <module>date-rule-runtime</module>
     </modules>
     <name>${project.artifactId}</name>
     <description>Date Parser - evaluating various technologies</description>

@@ -33,10 +33,33 @@ class Rules(DateScheduleVisitor):
 
     def visitItem(self, ctx):
         expr = self.visit(ctx.expr())
+        for combine in ctx.combine():
+            operand = self.visit(combine.operand())
+            node = semantics.combined(expr, combine.op.text == "&", operand)
+            shifts = [self.visit(shift) for shift in combine.shift()]
+            expr = self._shifted(node, shifts)
         if not ctx.WEEKDAY():
             return expr
         keep = semantics.only_on({w.getText() for w in ctx.WEEKDAY()})
         return lambda context: keep(expr(context))
+
+    @staticmethod
+    def _shifted(start, shifts):
+        def at(context):
+            d = start(context)
+            for shift in shifts:
+                d = shift(d, context)
+            return d
+        return at
+
+    def visitSingleOperand(self, ctx):
+        return [self.visit(ctx.date())]
+
+    def visitSetOperand(self, ctx):
+        return [self.visit(expr) for expr in ctx.expr()]
+
+    def visitDatesInYear(self, ctx):
+        return semantics.dates_in_year([self.visit(annual) for annual in ctx.annual()])
 
     def visitSeriesDate(self, ctx):
         return self.visit(ctx.series())

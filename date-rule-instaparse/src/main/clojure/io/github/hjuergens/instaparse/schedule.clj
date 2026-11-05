@@ -26,7 +26,14 @@
    :open-start     (fn [] true)
    :closed-end     (fn [] false)
    :open-end       (fn [] true)
-   :item           (fn [expr & weekdays] (if weekdays (ScheduleSemantics/onlyOn expr (vec weekdays)) expr))
+   :item           (fn [expr & rest]
+                     (let [combined (reduce (fn [left step] (if (fn? step) (step left) left)) expr rest)
+                           weekdays (seq (filter string? rest))]
+                       (if weekdays (ScheduleSemantics/onlyOn combined (vec weekdays)) combined)))
+   :include        (fn [operand & shifts] (fn [left] (reduce (fn [e shift] (shift e)) (ScheduleSemantics/combined left true operand) shifts)))
+   :exclude        (fn [operand & shifts] (fn [left] (reduce (fn [e shift] (shift e)) (ScheduleSemantics/combined left false operand) shifts)))
+   :operand        (fn [& exprs] (vec exprs))
+   :dates-in-year  (fn [& annuals] #(ScheduleSemantics/datesInYear % (vec annuals)))
    :expr           (fn [date & shifts] (reduce (fn [expr shift] (shift expr)) date shifts))
    :plus           (fn [period] #(ScheduleSemantics/plus % period))
    :minus          (fn [period] #(ScheduleSemantics/minus % period))

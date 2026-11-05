@@ -28,35 +28,56 @@
     return (context = {}) => dates({ base: context.base, market: context.market ?? WEEKENDS, events: context.events ?? {} });
   }
 
-  // thrown by an event date that is not bound to one occurrence yet; values() catches it
-  // thrown by a date with several values (an event, a series) that is not bound to one of them yet; values() catches
-  // it and evaluates the expression once per date of dates(c)
+  // thrown by a node with several values that is not bound yet; values() catches it and evaluates the expression once
+  // per date of dates(c)
   class Unbound {
     constructor(dates) {
       this.dates = dates;
     }
   }
 
+  // the value of the next node with several values in this evaluation: bound by values() (c.bindings, counted by
+  // c.cursor in the order the evaluation reaches them), or Unbound
+  function take(c, dates) {
+    if (c.cursor && c.cursor[0] < c.bindings.length) return c.bindings[c.cursor[0]++];
+    throw new Unbound(dates);
+  }
+
   // @NAME: one occurrence of the event, bound by values()
   function event(name) {
-    return (c) => {
-      if (!c.occurrence) throw new Unbound((c) => occurrences(name, base(c).year, c));
-      return c.occurrence;
-    };
+    return (c) => take(c, (c) => occurrences(name, base(c).year, c));
   }
 
   // [first : step : last]: one element of the series, bound by values(), so the shifts after it apply to each
   function series(first, step, last, startOut, endOut) {
-    return (c) => {
-      if (!c.occurrence) {
-        throw new Unbound((c) => {
-          const start = single(first, c), end = single(last, c);
-          return expand(start, step, end, c.market)
-            .filter((d) => !(startOut && compare(d, start) <= 0 || endOut && compare(d, end) >= 0));
-        });
-      }
-      return c.occurrence;
-    };
+    return (c) => take(c, (c) => {
+      const start = single(first, c), end = single(last, c);
+      return expand(start, step, end, c.market)
+        .filter((d) => !(startOut && compare(d, start) <= 0 || endOut && compare(d, end) >= 0));
+    });
+  }
+
+  // sorted and without duplicates
+  function distinct(dates) {
+    return [...new Map(dates.map((d) => [`${d.year}-${d.month}-${d.day}`, d])).values()].sort(compare);
+  }
+
+  // A & B (include), A \\ B: the dates of A with or without those of the operand (a date, a series or a set of
+  // dates), sorted and without duplicates; one value at a time, so the shifts after it apply to each
+  function combined(left, include, operand) {
+    return (c) => take(c, (c) => {
+      const key = (d) => `${d.year}-${d.month}-${d.day}`;
+      const leftDates = values(left, c).filter((d) => d !== null);
+      const right = operand.flatMap((expr) => values(expr, c)).filter((d) => d !== null);
+      if (include) return distinct([...leftDates, ...right]);
+      const removed = new Set(right.map(key));
+      return distinct(leftDates.filter((d) => !removed.has(key(d))));
+    });
+  }
+
+  // > {1 FEB, 1 MAY}: the dates of the set in the year of the date, sorted; one value at a time
+  function datesInYear(annuals) {
+    return (d, c) => take(c, () => distinct(annuals.map((annual) => annual(d.year))));
   }
 
   // the dates of the event in the year: its rule evaluated with the first of January as base date
@@ -66,14 +87,14 @@
       .filter((d) => d.year === year).sort(compare);
   }
 
-  // the dates of an expression: one, or one per date if it starts with an event (its occurrences in the base year) or
-  // a series (its elements)
-  function values(expr, c) {
+  // the dates of an expression: one, or one per combination of the values of its nodes with several values (an event's
+  // occurrences in the base year, a series' elements, ...), bound one after the other
+  function values(expr, c, bindings = []) {
     try {
-      return [expr(c)];
+      return [expr({ ...c, bindings, cursor: [0] })];
     } catch (e) {
       if (!(e instanceof Unbound)) throw e;
-      return e.dates(c).map((d) => expr({ ...c, occurrence: d }));
+      return e.dates(c).flatMap((d) => values(expr, c, [...bindings, d]));
     }
   }
 
@@ -406,10 +427,27 @@ Schedule
 // 24 DEC IF MON TUE WED THU: the date only on these weekdays
 // 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays
 Item
-  = expr:Expr _ "IF" days:Weekdays {
+  = expr:Combined _ "IF" days:Weekdays {
       return (c) => { const d = expr(c); return days.includes(WEEKDAYS[weekday(d)]) ? d : null; };
     }
-  / Expr
+  / Combined
+
+// A & B includes the dates of B, A \\ B excludes them; the shifts after it apply to the result
+Combined
+  = first:Expr combines:(_ @Combine)* { return combines.reduce((left, combine) => combine(left), first); }
+
+Combine
+  = op:("&" / "\\") _ operand:Operand shifts:(_ @Shift)* {
+      return (left) => {
+        const node = combined(left, op === '&', operand);
+        return (c) => shifts.reduce((d, shift) => shift(d, c), node(c));
+      };
+    }
+
+// a date, a series or a set of dates
+Operand
+  = "{" _ head:Expr tail:(_ "," _ @Expr)* _ "}" { return [head, ...tail]; }
+  / date:Date { return [date]; }
 
 Weekdays
   = _ "{" _ head:Weekday tail:(_ "," _ @Weekday)* _ "}" { return [head, ...tail]; }
@@ -438,6 +476,7 @@ Shift
     }
   / ">" _ "NEXT" _ anchor:Counted { return (d, c) => anchor(d, 1, c); }
   / ">" _ "PREV" _ anchor:Counted { return (d, c) => anchor(d, -1, c); }
+  / ">" _ "{" _ head:Annual tail:(_ "," _ @Annual)* _ "}" { return datesInYear([head, ...tail]); }  // > {1 FEB, 1 MAY}
   / ">" _ count:Count _ anchor:Select _ "IN" _ period:$("WEEK" / "MONTH" / "QUARTER" / "HALFYEAR" / "YEAR") {
       return (d, c) => select(d, count.n, count.fromEnd, anchor, period, c);
     }

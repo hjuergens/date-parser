@@ -3,6 +3,7 @@
  * events. The arithmetic follows java.time, like ScheduleSemantics.java and semantics.py in the other modules.
  *
  * An evaluation error unwinds with longjmp to schedule_evaluate, which frees what the evaluation allocated. */
+#include <limits.h>
 #include <math.h>
 #include <setjmp.h>
 #include <stdarg.h>
@@ -127,21 +128,35 @@ static int compare(const void *a, const void *b) {
 
 /* ---- evaluation ---- */
 
+/* a node with several values that wasn't bound yet: an event, a series, a combination or dates in year */
+enum { P_EVENT, P_SERIES, P_COMBINED, P_DATES_IN_YEAR };
+
 typedef struct {
     jmp_buf jump;
     char *error;
     size_t size;
     DateList **temps;   /* freed at the end, also after an error */
     int count, capacity;
+    struct {
+        int kind, date;          /* P_DATES_IN_YEAR: the date whose year counts */
+        const void *node;        /* the Date, Combine or Shift */
+        const Item *item;        /* P_COMBINED: the item and the number of combines before this one */
+        int before;
+    } pending;
 } Eval;
 
-/* what a rule is evaluated against; occurrence is the date of the event an expression is evaluated for */
+/* what a rule is evaluated against; bindings are the values collect() chose for the nodes with several values, in the
+ * order the evaluation reaches them, counted by cursor */
 typedef struct {
     int has_base, base;
     Market *market;
     const Events *events;
-    int has_occurrence, occurrence;
+    const int *bindings;
+    int count, *cursor;
 } Ctx;
+
+/* the value of a node with several values that isn't bound */
+#define UNBOUND INT_MIN
 
 struct Market {
     Schedule *rule;
@@ -209,7 +224,7 @@ static int base(Eval *eval, const Ctx *ctx) {
 static const DateList *holidays(Eval *eval, Market *market, int year) {
     for (int i = 0; i < market->count; i++)
         if (market->years[i].year == year) return &market->years[i].holidays;
-    Ctx first = { 1, make(eval, year, 1, 1), NULL, NULL, 0, 0 };
+    Ctx first = { 1, make(eval, year, 1, 1), NULL, NULL, NULL, 0, NULL };
     DateList *dates = nested(eval, market->rule, &first);
     if (market->count == market->capacity) {
         market->capacity = market->capacity ? 2 * market->capacity : 8;
@@ -494,7 +509,7 @@ static int annual_in(Eval *eval, const Annual *annual, long year) {
 static DateList *occurrences(Eval *eval, const char *name, int year, const Ctx *ctx) {
     for (int i = 0; ctx->events && i < ctx->events->count; i++) {
         if (strcmp(ctx->events->names[i], name)) continue;
-        Ctx first = { 1, make(eval, year, 1, 1), ctx->market, ctx->events, 0, 0 };
+        Ctx first = { 1, make(eval, year, 1, 1), ctx->market, ctx->events, NULL, 0, NULL };
         DateList *all = nested(eval, ctx->events->rules[i], &first), *kept = temp(eval);
         for (int j = 0; j < all->count; j++)
             if (year_of(all->dates[j]) == year) datelist_push(kept, all->dates[j]);
@@ -587,6 +602,15 @@ static int select_in(Eval *eval, const Shift *s, int date, const Ctx *ctx) {
 
 /* ---- expressions ---- */
 
+/* the value of the next node with several values in this evaluation: bound by collect(), or UNBOUND with the node
+ * noted as pending */
+static int take(Eval *eval, const Ctx *ctx, int kind, const void *node, int date, const Item *item, int before) {
+    if (ctx->cursor && *ctx->cursor < ctx->count) return ctx->bindings[(*ctx->cursor)++];
+    eval->pending.kind = kind, eval->pending.node = node, eval->pending.date = date;
+    eval->pending.item = item, eval->pending.before = before;
+    return UNBOUND;
+}
+
 static int date_at(Eval *eval, const Date *date, const Ctx *ctx) {
     switch (date->kind) {
     case D_BASE: return base(eval, ctx);
@@ -594,16 +618,15 @@ static int date_at(Eval *eval, const Date *date, const Ctx *ctx) {
     case D_SPOT: return spot(eval, base(eval, ctx), date->pair, ctx->market);
     case D_FIXED: return date->fixed;
     case D_ANNUAL: return annual_in(eval, &date->annual, year_of(base(eval, ctx)));
-    case D_EVENT: case D_SERIES:
-        if (!ctx->has_occurrence) fail(eval, "a date with several values is not bound");
-        return ctx->occurrence;
+    case D_EVENT: return take(eval, ctx, P_EVENT, date, 0, NULL, 0);
+    case D_SERIES: return take(eval, ctx, P_SERIES, date, 0, NULL, 0);
     }
     fail(eval, "unknown date");
 }
 
-static int expr_at(Eval *eval, const Expr *expr, const Ctx *ctx) {
-    int date = date_at(eval, &expr->date, ctx);
-    for (const Shift *s = expr->shifts; s; s = s->next) {
+/* each shift applies to everything on its left */
+static int shifted(Eval *eval, const Shift *shifts, int date, const Ctx *ctx) {
+    for (const Shift *s = shifts; s && date != UNBOUND; s = s->next) {
         switch (s->kind) {
         case S_PLUS: date = plus(eval, date, s->period, 1, ctx->market); break;
         case S_MINUS: date = plus(eval, date, s->period, -1, ctx->market); break;
@@ -616,6 +639,7 @@ static int expr_at(Eval *eval, const Expr *expr, const Ctx *ctx) {
             for (long i = 0; i < s->count; i++) date = find(eval, s->anchor, date, s->kind == S_NEXT ? 1 : -1, ctx);
             break;
         case S_SELECT: date = select_in(eval, s, date, ctx); break;
+        case S_DATES_IN_YEAR: date = take(eval, ctx, P_DATES_IN_YEAR, s, date, NULL, 0); break;
         case S_OBSERVANCE:
             /* {SAT - 1D, SUN + 1D}: the first item for the weekday of the date applies, items don't chain */
             for (const Observe *o = s->observes; o; o = o->next)
@@ -627,6 +651,20 @@ static int expr_at(Eval *eval, const Expr *expr, const Ctx *ctx) {
         }
     }
     return date;
+}
+
+static int expr_at(Eval *eval, const Expr *expr, const Ctx *ctx) {
+    int date = date_at(eval, &expr->date, ctx);
+    return date == UNBOUND ? UNBOUND : shifted(eval, expr->shifts, date, ctx);
+}
+
+/* an item with its first `upto` combines: the expression, or the result of the last of them with its shifts */
+static int item_at(Eval *eval, const Item *item, int upto, const Ctx *ctx) {
+    if (upto == 0) return expr_at(eval, item->expr, ctx);
+    const Combine *combine = item->combines;
+    for (int i = 1; i < upto; i++) combine = combine->next;
+    int date = take(eval, ctx, P_COMBINED, combine, 0, item, upto - 1);
+    return date == UNBOUND ? UNBOUND : shifted(eval, combine->shifts, date, ctx);
 }
 
 static int single(Eval *eval, const Expr *expr, const Ctx *ctx);
@@ -643,33 +681,85 @@ static DateList *elements(Eval *eval, const Date *series, const Ctx *ctx) {
     }
 }
 
-/* the dates of an item: one, or one per date if it starts with an event (its occurrences in the base year) or a series
- * (its elements); IF drops dates */
-static void values(Eval *eval, const Expr *expr, int weekdays, const Ctx *ctx, DateList *out) {
-    if ((expr->date.kind == D_EVENT || expr->date.kind == D_SERIES) && !ctx->has_occurrence) {
-        DateList *found = expr->date.kind == D_EVENT ? occurrences(eval, expr->date.event, year_of(base(eval, ctx)), ctx)
-                                                      : elements(eval, &expr->date, ctx);
-        for (int i = 0; i < found->count; i++) {
-            Ctx bound = *ctx;
-            bound.has_occurrence = 1, bound.occurrence = found->dates[i];
-            values(eval, expr, weekdays, &bound, out);
+static void collect(Eval *eval, const Item *item, int upto, const Expr *expr, const Ctx *ctx, const int *bindings,
+                    int count, int weekdays, DateList *out);
+
+/* sorted and without duplicates */
+static void distinct(DateList *dates) {
+    if (!dates->count) return;
+    qsort(dates->dates, dates->count, sizeof(int), compare);
+    int n = 1;
+    for (int i = 1; i < dates->count; i++)
+        if (dates->dates[i] != dates->dates[n - 1]) dates->dates[n++] = dates->dates[i];
+    dates->count = n;
+}
+
+/* the values of the pending node: an event's occurrences in the base year, a series' elements, the result of A & B or
+ * A \\ B, the dates in year of a date */
+static DateList *pending_dates(Eval *eval, const Ctx *ctx) {
+    int kind = eval->pending.kind, date = eval->pending.date, before = eval->pending.before;
+    const void *node = eval->pending.node;
+    const Item *item = eval->pending.item;
+    if (kind == P_EVENT) return occurrences(eval, ((const Date *) node)->event, year_of(base(eval, ctx)), ctx);
+    if (kind == P_SERIES) return elements(eval, node, ctx);
+    DateList *dates = temp(eval);
+    if (kind == P_DATES_IN_YEAR) {
+        for (const Anchor *a = ((const Shift *) node)->anchor; a; a = a->next)
+            datelist_push(dates, annual_in(eval, &a->annual, year_of(date)));
+    } else {
+        const Combine *combine = node;
+        DateList *right = temp(eval);
+        collect(eval, item, before, NULL, ctx, NULL, 0, 0, dates);
+        for (const Operand *o = combine->operands; o; o = o->next) collect(eval, NULL, 0, o->expr, ctx, NULL, 0, 0, right);
+        distinct(right);
+        if (combine->include) {
+            for (int i = 0; i < right->count; i++) datelist_push(dates, right->dates[i]);
+        } else {
+            int n = 0;
+            for (int i = 0; i < dates->count; i++)
+                if (!bsearch(&dates->dates[i], right->dates, right->count, sizeof(int), compare)) dates->dates[n++] = dates->dates[i];
+            dates->count = n;
         }
+    }
+    distinct(dates);
+    return dates;
+}
+
+/* the dates of an item with its first `upto` combines (or of an expression): one, or one per combination of the values
+ * of its nodes with several values, bound one after the other; IF drops dates */
+static void collect(Eval *eval, const Item *item, int upto, const Expr *expr, const Ctx *ctx, const int *bindings,
+                    int count, int weekdays, DateList *out) {
+    int cursor = 0;
+    Ctx bound = *ctx;
+    bound.bindings = bindings, bound.count = count, bound.cursor = &cursor;
+    int date = item ? item_at(eval, item, upto, &bound) : expr_at(eval, expr, &bound);
+    if (date != UNBOUND) {
+        if (!weekdays || weekdays & 1 << weekday_of(date)) datelist_push(out, date);
         return;
     }
-    int date = expr_at(eval, expr, ctx);
-    if (!weekdays || weekdays & 1 << weekday_of(date)) datelist_push(out, date);
+    DateList *found = pending_dates(eval, ctx), *more = temp(eval);
+    for (int i = 0; i < count; i++) datelist_push(more, bindings[i]);
+    datelist_push(more, 0);
+    for (int i = 0; i < found->count; i++) {
+        more->dates[count] = found->dates[i];
+        collect(eval, item, upto, expr, ctx, more->dates, count + 1, weekdays, out);
+    }
 }
 
 /* the date of an expression that must have exactly one, such as the end of a range */
 static int single(Eval *eval, const Expr *expr, const Ctx *ctx) {
     DateList *dates = temp(eval);
-    values(eval, expr, 0, ctx, dates);
+    collect(eval, NULL, 0, expr, ctx, NULL, 0, 0, dates);
     if (dates->count != 1) fail(eval, "%d dates where one is needed", dates->count);
     return dates->dates[0];
 }
 
 static void evaluate_into(Eval *eval, const Schedule *schedule, const Ctx *ctx, DateList *out) {
-    for (const Item *item = schedule->items; item; item = item->next) values(eval, item->expr, item->weekdays, ctx, out);
+    for (const Item *item = schedule->items; item; item = item->next) {
+        int combines = 0;
+        for (const Combine *c = item->combines; c; c = c->next) combines++;
+        collect(eval, item, combines, NULL, ctx, NULL, 0, item->weekdays, out);
+    }
 }
 
 int schedule_evaluate(const Schedule *schedule, const Context *context, DateList *out, char *error, size_t size) {
@@ -682,7 +772,7 @@ int schedule_evaluate(const Schedule *schedule, const Context *context, DateList
         datelist_free(out);
         status = -1;
     } else {
-        Ctx ctx = { context->has_base, context->base, context->market, context->events, 0, 0 };
+        Ctx ctx = { context->has_base, context->base, context->market, context->events, NULL, 0, NULL };
         evaluate_into(eval, schedule, &ctx, out);
     }
     for (int i = 0; i < eval->count; i++) {

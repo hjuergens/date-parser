@@ -52,6 +52,8 @@ Tokens
 	comma = ',';
 	colon = ':';
 	l_bracket = '[';
+	amp = '&';
+	backslash = 92;   /* \ */
 	r_bracket = ']';
 	blank = (' ' | 9 | 10 | 13)+;
 
@@ -64,7 +66,19 @@ Productions
 	more_item = comma item;
 
 	/* 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays */
-	item = expr condition?;
+	item = expr combine* condition?;
+
+	/* A & B includes the dates of B, A \ B excludes them; the shifts after it apply to the result */
+	combine
+		= {include} amp operand shift*
+		| {exclude} backslash operand shift*;
+
+	/* a date, a series or a set of dates */
+	operand
+		= {single} date
+		| {set} l_brace expr more_expr* r_brace;
+
+	more_expr = comma expr;
 
 	condition
 		= {plain} if weekday+
@@ -97,6 +111,7 @@ Productions
 		| {next} gt next ordinal? anchor   /* NEXT 3RD FRI: the third Friday */
 		| {prev} gt prev ordinal? anchor
 		| {select} gt count select in period_word   /* > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH */
+		| {dates_in_year} gt l_brace annual more_annual* r_brace   /* > {1 FEB, 1 MAY} */
 		| {observance} l_brace observe more_observe* r_brace;
 
 	observe
@@ -122,6 +137,8 @@ Productions
 		| {set} l_brace target more_target* r_brace;
 
 	more_target = comma target;
+
+	more_annual = comma annual;
 
 	target
 		= {chosen} chosen

@@ -1,7 +1,8 @@
 /*
  * Shared "schedule" example (see examples/schedule.txt in the project root):
- *   2015-06-09 + 3M, 09.06.2015, (2015-01-15 : 1Q : 2015-12-31)
+ *   2015-06-09 + 3M, 09.06.2015, [2015-01-15 : 1Q : 2015-12-31]
  * The actions build a ScheduleSemantics.Rule, a function of base date and market that is evaluated later.
+ * A second start rule, ruleLine, reads one line of a rules file of date-rule-runtime.
  */
 grammar DateSchedule;
 
@@ -17,7 +18,11 @@ grammar DateSchedule;
 }
 
 schedule returns [Rule result]
-    : e+=item (',' e+=item)* EOF
+    : items EOF                     { $result = $items.result; }
+    ;
+
+items returns [Rule result]
+    : e+=item (',' e+=item)*
       {
           List<Expr> exprs = new ArrayList<>();
           for (ItemContext item : $e) exprs.add(item.value);
@@ -25,9 +30,44 @@ schedule returns [Rule result]
       }
     ;
 
+// one line of a rules file (date-rule-runtime): a declaration, or an assertion of the dates a rule gives.
+// Names carry the sigil, as a bare IMMH or XNYS would clash with the keywords, months and currency pairs:
+//   rule @IMMH = T > NEXT 3 WED MAR        market @XNYS = 1 JAN, 25 DEC        event @FOMC = 2026-01-28, ...
+//   assert @IMMH [2026-11-02 @XNYS] => 2027-03-17
+ruleLine returns [String kind, String name, Rule rule, LocalDate base, String market, List<LocalDate> dates]
+    : k=('rule' | 'market' | 'event') n=EVENT '=' items EOF
+                                    { $kind = $k.text; $name = $n.text.substring(1); $rule = $items.result; }
+    | 'assert' n=EVENT '[' b=isoDate (m=EVENT)? ']' '=>' e=expected EOF
+      {
+          $kind = "assert";
+          $name = $n.text.substring(1);
+          $base = $b.value;
+          $market = $m == null ? null : $m.text.substring(1);
+          $dates = $e.dates;
+      }
+    ;
+
+// the expected dates of an assertion: a list, none, or error (null)
+expected returns [List<LocalDate> dates = new ArrayList<>()]
+    : 'none'
+    | 'error'                       { $dates = null; }
+    | d=isoDate                     { $dates.add($d.value); }
+      (',' d=isoDate                { $dates.add($d.value); }
+      )*
+    ;
+
+isoDate returns [LocalDate value]
+    : y=NUM '-' m=NUM '-' d=NUM     { $value = LocalDate.of($y.int, $m.int, $d.int); }
+    ;
+
 // 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays
 item returns [Expr value]
     : expr                          { $value = $expr.value; }
+      // A & B includes the dates of B, A \ B excludes them; the moves after it apply to the result
+      ( op=('&' | '\\') operand      { $value = ScheduleSemantics.combined($value, $op.text.equals("&"), $operand.exprs); }
+        ( move[$value]              { $value = $move.value; }
+        )*
+      )*
       ( 'IF' ((w+=WEEKDAY)+ | '{' w+=WEEKDAY (',' w+=WEEKDAY)* '}')
         {
             List<String> weekdays = new ArrayList<>();
@@ -35,6 +75,14 @@ item returns [Expr value]
             $value = ScheduleSemantics.onlyOn($value, weekdays);
         }
       )?
+    ;
+
+// a date, a series or a set of dates
+operand returns [List<Expr> exprs = new ArrayList<>()]
+    : date                          { $exprs.add($date.value); }
+    | '{' e=expr                    { $exprs.add($e.value); }
+      (',' e=expr                   { $exprs.add($e.value); }
+      )* '}'
     ;
 
 // [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out (ISO 80000-2).
@@ -51,17 +99,27 @@ locals [boolean startOut, boolean endOut]
 // periods are applied from left to right
 expr returns [Expr value]
     : date                          { $value = $date.value; }
-      ( '+' period                  { $value = ScheduleSemantics.plus($value, $period.value); }
-      | '-' period                  { $value = ScheduleSemantics.minus($value, $period.value); }
-      | '>' 'IMM'                   { $value = ScheduleSemantics.nextImm($value); }
-      | '>' spot                    { $value = ScheduleSemantics.spot($value, $spot.pair); }
-      | '>' ROLL                    { $value = ScheduleSemantics.roll($value, $ROLL.text); }
-      | '>' 'NEXT' ordinal anchor   { $value = ScheduleSemantics.next($value, $ordinal.n, $anchor.value); }
-      | '>' 'PREV' ordinal anchor   { $value = ScheduleSemantics.previous($value, $ordinal.n, $anchor.value); }
-      | '>' count select 'IN' PERIOD
-                                    { $value = ScheduleSemantics.select($value, $count.n, $count.fromEnd, $select.value, $PERIOD.text); }
-      | observance                  { $value = ScheduleSemantics.observe($value, $observance.shifts); }
+      ( move[$value]                { $value = $move.value; }
       )*
+    ;
+
+// one step, applied to everything on its left
+move[Expr before] returns [Expr value]
+locals [List<Annual> annuals = new ArrayList<>()]
+    : '+' period                    { $value = ScheduleSemantics.plus($before, $period.value); }
+    | '-' period                    { $value = ScheduleSemantics.minus($before, $period.value); }
+    | '>' 'IMM'                     { $value = ScheduleSemantics.nextImm($before); }
+    | '>' spot                      { $value = ScheduleSemantics.spot($before, $spot.pair); }
+    | '>' ROLL                      { $value = ScheduleSemantics.roll($before, $ROLL.text); }
+    | '>' 'NEXT' ordinal anchor     { $value = ScheduleSemantics.next($before, $ordinal.n, $anchor.value); }
+    | '>' 'PREV' ordinal anchor     { $value = ScheduleSemantics.previous($before, $ordinal.n, $anchor.value); }
+    | '>' count select 'IN' PERIOD
+                                    { $value = ScheduleSemantics.select($before, $count.n, $count.fromEnd, $select.value, $PERIOD.text); }
+      // > {1 FEB, 1 MAY}: the dates of the set in the year of the date
+    | '>' '{' a=annual              { $annuals.add($a.value); }
+      (',' a=annual                 { $annuals.add($a.value); }
+      )* '}'                        { $value = ScheduleSemantics.datesInYear($before, $annuals); }
+    | observance                    { $value = ScheduleSemantics.observe($before, $observance.shifts); }
     ;
 
 // {SAT - 1D, SUN + 1D}

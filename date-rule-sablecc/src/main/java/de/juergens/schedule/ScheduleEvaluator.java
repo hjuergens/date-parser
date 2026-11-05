@@ -54,8 +54,18 @@ public final class ScheduleEvaluator {
     /** 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays */
     static ScheduleSemantics.Expr item(PItem node) {
         AItem item = (AItem) node;
+        ScheduleSemantics.Expr value = expr(item.getExpr());
+        // A & B includes the dates of B, A \\ B excludes them; the shifts after it apply to the result
+        for (Object combine : item.getCombine()) {
+            if (combine instanceof AIncludeCombine include) {
+                value = shifts(ScheduleSemantics.combined(value, true, operand(include.getOperand())), include.getShift());
+            } else {
+                AExcludeCombine exclude = (AExcludeCombine) combine;
+                value = shifts(ScheduleSemantics.combined(value, false, operand(exclude.getOperand())), exclude.getShift());
+            }
+        }
         if (item.getCondition() == null) {
-            return expr(item.getExpr());
+            return value;
         }
         List<String> weekdays = new ArrayList<>();
         if (item.getCondition() instanceof APlainCondition plain) {
@@ -69,7 +79,22 @@ public final class ScheduleEvaluator {
                 weekdays.add(((AMoreWeekday) more).getWeekday().getText());
             }
         }
-        return ScheduleSemantics.onlyOn(expr(item.getExpr()), weekdays);
+        return ScheduleSemantics.onlyOn(value, weekdays);
+    }
+
+    /** a date, a series or a set of dates */
+    static List<ScheduleSemantics.Expr> operand(POperand node) {
+        List<ScheduleSemantics.Expr> exprs = new ArrayList<>();
+        if (node instanceof ASingleOperand single) {
+            exprs.add(date(single.getDate()));
+        } else {
+            ASetOperand set = (ASetOperand) node;
+            exprs.add(expr(set.getExpr()));
+            for (Object more : set.getMoreExpr()) {
+                exprs.add(expr(((AMoreExpr) more).getExpr()));
+            }
+        }
+        return exprs;
     }
 
     /** [a : step : b]: a date with several values, the shifts after it apply to each element */
@@ -83,8 +108,12 @@ public final class ScheduleEvaluator {
     /** periods are applied from left to right */
     static ScheduleSemantics.Expr expr(PExpr node) {
         AExpr expr = (AExpr) node;
-        ScheduleSemantics.Expr date = date(expr.getDate());
-        for (Object shift : expr.getShift()) {
+        return shifts(date(expr.getDate()), expr.getShift());
+    }
+
+    /** each shift applies to everything on its left */
+    static ScheduleSemantics.Expr shifts(ScheduleSemantics.Expr date, List<?> nodes) {
+        for (Object shift : nodes) {
             if (shift instanceof APlusShift plus) {
                 date = ScheduleSemantics.plus(date, period(plus.getPeriod()));
             } else if (shift instanceof AMinusShift minus) {
@@ -103,6 +132,13 @@ public final class ScheduleEvaluator {
                 int n = count instanceof AFromStartCount start ? count(start.getOrdinal())
                         : count instanceof AFromEndCount end ? count(end.getOrdinal()) : 1;
                 date = ScheduleSemantics.select(date, n, fromEnd, select(select.getSelect()), select.getPeriodWord().getText());
+            } else if (shift instanceof ADatesInYearShift datesInYear) {
+                List<ScheduleSemantics.Annual> annuals = new ArrayList<>();
+                annuals.add(annual(datesInYear.getAnnual()));
+                for (Object more : datesInYear.getMoreAnnual()) {
+                    annuals.add(annual(((AMoreAnnual) more).getAnnual()));
+                }
+                date = ScheduleSemantics.datesInYear(date, annuals);
             } else if (shift instanceof AObservanceShift observance) {
                 List<ScheduleSemantics.Shift> shifts = new ArrayList<>();
                 shifts.add(observe(observance.getObserve()));

@@ -55,6 +55,7 @@ mvn -pl date-rule-antlr-java verify
 Implements the [shared schedule example](../README.md#shared-example-schedule) and is tested against [examples/schedule.txt](../examples/schedule.txt).
 
 - [DateSchedule.g4](src/main/antlr4/io/github/hjuergens/time/DateSchedule.g4) computes the values in actions (`returns [LocalDate value]`).
+- `DateSchedule.g4` has a second start rule, `ruleLine`, for one line of a rules file of [date-rule-runtime](../date-rule-runtime/README.md) (`rule @IMMH = …`, `assert @IMMH [2026-11-02 @XNYS] => …`); `DateSchedules.parseRuleLine` is its entry point, so that module reads its files without regular expressions.
 - `> SPOT [PAIR]` has a rule of its own (`spot returns [String pair]`). A `PAIR?` label inside the `( … )*` loop of `expr`
   would be a field of the rule context, so a later `> SPOT` without pair would still see the pair of an earlier one.
 - Periods, business days (`B`), IMM and spot dates come from the shared `ScheduleSemantics`; `B` is a `TemporalAmount`

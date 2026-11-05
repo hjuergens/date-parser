@@ -39,7 +39,7 @@ typedef struct Observe {
     struct Observe *next;
 } Observe;
 
-typedef enum { S_PLUS, S_MINUS, S_IMM, S_SPOT, S_ROLL, S_NEXT, S_PREV, S_SELECT, S_OBSERVANCE } ShiftKind;
+typedef enum { S_PLUS, S_MINUS, S_IMM, S_SPOT, S_ROLL, S_NEXT, S_PREV, S_SELECT, S_DATES_IN_YEAR, S_OBSERVANCE } ShiftKind;
 
 /* the conventions of > ROLL */
 enum { FOLLOWING, PRECEDING, MODFOLLOWING, BOW, EOW, BOM, EOM, BOQ, EOQ, BOH, EOH, BOY, EOY };
@@ -54,7 +54,7 @@ typedef struct Shift {
     int roll;
     long count;            /* S_NEXT, S_PREV, S_SELECT: the ordinal, 1 without one */
     int from_end, within;  /* S_SELECT: counted back from the end of the period; the period, a P_ code */
-    Anchor *anchor;
+    Anchor *anchor;        /* S_DATES_IN_YEAR: a list of AT_ANNUAL anchors */
     Observe *observes;
     struct Shift *next;
 } Shift;
@@ -77,8 +77,22 @@ typedef struct Expr {
     Shift *shifts;
 } Expr;
 
+/* A & B, A \\ B: a date, a series or a set of dates */
+typedef struct Operand {
+    Expr *expr;
+    struct Operand *next;
+} Operand;
+
+typedef struct Combine {
+    int include;           /* & (include) or \\ (exclude) */
+    Operand *operands;
+    Shift *shifts;         /* applied to the result */
+    struct Combine *next;
+} Combine;
+
 typedef struct Item {
     Expr *expr;
+    Combine *combines;
     int weekdays;          /* IF: a bit per weekday, 0 without IF */
     struct Item *next;
 } Item;

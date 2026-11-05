@@ -11,6 +11,10 @@
 # business days); without a step every day. "]" at the start or "[" at the end leaves that endpoint out (ISO 80000-2), so
 # [a : b[ stops before b. A series is an item of a list, and the shifts after it apply to each element, duplicates kept:
 # "[2026-01-01 : 3M : 2026-12-31] > EOQ > 3RD WED IN MONTH" is the IMM dates of 2026. IF also takes a set: IF {SAT, SUN}.
+# Include and exclude: "A & B" adds the dates of B, "A \\ B" removes them, sorted and without duplicates; B is a date, a
+# series or a set of dates {1 JAN, 6 JAN}. Left to right, each shift applies to everything on its left: in
+# "[a : b] & c + 1D" every date of the union moves a day. Dates in year: "> {1 FEB, 1 MAY}" replaces a date with these
+# annual dates in its year, so "[T : 1Y : T + 2Y] > {1 FEB, 1 MAY}" is 1 February and 1 May of three years.
 # "> IMM" moves to the next IMM date strictly after the date: the third Wednesday of
 # March, June, September or December. Which date "next" counts from is written in front of it: today
 # ("T > IMM"), tomorrow ("TOM > IMM"), spot ("SPOT EURSEK > IMM") or spot + 1B; "SPOT - 1D > IMM" is on or after spot.
@@ -467,6 +471,34 @@ market XFED = 1 JAN {SAT - 1D, SUN + 1D}, 3 MON JAN, 3 MON FEB, LAST MON MAY, 19
 [2026-01-01] 24 DEC IF {MON TUE} => error
 [2026-01-01 : 1M] => error
 [2026-01-01 : 2026-01-05] [2026-01-06 : 2026-01-07] => error
+
+# include, exclude and dates in year
+[2026-01-01 : 2026-01-03] & [2026-01-02 : 2026-01-05] => 2026-01-01, 2026-01-02, 2026-01-03, 2026-01-04, 2026-01-05
+[2026-01-05 : 2026-01-06] & [2026-01-01 : 2026-01-02] => 2026-01-01, 2026-01-02, 2026-01-05, 2026-01-06
+[2026-01-01] [T : T + 7D] \ {1 JAN, 6 JAN} => 2026-01-02, 2026-01-03, 2026-01-04, 2026-01-05, 2026-01-07, 2026-01-08
+[2026-01-01] [T : T + 7D] \ {1 JAN, 6 JAN} & 25 DEC => 2026-01-02, 2026-01-03, 2026-01-04, 2026-01-05, 2026-01-07, 2026-01-08, 2026-12-25
+[2026-01-01] [T : 1W : T + 2W] & [T : 1W : T + 2W] => 2026-01-01, 2026-01-08, 2026-01-15
+[2026-01-01 : 2026-01-03] & 2026-01-10 + 1D => 2026-01-02, 2026-01-03, 2026-01-04, 2026-01-11
+[2026-01-01 : 2026-01-03] + 1D & 2026-01-10 => 2026-01-02, 2026-01-03, 2026-01-04, 2026-01-10
+[2026-01-01] 1 JAN & {1 JAN + 1D, 6 JAN} => 2026-01-01, 2026-01-02, 2026-01-06
+[2026-01-01] [T : T + 13D] \ [T : 1W : T + 13D] IF {MON, TUE} => 2026-01-05, 2026-01-06, 2026-01-12, 2026-01-13
+[2026-01-01] [T : T + 2D] & 6 JAN, 31 DEC => 2026-01-01, 2026-01-02, 2026-01-03, 2026-01-06, 2026-12-31
+[2025-06-01] [T : T + 29D] \ @FOMC IF WED => 2025-06-04, 2025-06-11, 2025-06-25
+[2026-11-02] T > {1 FEB, 1 MAY} => 2026-02-01, 2026-05-01
+[2026-11-02] [T : 1Y : T + 2Y] > {1 FEB, 1 MAY} => 2026-02-01, 2026-05-01, 2027-02-01, 2027-05-01, 2028-02-01, 2028-05-01
+[2026-11-02] [T : 1Y : T + 1Y] > {3 WED MAR, 3 WED JUN, 3 WED SEP, 3 WED DEC} => 2026-03-18, 2026-06-17, 2026-09-16, 2026-12-16, 2027-03-17, 2027-06-16, 2027-09-15, 2027-12-15
+[2026-11-02] [T : 1Y : T + 1Y] > {LAST MON MAY, 1 MON SEP} => 2026-05-25, 2026-09-07, 2027-05-31, 2027-09-06
+[2026-11-02 XNYS] [T : 1Y : T + 1Y] > {1 FEB, 1 MAY} > FOLLOWING => 2026-02-02, 2026-05-01, 2027-02-01, 2027-05-03
+[2026-11-02] T > {1 MAY, 1 FEB, 1 MAY} => 2026-02-01, 2026-05-01
+[2026-01-01] {1 JAN, 6 JAN} => error
+[2026-01-01] 1 JAN & => error
+[2026-01-01] 1 JAN & {} => error
+[2026-01-01] 1 JAN \ 3M => error
+[2026-01-01] 1 JAN & {1 JAN 6 JAN} => error
+[2026-11-02] T > {} => error
+[2026-11-02] T > {MON} => error
+[2026-11-02] T > {@FOMC} => error
+[2026-11-02] T > {IMM} => error
 
 # MaturityRule: the examples of another maturity rule language (selectors such as "lastday of month(5) of sp")
 # in this one; the comment gives the MaturityRule expression

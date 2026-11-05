@@ -10,9 +10,10 @@ import java.time.LocalDate;
 import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.UnaryOperator;
 
 terminal            PLUS, MINUS, GT, IMM, SPOT, BASE, TOM, NEXT, PREV, BD, LAST, EASTER, IF, IN;
-terminal            DOT, SLASH, COMMA, COLON, LBRACKET, RBRACKET, LBRACE, RBRACE;
+terminal            DOT, SLASH, COMMA, COLON, LBRACKET, RBRACKET, LBRACE, RBRACE, AMP, BACKSLASH;
 terminal Integer    NUM;
 terminal String     UNIT, PAIR, MONTH, WEEKDAY, ROLL, EVENT, SEASON, ZONE, ORDINAL, PERIOD;
 terminal            SOLARTERM;
@@ -20,7 +21,11 @@ terminal            SOLARTERM;
 non terminal Integer                              zone, count;
 non terminal ScheduleSemantics.Rule                schedule;
 non terminal ArrayList<ScheduleSemantics.Expr>     exprs;
-non terminal ScheduleSemantics.Expr                item, expr, date, series;
+non terminal ScheduleSemantics.Expr                item, expr, combined, date, series;
+non terminal UnaryOperator<ScheduleSemantics.Expr> move, combine;
+non terminal ArrayList<UnaryOperator<ScheduleSemantics.Expr>> moves, combines;
+non terminal ArrayList<ScheduleSemantics.Expr>     operand, operand_exprs;
+non terminal ArrayList<ScheduleSemantics.Annual>   annuals;
 non terminal Boolean                              start_out, end_out;
 non terminal ArrayList<String>                     weekdays, weekday_set;
 non terminal TemporalAmount                        period;
@@ -43,9 +48,9 @@ exprs ::= item:e
         ;
 
 /* 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays */
-item ::= expr:e                     {: RESULT = e; :}
-       | expr:e IF weekdays:w       {: RESULT = ScheduleSemantics.onlyOn(e, w); :}
-       | expr:e IF LBRACE weekday_set:w RBRACE {: RESULT = ScheduleSemantics.onlyOn(e, w); :}
+item ::= combined:e                 {: RESULT = e; :}
+       | combined:e IF weekdays:w   {: RESULT = ScheduleSemantics.onlyOn(e, w); :}
+       | combined:e IF LBRACE weekday_set:w RBRACE {: RESULT = ScheduleSemantics.onlyOn(e, w); :}
        ;
 
 weekdays ::= WEEKDAY:w              {: RESULT = new ArrayList<>(); RESULT.add(w); :}
@@ -74,18 +79,53 @@ end_out ::= RBRACKET                {: RESULT = false; :}
 
 /* periods are applied from left to right */
 expr ::= date:d                     {: RESULT = d; :}
-       | expr:e PLUS period:p       {: RESULT = ScheduleSemantics.plus(e, p); :}
-       | expr:e MINUS period:p      {: RESULT = ScheduleSemantics.minus(e, p); :}
-       | expr:e GT IMM              {: RESULT = ScheduleSemantics.nextImm(e); :}
-       | expr:e GT SPOT             {: RESULT = ScheduleSemantics.spot(e, null); :}
-       | expr:e GT SPOT PAIR:p      {: RESULT = ScheduleSemantics.spot(e, p); :}
-       | expr:e GT ROLL:r           {: RESULT = ScheduleSemantics.roll(e, r); :}
-       | expr:e GT NEXT counted:a   {: RESULT = ScheduleSemantics.next(e, a); :}
-       | expr:e GT PREV counted:a   {: RESULT = ScheduleSemantics.previous(e, a); :}
-       | expr:e GT count:n select:a IN PERIOD:p
-                                    {: RESULT = ScheduleSemantics.select(e, Math.abs(n), n < 0, a, p); :}
-       | expr:e LBRACE shifts:s RBRACE {: RESULT = ScheduleSemantics.observe(e, s); :}   /* {SAT - 1D, SUN + 1D} */
+       | expr:e move:m              {: RESULT = m.apply(e); :}
        ;
+
+/* one step, applied to everything on its left: a function of the expression so far */
+move ::= PLUS period:p              {: RESULT = e -> ScheduleSemantics.plus(e, p); :}
+       | MINUS period:p             {: RESULT = e -> ScheduleSemantics.minus(e, p); :}
+       | GT IMM                     {: RESULT = e -> ScheduleSemantics.nextImm(e); :}
+       | GT SPOT                    {: RESULT = e -> ScheduleSemantics.spot(e, null); :}
+       | GT SPOT PAIR:p             {: RESULT = e -> ScheduleSemantics.spot(e, p); :}
+       | GT ROLL:r                  {: RESULT = e -> ScheduleSemantics.roll(e, r); :}
+       | GT NEXT counted:a          {: RESULT = e -> ScheduleSemantics.next(e, a); :}
+       | GT PREV counted:a          {: RESULT = e -> ScheduleSemantics.previous(e, a); :}
+       | GT count:n select:a IN PERIOD:p
+                                    {: RESULT = e -> ScheduleSemantics.select(e, Math.abs(n), n < 0, a, p); :}
+       | GT LBRACE annuals:list RBRACE   /* > {1 FEB, 1 MAY}: the dates of the set in the year of the date */
+                                    {: RESULT = e -> ScheduleSemantics.datesInYear(e, list); :}
+       | LBRACE shifts:s RBRACE     {: RESULT = e -> ScheduleSemantics.observe(e, s); :}   /* {SAT - 1D, SUN + 1D} */
+       ;
+
+annuals ::= annual:a                {: RESULT = new ArrayList<>(); RESULT.add(a); :}
+          | annuals:list COMMA annual:a {: list.add(a); RESULT = list; :}
+          ;
+
+/* A & B includes the dates of B, A \\ B excludes them; the moves after it apply to the result */
+combined ::= expr:e combines:cs     {: ScheduleSemantics.Expr d = e; for (UnaryOperator<ScheduleSemantics.Expr> c : cs) d = c.apply(d); RESULT = d; :}
+           ;
+
+combines ::=                        {: RESULT = new ArrayList<>(); :}
+           | combines:list combine:c {: list.add(c); RESULT = list; :}
+           ;
+
+combine ::= AMP operand:o moves:ms  {: RESULT = e -> { ScheduleSemantics.Expr d = ScheduleSemantics.combined(e, true, o); for (UnaryOperator<ScheduleSemantics.Expr> m : ms) d = m.apply(d); return d; }; :}
+          | BACKSLASH operand:o moves:ms {: RESULT = e -> { ScheduleSemantics.Expr d = ScheduleSemantics.combined(e, false, o); for (UnaryOperator<ScheduleSemantics.Expr> m : ms) d = m.apply(d); return d; }; :}
+          ;
+
+moves ::=                           {: RESULT = new ArrayList<>(); :}
+        | moves:list move:m         {: list.add(m); RESULT = list; :}
+        ;
+
+/* a date, a series or a set of dates */
+operand ::= date:d                  {: RESULT = new ArrayList<>(); RESULT.add(d); :}
+          | LBRACE operand_exprs:list RBRACE {: RESULT = list; :}
+          ;
+
+operand_exprs ::= expr:e            {: RESULT = new ArrayList<>(); RESULT.add(e); :}
+                | operand_exprs:list COMMA expr:e {: list.add(e); RESULT = list; :}
+                ;
 
 shifts ::= shift:s                  {: RESULT = new ArrayList<>(); RESULT.add(s); :}
          | shifts:list COMMA shift:s {: list.add(s); RESULT = list; :}

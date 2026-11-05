@@ -12,7 +12,18 @@ schedule
 
 // 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays
 item
-    : expr ('IF' (WEEKDAY+ | '{' WEEKDAY (',' WEEKDAY)* '}'))?
+    : expr combine* ('IF' (WEEKDAY+ | '{' WEEKDAY (',' WEEKDAY)* '}'))?
+    ;
+
+// A & B includes the dates of B, A \ B excludes them; the shifts after it apply to the result
+combine
+    : op=('&' | '\\') operand shift*
+    ;
+
+// a date, a series or a set of dates
+operand
+    : date                          # singleOperand
+    | '{' expr (',' expr)* '}'      # setOperand
     ;
 
 // [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out (ISO 80000-2).
@@ -35,6 +46,7 @@ shift
     | '>' 'NEXT' ORDINAL? anchor    # next
     | '>' 'PREV' ORDINAL? anchor    # prev
     | '>' count select 'IN' PERIOD  # selectIn
+    | '>' '{' annual (',' annual)* '}' # datesInYear
     | '{' observe (',' observe)* '}' # observance
     ;
 

@@ -59,8 +59,15 @@ PRODUCTIONS
   .
 
   /* 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays */
-  Item<out ScheduleSemantics.Expr d>      (. String w; List<String> weekdays = new ArrayList<>(); .)
+  Item<out ScheduleSemantics.Expr d>      (. String w; List<String> weekdays = new ArrayList<>(); boolean include;
+                                             List<ScheduleSemantics.Expr> operand; .)
   = Expr<out d>
+    /* A & B includes the dates of B, A \\ B excludes them; the moves after it apply to the result */
+    { ( "&"                               (. include = true; .)
+      | "\\"                              (. include = false; .)
+      ) Operand<out operand>              (. d = ScheduleSemantics.combined(d, include, operand); .)
+      { Move<out d, d> }
+    }
     [ "IF"
       ( Weekday<out w>                    (. weekdays.add(w); .)
         { Weekday<out w>                  (. weekdays.add(w); .)
@@ -85,24 +92,43 @@ PRODUCTIONS
                                              catch (IllegalArgumentException e) { SemErr(e.getMessage()); } .)
   .
 
-  Expr<out ScheduleSemantics.Expr d>      (. TemporalAmount p; String code; ScheduleSemantics.Anchor a; int n;
-                                             List<ScheduleSemantics.Shift> shifts = new ArrayList<>(); .)
+  Expr<out ScheduleSemantics.Expr d>
   = Date<out d>
-    { "+" Period<out p>                   (. d = ScheduleSemantics.plus(d, p); .)
-    | "-" Period<out p>                   (. d = ScheduleSemantics.minus(d, p); .)
-    | ">"
-      ( "IMM"                             (. d = ScheduleSemantics.nextImm(d); .)
-      | Spot<out code>                    (. d = ScheduleSemantics.spot(d, code); .)
-      | Roll<out code>                    (. d = ScheduleSemantics.roll(d, code); .)
-      | "NEXT" Counted<out a>             (. d = ScheduleSemantics.next(d, a); .)
-      | "PREV" Counted<out a>             (. d = ScheduleSemantics.previous(d, a); .)
-      | Count<out n> Select<out a>
-        "IN" PeriodWord<out code>         (. d = ScheduleSemantics.select(d, Math.abs(n), n < 0, a, code); .)
-      )
-    | "{" Shift<shifts>                   /* {SAT - 1D, SUN + 1D} */
-      { "," Shift<shifts> }
-      "}"                                 (. d = ScheduleSemantics.observe(d, shifts); shifts = new ArrayList<>(); .)
-    }.
+    { Move<out d, d> }.
+
+  /* one step, applied to everything on its left */
+  Move<out ScheduleSemantics.Expr d, ScheduleSemantics.Expr before>
+                                          (. TemporalAmount p; String code; ScheduleSemantics.Anchor a; int n;
+                                             ScheduleSemantics.Annual an = ScheduleSemantics.EASTER; d = before;
+                                             List<ScheduleSemantics.Annual> annuals = new ArrayList<>();
+                                             List<ScheduleSemantics.Shift> shifts = new ArrayList<>(); .)
+  = "+" Period<out p>                     (. d = ScheduleSemantics.plus(before, p); .)
+  | "-" Period<out p>                     (. d = ScheduleSemantics.minus(before, p); .)
+  | ">"
+    ( "IMM"                               (. d = ScheduleSemantics.nextImm(before); .)
+    | Spot<out code>                      (. d = ScheduleSemantics.spot(before, code); .)
+    | Roll<out code>                      (. d = ScheduleSemantics.roll(before, code); .)
+    | "NEXT" Counted<out a>               (. d = ScheduleSemantics.next(before, a); .)
+    | "PREV" Counted<out a>               (. d = ScheduleSemantics.previous(before, a); .)
+    | Count<out n> Select<out a>
+      "IN" PeriodWord<out code>           (. d = ScheduleSemantics.select(before, Math.abs(n), n < 0, a, code); .)
+    | "{"                                 /* > {1 FEB, 1 MAY}: the dates of the set in the year of the date */
+      ( Number<out n> AnnualTail<out an, n> | AnnualWord<out an> ) (. annuals.add(an); .)
+      { "," ( Number<out n> AnnualTail<out an, n> | AnnualWord<out an> ) (. annuals.add(an); .)
+      } "}"                               (. d = ScheduleSemantics.datesInYear(before, annuals); .)
+    )
+  | "{" Shift<shifts>                     /* {SAT - 1D, SUN + 1D} */
+    { "," Shift<shifts> }
+    "}"                                   (. d = ScheduleSemantics.observe(before, shifts); .)
+  .
+
+  /* a date, a series or a set of dates */
+  Operand<out List<ScheduleSemantics.Expr> exprs> (. ScheduleSemantics.Expr d; exprs = new ArrayList<>(); .)
+  = Date<out d>                           (. exprs.add(d); .)
+  | "{" Expr<out d>                       (. exprs.add(d); .)
+    { "," Expr<out d>                     (. exprs.add(d); .)
+    } "}"
+  .
 
   Spot<out String code>                   (. code = null; .)
   = "SPOT" [ pair                         (. code = t.val; .)

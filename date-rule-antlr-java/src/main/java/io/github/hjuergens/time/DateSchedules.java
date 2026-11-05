@@ -33,6 +33,21 @@ public final class DateSchedules {
      * @throws IllegalArgumentException on a range without positive step
      */
     public static ScheduleSemantics.Rule parse(String text) {
+        return parser(text).schedule().result;
+    }
+
+    /**
+     * One line of a rules file of date-rule-runtime: {@code rule @NAME = ...}, {@code market @NAME = ...},
+     * {@code event @NAME = ...} or {@code assert @NAME [base @MARKET] => expected}.
+     *
+     * @throws ParseCancellationException on a syntax error, with column and message
+     * @throws java.time.DateTimeException on an invalid date
+     */
+    public static DateScheduleParser.RuleLineContext parseRuleLine(String text) {
+        return parser(text).ruleLine();
+    }
+
+    private static DateScheduleParser parser(String text) {
         DateScheduleLexer lexer = new DateScheduleLexer(CharStreams.fromString(text));
         lexer.removeErrorListeners();
         lexer.addErrorListener(FAIL);
@@ -40,6 +55,6 @@ public final class DateSchedules {
         parser.removeErrorListeners();
         parser.addErrorListener(FAIL);
         parser.setErrorHandler(new BailErrorStrategy());
-        return parser.schedule().result;
+        return parser;
     }
 }

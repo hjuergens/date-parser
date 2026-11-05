@@ -7,7 +7,14 @@ schedule = items
 items    = item (<','> item)*
 
 (* 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays *)
-item     = expr (<'IF'> (WEEKDAY+ | <'{'> WEEKDAY (<','> WEEKDAY)* <'}'>))?
+item     = expr combine* (<'IF'> (WEEKDAY+ | <'{'> WEEKDAY (<','> WEEKDAY)* <'}'>))?
+
+(* A & B includes the dates of B, A \ B excludes them; the shifts after it apply to the result *)
+<combine> = include | exclude
+include  = <'&'> operand shift*
+exclude  = <'\\'> operand shift*
+(* a date, a series or a set of dates *)
+operand  = date | <'{'> expr (<','> expr)* <'}'>
 
 (* [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out. A series is
    a date with several values, like an event: the shifts after it apply to each element *)
@@ -19,7 +26,7 @@ open-end     = <'['>
 
 (* shifts are applied from left to right *)
 expr     = date shift*
-<shift>  = plus | minus | imm | spot | roll | next | prev | select | observance
+<shift>  = plus | minus | imm | spot | roll | next | prev | select | dates-in-year | observance
 plus     = <'+'> period
 minus    = <'-'> period
 imm      = <'>'> <'IMM'>
@@ -34,6 +41,8 @@ select   = <'>'> count (chosen | any-of) <'IN'> PERIOD
 from-start = ORDINAL
 from-end = ORDINAL <'LAST'>
 last     = <'LAST'>
+(* > {1 FEB, 1 MAY}: the dates of the set in the year of the date *)
+dates-in-year = <'>'> <'{'> annual (<','> annual)* <'}'>
 observance = <'{'> observe (<','> observe)* <'}'>
 observe  = WEEKDAY SIGN period
 

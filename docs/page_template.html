@@ -264,19 +264,25 @@
           <tr><td>24 DEC IF MON TUE WED THU</td><td>Christmas Eve from Monday to Thursday, otherwise no date</td></tr>
           <tr><td>1 SHAWWAL, 1 ZHENGYUE</td><td>Eid al-Fitr and Chinese New Year in the year of <code>T</code></td></tr>
           <tr><td>@FOMC + 1B</td><td>the business day after each FOMC decision of that year (a named event)</td></tr>
+          <tr><td>[T : T + 7D] \ {1 JAN, 6 JAN} &amp; 25 DEC</td><td>exclude and include: sorted, without duplicates</td></tr>
+          <tr><td>[T : 1Y : T + 2Y] &gt; {1 FEB, 1 MAY}</td><td>dates in year: 1 February and 1 May of three years</td></tr>
           <tr><td>T &gt; 2ND LAST BD IN MONTH</td><td>the second-to-last business day in the month of <code>T</code></td></tr>
         </tbody>
       </table>
       <pre><code>schedule = item { "," item } .
-item     = expr [ "IF" ( WEEKDAY { WEEKDAY }
+item     = expr { combine } [ "IF" ( WEEKDAY { WEEKDAY }
                        | "{" WEEKDAY { "," WEEKDAY } "}" ) ] .
+combine  = ( "&amp;" | "\\" ) operand { move } .  <span class="c">(* include, exclude *)</span>
+operand  = date | "{" expr { "," expr } "}" .
 series   = ( "[" | "]" ) expr ":" [ period ":" ] expr
            ( "]" | "[" ) .             <span class="c">(* ]a, b[: endpoint left out *)</span>
-expr     = date { ("+" | "-") period
-               | "&gt;" ( "IMM" | "SPOT" [ PAIR ] | ROLL
-                       | ("NEXT" | "PREV") [ ORDINAL ] anchor
-                       | count select "IN" PERIOD )
-               | "{" shift { "," shift } "}" } .
+expr     = date { move } .
+move     = ("+" | "-") period
+         | "&gt;" ( "IMM" | "SPOT" [ PAIR ] | ROLL
+                 | ("NEXT" | "PREV") [ ORDINAL ] anchor
+                 | count select "IN" PERIOD
+                 | "{" annual { "," annual } "}" )  <span class="c">(* dates in year *)</span>
+         | "{" shift { "," shift } "}" .
 shift    = WEEKDAY ("+" | "-") period .
 anchor   = target                      <span class="c">(* NEXT 3RD FRI *)</span>
          | "{" target { "," target } "}" .  <span class="c">(* NEXT {MON, FRI} *)</span>

@@ -126,6 +126,9 @@ class ScheduleParsers extends RegexParsers {
     | ">" ~ "SPOT" ~> opt(pair) ^^ (p => (d: LocalDate, c: Context) => c.market.spot(d, p))
     | ">" ~> "MODFOLLOWING|FOLLOWING|PRECEDING|BOW|EOW|BOM|EOM|BOQ|EOQ|BOH|EOH|BOY|EOY".r ^^ (r => (d: LocalDate, c: Context) => roll(d, r, c.market))
     | ">" ~> selection
+    | ">" ~ "{" ~> rep1sep(annual, ",") <~ "}" ^^ (annuals => (d: LocalDate, c: Context) =>
+        // > {1 FEB, 1 MAY}: the dates of the set in the year of the date
+        take(c, _ => annuals.map(_(d.getYear)).distinct.sortWith(_.isBefore(_))))
     | ">" ~ "NEXT" ~> counted ^^ (a => (d: LocalDate, c: Context) => a(d, 1, c))
     | ">" ~ "PREV" ~> counted ^^ (a => (d: LocalDate, c: Context) => a(d, -1, c))
     | "{" ~> rep1sep(observe, ",") <~ "}" ^^ (shifts => (d: LocalDate, c: Context) =>
@@ -151,18 +154,32 @@ class ScheduleParsers extends RegexParsers {
           case p: Period => p.multipliedBy(k)
           case BusinessDays(n) => BusinessDays(k * n)
         }
-        (c: Context) => c.occurrence.getOrElse(throw new Unbound(c => {
+        (c: Context) => take(c, c => {
           val (start, end) = (single(first, c), single(last, c))
           Iterator.from(0).map(k => plus(start, times(k), 1, c.market)).takeWhile(!_.isAfter(end))
             .filterNot(d => startOut && !d.isAfter(start) || endOut && !d.isBefore(end)).toList
-        }))
+        })
     }
+
+  /** A & B includes the dates of B, A \\ B excludes them; the shifts after it apply to the result */
+  def combine: Parser[(Context => LocalDate) => (Context => LocalDate)] =
+    ("&" ^^^ true | "\\" ^^^ false) ~ operand ~ rep(shift) ^^ { case include ~ o ~ shifts => (left: Context => LocalDate) =>
+      val node = combined(left, include, o)
+      (c: Context) => shifts.foldLeft(node(c))((d, f) => f(d, c))
+    }
+
+  /** a date, a series or a set of dates */
+  def operand: Parser[List[Context => LocalDate]] = date ^^ (List(_)) | "{" ~> rep1sep(expr, ",") <~ "}"
 
   /** 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays */
   def item: Parser[Context => Option[LocalDate]] =
-    expr ~ opt("IF" ~> (rep1(weekday) | "{" ~> rep1sep(weekday, ",") <~ "}")) ^^ {
-    case e ~ None => (c: Context) => Some(e(c))
-    case e ~ Some(days) => (c: Context) => Some(e(c)).filter(d => days.map(weekdays).contains(d.getDayOfWeek))
+    expr ~ rep(combine) ~ opt("IF" ~> (rep1(weekday) | "{" ~> rep1sep(weekday, ",") <~ "}")) ^^ {
+    case first ~ combines ~ days =>
+      val e = combines.foldLeft(first)((left, c) => c(left))
+      days match {
+        case None => (c: Context) => Some(e(c))
+        case Some(days) => (c: Context) => Some(e(c)).filter(d => days.map(weekdays).contains(d.getDayOfWeek))
+      }
   }
 
   def schedule: Parser[Context => List[LocalDate]] =
@@ -199,21 +216,36 @@ object ScheduleParsers {
   }
 
   /** what a rule is evaluated against: the base date (only needed for T), the market and the named events;
-   *  occurrence is the date of the event an expression is being evaluated for */
+   *  bindings are the values values() chose for the nodes with several values (events, series, combinations, dates in
+   *  year), in the order the evaluation reaches them, counted by cursor */
   case class Context(base: Option[LocalDate] = None, market: Market = Market.Weekends,
-                     events: Map[String, Context => List[LocalDate]] = Map.empty, occurrence: Option[LocalDate] = None)
+                     events: Map[String, Context => List[LocalDate]] = Map.empty, bindings: List[LocalDate] = Nil,
+                     cursor: Array[Int] = null)
 
   /** T: the base date of the evaluation */
   val base: Context => LocalDate = _.base.getOrElse(throw new IllegalStateException("no base date"))
 
-  /** thrown by an event date that is not bound to one occurrence yet; values() catches it */
-  /** thrown by a date with several values (an event, a series) that is not bound to one of them yet; values() catches
-   *  it and evaluates the expression once per date of dates */
+  /** thrown by a node with several values that is not bound yet; values() catches it and evaluates the expression once
+   *  per date of dates */
   private class Unbound(val dates: Context => List[LocalDate]) extends RuntimeException("unbound", null, false, false)
 
+  /** the value of the next node with several values in this evaluation: bound by values(), or Unbound */
+  def take(c: Context, dates: Context => List[LocalDate]): LocalDate =
+    if (c.cursor != null && c.cursor(0) < c.bindings.size) {
+      c.cursor(0) += 1
+      c.bindings(c.cursor(0) - 1)
+    } else throw new Unbound(dates)
+
   /** @NAME: one occurrence of the event, bound by values() */
-  def event(name: String): Context => LocalDate =
-    _.occurrence.getOrElse(throw new Unbound(c => occurrences(name, base(c).getYear, c)))
+  def event(name: String): Context => LocalDate = c => take(c, c => occurrences(name, base(c).getYear, c))
+
+  /** A & B, A \\ B: the dates of A with or without those of the operand, sorted and without duplicates; one value at a
+   *  time, so the shifts after it apply to each */
+  def combined(left: Context => LocalDate, include: Boolean, operand: List[Context => LocalDate]): Context => LocalDate =
+    c => take(c, c => {
+      val (l, r) = (values(left, c).toSet, operand.flatMap(values(_, c)).toSet)
+      (if (include) l ++ r else l -- r).toList.sortWith(_.isBefore(_))
+    })
 
   /** the dates of the event in the year: its rule evaluated with the first of January as base date */
   def occurrences(name: String, year: Int, c: Context): List[LocalDate] = {
@@ -221,12 +253,12 @@ object ScheduleParsers {
     rule(Context(Some(LocalDate.of(year, 1, 1)), c.market, c.events)).filter(_.getYear == year).sortWith(_.isBefore(_))
   }
 
-  /** the values of an expression: one, or one per date if it starts with an event (its occurrences in the base year)
-   *  or a series (its elements) */
-  def values[A](expr: Context => A, c: Context): List[A] =
-    try List(expr(c))
+  /** the values of an expression: one, or one per combination of the values of its nodes with several values (an
+   *  event's occurrences in the base year, a series' elements, ...), bound one after the other */
+  def values[A](expr: Context => A, c: Context, bindings: List[LocalDate] = Nil): List[A] =
+    try List(expr(c.copy(bindings = bindings, cursor = Array(0))))
     catch {
-      case unbound: Unbound => unbound.dates(c).map(d => expr(c.copy(occurrence = Some(d))))
+      case unbound: Unbound => unbound.dates(c).flatMap(d => values(expr, c, bindings :+ d))
     }
 
   /** the date of an expression that must have exactly one, such as the end of a range */

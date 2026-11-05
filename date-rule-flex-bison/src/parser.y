@@ -71,6 +71,8 @@ static int fixed(Parse *parse, long year, long month, long day, int *date) {
     Anchor *anchor;
     Observe *observe;
     Item *item;
+    Combine *combine;
+    Operand *operand;
 }
 
 %token TODAY "T" TOM "TOM" SPOT "SPOT" IMM "IMM" NEXT "NEXT" PREV "PREV" BD "BD" LAST "LAST" EASTER "EASTER"
@@ -88,6 +90,10 @@ static int fixed(Parse *parse, long year, long month, long day, int *date) {
 %type <num> count
 %type <observe> observe observes
 %type <item> item items
+%type <combine> combine combines
+%type <operand> operand operand_exprs
+%type <shift> shifts
+%type <anchor> annuals
 %type <code> weekdays weekday_set start_out end_out
 %type <text> pair
 
@@ -101,10 +107,32 @@ items: item
      ;
 
 /* 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays */
-item: expr                      { $$ = NEW(Item); $$->expr = $1; }
-    | expr IF weekdays          { $$ = NEW(Item); $$->expr = $1; $$->weekdays = $3; }
-    | expr IF '{' weekday_set '}' { $$ = NEW(Item); $$->expr = $1; $$->weekdays = $4; }
+item: expr combines             { $$ = NEW(Item); $$->expr = $1; $$->combines = $2; }
+    | expr combines IF weekdays { $$ = NEW(Item); $$->expr = $1; $$->combines = $2; $$->weekdays = $4; }
+    | expr combines IF '{' weekday_set '}' { $$ = NEW(Item); $$->expr = $1; $$->combines = $2; $$->weekdays = $5; }
     ;
+
+/* A & B includes the dates of B, A \\ B excludes them; the shifts after it apply to the result */
+combines: %empty                { $$ = NULL; }
+        | combines combine      { $$ = $1; APPEND(Combine, $$, $2); }
+        ;
+
+combine: '&' operand shifts     { $$ = NEW(Combine); $$->include = 1; $$->operands = $2; $$->shifts = $3; }
+       | '\\' operand shifts    { $$ = NEW(Combine); $$->include = 0; $$->operands = $2; $$->shifts = $3; }
+       ;
+
+shifts: %empty                  { $$ = NULL; }
+      | shifts shift            { $$ = $1; APPEND(Shift, $$, $2); }
+      ;
+
+/* a date, a series or a set of dates */
+operand: date                   { $$ = NEW(Operand); $$->expr = NEW(Expr); $$->expr->date = $1; }
+       | '{' operand_exprs '}'  { $$ = $2; }
+       ;
+
+operand_exprs: expr             { $$ = NEW(Operand); $$->expr = $1; }
+             | operand_exprs ',' expr { Operand *o = NEW(Operand); o->expr = $3; $$ = $1; APPEND(Operand, $$, o); }
+             ;
 
 weekdays: WEEKDAY               { $$ = 1 << $1; }
         | weekdays WEEKDAY      { $$ = $1 | 1 << $2; }
@@ -152,8 +180,13 @@ shift: '+' period               { $$ = shift(parse, S_PLUS); $$->period = $2; }
                                     $$->anchor = $3;
                                     $$->within = $5;
                                 }
+     | '>' '{' annuals '}'      { $$ = shift(parse, S_DATES_IN_YEAR); $$->anchor = $3; }   /* > {1 FEB, 1 MAY} */
      | '{' observes '}'         { $$ = shift(parse, S_OBSERVANCE); $$->observes = $2; }
      ;
+
+annuals: annual                 { $$ = anchor(parse, AT_ANNUAL); $$->annual = $1; }
+       | annuals ',' annual     { Anchor *a = anchor(parse, AT_ANNUAL); a->annual = $3; $$ = $1; APPEND(Anchor, $$, a); }
+       ;
 
 pair: %empty                    { $$ = NULL; }
     | PAIR

@@ -15,6 +15,7 @@
   import java.time.temporal.TemporalAmount;
   import java.util.ArrayList;
   import java.util.List;
+  import java.util.function.UnaryOperator;
   import io.github.hjuergens.bison.ScheduleSemantics.Anchor;
   import io.github.hjuergens.bison.ScheduleSemantics.Annual;
   import io.github.hjuergens.bison.ScheduleSemantics.Expr;
@@ -51,7 +52,11 @@
 %token SOLARTERM "SOLARTERM"
 %token <Integer> ZONE "time zone"
 %type <Integer> zone count
-%type <Expr> item expr date series
+%type <Expr> item expr combined date series
+%type <UnaryOperator<Expr>> move combine
+%type <ArrayList<UnaryOperator<Expr>>> moves combines
+%type <ArrayList<Expr>> operand operand_exprs
+%type <ArrayList<Annual>> annuals
 %type <Boolean> start_out end_out
 %type <ArrayList<String>> weekdays weekday_set
 %type <Annual> annual fixed_annual
@@ -75,9 +80,9 @@ exprs:
 
 /* 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays */
 item:
-  expr                              { $$ = $1; }
-| expr IF weekdays                  { $$ = ScheduleSemantics.onlyOn ($1, $3); }
-| expr IF '{' weekday_set '}'       { $$ = ScheduleSemantics.onlyOn ($1, $4); }
+  combined                          { $$ = $1; }
+| combined IF weekdays              { $$ = ScheduleSemantics.onlyOn ($1, $3); }
+| combined IF '{' weekday_set '}'   { $$ = ScheduleSemantics.onlyOn ($1, $4); }
 ;
 
 weekday_set:
@@ -110,16 +115,62 @@ weekdays:
 /* periods are applied from left to right */
 expr:
   date                              { $$ = $1; }
-| expr '+' period                   { $$ = ScheduleSemantics.plus ($1, $3); }
-| expr '-' period                   { $$ = ScheduleSemantics.minus ($1, $3); }
-| expr '>' IMM                      { $$ = ScheduleSemantics.nextImm ($1); }
-| expr '>' SPOT                     { $$ = ScheduleSemantics.spot ($1, null); }
-| expr '>' SPOT PAIR                { $$ = ScheduleSemantics.spot ($1, $4); }
-| expr '>' ROLL                     { $$ = ScheduleSemantics.roll ($1, $3); }
-| expr '>' NEXT counted             { $$ = ScheduleSemantics.next ($1, $4); }
-| expr '>' PREV counted             { $$ = ScheduleSemantics.previous ($1, $4); }
-| expr '>' count select IN PERIOD   { $$ = ScheduleSemantics.select ($1, Math.abs ($3), $3 < 0, $4, $6); }
-| expr '{' shifts '}'               { $$ = ScheduleSemantics.observe ($1, $3); }   /* {SAT - 1D, SUN + 1D} */
+| expr move                         { $$ = $2.apply ($1); }
+;
+
+/* one step, applied to everything on its left: a function of the expression so far ($$ is an Object in the Java
+   skeleton, so each lambda is cast to its type) */
+move:
+  '+' period                        { TemporalAmount p = $2; $$ = (UnaryOperator<Expr>) e -> ScheduleSemantics.plus (e, p); }
+| '-' period                        { TemporalAmount p = $2; $$ = (UnaryOperator<Expr>) e -> ScheduleSemantics.minus (e, p); }
+| '>' IMM                           { $$ = (UnaryOperator<Expr>) e -> ScheduleSemantics.nextImm (e); }
+| '>' SPOT                          { $$ = (UnaryOperator<Expr>) e -> ScheduleSemantics.spot (e, null); }
+| '>' SPOT PAIR                     { String pair = $3; $$ = (UnaryOperator<Expr>) e -> ScheduleSemantics.spot (e, pair); }
+| '>' ROLL                          { String roll = $2; $$ = (UnaryOperator<Expr>) e -> ScheduleSemantics.roll (e, roll); }
+| '>' NEXT counted                  { Anchor a = $3; $$ = (UnaryOperator<Expr>) e -> ScheduleSemantics.next (e, a); }
+| '>' PREV counted                  { Anchor a = $3; $$ = (UnaryOperator<Expr>) e -> ScheduleSemantics.previous (e, a); }
+| '>' count select IN PERIOD        { int n = $2; Anchor a = $3; String period = $5;
+                                      $$ = (UnaryOperator<Expr>) e -> ScheduleSemantics.select (e, Math.abs (n), n < 0, a, period); }
+| '>' '{' annuals '}'               { ArrayList<Annual> list = $3; $$ = (UnaryOperator<Expr>) e -> ScheduleSemantics.datesInYear (e, list); }
+| '{' shifts '}'                    { ArrayList<Shift> s = $2; $$ = (UnaryOperator<Expr>) e -> ScheduleSemantics.observe (e, s); }   /* {SAT - 1D, SUN + 1D} */
+;
+
+annuals:
+  annual                            { ArrayList<Annual> list = new ArrayList<> (); list.add ($1); $$ = list; }
+| annuals ',' annual                { $1.add ($3); $$ = $1; }
+;
+
+/* A & B includes the dates of B, A \\ B excludes them; the moves after it apply to the result */
+combined:
+  expr combines                     { Expr d = $1; for (UnaryOperator<Expr> c : $2) d = c.apply (d); $$ = d; }
+;
+
+combines:
+  %empty                            { $$ = new ArrayList<> (); }
+| combines combine                  { $1.add ($2); $$ = $1; }
+;
+
+combine:
+  '&' operand moves                 { ArrayList<Expr> o = $2; ArrayList<UnaryOperator<Expr>> ms = $3;
+                                      $$ = (UnaryOperator<Expr>) e -> { Expr d = ScheduleSemantics.combined (e, true, o); for (UnaryOperator<Expr> m : ms) d = m.apply (d); return d; }; }
+| '\\' operand moves                { ArrayList<Expr> o = $2; ArrayList<UnaryOperator<Expr>> ms = $3;
+                                      $$ = (UnaryOperator<Expr>) e -> { Expr d = ScheduleSemantics.combined (e, false, o); for (UnaryOperator<Expr> m : ms) d = m.apply (d); return d; }; }
+;
+
+moves:
+  %empty                            { $$ = new ArrayList<> (); }
+| moves move                        { $1.add ($2); $$ = $1; }
+;
+
+/* a date, a series or a set of dates */
+operand:
+  date                              { ArrayList<Expr> list = new ArrayList<> (); list.add ($1); $$ = list; }
+| '{' operand_exprs '}'             { $$ = $2; }
+;
+
+operand_exprs:
+  expr                              { ArrayList<Expr> list = new ArrayList<> (); list.add ($1); $$ = list; }
+| operand_exprs ',' expr            { $1.add ($3); $$ = $1; }
 ;
 
 shifts:
@@ -327,7 +378,7 @@ class ScheduleLexer implements ScheduleParser.Lexer {
         return EVENT;
       }
     pos++;
-    if ("+-./,:[]>{}".indexOf (c) >= 0)
+    if ("+-./,:[]>{}&\\".indexOf (c) >= 0)
       return c;
     return YYUNDEF;   /* unknown character: a syntax error for the parser */
   }

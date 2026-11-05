@@ -58,38 +58,61 @@ class RuleMarket(Market):
 @dataclass(frozen=True)
 class Context:
     """what a rule is evaluated against: the base date (only needed for T), the market and the named events
-    (name -> rule); occurrence is the date of the event an expression is being evaluated for"""
+    (name -> rule); bindings are the values chosen by values() for the nodes with several values (events, series,
+    combinations, dates in year), in the order the evaluation reaches them, counted by cursor"""
     base: date | None = None
     market: Market = WEEKENDS
     events: dict = field(default_factory=dict)
-    occurrence: date | None = None
+    bindings: tuple = ()
+    cursor: list | None = field(default=None, compare=False)
 
 
 class Unbound(Exception):
-    """raised by a date with several values (an event, a series) that is not bound to one of them yet; values() catches
-    it and evaluates the expression once per date of dates(context)"""
+    """raised by a node with several values that is not bound yet; values() catches it and evaluates the expression
+    once per date of dates(context)"""
 
     def __init__(self, dates):
         super().__init__("unbound")
         self.dates = dates
 
 
+def take(context, dates):
+    """the value of the next node with several values in this evaluation: bound by values(), or Unbound(dates)"""
+    if context.cursor is None:
+        raise Unbound(dates)
+    i = context.cursor[0]
+    context.cursor[0] += 1
+    if i < len(context.bindings):
+        return context.bindings[i]
+    raise Unbound(dates)
+
+
 def event(name):
     """@NAME: one occurrence of the event, bound by values()"""
-    def at(context):
-        if context.occurrence is None:
-            raise Unbound(lambda c: occurrences(name, base(c).year, c))
-        return context.occurrence
-    return at
+    return lambda context: take(context, lambda c: occurrences(name, base(c).year, c))
 
 
 def series_date(first, step, last, start_out, end_out):
     """[first : step : last]: one element of the series, bound by values(), so the shifts after it apply to each"""
-    def at(context):
-        if context.occurrence is None:
-            raise Unbound(lambda c: series(single(first, c), step, single(last, c), start_out, end_out, c.market))
-        return context.occurrence
-    return at
+    return lambda context: take(context, lambda c: series(single(first, c), step, single(last, c), start_out, end_out,
+                                                          c.market))
+
+
+def combined(left, include, operand):
+    """A & B (include), A \\ B (exclude): the dates of A with or without those of the operand (a date, a series or a set
+    of dates), sorted and without duplicates; one value at a time, so the shifts after it apply to each"""
+    def dates(c):
+        right = {d for expr in operand for d in values(expr, c) if d is not None}
+        left_dates = {d for d in values(left, c) if d is not None}
+        return sorted(left_dates | right if include else left_dates - right)
+    return lambda context: take(context, dates)
+
+
+def dates_in_year(annuals):
+    """> {1 FEB, 1 MAY}: the dates of the set in the year of the date, sorted; one value at a time"""
+    def shift(d, context):
+        return take(context, lambda c: sorted({annual(d.year) for annual in annuals}))
+    return shift
 
 
 def occurrences(name, year, context):
@@ -100,13 +123,13 @@ def occurrences(name, year, context):
     return sorted(d for d in context.events[name](first) if d.year == year)
 
 
-def values(expr, context):
-    """the dates of an expression: one, or one per date if it starts with an event (its occurrences in the base year)
-    or a series (its elements)"""
+def values(expr, context, bindings=()):
+    """the dates of an expression: one, or one per combination of the values of its nodes with several values (an
+    event's occurrences in the base year, a series' elements, ...), bound one after the other"""
     try:
-        return [expr(context)]
+        return [expr(replace(context, bindings=bindings, cursor=[0]))]
     except Unbound as unbound:
-        return [expr(replace(context, occurrence=d)) for d in unbound.dates(context)]
+        return [v for d in unbound.dates(context) for v in values(expr, context, bindings + (d,))]
 
 
 def single(expr, context):

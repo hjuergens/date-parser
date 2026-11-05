@@ -235,11 +235,11 @@
     <h1>Twelve parsers, one date language</h1>
     <p class="lead">
       The same small language for dates, periods and ranges, implemented with twelve parser generators and
-      parser libraries, from LL(1) to LALR(1), Earley, GLL and PEG. Every implementation passes the same 401 test cases.
+      parser libraries, from LL(1) to LALR(1), Earley, GLL and PEG. Every implementation passes the same 427 test cases.
     </p>
     <ul class="stats">
       <li><strong>12</strong><span>implementations, 6 languages</span></li>
-      <li><strong>401</strong><span>shared test cases</span></li>
+      <li><strong>427</strong><span>shared test cases</span></li>
       <li><strong>0</strong><span>grammar conflicts</span></li>
       <li><strong>1</strong><span>specification file</span></li>
     </ul>
@@ -264,19 +264,25 @@
           <tr><td>24 DEC IF MON TUE WED THU</td><td>Christmas Eve from Monday to Thursday, otherwise no date</td></tr>
           <tr><td>1 SHAWWAL, 1 ZHENGYUE</td><td>Eid al-Fitr and Chinese New Year in the year of <code>T</code></td></tr>
           <tr><td>@FOMC + 1B</td><td>the business day after each FOMC decision of that year (a named event)</td></tr>
+          <tr><td>[T : T + 7D] \ {1 JAN, 6 JAN} &amp; 25 DEC</td><td>exclude and include: sorted, without duplicates</td></tr>
+          <tr><td>[T : 1Y : T + 2Y] &gt; {1 FEB, 1 MAY}</td><td>dates in year: 1 February and 1 May of three years</td></tr>
           <tr><td>T &gt; 2ND LAST BD IN MONTH</td><td>the second-to-last business day in the month of <code>T</code></td></tr>
         </tbody>
       </table>
       <pre><code>schedule = item { "," item } .
-item     = expr [ "IF" ( WEEKDAY { WEEKDAY }
+item     = expr { combine } [ "IF" ( WEEKDAY { WEEKDAY }
                        | "{" WEEKDAY { "," WEEKDAY } "}" ) ] .
+combine  = ( "&amp;" | "\\" ) operand { move } .  <span class="c">(* include, exclude *)</span>
+operand  = date | "{" expr { "," expr } "}" .
 series   = ( "[" | "]" ) expr ":" [ period ":" ] expr
            ( "]" | "[" ) .             <span class="c">(* ]a, b[: endpoint left out *)</span>
-expr     = date { ("+" | "-") period
-               | "&gt;" ( "IMM" | "SPOT" [ PAIR ] | ROLL
-                       | ("NEXT" | "PREV") [ ORDINAL ] anchor
-                       | count select "IN" PERIOD )
-               | "{" shift { "," shift } "}" } .
+expr     = date { move } .
+move     = ("+" | "-") period
+         | "&gt;" ( "IMM" | "SPOT" [ PAIR ] | ROLL
+                 | ("NEXT" | "PREV") [ ORDINAL ] anchor
+                 | count select "IN" PERIOD
+                 | "{" annual { "," annual } "}" )  <span class="c">(* dates in year *)</span>
+         | "{" shift { "," shift } "}" .
 shift    = WEEKDAY ("+" | "-") period .
 anchor   = target                      <span class="c">(* NEXT 3RD FRI *)</span>
          | "{" target { "," target } "}" .  <span class="c">(* NEXT {MON, FRI} *)</span>
@@ -406,17 +412,27 @@ ORDINAL  = NUM ("ST" | "ND" | "RD" | "TH") .  <span class="c">(* 3RD, one token 
       <pre><code><span class="c">// periods are applied from left to right</span>
 expr returns [Expr value]
     : date                          { $value = $date.value; }
-      ( &#x27;+&#x27; period                  { $value = ScheduleSemantics.plus($value, $period.value); }
-      | &#x27;-&#x27; period                  { $value = ScheduleSemantics.minus($value, $period.value); }
-      | &#x27;&gt;&#x27; &#x27;IMM&#x27;                   { $value = ScheduleSemantics.nextImm($value); }
-      | &#x27;&gt;&#x27; spot                    { $value = ScheduleSemantics.spot($value, $spot.pair); }
-      | &#x27;&gt;&#x27; ROLL                    { $value = ScheduleSemantics.roll($value, $ROLL.text); }
-      | &#x27;&gt;&#x27; &#x27;NEXT&#x27; ordinal anchor   { $value = ScheduleSemantics.next($value, $ordinal.n, $anchor.value); }
-      | &#x27;&gt;&#x27; &#x27;PREV&#x27; ordinal anchor   { $value = ScheduleSemantics.previous($value, $ordinal.n, $anchor.value); }
-      | &#x27;&gt;&#x27; count select &#x27;IN&#x27; PERIOD
-                                    { $value = ScheduleSemantics.select($value, $count.n, $count.fromEnd, $select.value, $PERIOD.text); }
-      | observance                  { $value = ScheduleSemantics.observe($value, $observance.shifts); }
+      ( move[$value]                { $value = $move.value; }
       )*
+    ;
+
+<span class="c">// one step, applied to everything on its left</span>
+move[Expr before] returns [Expr value]
+locals [List&lt;Annual&gt; annuals = new ArrayList&lt;&gt;()]
+    : &#x27;+&#x27; period                    { $value = ScheduleSemantics.plus($before, $period.value); }
+    | &#x27;-&#x27; period                    { $value = ScheduleSemantics.minus($before, $period.value); }
+    | &#x27;&gt;&#x27; &#x27;IMM&#x27;                     { $value = ScheduleSemantics.nextImm($before); }
+    | &#x27;&gt;&#x27; spot                      { $value = ScheduleSemantics.spot($before, $spot.pair); }
+    | &#x27;&gt;&#x27; ROLL                      { $value = ScheduleSemantics.roll($before, $ROLL.text); }
+    | &#x27;&gt;&#x27; &#x27;NEXT&#x27; ordinal anchor     { $value = ScheduleSemantics.next($before, $ordinal.n, $anchor.value); }
+    | &#x27;&gt;&#x27; &#x27;PREV&#x27; ordinal anchor     { $value = ScheduleSemantics.previous($before, $ordinal.n, $anchor.value); }
+    | &#x27;&gt;&#x27; count select &#x27;IN&#x27; PERIOD
+                                    { $value = ScheduleSemantics.select($before, $count.n, $count.fromEnd, $select.value, $PERIOD.text); }
+      <span class="c">// &gt; {1 FEB, 1 MAY}: the dates of the set in the year of the date</span>
+    | &#x27;&gt;&#x27; &#x27;{&#x27; a=annual              { $annuals.add($a.value); }
+      (&#x27;,&#x27; a=annual                 { $annuals.add($a.value); }
+      )* &#x27;}&#x27;                        { $value = ScheduleSemantics.datesInYear($before, $annuals); }
+    | observance                    { $value = ScheduleSemantics.observe($before, $observance.shifts); }
     ;</code></pre>
       <p class="pitfall"><strong>Pitfall.</strong> <code>$start</code> is reserved (the rule's first token), so the range labels are <code>first</code>/<code>last</code>.</p>
     </div>
@@ -480,24 +496,43 @@ def expr: Parser[Context =&gt; LocalDate] = date ~ rep(shift) ^^ {
         <span class="kind">LL(1)</span><span class="lang">Java</span>
         <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-coco/src/main/coco/Schedule.atg">Schedule.atg ↗</a>
       </div>
-      <pre><code>Expr&lt;out ScheduleSemantics.Expr d&gt;      (. TemporalAmount p; String code; ScheduleSemantics.Anchor a; int n;
-                                           List&lt;ScheduleSemantics.Shift&gt; shifts = new ArrayList&lt;&gt;(); .)
+      <pre><code>Expr&lt;out ScheduleSemantics.Expr d&gt;
 = Date&lt;out d&gt;
-  { &quot;+&quot; Period&lt;out p&gt;                   (. d = ScheduleSemantics.plus(d, p); .)
-  | &quot;-&quot; Period&lt;out p&gt;                   (. d = ScheduleSemantics.minus(d, p); .)
-  | &quot;&gt;&quot;
-    ( &quot;IMM&quot;                             (. d = ScheduleSemantics.nextImm(d); .)
-    | Spot&lt;out code&gt;                    (. d = ScheduleSemantics.spot(d, code); .)
-    | Roll&lt;out code&gt;                    (. d = ScheduleSemantics.roll(d, code); .)
-    | &quot;NEXT&quot; Counted&lt;out a&gt;             (. d = ScheduleSemantics.next(d, a); .)
-    | &quot;PREV&quot; Counted&lt;out a&gt;             (. d = ScheduleSemantics.previous(d, a); .)
-    | Count&lt;out n&gt; Select&lt;out a&gt;
-      &quot;IN&quot; PeriodWord&lt;out code&gt;         (. d = ScheduleSemantics.select(d, Math.abs(n), n &lt; 0, a, code); .)
-    )
-  | &quot;{&quot; Shift&lt;shifts&gt;                   <span class="c">/* {SAT - 1D, SUN + 1D} */</span>
-    { &quot;,&quot; Shift&lt;shifts&gt; }
-    &quot;}&quot;                                 (. d = ScheduleSemantics.observe(d, shifts); shifts = new ArrayList&lt;&gt;(); .)
-  }.</code></pre>
+  { Move&lt;out d, d&gt; }.
+
+<span class="c">/* one step, applied to everything on its left */</span>
+Move&lt;out ScheduleSemantics.Expr d, ScheduleSemantics.Expr before&gt;
+                                        (. TemporalAmount p; String code; ScheduleSemantics.Anchor a; int n;
+                                           ScheduleSemantics.Annual an = ScheduleSemantics.EASTER; d = before;
+                                           List&lt;ScheduleSemantics.Annual&gt; annuals = new ArrayList&lt;&gt;();
+                                           List&lt;ScheduleSemantics.Shift&gt; shifts = new ArrayList&lt;&gt;(); .)
+= &quot;+&quot; Period&lt;out p&gt;                     (. d = ScheduleSemantics.plus(before, p); .)
+| &quot;-&quot; Period&lt;out p&gt;                     (. d = ScheduleSemantics.minus(before, p); .)
+| &quot;&gt;&quot;
+  ( &quot;IMM&quot;                               (. d = ScheduleSemantics.nextImm(before); .)
+  | Spot&lt;out code&gt;                      (. d = ScheduleSemantics.spot(before, code); .)
+  | Roll&lt;out code&gt;                      (. d = ScheduleSemantics.roll(before, code); .)
+  | &quot;NEXT&quot; Counted&lt;out a&gt;               (. d = ScheduleSemantics.next(before, a); .)
+  | &quot;PREV&quot; Counted&lt;out a&gt;               (. d = ScheduleSemantics.previous(before, a); .)
+  | Count&lt;out n&gt; Select&lt;out a&gt;
+    &quot;IN&quot; PeriodWord&lt;out code&gt;           (. d = ScheduleSemantics.select(before, Math.abs(n), n &lt; 0, a, code); .)
+  | &quot;{&quot;                                 <span class="c">/* &gt; {1 FEB, 1 MAY}: the dates of the set in the year of the date */</span>
+    ( Number&lt;out n&gt; AnnualTail&lt;out an, n&gt; | AnnualWord&lt;out an&gt; ) (. annuals.add(an); .)
+    { &quot;,&quot; ( Number&lt;out n&gt; AnnualTail&lt;out an, n&gt; | AnnualWord&lt;out an&gt; ) (. annuals.add(an); .)
+    } &quot;}&quot;                               (. d = ScheduleSemantics.datesInYear(before, annuals); .)
+  )
+| &quot;{&quot; Shift&lt;shifts&gt;                     <span class="c">/* {SAT - 1D, SUN + 1D} */</span>
+  { &quot;,&quot; Shift&lt;shifts&gt; }
+  &quot;}&quot;                                   (. d = ScheduleSemantics.observe(before, shifts); .)
+.
+
+<span class="c">/* a date, a series or a set of dates */</span>
+Operand&lt;out List&lt;ScheduleSemantics.Expr&gt; exprs&gt; (. ScheduleSemantics.Expr d; exprs = new ArrayList&lt;&gt;(); .)
+= Date&lt;out d&gt;                           (. exprs.add(d); .)
+| &quot;{&quot; Expr&lt;out d&gt;                       (. exprs.add(d); .)
+  { &quot;,&quot; Expr&lt;out d&gt;                     (. exprs.add(d); .)
+  } &quot;}&quot;
+.</code></pre>
       <p class="pitfall"><strong>Pitfall.</strong> Error recovery keeps running semantic actions on incomplete input, so they must not throw.</p>
     </div>
     <div role="tabpanel" id="panel-javacc" aria-labelledby="tab-javacc" hidden>
@@ -506,28 +541,46 @@ def expr: Parser[Context =&gt; LocalDate] = date ~ rep(shift) ^^ {
         <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-javacc/src/main/javacc/Schedule.jj">Schedule.jj ↗</a>
       </div>
       <pre><code>ScheduleSemantics.Expr Expr() :
-{ ScheduleSemantics.Expr d; TemporalAmount p; String pair; Token roll, o, period; ScheduleSemantics.Anchor a;
-  List&lt;ScheduleSemantics.Shift&gt; shifts; boolean fromEnd; }
+{ ScheduleSemantics.Expr d; }
 {
-  d = Date()
-  ( &quot;+&quot; p = Period() { d = ScheduleSemantics.plus(d, p); }
-  | &quot;-&quot; p = Period() { d = ScheduleSemantics.minus(d, p); }
-  | &quot;&gt;&quot;
-    ( &quot;IMM&quot; { d = ScheduleSemantics.nextImm(d); }
-    | pair = Spot() { d = ScheduleSemantics.spot(d, pair); }
-    | roll = &lt;ROLL&gt; { d = ScheduleSemantics.roll(d, roll.image); }
-    | &quot;NEXT&quot; a = Counted() { d = ScheduleSemantics.next(d, a); }
-    | &quot;PREV&quot; a = Counted() { d = ScheduleSemantics.previous(d, a); }
-      <span class="c">// &gt; 3RD WED IN MONTH, &gt; 2ND LAST BD IN MONTH: the n-th match in the period of the date, from its start or its end</span>
-    | { o = null; fromEnd = false; }
-      ( o = &lt;ORDINAL&gt; ( &quot;LAST&quot; { fromEnd = true; } )? | &quot;LAST&quot; { fromEnd = true; } )
-      a = Select() &quot;IN&quot; period = &lt;PERIOD&gt;
-      { d = ScheduleSemantics.select(d, o == null ? 1 : ScheduleSemantics.ordinal(o.image), fromEnd, a, period.image); }
-    )
-  | { shifts = new ArrayList&lt;ScheduleSemantics.Shift&gt;(); }   <span class="c">// {SAT - 1D, SUN + 1D}</span>
-    &quot;{&quot; Shift(shifts) ( &quot;,&quot; Shift(shifts) )* &quot;}&quot; { d = ScheduleSemantics.observe(d, shifts); }
-  )*
+  d = Date() ( d = Move(d) )*
   { return d; }
+}
+
+<span class="c">/** one step, applied to everything on its left */</span>
+ScheduleSemantics.Expr Move(ScheduleSemantics.Expr before) :
+{ TemporalAmount p; String pair; Token roll, o = null, period; ScheduleSemantics.Anchor a; int n;
+  ScheduleSemantics.Annual an; List&lt;ScheduleSemantics.Annual&gt; annuals = new ArrayList&lt;ScheduleSemantics.Annual&gt;();
+  List&lt;ScheduleSemantics.Shift&gt; shifts = new ArrayList&lt;ScheduleSemantics.Shift&gt;(); boolean fromEnd = false; }
+{
+  &quot;+&quot; p = Period() { return ScheduleSemantics.plus(before, p); }
+| &quot;-&quot; p = Period() { return ScheduleSemantics.minus(before, p); }
+| &quot;&gt;&quot;
+  ( &quot;IMM&quot; { return ScheduleSemantics.nextImm(before); }
+  | pair = Spot() { return ScheduleSemantics.spot(before, pair); }
+  | roll = &lt;ROLL&gt; { return ScheduleSemantics.roll(before, roll.image); }
+  | &quot;NEXT&quot; a = Counted() { return ScheduleSemantics.next(before, a); }
+  | &quot;PREV&quot; a = Counted() { return ScheduleSemantics.previous(before, a); }
+    <span class="c">// &gt; 3RD WED IN MONTH, &gt; 2ND LAST BD IN MONTH: the n-th match in the period of the date, from its start or its end</span>
+  | ( o = &lt;ORDINAL&gt; ( &quot;LAST&quot; { fromEnd = true; } )? | &quot;LAST&quot; { fromEnd = true; } )
+    a = Select() &quot;IN&quot; period = &lt;PERIOD&gt;
+    { return ScheduleSemantics.select(before, o == null ? 1 : ScheduleSemantics.ordinal(o.image), fromEnd, a, period.image); }
+    <span class="c">// &gt; {1 FEB, 1 MAY}: the dates of the set in the year of the date</span>
+  | &quot;{&quot; ( n = Number() an = AnnualTail(n) | an = AnnualWord() ) { annuals.add(an); }
+    ( &quot;,&quot; ( n = Number() an = AnnualTail(n) | an = AnnualWord() ) { annuals.add(an); } )* &quot;}&quot;
+    { return ScheduleSemantics.datesInYear(before, annuals); }
+  )
+| &quot;{&quot; Shift(shifts) ( &quot;,&quot; Shift(shifts) )* &quot;}&quot; { return ScheduleSemantics.observe(before, shifts); }   <span class="c">// {SAT - 1D, SUN + 1D}</span>
+}
+
+<span class="c">/** a date, a series or a set of dates */</span>
+List&lt;ScheduleSemantics.Expr&gt; Operand() :
+{ ScheduleSemantics.Expr d; List&lt;ScheduleSemantics.Expr&gt; exprs = new ArrayList&lt;ScheduleSemantics.Expr&gt;(); }
+{
+  ( d = Date() { exprs.add(d); }
+  | &quot;{&quot; d = Expr() { exprs.add(d); } ( &quot;,&quot; d = Expr() { exprs.add(d); } )* &quot;}&quot;
+  )
+  { return exprs; }
 }</code></pre>
       <p class="pitfall"><strong>Pitfall.</strong> ParserGeneratorCC (used by the Maven plugin) rejects the classic <code>STATIC</code> option.</p>
     </div>
@@ -547,6 +600,7 @@ shift
     | {next} gt next ordinal? anchor   <span class="c">/* NEXT 3RD FRI: the third Friday */</span>
     | {prev} gt prev ordinal? anchor
     | {select} gt count select in period_word   <span class="c">/* &gt; 3RD WED IN MONTH, &gt; 2ND LAST BD IN MONTH */</span>
+    | {dates_in_year} gt l_brace annual more_annual* r_brace   <span class="c">/* &gt; {1 FEB, 1 MAY} */</span>
     | {observance} l_brace observe more_observe* r_brace;
 
 observe
@@ -572,6 +626,8 @@ anchor
     | {set} l_brace target more_target* r_brace;
 
 more_target = comma target;
+
+more_annual = comma annual;
 
 target
     = {chosen} chosen
@@ -616,18 +672,53 @@ period = number unit;</code></pre>
       </div>
       <pre><code><span class="c">/* periods are applied from left to right */</span>
 expr ::= date:d                     {: RESULT = d; :}
-       | expr:e PLUS period:p       {: RESULT = ScheduleSemantics.plus(e, p); :}
-       | expr:e MINUS period:p      {: RESULT = ScheduleSemantics.minus(e, p); :}
-       | expr:e GT IMM              {: RESULT = ScheduleSemantics.nextImm(e); :}
-       | expr:e GT SPOT             {: RESULT = ScheduleSemantics.spot(e, null); :}
-       | expr:e GT SPOT PAIR:p      {: RESULT = ScheduleSemantics.spot(e, p); :}
-       | expr:e GT ROLL:r           {: RESULT = ScheduleSemantics.roll(e, r); :}
-       | expr:e GT NEXT counted:a   {: RESULT = ScheduleSemantics.next(e, a); :}
-       | expr:e GT PREV counted:a   {: RESULT = ScheduleSemantics.previous(e, a); :}
-       | expr:e GT count:n select:a IN PERIOD:p
-                                    {: RESULT = ScheduleSemantics.select(e, Math.abs(n), n &lt; 0, a, p); :}
-       | expr:e LBRACE shifts:s RBRACE {: RESULT = ScheduleSemantics.observe(e, s); :}   <span class="c">/* {SAT - 1D, SUN + 1D} */</span>
-       ;</code></pre>
+       | expr:e move:m              {: RESULT = m.apply(e); :}
+       ;
+
+<span class="c">/* one step, applied to everything on its left: a function of the expression so far */</span>
+move ::= PLUS period:p              {: RESULT = e -&gt; ScheduleSemantics.plus(e, p); :}
+       | MINUS period:p             {: RESULT = e -&gt; ScheduleSemantics.minus(e, p); :}
+       | GT IMM                     {: RESULT = e -&gt; ScheduleSemantics.nextImm(e); :}
+       | GT SPOT                    {: RESULT = e -&gt; ScheduleSemantics.spot(e, null); :}
+       | GT SPOT PAIR:p             {: RESULT = e -&gt; ScheduleSemantics.spot(e, p); :}
+       | GT ROLL:r                  {: RESULT = e -&gt; ScheduleSemantics.roll(e, r); :}
+       | GT NEXT counted:a          {: RESULT = e -&gt; ScheduleSemantics.next(e, a); :}
+       | GT PREV counted:a          {: RESULT = e -&gt; ScheduleSemantics.previous(e, a); :}
+       | GT count:n select:a IN PERIOD:p
+                                    {: RESULT = e -&gt; ScheduleSemantics.select(e, Math.abs(n), n &lt; 0, a, p); :}
+       | GT LBRACE annuals:list RBRACE   <span class="c">/* &gt; {1 FEB, 1 MAY}: the dates of the set in the year of the date */</span>
+                                    {: RESULT = e -&gt; ScheduleSemantics.datesInYear(e, list); :}
+       | LBRACE shifts:s RBRACE     {: RESULT = e -&gt; ScheduleSemantics.observe(e, s); :}   <span class="c">/* {SAT - 1D, SUN + 1D} */</span>
+       ;
+
+annuals ::= annual:a                {: RESULT = new ArrayList&lt;&gt;(); RESULT.add(a); :}
+          | annuals:list COMMA annual:a {: list.add(a); RESULT = list; :}
+          ;
+
+<span class="c">/* A &amp; B includes the dates of B, A \\ B excludes them; the moves after it apply to the result */</span>
+combined ::= expr:e combines:cs     {: ScheduleSemantics.Expr d = e; for (UnaryOperator&lt;ScheduleSemantics.Expr&gt; c : cs) d = c.apply(d); RESULT = d; :}
+           ;
+
+combines ::=                        {: RESULT = new ArrayList&lt;&gt;(); :}
+           | combines:list combine:c {: list.add(c); RESULT = list; :}
+           ;
+
+combine ::= AMP operand:o moves:ms  {: RESULT = e -&gt; { ScheduleSemantics.Expr d = ScheduleSemantics.combined(e, true, o); for (UnaryOperator&lt;ScheduleSemantics.Expr&gt; m : ms) d = m.apply(d); return d; }; :}
+          | BACKSLASH operand:o moves:ms {: RESULT = e -&gt; { ScheduleSemantics.Expr d = ScheduleSemantics.combined(e, false, o); for (UnaryOperator&lt;ScheduleSemantics.Expr&gt; m : ms) d = m.apply(d); return d; }; :}
+          ;
+
+moves ::=                           {: RESULT = new ArrayList&lt;&gt;(); :}
+        | moves:list move:m         {: list.add(m); RESULT = list; :}
+        ;
+
+<span class="c">/* a date, a series or a set of dates */</span>
+operand ::= date:d                  {: RESULT = new ArrayList&lt;&gt;(); RESULT.add(d); :}
+          | LBRACE operand_exprs:list RBRACE {: RESULT = list; :}
+          ;
+
+operand_exprs ::= expr:e            {: RESULT = new ArrayList&lt;&gt;(); RESULT.add(e); :}
+                | operand_exprs:list COMMA expr:e {: list.add(e); RESULT = list; :}
+                ;</code></pre>
       <p class="pitfall"><strong>Pitfall.</strong> In the JFlex spec, <code>%cupsym</code> must come before <code>%cup</code>, or the EOF action refers to <code>sym</code>.</p>
     </div>
     <div role="tabpanel" id="panel-bison" aria-labelledby="tab-bison" hidden>
@@ -638,16 +729,62 @@ expr ::= date:d                     {: RESULT = d; :}
       <pre><code><span class="c">/* periods are applied from left to right */</span>
 expr:
   date                              { $$ = $1; }
-| expr &#x27;+&#x27; period                   { $$ = ScheduleSemantics.plus ($1, $3); }
-| expr &#x27;-&#x27; period                   { $$ = ScheduleSemantics.minus ($1, $3); }
-| expr &#x27;&gt;&#x27; IMM                      { $$ = ScheduleSemantics.nextImm ($1); }
-| expr &#x27;&gt;&#x27; SPOT                     { $$ = ScheduleSemantics.spot ($1, null); }
-| expr &#x27;&gt;&#x27; SPOT PAIR                { $$ = ScheduleSemantics.spot ($1, $4); }
-| expr &#x27;&gt;&#x27; ROLL                     { $$ = ScheduleSemantics.roll ($1, $3); }
-| expr &#x27;&gt;&#x27; NEXT counted             { $$ = ScheduleSemantics.next ($1, $4); }
-| expr &#x27;&gt;&#x27; PREV counted             { $$ = ScheduleSemantics.previous ($1, $4); }
-| expr &#x27;&gt;&#x27; count select IN PERIOD   { $$ = ScheduleSemantics.select ($1, Math.abs ($3), $3 &lt; 0, $4, $6); }
-| expr &#x27;{&#x27; shifts &#x27;}&#x27;               { $$ = ScheduleSemantics.observe ($1, $3); }   <span class="c">/* {SAT - 1D, SUN + 1D} */</span>
+| expr move                         { $$ = $2.apply ($1); }
+;
+
+/* one step, applied to everything on its left: a function of the expression so far ($$ is an Object in the Java
+   skeleton, so each lambda is cast to its type) */
+move:
+  &#x27;+&#x27; period                        { TemporalAmount p = $2; $$ = (UnaryOperator&lt;Expr&gt;) e -&gt; ScheduleSemantics.plus (e, p); }
+| &#x27;-&#x27; period                        { TemporalAmount p = $2; $$ = (UnaryOperator&lt;Expr&gt;) e -&gt; ScheduleSemantics.minus (e, p); }
+| &#x27;&gt;&#x27; IMM                           { $$ = (UnaryOperator&lt;Expr&gt;) e -&gt; ScheduleSemantics.nextImm (e); }
+| &#x27;&gt;&#x27; SPOT                          { $$ = (UnaryOperator&lt;Expr&gt;) e -&gt; ScheduleSemantics.spot (e, null); }
+| &#x27;&gt;&#x27; SPOT PAIR                     { String pair = $3; $$ = (UnaryOperator&lt;Expr&gt;) e -&gt; ScheduleSemantics.spot (e, pair); }
+| &#x27;&gt;&#x27; ROLL                          { String roll = $2; $$ = (UnaryOperator&lt;Expr&gt;) e -&gt; ScheduleSemantics.roll (e, roll); }
+| &#x27;&gt;&#x27; NEXT counted                  { Anchor a = $3; $$ = (UnaryOperator&lt;Expr&gt;) e -&gt; ScheduleSemantics.next (e, a); }
+| &#x27;&gt;&#x27; PREV counted                  { Anchor a = $3; $$ = (UnaryOperator&lt;Expr&gt;) e -&gt; ScheduleSemantics.previous (e, a); }
+| &#x27;&gt;&#x27; count select IN PERIOD        { int n = $2; Anchor a = $3; String period = $5;
+                                      $$ = (UnaryOperator&lt;Expr&gt;) e -&gt; ScheduleSemantics.select (e, Math.abs (n), n &lt; 0, a, period); }
+| &#x27;&gt;&#x27; &#x27;{&#x27; annuals &#x27;}&#x27;               { ArrayList&lt;Annual&gt; list = $3; $$ = (UnaryOperator&lt;Expr&gt;) e -&gt; ScheduleSemantics.datesInYear (e, list); }
+| &#x27;{&#x27; shifts &#x27;}&#x27;                    { ArrayList&lt;Shift&gt; s = $2; $$ = (UnaryOperator&lt;Expr&gt;) e -&gt; ScheduleSemantics.observe (e, s); }   <span class="c">/* {SAT - 1D, SUN + 1D} */</span>
+;
+
+annuals:
+  annual                            { ArrayList&lt;Annual&gt; list = new ArrayList&lt;&gt; (); list.add ($1); $$ = list; }
+| annuals &#x27;,&#x27; annual                { $1.add ($3); $$ = $1; }
+;
+
+<span class="c">/* A &amp; B includes the dates of B, A \\ B excludes them; the moves after it apply to the result */</span>
+combined:
+  expr combines                     { Expr d = $1; for (UnaryOperator&lt;Expr&gt; c : $2) d = c.apply (d); $$ = d; }
+;
+
+combines:
+  %empty                            { $$ = new ArrayList&lt;&gt; (); }
+| combines combine                  { $1.add ($2); $$ = $1; }
+;
+
+combine:
+  &#x27;&amp;&#x27; operand moves                 { ArrayList&lt;Expr&gt; o = $2; ArrayList&lt;UnaryOperator&lt;Expr&gt;&gt; ms = $3;
+                                      $$ = (UnaryOperator&lt;Expr&gt;) e -&gt; { Expr d = ScheduleSemantics.combined (e, true, o); for (UnaryOperator&lt;Expr&gt; m : ms) d = m.apply (d); return d; }; }
+| &#x27;\\&#x27; operand moves                { ArrayList&lt;Expr&gt; o = $2; ArrayList&lt;UnaryOperator&lt;Expr&gt;&gt; ms = $3;
+                                      $$ = (UnaryOperator&lt;Expr&gt;) e -&gt; { Expr d = ScheduleSemantics.combined (e, false, o); for (UnaryOperator&lt;Expr&gt; m : ms) d = m.apply (d); return d; }; }
+;
+
+moves:
+  %empty                            { $$ = new ArrayList&lt;&gt; (); }
+| moves move                        { $1.add ($2); $$ = $1; }
+;
+
+<span class="c">/* a date, a series or a set of dates */</span>
+operand:
+  date                              { ArrayList&lt;Expr&gt; list = new ArrayList&lt;&gt; (); list.add ($1); $$ = list; }
+| &#x27;{&#x27; operand_exprs &#x27;}&#x27;             { $$ = $2; }
+;
+
+operand_exprs:
+  expr                              { ArrayList&lt;Expr&gt; list = new ArrayList&lt;&gt; (); list.add ($1); $$ = list; }
+| operand_exprs &#x27;,&#x27; expr            { $1.add ($3); $$ = $1; }
 ;</code></pre>
       <p class="pitfall"><strong>Pitfall.</strong> In Bison's Java skeleton <code>$$</code> is a plain <code>Object</code>; only <code>$1</code>…<code>$n</code> are typed.</p>
     </div>
@@ -678,8 +815,13 @@ shift: &#x27;+&#x27; period               { $$ = shift(parse, S_PLUS); $$-&gt;pe
                                     $$-&gt;anchor = $3;
                                     $$-&gt;within = $5;
                                 }
+     | &#x27;&gt;&#x27; &#x27;{&#x27; annuals &#x27;}&#x27;      { $$ = shift(parse, S_DATES_IN_YEAR); $$-&gt;anchor = $3; }   <span class="c">/* &gt; {1 FEB, 1 MAY} */</span>
      | &#x27;{&#x27; observes &#x27;}&#x27;         { $$ = shift(parse, S_OBSERVANCE); $$-&gt;observes = $2; }
      ;
+
+annuals: annual                 { $$ = anchor(parse, AT_ANNUAL); $$-&gt;annual = $1; }
+       | annuals &#x27;,&#x27; annual     { Anchor *a = anchor(parse, AT_ANNUAL); a-&gt;annual = $3; $$ = $1; APPEND(Anchor, $$, a); }
+       ;
 
 pair: %empty                    { $$ = NULL; }
     | PAIR
@@ -705,6 +847,7 @@ Shift
     }
   / &quot;&gt;&quot; _ &quot;NEXT&quot; _ anchor:Counted { return (d, c) =&gt; anchor(d, 1, c); }
   / &quot;&gt;&quot; _ &quot;PREV&quot; _ anchor:Counted { return (d, c) =&gt; anchor(d, -1, c); }
+  / &quot;&gt;&quot; _ &quot;{&quot; _ head:Annual tail:(_ &quot;,&quot; _ @Annual)* _ &quot;}&quot; { return datesInYear([head, ...tail]); }  <span class="c">// &gt; {1 FEB, 1 MAY}</span>
   / &quot;&gt;&quot; _ count:Count _ anchor:Select _ &quot;IN&quot; _ period:$(&quot;WEEK&quot; / &quot;MONTH&quot; / &quot;QUARTER&quot; / &quot;HALFYEAR&quot; / &quot;YEAR&quot;) {
       return (d, c) =&gt; select(d, count.n, count.fromEnd, anchor, period, c);
     }
@@ -729,6 +872,7 @@ shift: &quot;+&quot; period           -&gt; plus
      | &quot;&gt;&quot; &quot;NEXT&quot; [ORDINAL] anchor -&gt; next
      | &quot;&gt;&quot; &quot;PREV&quot; [ORDINAL] anchor -&gt; prev
      | &quot;&gt;&quot; count select &quot;IN&quot; PERIOD -&gt; select
+     | &quot;&gt;&quot; &quot;{&quot; annual (&quot;,&quot; annual)* &quot;}&quot; -&gt; dates_in_year
      | &quot;{&quot; observe (&quot;,&quot; observe)* &quot;}&quot; -&gt; observance
 
 observe: WEEKDAY &quot;+&quot; period -&gt; observe_plus
@@ -789,7 +933,7 @@ period: NUM UNIT</code></pre>
       </div>
       <pre><code><span class="c">(* shifts are applied from left to right *)</span>
 expr     = date shift*
-&lt;shift&gt;  = plus | minus | imm | spot | roll | next | prev | select | observance
+&lt;shift&gt;  = plus | minus | imm | spot | roll | next | prev | select | dates-in-year | observance
 plus     = &lt;&#x27;+&#x27;&gt; period
 minus    = &lt;&#x27;-&#x27;&gt; period
 imm      = &lt;&#x27;&gt;&#x27;&gt; &lt;&#x27;IMM&#x27;&gt;
@@ -804,6 +948,8 @@ select   = &lt;&#x27;&gt;&#x27;&gt; count (chosen | any-of) &lt;&#x27;IN&#x27;&g
 from-start = ORDINAL
 from-end = ORDINAL &lt;&#x27;LAST&#x27;&gt;
 last     = &lt;&#x27;LAST&#x27;&gt;
+<span class="c">(* &gt; {1 FEB, 1 MAY}: the dates of the set in the year of the date *)</span>
+dates-in-year = &lt;&#x27;&gt;&#x27;&gt; &lt;&#x27;{&#x27;&gt; annual (&lt;&#x27;,&#x27;&gt; annual)* &lt;&#x27;}&#x27;&gt;
 observance = &lt;&#x27;{&#x27;&gt; observe (&lt;&#x27;,&#x27;&gt; observe)* &lt;&#x27;}&#x27;&gt;
 observe  = WEEKDAY SIGN period
 
@@ -1480,6 +1626,39 @@ observe  = WEEKDAY SIGN period
       </table>
       </section>
       <section>
+      <h3>include, exclude and dates in year</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-01-01 : 2026-01-03]</span> &amp; [2026-01-02 : 2026-01-05]</code></td><td><span class="date">2026-01-01</span>, <span class="date">2026-01-02</span>, <span class="date">2026-01-03</span>, <span class="date">2026-01-04</span>, <span class="date">2026-01-05</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-05 : 2026-01-06]</span> &amp; [2026-01-01 : 2026-01-02]</code></td><td><span class="date">2026-01-01</span>, <span class="date">2026-01-02</span>, <span class="date">2026-01-05</span>, <span class="date">2026-01-06</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01]</span> [T : T + 7D] \ {1 JAN, 6 JAN}</code></td><td><span class="date">2026-01-02</span>, <span class="date">2026-01-03</span>, <span class="date">2026-01-04</span>, <span class="date">2026-01-05</span>, <span class="date">2026-01-07</span>, <span class="date">2026-01-08</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01]</span> [T : T + 7D] \ {1 JAN, 6 JAN} &amp; 25 DEC</code></td><td><span class="date">2026-01-02</span>, <span class="date">2026-01-03</span>, <span class="date">2026-01-04</span>, <span class="date">2026-01-05</span>, <span class="date">2026-01-07</span>, <span class="date">2026-01-08</span>, <span class="date">2026-12-25</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01]</span> [T : 1W : T + 2W] &amp; [T : 1W : T + 2W]</code></td><td><span class="date">2026-01-01</span>, <span class="date">2026-01-08</span>, <span class="date">2026-01-15</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01 : 2026-01-03]</span> &amp; 2026-01-10 + 1D</code></td><td><span class="date">2026-01-02</span>, <span class="date">2026-01-03</span>, <span class="date">2026-01-04</span>, <span class="date">2026-01-11</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01 : 2026-01-03]</span> + 1D &amp; 2026-01-10</code></td><td><span class="date">2026-01-02</span>, <span class="date">2026-01-03</span>, <span class="date">2026-01-04</span>, <span class="date">2026-01-10</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01]</span> 1 JAN &amp; {1 JAN + 1D, 6 JAN}</code></td><td><span class="date">2026-01-01</span>, <span class="date">2026-01-02</span>, <span class="date">2026-01-06</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01]</span> [T : T + 13D] \ [T : 1W : T + 13D] IF {MON, TUE}</code></td><td><span class="date">2026-01-05</span>, <span class="date">2026-01-06</span>, <span class="date">2026-01-12</span>, <span class="date">2026-01-13</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01]</span> [T : T + 2D] &amp; 6 JAN, 31 DEC</code></td><td><span class="date">2026-01-01</span>, <span class="date">2026-01-02</span>, <span class="date">2026-01-03</span>, <span class="date">2026-01-06</span>, <span class="date">2026-12-31</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-06-01]</span> [T : T + 29D] \ @FOMC IF WED</code></td><td><span class="date">2025-06-04</span>, <span class="date">2025-06-11</span>, <span class="date">2025-06-25</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; {1 FEB, 1 MAY}</code></td><td><span class="date">2026-02-01</span>, <span class="date">2026-05-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> [T : 1Y : T + 2Y] &gt; {1 FEB, 1 MAY}</code></td><td><span class="date">2026-02-01</span>, <span class="date">2026-05-01</span>, <span class="date">2027-02-01</span>, <span class="date">2027-05-01</span>, <span class="date">2028-02-01</span>, <span class="date">2028-05-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> [T : 1Y : T + 1Y] &gt; {3 WED MAR, 3 WED JUN, 3 WED SEP, 3 WED DEC}</code></td><td><span class="date">2026-03-18</span>, <span class="date">2026-06-17</span>, <span class="date">2026-09-16</span>, <span class="date">2026-12-16</span>, <span class="date">2027-03-17</span>, <span class="date">2027-06-16</span>, <span class="date">2027-09-15</span>, <span class="date">2027-12-15</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> [T : 1Y : T + 1Y] &gt; {LAST MON MAY, 1 MON SEP}</code></td><td><span class="date">2026-05-25</span>, <span class="date">2026-09-07</span>, <span class="date">2027-05-31</span>, <span class="date">2027-09-06</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02 XNYS]</span> [T : 1Y : T + 1Y] &gt; {1 FEB, 1 MAY} &gt; FOLLOWING</code></td><td><span class="date">2026-02-02</span>, <span class="date">2026-05-01</span>, <span class="date">2027-02-01</span>, <span class="date">2027-05-03</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; {1 MAY, 1 FEB, 1 MAY}</code></td><td><span class="date">2026-02-01</span>, <span class="date">2026-05-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01]</span> {1 JAN, 6 JAN}</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01]</span> 1 JAN &amp;</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01]</span> 1 JAN &amp; {}</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01]</span> 1 JAN \ 3M</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01]</span> 1 JAN &amp; {1 JAN 6 JAN}</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; {}</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; {MON}</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; {@FOMC}</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; {IMM}</code></td><td><span class="err">error</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
       <h3>in this one; the comment gives the MaturityRule expression</h3>
       <table class="cases">
         <tbody>
@@ -1719,35 +1898,56 @@ docker run --rm -v "$PWD:/work" -w /work/date-rule-flex-bison date-rule-flex-bis
     return (context = {}) => dates({ base: context.base, market: context.market ?? WEEKENDS, events: context.events ?? {} });
   }
 
-  // thrown by an event date that is not bound to one occurrence yet; values() catches it
-  // thrown by a date with several values (an event, a series) that is not bound to one of them yet; values() catches
-  // it and evaluates the expression once per date of dates(c)
+  // thrown by a node with several values that is not bound yet; values() catches it and evaluates the expression once
+  // per date of dates(c)
   class Unbound {
     constructor(dates) {
       this.dates = dates;
     }
   }
 
+  // the value of the next node with several values in this evaluation: bound by values() (c.bindings, counted by
+  // c.cursor in the order the evaluation reaches them), or Unbound
+  function take(c, dates) {
+    if (c.cursor && c.cursor[0] < c.bindings.length) return c.bindings[c.cursor[0]++];
+    throw new Unbound(dates);
+  }
+
   // @NAME: one occurrence of the event, bound by values()
   function event(name) {
-    return (c) => {
-      if (!c.occurrence) throw new Unbound((c) => occurrences(name, base(c).year, c));
-      return c.occurrence;
-    };
+    return (c) => take(c, (c) => occurrences(name, base(c).year, c));
   }
 
   // [first : step : last]: one element of the series, bound by values(), so the shifts after it apply to each
   function series(first, step, last, startOut, endOut) {
-    return (c) => {
-      if (!c.occurrence) {
-        throw new Unbound((c) => {
-          const start = single(first, c), end = single(last, c);
-          return expand(start, step, end, c.market)
-            .filter((d) => !(startOut && compare(d, start) <= 0 || endOut && compare(d, end) >= 0));
-        });
-      }
-      return c.occurrence;
-    };
+    return (c) => take(c, (c) => {
+      const start = single(first, c), end = single(last, c);
+      return expand(start, step, end, c.market)
+        .filter((d) => !(startOut && compare(d, start) <= 0 || endOut && compare(d, end) >= 0));
+    });
+  }
+
+  // sorted and without duplicates
+  function distinct(dates) {
+    return [...new Map(dates.map((d) => [`${d.year}-${d.month}-${d.day}`, d])).values()].sort(compare);
+  }
+
+  // A & B (include), A \\ B: the dates of A with or without those of the operand (a date, a series or a set of
+  // dates), sorted and without duplicates; one value at a time, so the shifts after it apply to each
+  function combined(left, include, operand) {
+    return (c) => take(c, (c) => {
+      const key = (d) => `${d.year}-${d.month}-${d.day}`;
+      const leftDates = values(left, c).filter((d) => d !== null);
+      const right = operand.flatMap((expr) => values(expr, c)).filter((d) => d !== null);
+      if (include) return distinct([...leftDates, ...right]);
+      const removed = new Set(right.map(key));
+      return distinct(leftDates.filter((d) => !removed.has(key(d))));
+    });
+  }
+
+  // > {1 FEB, 1 MAY}: the dates of the set in the year of the date, sorted; one value at a time
+  function datesInYear(annuals) {
+    return (d, c) => take(c, () => distinct(annuals.map((annual) => annual(d.year))));
   }
 
   // the dates of the event in the year: its rule evaluated with the first of January as base date
@@ -1757,14 +1957,14 @@ docker run --rm -v "$PWD:/work" -w /work/date-rule-flex-bison date-rule-flex-bis
       .filter((d) => d.year === year).sort(compare);
   }
 
-  // the dates of an expression: one, or one per date if it starts with an event (its occurrences in the base year) or
-  // a series (its elements)
-  function values(expr, c) {
+  // the dates of an expression: one, or one per combination of the values of its nodes with several values (an event's
+  // occurrences in the base year, a series' elements, ...), bound one after the other
+  function values(expr, c, bindings = []) {
     try {
-      return [expr(c)];
+      return [expr({ ...c, bindings, cursor: [0] })];
     } catch (e) {
       if (!(e instanceof Unbound)) throw e;
-      return e.dates(c).map((d) => expr({ ...c, occurrence: d }));
+      return e.dates(c).flatMap((d) => values(expr, c, [...bindings, d]));
     }
   }
 
@@ -2097,10 +2297,27 @@ Schedule
 // 24 DEC IF MON TUE WED THU: the date only on these weekdays
 // 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays
 Item
-  = expr:Expr _ "IF" days:Weekdays {
+  = expr:Combined _ "IF" days:Weekdays {
       return (c) => { const d = expr(c); return days.includes(WEEKDAYS[weekday(d)]) ? d : null; };
     }
-  / Expr
+  / Combined
+
+// A & B includes the dates of B, A \\ B excludes them; the shifts after it apply to the result
+Combined
+  = first:Expr combines:(_ @Combine)* { return combines.reduce((left, combine) => combine(left), first); }
+
+Combine
+  = op:("&" / "\\") _ operand:Operand shifts:(_ @Shift)* {
+      return (left) => {
+        const node = combined(left, op === '&', operand);
+        return (c) => shifts.reduce((d, shift) => shift(d, c), node(c));
+      };
+    }
+
+// a date, a series or a set of dates
+Operand
+  = "{" _ head:Expr tail:(_ "," _ @Expr)* _ "}" { return [head, ...tail]; }
+  / date:Date { return [date]; }
 
 Weekdays
   = _ "{" _ head:Weekday tail:(_ "," _ @Weekday)* _ "}" { return [head, ...tail]; }
@@ -2129,6 +2346,7 @@ Shift
     }
   / ">" _ "NEXT" _ anchor:Counted { return (d, c) => anchor(d, 1, c); }
   / ">" _ "PREV" _ anchor:Counted { return (d, c) => anchor(d, -1, c); }
+  / ">" _ "{" _ head:Annual tail:(_ "," _ @Annual)* _ "}" { return datesInYear([head, ...tail]); }  // > {1 FEB, 1 MAY}
   / ">" _ count:Count _ anchor:Select _ "IN" _ period:$("WEEK" / "MONTH" / "QUARTER" / "HALFYEAR" / "YEAR") {
       return (d, c) => select(d, count.n, count.fromEnd, anchor, period, c);
     }

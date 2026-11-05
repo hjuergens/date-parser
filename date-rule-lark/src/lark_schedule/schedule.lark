@@ -7,7 +7,15 @@
 exprs: item ("," item)*
 
 // 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays
-item: expr _if?
+item: expr combine* _if?
+
+// A & B includes the dates of B, A \ B excludes them; sorted, without duplicates, left to right: each shift applies to
+// everything on its left
+combine: "&" operand shift*     -> include
+       | "\\" operand shift*    -> exclude
+
+operand: date                   -> single_operand
+       | "{" expr ("," expr)* "}" -> set_operand
 
 _if: "IF" (WEEKDAY+ | "{" WEEKDAY ("," WEEKDAY)* "}")
 
@@ -30,6 +38,7 @@ shift: "+" period           -> plus
      | ">" "NEXT" [ORDINAL] anchor -> next
      | ">" "PREV" [ORDINAL] anchor -> prev
      | ">" count select "IN" PERIOD -> select
+     | ">" "{" annual ("," annual)* "}" -> dates_in_year
      | "{" observe ("," observe)* "}" -> observance
 
 observe: WEEKDAY "+" period -> observe_plus

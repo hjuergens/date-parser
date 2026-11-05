@@ -4,7 +4,7 @@ parse() returns the rule: a function of semantics.Context (base date, market and
 """
 from datetime import date
 
-from lark import Lark, Transformer, v_args
+from lark import Lark, Token, Transformer, v_args
 from lark.exceptions import VisitError
 
 from . import semantics
@@ -20,11 +20,31 @@ class Rules(Transformer):
         return lambda context: [d for item in items for d in semantics.values(item, context) if d is not None]
 
 
-    def item(self, expr, *weekdays):
+    def item(self, expr, *rest):
+        for step in rest:
+            if not isinstance(step, Token):
+                include, operand, shifts = step
+                expr = self.expr(semantics.combined(expr, include, operand), *shifts)
+        weekdays = {str(w) for w in rest if isinstance(w, Token)}
         if not weekdays:
             return expr
-        keep = semantics.only_on({str(w) for w in weekdays})
+        keep = semantics.only_on(weekdays)
         return lambda context: keep(expr(context))
+
+    def include(self, operand, *shifts):
+        return True, operand, shifts
+
+    def exclude(self, operand, *shifts):
+        return False, operand, shifts
+
+    def single_operand(self, date):
+        return [date]
+
+    def set_operand(self, *exprs):
+        return list(exprs)
+
+    def dates_in_year(self, *annuals):
+        return semantics.dates_in_year(annuals)
 
     def series(self, start_out, first, step, last, end_out):
         step = step or semantics.period(1, "D")

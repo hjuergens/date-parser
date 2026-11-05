@@ -71,6 +71,8 @@ private Symbol symbol(int type, Object value) {
                 { return symbol(ScheduleSym.EVENT, yytext().substring(1)); }
 [DWMQHYB]       { return symbol(ScheduleSym.UNIT, yytext()); }
 "+"             { return symbol(ScheduleSym.PLUS); }
+"&"             { return symbol(ScheduleSym.AMP); }
+"\\"            { return symbol(ScheduleSym.BACKSLASH); }
 "-"             { return symbol(ScheduleSym.MINUS); }
 ">"             { return symbol(ScheduleSym.GT); }
 "{"             { return symbol(ScheduleSym.LBRACE); }

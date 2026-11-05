@@ -3,7 +3,7 @@
 The [shared schedule example](../README.md#shared-example-schedule) in C, with a [Flex](https://github.com/westes/flex)
 scanner and a [GNU Bison](https://www.gnu.org/software/bison/) parser (C skeleton, LALR(1)). Both are reentrant, so
 nothing is global. It is tested against all three spec files: [schedule.txt](../examples/schedule.txt),
-[catalog.txt](../examples/catalog.txt) and [date-holidays.txt](../examples/date-holidays.txt), 5934 cases.
+[catalog.txt](../examples/catalog.txt) and [date-holidays.txt](../examples/date-holidays.txt), 5960 cases.
 A [Go binding](#go-via-swig), generated with [SWIG](https://www.swig.org/), runs the same cases from Go.
 
 ## Files
@@ -68,7 +68,7 @@ dates, err := rule.Evaluate(schedule.Context{Base: &base})   // [2025-06-27 00:0
 ```
 
 `NewMarket(rule)` and `(*Events).Add(name, rule)` take the rule over, as in C. A market caches holidays, so don't share it
-between goroutines. `make test-go` builds `build/libschedule.a` and runs `go vet` and `go test`: 5934 subtests over the
+between goroutines. `make test-go` builds `build/libschedule.a` and runs `go vet` and `go test`: 5960 subtests over the
 spec files, as in [schedule_test.go](go/schedule_test.go), plus an ownership test and the example above. You need Go 1.24
 or newer and SWIG 4; the Dockerfile has both.
 

@@ -56,10 +56,11 @@ public final class ScheduleSemantics {
 
     /**
      * Monday to Friday except the dates the rule yields; the rule is evaluated with the first of January of a year as
-     * base date, for the year before and after as well (an observed holiday can fall into the neighbouring year)
+     * base date, for the year before and after as well (an observed holiday can fall into the neighbouring year);
+     * the years are cached, safe for concurrent use
      */
     public static Market withHolidayRules(Rule rule) {
-        Map<Integer, List<LocalDate>> years = new HashMap<>();
+        Map<Integer, List<LocalDate>> years = new java.util.concurrent.ConcurrentHashMap<>();
         return date -> {
             if (!WEEKENDS.isBusinessDay(date)) {
                 return false;
@@ -76,20 +77,22 @@ public final class ScheduleSemantics {
 
     /**
      * what a rule is evaluated against: the base date (only needed for T), the market (default: weekends only) and
-     * the named events; occurrence is the date of the event an expression is being evaluated for
+     * the named events; bindings are the values values() chose for the nodes with several values (events, series,
+     * combinations, dates in year), in the order the evaluation reaches them, counted by cursor
      */
-    public record Context(LocalDate base, Market market, Map<String, Rule> events, LocalDate occurrence) {
+    public record Context(LocalDate base, Market market, Map<String, Rule> events, List<LocalDate> bindings, int[] cursor) {
         public Context {
             market = market == null ? WEEKENDS : market;
             events = events == null ? Map.of() : events;
+            bindings = bindings == null ? List.of() : bindings;
         }
 
         public Context(LocalDate base, Market market) {
-            this(base, market, null, null);
+            this(base, market, null, null, null);
         }
 
         public Context(LocalDate base, Market market, Map<String, Rule> events) {
-            this(base, market, events, null);
+            this(base, market, events, null, null);
         }
     }
 
@@ -144,13 +147,45 @@ public final class ScheduleSemantics {
         }
     }
 
+    /** the value of the next node with several values in this evaluation: bound by values(), or Unbound */
+    private static LocalDate take(Context context, java.util.function.Function<Context, List<LocalDate>> dates) {
+        int[] cursor = context.cursor();
+        if (cursor != null && cursor[0] < context.bindings().size()) {
+            return context.bindings().get(cursor[0]++);
+        }
+        throw new Unbound(dates);
+    }
+
     /** @NAME: one occurrence of the event, bound by values() */
     public static Expr event(String name) {
-        return context -> {
-            if (context.occurrence() == null) {
-                throw new Unbound(c -> occurrences(name, BASE.at(c).getYear(), c));
+        return context -> take(context, c -> occurrences(name, BASE.at(c).getYear(), c));
+    }
+
+    /**
+     * A &amp; B ({@code include}), A \ B: the dates of A with or without those of the operand (a date, a series or a set
+     * of dates), sorted and without duplicates; one value at a time, so the shifts after it apply to each
+     */
+    public static Expr combined(Expr left, boolean include, List<Expr> operand) {
+        List<Expr> copy = List.copyOf(operand);
+        return context -> take(context, c -> {
+            java.util.TreeSet<LocalDate> dates = new java.util.TreeSet<>();
+            values(left, c).stream().filter(Objects::nonNull).forEach(dates::add);
+            List<LocalDate> right = copy.stream().flatMap(expr -> values(expr, c).stream()).filter(Objects::nonNull).toList();
+            if (include) {
+                dates.addAll(right);
+            } else {
+                dates.removeAll(right);
             }
-            return context.occurrence();
+            return List.copyOf(dates);
+        });
+    }
+
+    /** &gt; {1 FEB, 1 MAY}: the dates of the set in the year of the date, sorted; one value at a time */
+    public static Expr datesInYear(Expr expr, List<Annual> annuals) {
+        List<Annual> copy = List.copyOf(annuals);
+        return context -> {
+            LocalDate date = expr.at(context);
+            return take(context, c -> copy.stream().map(annual -> annual.in(date.getYear())).distinct().sorted().toList());
         };
     }
 
@@ -163,16 +198,11 @@ public final class ScheduleSemantics {
         if (!isPositive(every)) {
             throw new IllegalArgumentException("step must be positive: " + every);
         }
-        return context -> {
-            if (context.occurrence() == null) {
-                throw new Unbound(c -> {
-                    LocalDate start = single(first, c), end = single(last, c);
-                    return range(start, every, end, c.market()).stream()
-                            .filter(date -> !(startOut && !date.isAfter(start) || endOut && !date.isBefore(end))).toList();
-                });
-            }
-            return context.occurrence();
-        };
+        return context -> take(context, c -> {
+            LocalDate start = single(first, c), end = single(last, c);
+            return range(start, every, end, c.market()).stream()
+                    .filter(date -> !(startOut && !date.isAfter(start) || endOut && !date.isBefore(end))).toList();
+        });
     }
 
     /** the dates of the event in the year: its rule evaluated with the first of January as base date */
@@ -186,16 +216,25 @@ public final class ScheduleSemantics {
     }
 
     /**
-     * the dates of an expression: one, or one per date if it starts with an event (its occurrences in the base year)
-     * or a series (its elements)
+     * the dates of an expression: one, or one per combination of the values of its nodes with several values (an event's
+     * occurrences in the base year, a series' elements, ...), bound one after the other
      */
     private static List<LocalDate> values(Expr expr, Context context) {
+        return values(expr, context, List.of());
+    }
+
+    private static List<LocalDate> values(Expr expr, Context context, List<LocalDate> bindings) {
         try {
-            return Collections.singletonList(expr.at(context));
+            return Collections.singletonList(expr.at(new Context(context.base(), context.market(), context.events(),
+                    bindings, new int[1])));
         } catch (Unbound unbound) {
-            return unbound.dates.apply(context).stream()
-                    .map(date -> expr.at(new Context(context.base(), context.market(), context.events(), date)))
-                    .toList();
+            List<LocalDate> dates = new ArrayList<>();
+            for (LocalDate date : unbound.dates.apply(context)) {
+                List<LocalDate> more = new ArrayList<>(bindings);
+                more.add(date);
+                dates.addAll(values(expr, context, more));
+            }
+            return dates;
         }
     }
 

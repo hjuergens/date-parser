@@ -78,9 +78,15 @@ Rule Exprs() :
 
 /** 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays */
 ScheduleSemantics.Expr Item() :
-{ ScheduleSemantics.Expr d; Token w; List<String> weekdays = new ArrayList<String>(); }
+{ ScheduleSemantics.Expr d; Token w; List<String> weekdays = new ArrayList<String>(); boolean include;
+  List<ScheduleSemantics.Expr> operand; }
 {
   d = Expr()
+  // A & B includes the dates of B, A \\ B excludes them; the moves after it apply to the result
+  ( ( "&" { include = true; } | "\\" { include = false; } ) operand = Operand()
+    { d = ScheduleSemantics.combined(d, include, operand); }
+    ( d = Move(d) )*
+  )*
   ( "IF"
     ( ( w = <WEEKDAY> { weekdays.add(w.image); } )+
     | "{" w = <WEEKDAY> { weekdays.add(w.image); } ( "," w = <WEEKDAY> { weekdays.add(w.image); } )* "}"
@@ -106,28 +112,46 @@ ScheduleSemantics.Expr Series() :
 
 /** periods are applied from left to right */
 ScheduleSemantics.Expr Expr() :
-{ ScheduleSemantics.Expr d; TemporalAmount p; String pair; Token roll, o, period; ScheduleSemantics.Anchor a;
-  List<ScheduleSemantics.Shift> shifts; boolean fromEnd; }
+{ ScheduleSemantics.Expr d; }
 {
-  d = Date()
-  ( "+" p = Period() { d = ScheduleSemantics.plus(d, p); }
-  | "-" p = Period() { d = ScheduleSemantics.minus(d, p); }
-  | ">"
-    ( "IMM" { d = ScheduleSemantics.nextImm(d); }
-    | pair = Spot() { d = ScheduleSemantics.spot(d, pair); }
-    | roll = <ROLL> { d = ScheduleSemantics.roll(d, roll.image); }
-    | "NEXT" a = Counted() { d = ScheduleSemantics.next(d, a); }
-    | "PREV" a = Counted() { d = ScheduleSemantics.previous(d, a); }
-      // > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH: the n-th match in the period of the date, from its start or its end
-    | { o = null; fromEnd = false; }
-      ( o = <ORDINAL> ( "LAST" { fromEnd = true; } )? | "LAST" { fromEnd = true; } )
-      a = Select() "IN" period = <PERIOD>
-      { d = ScheduleSemantics.select(d, o == null ? 1 : ScheduleSemantics.ordinal(o.image), fromEnd, a, period.image); }
-    )
-  | { shifts = new ArrayList<ScheduleSemantics.Shift>(); }   // {SAT - 1D, SUN + 1D}
-    "{" Shift(shifts) ( "," Shift(shifts) )* "}" { d = ScheduleSemantics.observe(d, shifts); }
-  )*
+  d = Date() ( d = Move(d) )*
   { return d; }
+}
+
+/** one step, applied to everything on its left */
+ScheduleSemantics.Expr Move(ScheduleSemantics.Expr before) :
+{ TemporalAmount p; String pair; Token roll, o = null, period; ScheduleSemantics.Anchor a; int n;
+  ScheduleSemantics.Annual an; List<ScheduleSemantics.Annual> annuals = new ArrayList<ScheduleSemantics.Annual>();
+  List<ScheduleSemantics.Shift> shifts = new ArrayList<ScheduleSemantics.Shift>(); boolean fromEnd = false; }
+{
+  "+" p = Period() { return ScheduleSemantics.plus(before, p); }
+| "-" p = Period() { return ScheduleSemantics.minus(before, p); }
+| ">"
+  ( "IMM" { return ScheduleSemantics.nextImm(before); }
+  | pair = Spot() { return ScheduleSemantics.spot(before, pair); }
+  | roll = <ROLL> { return ScheduleSemantics.roll(before, roll.image); }
+  | "NEXT" a = Counted() { return ScheduleSemantics.next(before, a); }
+  | "PREV" a = Counted() { return ScheduleSemantics.previous(before, a); }
+    // > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH: the n-th match in the period of the date, from its start or its end
+  | ( o = <ORDINAL> ( "LAST" { fromEnd = true; } )? | "LAST" { fromEnd = true; } )
+    a = Select() "IN" period = <PERIOD>
+    { return ScheduleSemantics.select(before, o == null ? 1 : ScheduleSemantics.ordinal(o.image), fromEnd, a, period.image); }
+    // > {1 FEB, 1 MAY}: the dates of the set in the year of the date
+  | "{" ( n = Number() an = AnnualTail(n) | an = AnnualWord() ) { annuals.add(an); }
+    ( "," ( n = Number() an = AnnualTail(n) | an = AnnualWord() ) { annuals.add(an); } )* "}"
+    { return ScheduleSemantics.datesInYear(before, annuals); }
+  )
+| "{" Shift(shifts) ( "," Shift(shifts) )* "}" { return ScheduleSemantics.observe(before, shifts); }   // {SAT - 1D, SUN + 1D}
+}
+
+/** a date, a series or a set of dates */
+List<ScheduleSemantics.Expr> Operand() :
+{ ScheduleSemantics.Expr d; List<ScheduleSemantics.Expr> exprs = new ArrayList<ScheduleSemantics.Expr>(); }
+{
+  ( d = Date() { exprs.add(d); }
+  | "{" d = Expr() { exprs.add(d); } ( "," d = Expr() { exprs.add(d); } )* "}"
+  )
+  { return exprs; }
 }
 
 String Spot() :

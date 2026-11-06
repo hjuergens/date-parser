@@ -20,13 +20,22 @@
 (def ^:private transforms
   {:schedule       identity
    :items          (fn [& exprs] (ScheduleSemantics/list (vec exprs)))
-   :series         (fn ([start-out first last end-out] (ScheduleSemantics/series first nil last start-out end-out))
+   :picked-item    (fn [[n from-end] start & rest]
+                     (let [moved (reduce (fn [e f] (f e)) start (filter fn? rest))
+                           weekdays (seq (filter string? rest))]
+                       (ScheduleSemantics/pick n from-end (if weekdays (ScheduleSemantics/onlyOn moved (vec weekdays)) moved))))
+   :pick           identity   ; [count from-end], as for a selection
+   :endpoint       (fn [start & shifts] (reduce (fn [e shift] (shift e)) start shifts))
+   :series         (fn ([start-out first last end-out]   ; [a : b], or an open series [a : step : ]
+                      (if (instance? java.time.temporal.TemporalAmount last)
+                        (ScheduleSemantics/series first last nil start-out end-out)
+                        (ScheduleSemantics/series first nil last start-out end-out)))
                      ([start-out first step last end-out] (ScheduleSemantics/series first step last start-out end-out)))
    :closed-start   (fn [] false)
    :open-start     (fn [] true)
    :closed-end     (fn [] false)
    :open-end       (fn [] true)
-   :item           (fn [expr & rest]
+   :plain-item     (fn [expr & rest]
                      (let [combined (reduce (fn [left step] (if (fn? step) (step left) left)) expr rest)
                            weekdays (seq (filter string? rest))]
                        (if weekdays (ScheduleSemantics/onlyOn combined (vec weekdays)) combined)))

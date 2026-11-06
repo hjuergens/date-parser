@@ -21,6 +21,22 @@ class Rules(Transformer):
 
 
     def item(self, expr, *rest):
+        return self._item(expr, *rest)
+
+    def picked_item(self, pick, start, *rest):
+        if isinstance(start, Token):
+            start = semantics.event(str(start)[1:])
+        shifts = [r for r in rest if callable(r)]
+        others = [r for r in rest if not callable(r)]
+        return semantics.pick(*pick, self._item(self.expr(start, *shifts), *others))
+
+    def pick(self, ordinal, last):
+        return semantics.ordinal(str(ordinal)), last is not None
+
+    def series_every_day(self, start_out, first, last, end_out):
+        return self.series(start_out, first, None, last, end_out)
+
+    def _item(self, expr, *rest):
         for step in rest:
             if not isinstance(step, Token):
                 include, operand, shifts = step
@@ -48,6 +64,8 @@ class Rules(Transformer):
 
     def series(self, start_out, first, step, last, end_out):
         step = step or semantics.period(1, "D")
+        if last is None and end_out:
+            raise ValueError("an open series ends with ]")
         if not step.is_positive():
             raise ValueError(f"step must be positive: {step}")
         return semantics.series_date(first, step, last, start_out, end_out)
@@ -66,6 +84,9 @@ class Rules(Transformer):
 
     def end_out(self):
         return True
+
+    def endpoint(self, start, *shifts):
+        return self.expr(start, *shifts)
 
     def expr(self, start, *shifts):
         def at(context):

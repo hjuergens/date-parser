@@ -43,6 +43,10 @@ static int series(Parse *parse, Date *date, int start_out, Expr *first, Period s
         snprintf(parse->error, parse->size, "step must be positive");
         return -1;
     }
+    if (!last && end_out) {
+        snprintf(parse->error, parse->size, "an open series ends with ]");
+        return -1;
+    }
     *date = (Date) { .kind = D_SERIES, .first = first, .last = last, .step = step, .start_out = start_out, .end_out = end_out };
     return 0;
 }
@@ -89,7 +93,11 @@ static int fixed(Parse *parse, long year, long month, long day, int *date) {
 %type <anchor> anchor target targets select chosen
 %type <num> count
 %type <observe> observe observes
-%type <item> item items
+%type <item> item items picked_item
+%type <num> pick
+%type <code> condition
+%type <expr> endpoint
+%type <date> single_date
 %type <combine> combine combines
 %type <operand> operand operand_exprs
 %type <shift> shifts
@@ -107,10 +115,31 @@ items: item
      ;
 
 /* 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays */
-item: expr combines             { $$ = NEW(Item); $$->expr = $1; $$->combines = $2; }
-    | expr combines IF weekdays { $$ = NEW(Item); $$->expr = $1; $$->combines = $2; $$->weekdays = $4; }
-    | expr combines IF '{' weekday_set '}' { $$ = NEW(Item); $$->expr = $1; $$->combines = $2; $$->weekdays = $5; }
+item: expr combines condition   { $$ = NEW(Item); $$->expr = $1; $$->combines = $2; $$->weekdays = $3; }
+    | picked_item
     ;
+
+/* 5TH [SPOT : 1Q : ] > EOQ > 3RD WED IN MONTH: the 5th date after T of the item; it starts with a series or an event,
+   where several dates come from */
+picked_item: pick series shifts combines condition
+                                { $$ = NEW(Item); $$->expr = NEW(Expr); $$->expr->date = $2; $$->expr->shifts = $3;
+                                  $$->combines = $4; $$->weekdays = $5; $$->has_pick = 1;
+                                  $$->pick = $1 < 0 ? -$1 : $1; $$->from_end = $1 < 0; }
+           | pick EVENT shifts combines condition
+                                { $$ = NEW(Item); $$->expr = NEW(Expr); $$->expr->date = (Date) { .kind = D_EVENT, .event = $2 };
+                                  $$->expr->shifts = $3; $$->combines = $4; $$->weekdays = $5; $$->has_pick = 1;
+                                  $$->pick = $1 < 0 ? -$1 : $1; $$->from_end = $1 < 0; }
+           ;
+
+/* 2ND LAST from the last one: a negative count (0 is an error anyway) */
+pick: ORDINAL
+    | ORDINAL LAST              { $$ = -$1; }
+    ;
+
+condition: %empty               { $$ = 0; }
+         | IF weekdays          { $$ = $2; }
+         | IF '{' weekday_set '}' { $$ = $3; }
+         ;
 
 /* A & B includes the dates of B, A \\ B excludes them; the shifts after it apply to the result */
 combines: %empty                { $$ = NULL; }
@@ -144,11 +173,18 @@ weekday_set: WEEKDAY            { $$ = 1 << $1; }
 
 /* [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out. A series is
    a date with several values, like an event: the shifts after it apply to each element */
-series: start_out expr ':' period ':' expr end_out
+series: start_out endpoint ':' period ':' endpoint end_out
                                 { if (series(parse, &$$, $1, $2, $4, $6, $7)) YYERROR; }
-      | start_out expr ':' expr end_out
+      | start_out endpoint ':' period ':' end_out    /* an open series [SPOT : 1Q : ] */
+                                { if (series(parse, &$$, $1, $2, $4, NULL, $6)) YYERROR; }
+      | start_out endpoint ':' endpoint end_out
                                 { if (series(parse, &$$, $1, $2, (Period) { 0, 1, 0 }, $4, $5)) YYERROR; }
       ;
+
+/* an endpoint is one date, so it can't be a series: after the last ":" a "]" closes an open series */
+endpoint: single_date           { $$ = NEW(Expr); $$->date = $1; }
+        | endpoint shift        { $$ = $1; APPEND(Shift, $$->shifts, $2); }
+        ;
 
 start_out: '['                  { $$ = 0; }
          | ']'                  { $$ = 1; }
@@ -233,7 +269,12 @@ chosen: WEEKDAY                 { $$ = anchor(parse, AT_WEEKDAY); $$->weekday = 
       | EVENT                   { $$ = anchor(parse, AT_EVENT); $$->event = $1; }
       ;
 
-date: TODAY                     { $$ = (Date) { .kind = D_BASE }; }
+date: single_date
+    | series
+    ;
+
+/* a date that is not a series */
+single_date: TODAY              { $$ = (Date) { .kind = D_BASE }; }
     | TOM                       { $$ = (Date) { .kind = D_TOM }; }
     | SPOT pair                 { $$ = (Date) { .kind = D_SPOT, .pair = $2 }; }
     | NUM '-' NUM '-' NUM       { $$ = (Date) { .kind = D_FIXED }; if (fixed(parse, $1, $3, $5, &$$.fixed)) YYERROR; }
@@ -241,7 +282,6 @@ date: TODAY                     { $$ = (Date) { .kind = D_BASE }; }
     | NUM '/' NUM '/' NUM       { $$ = (Date) { .kind = D_FIXED }; if (fixed(parse, $5, $1, $3, &$$.fixed)) YYERROR; }
     | annual                    { $$ = (Date) { .kind = D_ANNUAL, .annual = $1 }; }
     | EVENT                     { $$ = (Date) { .kind = D_EVENT, .event = $1 }; }
-    | series
     ;
 
 /* dates that recur every year, evaluated in the year of the base date */

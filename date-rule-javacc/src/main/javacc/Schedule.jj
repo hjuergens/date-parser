@@ -77,11 +77,17 @@ Rule Exprs() :
 }
 
 /** 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays */
+/** 5TH [SPOT : 1Q : ] > EOQ > 3RD WED IN MONTH: the 5th date after T of the item, 2ND LAST from the last one */
 ScheduleSemantics.Expr Item() :
-{ ScheduleSemantics.Expr d; Token w; List<String> weekdays = new ArrayList<String>(); boolean include;
-  List<ScheduleSemantics.Expr> operand; }
+{ ScheduleSemantics.Expr d; Token w, o = null; List<String> weekdays = new ArrayList<String>(); boolean include;
+  List<ScheduleSemantics.Expr> operand; boolean fromEnd = false; }
 {
-  d = Expr()
+  ( o = <ORDINAL> ( "LAST" { fromEnd = true; } )?
+    // the item starts with a series or an event, where several dates come from
+    ( d = Series() | w = <EVENT> { d = ScheduleSemantics.event(w.image.substring(1)); } )
+    ( d = Move(d) )*
+  | d = Expr()
+  )
   // A & B includes the dates of B, A \\ B excludes them; the moves after it apply to the result
   ( ( "&" { include = true; } | "\\" { include = false; } ) operand = Operand()
     { d = ScheduleSemantics.combined(d, include, operand); }
@@ -93,7 +99,7 @@ ScheduleSemantics.Expr Item() :
     )
     { d = ScheduleSemantics.onlyOn(d, weekdays); }
   )?
-  { return d; }
+  { return o == null ? d : ScheduleSemantics.pick(ScheduleSemantics.ordinal(o.image), fromEnd, d); }
 }
 
 /**
@@ -102,10 +108,13 @@ ScheduleSemantics.Expr Item() :
  * starts the step (1D) or the end (3 MAR), so the step needs a lookahead of two tokens.
  */
 ScheduleSemantics.Expr Series() :
-{ ScheduleSemantics.Expr first, last; TemporalAmount step = null; boolean startOut = false, endOut = false; }
+{ ScheduleSemantics.Expr first, last = null; TemporalAmount step = null; boolean startOut = false, endOut = false; }
 {
   ( "[" | "]" { startOut = true; } )
-  first = Expr() ":" ( LOOKAHEAD(2) step = Period() ":" )? last = Expr()
+  first = Endpoint() ":"
+  ( LOOKAHEAD(2) step = Period() ":" ( last = Endpoint() )?   // none: an open series [SPOT : 1Q : ]
+  | last = Endpoint()
+  )
   ( "]" | "[" { endOut = true; } )
   { return ScheduleSemantics.series(first, step, last, startOut, endOut); }
 }
@@ -211,8 +220,24 @@ ScheduleSemantics.Anchor Chosen() :
 | e = <EVENT> { return ScheduleSemantics.eventAnchor(e.image.substring(1)); }
 }
 
+/** an endpoint is one date, so it can't be a series: after the last ":" a "]" closes an open series */
+ScheduleSemantics.Expr Endpoint() :
+{ ScheduleSemantics.Expr d; }
+{
+  d = SingleDate() ( d = Move(d) )*
+  { return d; }
+}
+
 ScheduleSemantics.Expr Date() :
-{ int a, b, c; String pair; ScheduleSemantics.Annual an; Token e; ScheduleSemantics.Expr d; }
+{ ScheduleSemantics.Expr d; }
+{
+  ( d = SingleDate() | d = Series() )
+  { return d; }
+}
+
+/** a date that is not a series */
+ScheduleSemantics.Expr SingleDate() :
+{ int a, b, c; String pair; ScheduleSemantics.Annual an; Token e; }
 {
   "T" { return ScheduleSemantics.BASE; }   // the base date
 | "TOM" { return ScheduleSemantics.plus(ScheduleSemantics.BASE, ScheduleSemantics.period(1, "B")); }
@@ -225,7 +250,6 @@ ScheduleSemantics.Expr Date() :
   )
 | an = AnnualWord() { return ScheduleSemantics.inYear(an); }
 | e = <EVENT> { return ScheduleSemantics.event(e.image.substring(1)); }
-| d = Series() { return d; }
 }
 
 ScheduleSemantics.Annual AnnualTail(int n) :

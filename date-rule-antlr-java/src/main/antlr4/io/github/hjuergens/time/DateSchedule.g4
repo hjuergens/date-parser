@@ -62,7 +62,19 @@ isoDate returns [LocalDate value]
 
 // 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays
 item returns [Expr value]
-    : expr                          { $value = $expr.value; }
+locals [int pickCount, boolean pickFromEnd]
+      // 5TH [SPOT : 1Q : ] > EOQ > 3RD WED IN MONTH: the 5th date after T of the item, 2ND LAST from the last one; the
+      // item starts with a series or an event, where several dates come from
+    : ( o=ORDINAL                   { $pickCount = ScheduleSemantics.ordinal($o.text); }
+        ('LAST'                     { $pickFromEnd = true; }
+        )?
+        ( series                    { $value = $series.value; }
+        | EVENT                     { $value = ScheduleSemantics.event($EVENT.text.substring(1)); }
+        )
+        ( move[$value]              { $value = $move.value; }
+        )*
+      | expr                        { $value = $expr.value; }
+      )
       // A & B includes the dates of B, A \ B excludes them; the moves after it apply to the result
       ( op=('&' | '\\') operand      { $value = ScheduleSemantics.combined($value, $op.text.equals("&"), $operand.exprs); }
         ( move[$value]              { $value = $move.value; }
@@ -74,7 +86,7 @@ item returns [Expr value]
             for (Token weekday : $w) weekdays.add(weekday.getText());
             $value = ScheduleSemantics.onlyOn($value, weekdays);
         }
-      )?
+      )?                            { if ($o != null) $value = ScheduleSemantics.pick($pickCount, $pickFromEnd, $value); }
     ;
 
 // a date, a series or a set of dates
@@ -90,10 +102,17 @@ operand returns [List<Expr> exprs = new ArrayList<>()]
 series returns [Expr value]
 locals [boolean startOut, boolean endOut]
     : ('[' | ']'                    { $startOut = true; }
-      ) first=expr ':' (step=period ':')? last=expr
+      ) first=endpoint ':' (step=period ':' last=endpoint? | last=endpoint)
       (']' | '['                    { $endOut = true; }
       )                             { $value = ScheduleSemantics.series($first.value, $step.ctx == null ? null : $step.value,
-                                                                        $last.value, $startOut, $endOut); }
+                                                                        $last.ctx == null ? null : $last.value, $startOut, $endOut); }
+    ;
+
+// an endpoint is one date, so it can't be a series: after the last ':' a ']' closes an open series [SPOT : 1Q : ]
+endpoint returns [Expr value]
+    : singleDate                    { $value = $singleDate.value; }
+      ( move[$value]                { $value = $move.value; }
+      )*
     ;
 
 // periods are applied from left to right
@@ -186,12 +205,17 @@ spot returns [String pair]
     ;
 
 date returns [Expr value]
+    : singleDate                    { $value = $singleDate.value; }
+    | series                        { $value = $series.value; }
+    ;
+
+// a date that is not a series
+singleDate returns [Expr value]
     : 'T'                           { $value = ScheduleSemantics.BASE; }                                       // base date
     | 'TOM'                         { $value = ScheduleSemantics.plus(ScheduleSemantics.BASE, ScheduleSemantics.period(1, "B")); }
     | spot                          { $value = ScheduleSemantics.spot(ScheduleSemantics.BASE, $spot.pair); }
     | annual                        { $value = ScheduleSemantics.inYear($annual.value); }
     | EVENT                         { $value = ScheduleSemantics.event($EVENT.text.substring(1)); }
-    | series                        { $value = $series.value; }
     | y=NUM '-' m=NUM '-' d=NUM     { $value = ScheduleSemantics.literal(LocalDate.of($y.int, $m.int, $d.int)); }  // ISO
     | d=NUM '.' m=NUM '.' y=NUM     { $value = ScheduleSemantics.literal(LocalDate.of($y.int, $m.int, $d.int)); }  // German
     | m=NUM '/' d=NUM '/' y=NUM     { $value = ScheduleSemantics.literal(LocalDate.of($y.int, $m.int, $d.int)); }  // US

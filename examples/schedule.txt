@@ -15,6 +15,11 @@
 # series or a set of dates {1 JAN, 6 JAN}. Left to right, each shift applies to everything on its left: in
 # "[a : b] & c + 1D" every date of the union moves a day. Dates in year: "> {1 FEB, 1 MAY}" replaces a date with these
 # annual dates in its year, so "[T : 1Y : T + 2Y] > {1 FEB, 1 MAY}" is 1 February and 1 May of three years.
+# Picks: "5TH [SPOT : 1Q : ] > EOQ > 3RD WED IN MONTH" is the 5th date of the item strictly after T, in the order the item
+# yields them (MaturityRule's next(5, ... every(quarter))); "2ND LAST" counts from the last one. A series with an empty
+# end, [SPOT : 1Q : ], is open and needs a pick in front of the item (a pick looks at up to 10000 elements); LAST needs
+# a closed series. The item of a pick starts with a series or an event, where several dates come from. The end of a
+# series is one date, never a series, so after the last ":" a "]" closes an open series.
 # "> IMM" moves to the next IMM date strictly after the date: the third Wednesday of
 # March, June, September or December. Which date "next" counts from is written in front of it: today
 # ("T > IMM"), tomorrow ("TOM > IMM"), spot ("SPOT EURSEK > IMM") or spot + 1B; "SPOT - 1D > IMM" is on or after spot.
@@ -499,6 +504,29 @@ market XFED = 1 JAN {SAT - 1D, SUN + 1D}, 3 MON JAN, 3 MON FEB, LAST MON MAY, 19
 [2026-11-02] T > {MON} => error
 [2026-11-02] T > {@FOMC} => error
 [2026-11-02] T > {IMM} => error
+
+# picks
+[2026-11-02] 5TH [SPOT : 1Q : ] > EOQ > 3RD WED IN MONTH => 2027-12-15
+[2026-11-02] 7TH [T : 1D : ] IF {MON, FRI} => 2026-11-27
+[2026-11-02] 1ST [T : 1D : ] IF SAT => 2026-11-07
+[2026-11-02] 3RD [2026-01-01 : 1M : ] > EOM => 2027-01-31
+[2026-11-02] 2ND LAST [T : 1D : T + 10D] => 2026-11-11
+[2026-11-02] 1ST LAST [T : 1W : T + 3W] => 2026-11-23
+[2026-11-02] 2ND [T : T + 3D], 5 JAN => 2026-11-04, 2026-01-05
+[2025-04-01] 2ND @FOMC => 2025-06-18
+[2026-11-02] 1ST [T - 3D : 1D : ] => 2026-11-03
+[2026-11-02] [T : 1Q : ] => error
+[2026-11-02] ]T : 1W : ] => error
+[2026-11-02] 0TH [T : 1D : ] => error
+[2026-11-02] 2ST [T : 1D : ] => error
+[2026-11-02] 1ST LAST [T : 1D : ] => error
+[2026-11-02] 20000TH [T : 1D : ] => error
+[2026-11-02] 5TH [T : 1D : T + 2D] => error
+[2026-11-02] LAST [T : 1D : T + 2D] => error
+[2026-11-02] 1ST [T : 1D : ] [ => error
+[2026-11-02] [T : 1D : [ => error
+[2026-11-02] 2ND T + 1D => error
+[2026-11-02] 1ST LAST MON MAY => error
 
 # MaturityRule: the examples of another maturity rule language (selectors such as "lastday of month(5) of sp")
 # in this one; the comment gives the MaturityRule expression

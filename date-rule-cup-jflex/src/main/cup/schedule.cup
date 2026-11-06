@@ -1,6 +1,6 @@
 /*
  * Shared "schedule" example (see examples/schedule.txt in the project root):
- *   2015-06-09 + 3M, 09.06.2015, (2015-01-15 : 1Q : 2015-12-31)
+ *   2015-06-09 + 3M, 09.06.2015, [2015-01-15 : 1Q : 2015-12-31]
  * LALR(1): lists and period chains are written left recursive.
  * The actions build a ScheduleSemantics.Rule, a function of base date and market that is evaluated later.
  */
@@ -12,6 +12,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
+action code {:
+    /** the moves and combines of an item applied to its start, then IF (null: none) */
+    static ScheduleSemantics.Expr item(ScheduleSemantics.Expr start, List<UnaryOperator<ScheduleSemantics.Expr>> moves,
+                                       List<UnaryOperator<ScheduleSemantics.Expr>> combines, List<String> weekdays) {
+        ScheduleSemantics.Expr d = start;
+        for (UnaryOperator<ScheduleSemantics.Expr> m : moves) d = m.apply(d);
+        for (UnaryOperator<ScheduleSemantics.Expr> c : combines) d = c.apply(d);
+        return weekdays == null ? d : ScheduleSemantics.onlyOn(d, weekdays);
+    }
+:};
+
 terminal            PLUS, MINUS, GT, IMM, SPOT, BASE, TOM, NEXT, PREV, BD, LAST, EASTER, IF, IN;
 terminal            DOT, SLASH, COMMA, COLON, LBRACKET, RBRACKET, LBRACE, RBRACE, AMP, BACKSLASH;
 terminal Integer    NUM;
@@ -21,7 +32,9 @@ terminal            SOLARTERM;
 non terminal Integer                              zone, count;
 non terminal ScheduleSemantics.Rule                schedule;
 non terminal ArrayList<ScheduleSemantics.Expr>     exprs;
-non terminal ScheduleSemantics.Expr                item, expr, combined, date, series;
+non terminal ScheduleSemantics.Expr                item, picked_item, expr, combined, date, series, endpoint, single_date;
+non terminal Integer                              pick;
+non terminal ArrayList<String>                     condition;
 non terminal UnaryOperator<ScheduleSemantics.Expr> move, combine;
 non terminal ArrayList<UnaryOperator<ScheduleSemantics.Expr>> moves, combines;
 non terminal ArrayList<ScheduleSemantics.Expr>     operand, operand_exprs;
@@ -48,10 +61,27 @@ exprs ::= item:e
         ;
 
 /* 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays */
-item ::= combined:e                 {: RESULT = e; :}
-       | combined:e IF weekdays:w   {: RESULT = ScheduleSemantics.onlyOn(e, w); :}
-       | combined:e IF LBRACE weekday_set:w RBRACE {: RESULT = ScheduleSemantics.onlyOn(e, w); :}
+item ::= combined:e condition:w     {: RESULT = w == null ? e : ScheduleSemantics.onlyOn(e, w); :}
+       | picked_item:e              {: RESULT = e; :}
        ;
+
+/* the item of a pick starts with a series or an event, where several dates come from */
+picked_item ::= pick:n series:s moves:ms combines:cs condition:w
+                                    {: RESULT = ScheduleSemantics.pick(Math.abs(n), n < 0, item(s, ms, cs, w)); :}
+              | pick:n EVENT:name moves:ms combines:cs condition:w
+                                    {: RESULT = ScheduleSemantics.pick(Math.abs(n), n < 0, item(ScheduleSemantics.event(name), ms, cs, w)); :}
+              ;
+
+/* 5TH [SPOT : 1Q : ] > EOQ > 3RD WED IN MONTH: the 5th date after T of the item; 2ND LAST from the last one, a negative
+   count (0 is an error anyway) */
+pick ::= ORDINAL:o                  {: RESULT = ScheduleSemantics.ordinal(o); :}
+       | ORDINAL:o LAST             {: RESULT = -ScheduleSemantics.ordinal(o); :}
+       ;
+
+condition ::=                       {: RESULT = null; :}
+            | IF weekdays:w         {: RESULT = w; :}
+            | IF LBRACE weekday_set:w RBRACE {: RESULT = w; :}
+            ;
 
 weekdays ::= WEEKDAY:w              {: RESULT = new ArrayList<>(); RESULT.add(w); :}
            | weekdays:list WEEKDAY:w {: list.add(w); RESULT = list; :}
@@ -63,11 +93,18 @@ weekday_set ::= WEEKDAY:w           {: RESULT = new ArrayList<>(); RESULT.add(w)
 
 /* [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out. A series is
    a date with several values, like an event: the shifts after it apply to each element */
-series ::= start_out:s expr:first COLON period:step COLON expr:last end_out:e
+series ::= start_out:s endpoint:first COLON period:step COLON endpoint:last end_out:e
                 {: RESULT = ScheduleSemantics.series(first, step, last, s, e); :}
-         | start_out:s expr:first COLON expr:last end_out:e
+         | start_out:s endpoint:first COLON period:step COLON end_out:e   /* an open series [SPOT : 1Q : ] */
+                {: RESULT = ScheduleSemantics.series(first, step, null, s, e); :}
+         | start_out:s endpoint:first COLON endpoint:last end_out:e
                 {: RESULT = ScheduleSemantics.series(first, null, last, s, e); :}
          ;
+
+/* an endpoint is one date, so it can't be a series: after the last ":" a "]" closes an open series */
+endpoint ::= single_date:d          {: RESULT = d; :}
+           | endpoint:e move:m      {: RESULT = m.apply(e); :}
+           ;
 
 start_out ::= LBRACKET              {: RESULT = false; :}
             | RBRACKET              {: RESULT = true; :}
@@ -172,13 +209,17 @@ chosen ::= WEEKDAY:w                {: RESULT = ScheduleSemantics.weekday(w); :}
          | EVENT:n                  {: RESULT = ScheduleSemantics.eventAnchor(n); :}
          ;
 
-date ::= BASE                             {: RESULT = ScheduleSemantics.BASE; :}                         /* T */
+date ::= single_date:d                    {: RESULT = d; :}
+       | series:s                         {: RESULT = s; :}
+       ;
+
+/* a date that is not a series */
+single_date ::= BASE                      {: RESULT = ScheduleSemantics.BASE; :}                         /* T */
        | TOM                              {: RESULT = ScheduleSemantics.plus(ScheduleSemantics.BASE, ScheduleSemantics.period(1, "B")); :}
        | SPOT                             {: RESULT = ScheduleSemantics.spot(ScheduleSemantics.BASE, null); :}
        | SPOT PAIR:p                      {: RESULT = ScheduleSemantics.spot(ScheduleSemantics.BASE, p); :}
        | annual:a                         {: RESULT = ScheduleSemantics.inYear(a); :}
        | EVENT:n                          {: RESULT = ScheduleSemantics.event(n); :}             /* @FOMC */
-       | series:s                         {: RESULT = s; :}
        | NUM:y MINUS NUM:m MINUS NUM:d      {: RESULT = ScheduleSemantics.literal(LocalDate.of(y, m, d)); :}   /* ISO */
        | NUM:d DOT NUM:m DOT NUM:y          {: RESULT = ScheduleSemantics.literal(LocalDate.of(y, m, d)); :}   /* German */
        | NUM:m SLASH NUM:d SLASH NUM:y      {: RESULT = ScheduleSemantics.literal(LocalDate.of(y, m, d)); :}   /* US */

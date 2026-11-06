@@ -66,7 +66,13 @@ Productions
 	more_item = comma item;
 
 	/* 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays */
-	item = expr combine* condition?;
+	item
+		= {plain} expr combine* condition?
+		| {picked_series} pick series shift* combine* condition?   /* 5TH [SPOT : 1Q : ] > EOQ > ... */
+		| {picked_event} pick event shift* combine* condition?;
+
+	/* the n-th date after T of the item, 2ND LAST from the last one */
+	pick = ordinal last?;
 
 	/* A & B includes the dates of B, A \ B excludes them; the shifts after it apply to the result */
 	combine
@@ -88,7 +94,10 @@ Productions
 
 	/* [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out. A series
 	   is a date with several values, like an event: the shifts after it apply to each element */
-	series = start_bracket [first]:expr colon step? [last]:expr end_bracket;
+	series = start_bracket [first]:endpoint colon step? [last]:endpoint? end_bracket;
+
+	/* an endpoint is one date, so it can't be a series: after the last colon a ] closes an open series */
+	endpoint = single_date shift*;
 
 	step = period colon;
 
@@ -152,12 +161,16 @@ Productions
 		| {event} event;
 
 	date
+		= {single} single_date
+		| {series} series;
+
+	/* a date that is not a series */
+	single_date
 		= {base} base
 		| {tom} tom
 		| {spot} spot pair?
 		| {annual} annual
 		| {event} event
-		| {series} series
 		| {iso} [year]:number [s1]:minus [month]:number [s2]:minus [day]:number
 		| {german} [day]:number [s1]:dot [month]:number [s2]:dot [year]:number
 		| {us} [month]:number [s1]:slash [day]:number [s2]:slash [year]:number;

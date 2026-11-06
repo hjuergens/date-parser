@@ -235,11 +235,11 @@
     <h1>Twelve parsers, one date language</h1>
     <p class="lead">
       The same small language for dates, periods and ranges, implemented with twelve parser generators and
-      parser libraries, from LL(1) to LALR(1), Earley, GLL and PEG. Every implementation passes the same 427 test cases.
+      parser libraries, from LL(1) to LALR(1), Earley, GLL and PEG. Every implementation passes the same 448 test cases.
     </p>
     <ul class="stats">
       <li><strong>12</strong><span>implementations, 6 languages</span></li>
-      <li><strong>427</strong><span>shared test cases</span></li>
+      <li><strong>448</strong><span>shared test cases</span></li>
       <li><strong>0</strong><span>grammar conflicts</span></li>
       <li><strong>1</strong><span>specification file</span></li>
     </ul>
@@ -266,16 +266,21 @@
           <tr><td>@FOMC + 1B</td><td>the business day after each FOMC decision of that year (a named event)</td></tr>
           <tr><td>[T : T + 7D] \ {1 JAN, 6 JAN} &amp; 25 DEC</td><td>exclude and include: sorted, without duplicates</td></tr>
           <tr><td>[T : 1Y : T + 2Y] &gt; {1 FEB, 1 MAY}</td><td>dates in year: 1 February and 1 May of three years</td></tr>
+          <tr><td>5TH [SPOT : 1Q : ] &gt; EOQ &gt; 3RD WED IN MONTH</td><td>pick: the 5th IMM date after <code>T</code>, from an open series</td></tr>
           <tr><td>T &gt; 2ND LAST BD IN MONTH</td><td>the second-to-last business day in the month of <code>T</code></td></tr>
         </tbody>
       </table>
       <pre><code>schedule = item { "," item } .
-item     = expr { combine } [ "IF" ( WEEKDAY { WEEKDAY }
-                       | "{" WEEKDAY { "," WEEKDAY } "}" ) ] .
+item     = expr { combine } [ condition ]
+         | pick ( series | EVENT ) { move } { combine } [ condition ] .
+pick     = ORDINAL [ "LAST" ] .            <span class="c">(* the n-th date after T *)</span>
+condition = "IF" ( WEEKDAY { WEEKDAY }
+                 | "{" WEEKDAY { "," WEEKDAY } "}" ) .
 combine  = ( "&amp;" | "\\" ) operand { move } .  <span class="c">(* include, exclude *)</span>
 operand  = date | "{" expr { "," expr } "}" .
-series   = ( "[" | "]" ) expr ":" [ period ":" ] expr
-           ( "]" | "[" ) .             <span class="c">(* ]a, b[: endpoint left out *)</span>
+series   = ( "[" | "]" ) endpoint ":" ( period ":" [ endpoint ] | endpoint )
+           ( "]" | "[" ) .             <span class="c">(* ]a, b[: endpoint left out; no end: open *)</span>
+endpoint = single_date { move } .
 expr     = date { move } .
 move     = ("+" | "-") period
          | "&gt;" ( "IMM" | "SPOT" [ PAIR ] | ROLL
@@ -291,11 +296,12 @@ count    = ORDINAL [ "LAST" ] | "LAST" .  <span class="c">(* 2ND LAST *)</span>
 select   = chosen                      <span class="c">(* 3RD WED IN MONTH *)</span>
          | "{" target { "," target } "}" .
 chosen   = WEEKDAY | "BD" | "IMM" | fixed | EVENT .
-date     = "T" | "TOM" | "SPOT" [ PAIR ]
+date     = single_date | series .
+single_date = "T" | "TOM" | "SPOT" [ PAIR ]
          | NUM ( "-" NUM "-" NUM       <span class="c">(* ISO    *)</span>
                | "." NUM "." NUM       <span class="c">(* German *)</span>
                | "/" NUM "/" NUM )     <span class="c">(* US     *)</span>
-         | annual | EVENT | series .
+         | annual | EVENT .
 annual   = fixed | "LAST" WEEKDAY MONTH .
 fixed    = NUM MONTH                   <span class="c">(* 4 JUL     *)</span>
          | NUM WEEKDAY MONTH           <span class="c">(* 3 MON JAN *)</span>
@@ -477,7 +483,10 @@ def visitRoll(self, ctx):
         <span class="kind">Recursive descent with backtracking</span><span class="lang">Scala 2.13</span>
         <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-combinators/src/main/scala/de/juergens/text/ScheduleParsers.scala">ScheduleParsers.scala ↗</a>
       </div>
-      <pre><code>def date: Parser[Context =&gt; LocalDate] = series | eventName ^^ event | &quot;TOM&quot; ^^^ ((c: Context) =&gt; plusBusinessDays(base(c), 1, c.market)) |
+      <pre><code>def date: Parser[Context =&gt; LocalDate] = series | singleDate
+
+<span class="c">/** a date that is not a series */</span>
+def singleDate: Parser[Context =&gt; LocalDate] = eventName ^^ event | &quot;TOM&quot; ^^^ ((c: Context) =&gt; plusBusinessDays(base(c), 1, c.market)) |
   &quot;T&quot; ^^^ base |
   &quot;SPOT&quot; ~&gt; opt(pair) ^^ (p =&gt; (c: Context) =&gt; c.market.spot(base(c), p)) |
   annual ^^ (a =&gt; (c: Context) =&gt; a(base(c).getYear)) | number ~ (
@@ -641,12 +650,16 @@ chosen
     | {event} event;
 
 date
+    = {single} single_date
+    | {series} series;
+
+<span class="c">/* a date that is not a series */</span>
+single_date
     = {base} base
     | {tom} tom
     | {spot} spot pair?
     | {annual} annual
     | {event} event
-    | {series} series
     | {iso} [year]:number [s1]:minus [month]:number [s2]:minus [day]:number
     | {german} [day]:number [s1]:dot [month]:number [s2]:dot [year]:number
     | {us} [month]:number [s1]:slash [day]:number [s2]:slash [year]:number;
@@ -903,7 +916,11 @@ count: ORDINAL              -&gt; from_start
       | annual              -&gt; annual_anchor
       | EVENT               -&gt; event_anchor
 
-date: &quot;T&quot;                   -&gt; base
+?date: single_date
+     | series               -&gt; element
+
+<span class="c">// a date that is not a series</span>
+?single_date: &quot;T&quot;           -&gt; base
     | &quot;TOM&quot;                 -&gt; tom
     | &quot;SPOT&quot; [PAIR]         -&gt; spot_date
     | NUM &quot;-&quot; NUM &quot;-&quot; NUM   -&gt; iso
@@ -911,7 +928,6 @@ date: &quot;T&quot;                   -&gt; base
     | NUM &quot;/&quot; NUM &quot;/&quot; NUM   -&gt; us
     | annual                -&gt; in_year
     | EVENT                 -&gt; event
-    | series                -&gt; element
 
 <span class="c">// dates that recur every year, evaluated in the year of the base date</span>
 ?annual: fixed_annual
@@ -1659,6 +1675,34 @@ observe  = WEEKDAY SIGN period
       </table>
       </section>
       <section>
+      <h3>picks</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> 5TH [SPOT : 1Q : ] &gt; EOQ &gt; 3RD WED IN MONTH</code></td><td><span class="date">2027-12-15</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> 7TH [T : 1D : ] IF {MON, FRI}</code></td><td><span class="date">2026-11-27</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> 1ST [T : 1D : ] IF SAT</code></td><td><span class="date">2026-11-07</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> 3RD [2026-01-01 : 1M : ] &gt; EOM</code></td><td><span class="date">2027-01-31</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> 2ND LAST [T : 1D : T + 10D]</code></td><td><span class="date">2026-11-11</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> 1ST LAST [T : 1W : T + 3W]</code></td><td><span class="date">2026-11-23</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> 2ND [T : T + 3D], 5 JAN</code></td><td><span class="date">2026-11-04</span>, <span class="date">2026-01-05</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-04-01]</span> 2ND @FOMC</code></td><td><span class="date">2025-06-18</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> 1ST [T - 3D : 1D : ]</code></td><td><span class="date">2026-11-03</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> [T : 1Q : ]</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> ]T : 1W : ]</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> 0TH [T : 1D : ]</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> 2ST [T : 1D : ]</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> 1ST LAST [T : 1D : ]</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> 20000TH [T : 1D : ]</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> 5TH [T : 1D : T + 2D]</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> LAST [T : 1D : T + 2D]</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> 1ST [T : 1D : ] [</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> [T : 1D : [</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> 2ND T + 1D</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> 1ST LAST MON MAY</code></td><td><span class="err">error</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
       <h3>in this one; the comment gives the MaturityRule expression</h3>
       <table class="cases">
         <tbody>
@@ -1921,10 +1965,30 @@ docker run --rm -v "$PWD:/work" -w /work/date-rule-flex-bison date-rule-flex-bis
   // [first : step : last]: one element of the series, bound by values(), so the shifts after it apply to each
   function series(first, step, last, startOut, endOut) {
     return (c) => take(c, (c) => {
-      const start = single(first, c), end = single(last, c);
+      const start = single(first, c);
+      if (last === null) {   // an open series [first : step : ], only under a pick, which sets how many elements it yields
+        if (!c.limit) throw new Error('an open series needs a pick in front of the item');
+        return Array.from({ length: c.limit }, (_, k) => plus(start, { months: k * step.months, days: k * step.days,
+          business: k * step.business }, 1, c.market)).filter((d) => !(startOut && compare(d, start) <= 0));
+      }
+      const end = single(last, c);
       return expand(start, step, end, c.market)
         .filter((d) => !(startOut && compare(d, start) <= 0 || endOut && compare(d, end) >= 0));
     });
+  }
+
+  // 5TH ...: the count-th date of the item strictly after T, in the order the item yields them; 2ND LAST ...: counted
+  // from the last one. An open series grows until there are enough dates, up to 10000 elements
+  function pick(count, fromEnd, item) {
+    return (c) => {
+      if (count < 1) throw new Error(`count must be positive: ${count}`);
+      const t = base(c);
+      for (const limit of fromEnd ? [undefined] : [16, 256, 4096, 10000]) {
+        const hits = values(item, { ...c, limit }).filter((d) => d !== null && compare(d, t) > 0);
+        if (hits.length >= count) return fromEnd ? hits[hits.length - count] : hits[count - 1];
+      }
+      throw new Error(`no ${count}. date after the base date`);
+    };
   }
 
   // sorted and without duplicates
@@ -2297,10 +2361,22 @@ Schedule
 // 24 DEC IF MON TUE WED THU: the date only on these weekdays
 // 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays
 Item
-  = expr:Combined _ "IF" days:Weekdays {
+  = PickedItem
+  / expr:Combined _ "IF" days:Weekdays {
       return (c) => { const d = expr(c); return days.includes(WEEKDAYS[weekday(d)]) ? d : null; };
     }
   / Combined
+
+// 5TH [SPOT : 1Q : ] > EOQ > 3RD WED IN MONTH: the 5th date after T of the item, 2ND LAST from the last one; the item
+// starts with a series or an event, where several dates come from
+PickedItem
+  = count:$([0-9]+ ("ST" / "ND" / "RD" / "TH")) last:(_ "LAST")? _ start:(Series / name:Event { return event(name); })
+    shifts:(_ @Shift)* combines:(_ @Combine)* days:(_ "IF" @Weekdays)? {
+      const first = (c) => shifts.reduce((d, shift) => shift(d, c), start(c));
+      const expr = combines.reduce((left, combine) => combine(left), first);
+      const item = days ? (c) => { const d = expr(c); return days.includes(WEEKDAYS[weekday(d)]) ? d : null; } : expr;
+      return pick(ordinal(count), last !== null, item);
+    }
 
 // A & B includes the dates of B, A \\ B excludes them; the shifts after it apply to the result
 Combined
@@ -2326,11 +2402,18 @@ Weekdays
 // [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out. A series is
 // a date with several values, like an event: the shifts after it apply to each element
 Series
-  = open:("[" / "]") _ first:Expr _ ":" _ step:(@Period _ ":" _)? last:Expr _ close:("]" / "[") {
-      step ??= { months: 0, days: 1, business: 0 };
+  = open:("[" / "]") _ first:Endpoint _ ":" _
+    rest:(step:Period _ ":" _ last:Endpoint? { return [step, last]; } / last:Endpoint { return [null, last]; })
+    _ close:("]" / "[") {
+      const step = rest[0] ?? { months: 0, days: 1, business: 0 }, last = rest[1];
       if (step.months <= 0 && step.days <= 0 && step.business <= 0) throw new RangeError('step must be positive');
+      if (last === null && close === '[') throw new RangeError('an open series ends with ]');
       return series(first, step, last, open === ']', close === '[');
     }
+
+// an endpoint is one date, so it can't be a series: after the last ":" a "]" closes an open series [SPOT : 1Q : ]
+Endpoint
+  = start:SingleDate shifts:(_ @Shift)* { return (c) => shifts.reduce((d, shift) => shift(d, c), start(c)); }
 
 // periods are applied from left to right
 Expr
@@ -2389,6 +2472,11 @@ Chosen
   / name:Event { return eventAnchor(name); }
 
 Date
+  = Series
+  / SingleDate
+
+// a date that is not a series
+SingleDate
   = "TOM" { return (c) => plusBusinessDays(base(c), 1, c.market); }  // before "T": no lexer, so order matters
   / "T" { return base; }  // the base date
   / "SPOT" pair:(_ @Pair)? { return (c) => spot(base(c), pair, c.market); }
@@ -2397,7 +2485,6 @@ Date
   / m:Number _ "/" _ d:Number _ "/" _ y:Number { const value = date(y, m, d); return () => value; }  // US
   / annual:Annual { return (c) => annual(base(c).year); }
   / name:Event { return event(name); }
-  / Series
 
 // dates that recur every year, evaluated in the year of the base date
 Annual

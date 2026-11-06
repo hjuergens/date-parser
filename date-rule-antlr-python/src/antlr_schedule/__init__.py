@@ -32,16 +32,22 @@ class Rules(DateScheduleVisitor):
         return lambda context: [d for item in items for d in semantics.values(item, context) if d is not None]
 
     def visitItem(self, ctx):
-        expr = self.visit(ctx.expr())
+        if ctx.ORDINAL():   # a pick: the item starts with a series or an event
+            start = self.visit(ctx.series()) if ctx.series() else semantics.event(ctx.EVENT().getText()[1:])
+            expr = self._shifted(start, [self.visit(shift) for shift in ctx.shift()])
+        else:
+            expr = self.visit(ctx.expr())
         for combine in ctx.combine():
             operand = self.visit(combine.operand())
             node = semantics.combined(expr, combine.op.text == "&", operand)
             shifts = [self.visit(shift) for shift in combine.shift()]
             expr = self._shifted(node, shifts)
-        if not ctx.WEEKDAY():
-            return expr
-        keep = semantics.only_on({w.getText() for w in ctx.WEEKDAY()})
-        return lambda context: keep(expr(context))
+        if ctx.WEEKDAY():
+            keep, unfiltered = semantics.only_on({w.getText() for w in ctx.WEEKDAY()}), expr
+            expr = lambda context: keep(unfiltered(context))
+        if ctx.ORDINAL():
+            expr = semantics.pick(semantics.ordinal(ctx.ORDINAL().getText()), ctx.fromEnd is not None, expr)
+        return expr
 
     @staticmethod
     def _shifted(start, shifts):
@@ -68,8 +74,16 @@ class Rules(DateScheduleVisitor):
         step = self.visit(ctx.step) if ctx.step else semantics.period(1, "D")
         if not step.is_positive():
             raise ValueError(f"step must be positive: {step}")
-        return semantics.series_date(self.visit(ctx.first), step, self.visit(ctx.last),
+        if ctx.last is None and ctx.right.text == "[":
+            raise ValueError("an open series ends with ]")
+        return semantics.series_date(self.visit(ctx.first), step, ctx.last and self.visit(ctx.last),
                                      ctx.left.text == "]", ctx.right.text == "[")
+
+    def visitSingle(self, ctx):
+        return self.visit(ctx.singleDate())
+
+    def visitEndpoint(self, ctx):
+        return self._shifted(self.visit(ctx.singleDate()), [self.visit(shift) for shift in ctx.shift()])
 
     # shifts are applied from left to right
     def visitExpr(self, ctx):

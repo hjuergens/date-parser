@@ -53,10 +53,28 @@ public final class ScheduleEvaluator {
 
     /** 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays */
     static ScheduleSemantics.Expr item(PItem node) {
-        AItem item = (AItem) node;
-        ScheduleSemantics.Expr value = expr(item.getExpr());
+        if (node instanceof APlainItem plain) {
+            return item(expr(plain.getExpr()), plain.getCombine(), plain.getCondition());
+        }
+        // 5TH [SPOT : 1Q : ] > EOQ > ...: the item of a pick starts with a series or an event
+        APick pick;
+        ScheduleSemantics.Expr value;
+        if (node instanceof APickedSeriesItem picked) {
+            pick = (APick) picked.getPick();
+            value = item(shifts(series(picked.getSeries()), picked.getShift()), picked.getCombine(), picked.getCondition());
+        } else {
+            APickedEventItem picked = (APickedEventItem) node;
+            pick = (APick) picked.getPick();
+            value = item(shifts(ScheduleSemantics.event(picked.getEvent().getText().substring(1)), picked.getShift()),
+                    picked.getCombine(), picked.getCondition());
+        }
+        return ScheduleSemantics.pick(count(pick.getOrdinal()), pick.getLast() != null, value);
+    }
+
+    static ScheduleSemantics.Expr item(ScheduleSemantics.Expr start, List<?> combines, PCondition condition) {
+        ScheduleSemantics.Expr value = start;
         // A & B includes the dates of B, A \\ B excludes them; the shifts after it apply to the result
-        for (Object combine : item.getCombine()) {
+        for (Object combine : combines) {
             if (combine instanceof AIncludeCombine include) {
                 value = shifts(ScheduleSemantics.combined(value, true, operand(include.getOperand())), include.getShift());
             } else {
@@ -64,16 +82,16 @@ public final class ScheduleEvaluator {
                 value = shifts(ScheduleSemantics.combined(value, false, operand(exclude.getOperand())), exclude.getShift());
             }
         }
-        if (item.getCondition() == null) {
+        if (condition == null) {
             return value;
         }
         List<String> weekdays = new ArrayList<>();
-        if (item.getCondition() instanceof APlainCondition plain) {
+        if (condition instanceof APlainCondition plain) {
             for (Object weekday : plain.getWeekday()) {
                 weekdays.add(((TWeekday) weekday).getText());
             }
         } else {
-            ASetCondition set = (ASetCondition) item.getCondition();
+            ASetCondition set = (ASetCondition) condition;
             weekdays.add(set.getWeekday().getText());
             for (Object more : set.getMoreWeekday()) {
                 weekdays.add(((AMoreWeekday) more).getWeekday().getText());
@@ -101,8 +119,18 @@ public final class ScheduleEvaluator {
     static ScheduleSemantics.Expr series(PSeries node) {
         ASeries series = (ASeries) node;
         TemporalAmount step = series.getStep() == null ? null : period(((AStep) series.getStep()).getPeriod());
-        return ScheduleSemantics.series(expr(series.getFirst()), step, expr(series.getLast()),
+        if (step == null && series.getLast() == null) {
+            throw new IllegalArgumentException("a series needs an end or a step");
+        }
+        return ScheduleSemantics.series(endpoint(series.getFirst()), step,
+                series.getLast() == null ? null : endpoint(series.getLast()),
                 series.getStartBracket() instanceof AOpenStartBracket, series.getEndBracket() instanceof AOpenEndBracket);
+    }
+
+    /** an endpoint is one date, never a series */
+    static ScheduleSemantics.Expr endpoint(PEndpoint node) {
+        AEndpoint endpoint = (AEndpoint) node;
+        return shifts(singleDate(endpoint.getSingleDate()), endpoint.getShift());
     }
 
     /** periods are applied from left to right */
@@ -237,24 +265,27 @@ public final class ScheduleEvaluator {
     }
 
     static ScheduleSemantics.Expr date(PDate node) {
-        if (node instanceof ABaseDate) {
+        return node instanceof ASeriesDate series ? series(series.getSeries()) : singleDate(((ASingleDate) node).getSingleDate());
+    }
+
+    /** a date that is not a series */
+    static ScheduleSemantics.Expr singleDate(PSingleDate node) {
+        if (node instanceof ABaseSingleDate) {
             return ScheduleSemantics.BASE;
-        } else if (node instanceof ATomDate) {
+        } else if (node instanceof ATomSingleDate) {
             return ScheduleSemantics.plus(ScheduleSemantics.BASE, ScheduleSemantics.period(1, "B"));
-        } else if (node instanceof ASpotDate spot) {
+        } else if (node instanceof ASpotSingleDate spot) {
             return ScheduleSemantics.spot(ScheduleSemantics.BASE, spot.getPair() == null ? null : spot.getPair().getText());
-        } else if (node instanceof AAnnualDate annual) {
+        } else if (node instanceof AAnnualSingleDate annual) {
             return ScheduleSemantics.inYear(annual(annual.getAnnual()));
-        } else if (node instanceof AEventDate event) {
+        } else if (node instanceof AEventSingleDate event) {
             return ScheduleSemantics.event(event.getEvent().getText().substring(1));
-        } else if (node instanceof ASeriesDate series) {
-            return series(series.getSeries());
-        } else if (node instanceof AIsoDate iso) {
+        } else if (node instanceof AIsoSingleDate iso) {
             return ScheduleSemantics.literal(LocalDate.of(number(iso.getYear()), number(iso.getMonth()), number(iso.getDay())));
-        } else if (node instanceof AGermanDate german) {
+        } else if (node instanceof AGermanSingleDate german) {
             return ScheduleSemantics.literal(LocalDate.of(number(german.getYear()), number(german.getMonth()), number(german.getDay())));
         }
-        AUsDate us = (AUsDate) node;
+        AUsSingleDate us = (AUsSingleDate) node;
         return ScheduleSemantics.literal(LocalDate.of(number(us.getYear()), number(us.getMonth()), number(us.getDay())));
     }
 

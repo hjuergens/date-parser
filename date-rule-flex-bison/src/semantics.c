@@ -153,6 +153,7 @@ typedef struct {
     const Events *events;
     const int *bindings;
     int count, *cursor;
+    int limit;   /* how many elements an open series yields; set by a pick, 0 elsewhere */
 } Ctx;
 
 /* the value of a node with several values that isn't bound */
@@ -224,7 +225,7 @@ static int base(Eval *eval, const Ctx *ctx) {
 static const DateList *holidays(Eval *eval, Market *market, int year) {
     for (int i = 0; i < market->count; i++)
         if (market->years[i].year == year) return &market->years[i].holidays;
-    Ctx first = { 1, make(eval, year, 1, 1), NULL, NULL, NULL, 0, NULL };
+    Ctx first = { 1, make(eval, year, 1, 1), NULL, NULL, NULL, 0, NULL, 0 };
     DateList *dates = nested(eval, market->rule, &first);
     if (market->count == market->capacity) {
         market->capacity = market->capacity ? 2 * market->capacity : 8;
@@ -509,7 +510,7 @@ static int annual_in(Eval *eval, const Annual *annual, long year) {
 static DateList *occurrences(Eval *eval, const char *name, int year, const Ctx *ctx) {
     for (int i = 0; ctx->events && i < ctx->events->count; i++) {
         if (strcmp(ctx->events->names[i], name)) continue;
-        Ctx first = { 1, make(eval, year, 1, 1), ctx->market, ctx->events, NULL, 0, NULL };
+        Ctx first = { 1, make(eval, year, 1, 1), ctx->market, ctx->events, NULL, 0, NULL, 0 };
         DateList *all = nested(eval, ctx->events->rules[i], &first), *kept = temp(eval);
         for (int j = 0; j < all->count; j++)
             if (year_of(all->dates[j]) == year) datelist_push(kept, all->dates[j]);
@@ -671,8 +672,18 @@ static int single(Eval *eval, const Expr *expr, const Ctx *ctx);
 
 /* [first : step : last]: first + k * step for k = 0, 1, ... while not after last, without the endpoints left out */
 static DateList *elements(Eval *eval, const Date *series, const Ctx *ctx) {
-    int first = single(eval, series->first, ctx), last = single(eval, series->last, ctx);
+    int first = single(eval, series->first, ctx);
     DateList *dates = temp(eval);
+    if (!series->last) {   /* an open series [first : step : ], only under a pick, which sets how many elements it yields */
+        if (!ctx->limit) fail(eval, "an open series needs a pick in front of the item");
+        for (long long k = 0; k < ctx->limit; k++) {
+            Period step = { k * series->step.months, k * series->step.days, k * series->step.business };
+            int date = plus(eval, first, step, 1, ctx->market);
+            if (!(series->start_out && date <= first)) datelist_push(dates, date);
+        }
+        return dates;
+    }
+    int last = single(eval, series->last, ctx);
     for (long long k = 0;; k++) {
         Period step = { k * series->step.months, k * series->step.days, k * series->step.business };
         int date = plus(eval, first, step, 1, ctx->market);
@@ -754,11 +765,30 @@ static int single(Eval *eval, const Expr *expr, const Ctx *ctx) {
     return dates->dates[0];
 }
 
+/* 5TH ...: the pick-th date of the item strictly after T, in the order the item yields them; 2ND LAST ...: counted
+ * from the last one. An open series grows until there are enough dates, up to 10000 elements */
+static int pick(Eval *eval, const Item *item, int combines, const Ctx *ctx) {
+    static const int LIMITS[] = { 16, 256, 4096, 10000 };
+    if (item->pick < 1) fail(eval, "count must be positive: %ld", item->pick);
+    int t = base(eval, ctx);
+    for (int l = 0; l < (item->from_end ? 1 : 4); l++) {
+        Ctx limited = *ctx;
+        limited.limit = item->from_end ? 0 : LIMITS[l];
+        DateList *dates = temp(eval), *hits = temp(eval);
+        collect(eval, item, combines, NULL, &limited, NULL, 0, item->weekdays, dates);
+        for (int i = 0; i < dates->count; i++)
+            if (dates->dates[i] > t) datelist_push(hits, dates->dates[i]);
+        if (hits->count >= item->pick) return hits->dates[item->from_end ? hits->count - item->pick : item->pick - 1];
+    }
+    fail(eval, "no %ld. date after the base date", item->pick);
+}
+
 static void evaluate_into(Eval *eval, const Schedule *schedule, const Ctx *ctx, DateList *out) {
     for (const Item *item = schedule->items; item; item = item->next) {
         int combines = 0;
         for (const Combine *c = item->combines; c; c = c->next) combines++;
-        collect(eval, item, combines, NULL, ctx, NULL, 0, item->weekdays, out);
+        if (item->has_pick) datelist_push(out, pick(eval, item, combines, ctx));
+        else collect(eval, item, combines, NULL, ctx, NULL, 0, item->weekdays, out);
     }
 }
 
@@ -772,7 +802,7 @@ int schedule_evaluate(const Schedule *schedule, const Context *context, DateList
         datelist_free(out);
         status = -1;
     } else {
-        Ctx ctx = { context->has_base, context->base, context->market, context->events, NULL, 0, NULL };
+        Ctx ctx = { context->has_base, context->base, context->market, context->events, NULL, 0, NULL, 0 };
         evaluate_into(eval, schedule, &ctx, out);
     }
     for (int i = 0; i < eval->count; i++) {

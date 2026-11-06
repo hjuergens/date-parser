@@ -7,7 +7,13 @@ schedule = items
 items    = item (<','> item)*
 
 (* 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays *)
-item     = expr combine* (<'IF'> (WEEKDAY+ | <'{'> WEEKDAY (<','> WEEKDAY)* <'}'>))?
+<item>   = plain-item | picked-item
+plain-item  = expr combine* condition?
+(* 5TH [SPOT : 1Q : ] > EOQ > 3RD WED IN MONTH: the 5th date after T of the item, 2ND LAST from the last one; the item
+   starts with a series or an event, where several dates come from *)
+picked-item = pick (series | event) shift* combine* condition?
+pick     = from-start | from-end
+<condition> = <'IF'> (WEEKDAY+ | <'{'> WEEKDAY (<','> WEEKDAY)* <'}'>)
 
 (* A & B includes the dates of B, A \ B excludes them; the shifts after it apply to the result *)
 <combine> = include | exclude
@@ -18,7 +24,9 @@ operand  = date | <'{'> expr (<','> expr)* <'}'>
 
 (* [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out. A series is
    a date with several values, like an event: the shifts after it apply to each element *)
-series   = (closed-start | open-start) expr <':'> (period <':'>)? expr (closed-end | open-end)
+series   = (closed-start | open-start) endpoint <':'> (period <':'> endpoint? | endpoint) (closed-end | open-end)
+(* an endpoint is one date, so it can't be a series: after the last ':' a ']' closes an open series *)
+endpoint = single-date shift*
 closed-start = <'['>
 open-start   = <']'>
 closed-end   = <']'>
@@ -59,7 +67,9 @@ imm-anchor     = <'IMM'>
 annual-anchor  = annual
 event-anchor   = EVENT
 
-<date>   = base | tom | spot-date | iso | german | us | in-year | event | series
+<date>   = single-date | series
+(* a date that is not a series *)
+<single-date> = base | tom | spot-date | iso | german | us | in-year | event
 base     = <'T'>
 tom      = <'TOM'>
 spot-date = <'SPOT'> PAIR?

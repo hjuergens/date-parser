@@ -78,9 +78,11 @@ public final class ScheduleSemantics {
     /**
      * what a rule is evaluated against: the base date (only needed for T), the market (default: weekends only) and
      * the named events; bindings are the values values() chose for the nodes with several values (events, series,
-     * combinations, dates in year), in the order the evaluation reaches them, counted by cursor
+     * combinations, dates in year), in the order the evaluation reaches them, counted by cursor; limit is how many
+     * elements an open series yields, set by a pick (null elsewhere)
      */
-    public record Context(LocalDate base, Market market, Map<String, Rule> events, List<LocalDate> bindings, int[] cursor) {
+    public record Context(LocalDate base, Market market, Map<String, Rule> events, List<LocalDate> bindings, int[] cursor,
+                          Integer limit) {
         public Context {
             market = market == null ? WEEKENDS : market;
             events = events == null ? Map.of() : events;
@@ -88,11 +90,11 @@ public final class ScheduleSemantics {
         }
 
         public Context(LocalDate base, Market market) {
-            this(base, market, null, null, null);
+            this(base, market, null, null, null, null);
         }
 
         public Context(LocalDate base, Market market, Map<String, Rule> events) {
-            this(base, market, events, null, null);
+            this(base, market, events, null, null, null);
         }
     }
 
@@ -180,6 +182,28 @@ public final class ScheduleSemantics {
         });
     }
 
+    /**
+     * 5TH ...: the count-th date of the item strictly after T, in the order the item yields them; 2ND LAST ...
+     * ({@code fromEnd}): counted from the last one. An open series grows until there are enough dates, up to 10000
+     * elements
+     */
+    public static Expr pick(int count, boolean fromEnd, Expr item) {
+        return context -> {
+            if (count < 1) {
+                throw new IllegalArgumentException("count must be positive: " + count);
+            }
+            LocalDate base = BASE.at(context);
+            for (Integer limit : fromEnd ? new Integer[] {null} : new Integer[] {16, 256, 4096, 10000}) {
+                List<LocalDate> hits = values(item, new Context(context.base(), context.market(), context.events(), null,
+                        null, limit)).stream().filter(date -> date != null && date.isAfter(base)).toList();
+                if (hits.size() >= count) {
+                    return fromEnd ? hits.get(hits.size() - count) : hits.get(count - 1);
+                }
+            }
+            throw new IllegalArgumentException("no " + count + ". date after " + base);
+        };
+    }
+
     /** &gt; {1 FEB, 1 MAY}: the dates of the set in the year of the date, sorted; one value at a time */
     public static Expr datesInYear(Expr expr, List<Annual> annuals) {
         List<Annual> copy = List.copyOf(annuals);
@@ -191,15 +215,34 @@ public final class ScheduleSemantics {
 
     /**
      * [first : step : last]: one element of the series, bound by values(), so the shifts after it apply to each;
-     * {@code startOut} and {@code endOut} leave an endpoint out (]a : b], [a : b[), a null step is every day
+     * {@code startOut} and {@code endOut} leave an endpoint out (]a : b], [a : b[), a null step is every day; a null last
+     * is an open series [first : step : ], only under a pick, which sets how many elements it yields
      */
     public static Expr series(Expr first, TemporalAmount step, Expr last, boolean startOut, boolean endOut) {
         TemporalAmount every = step == null ? Period.ofDays(1) : step;
         if (!isPositive(every)) {
             throw new IllegalArgumentException("step must be positive: " + every);
         }
+        if (last == null && endOut) {
+            throw new IllegalArgumentException("an open series ends with ]");
+        }
         return context -> take(context, c -> {
-            LocalDate start = single(first, c), end = single(last, c);
+            LocalDate start = single(first, c);
+            if (last == null) {
+                if (c.limit() == null) {
+                    throw new IllegalArgumentException("an open series needs a pick in front of the item");
+                }
+                List<LocalDate> dates = new ArrayList<>();
+                for (int k = 0; k < c.limit(); k++) {
+                    LocalDate date = every instanceof BusinessDays days ? plusBusinessDays(start, k * days.count(), c.market())
+                            : start.plus(((Period) every).multipliedBy(k));
+                    if (!(startOut && !date.isAfter(start))) {
+                        dates.add(date);
+                    }
+                }
+                return dates;
+            }
+            LocalDate end = single(last, c);
             return range(start, every, end, c.market()).stream()
                     .filter(date -> !(startOut && !date.isAfter(start) || endOut && !date.isBefore(end))).toList();
         });
@@ -226,7 +269,7 @@ public final class ScheduleSemantics {
     private static List<LocalDate> values(Expr expr, Context context, List<LocalDate> bindings) {
         try {
             return Collections.singletonList(expr.at(new Context(context.base(), context.market(), context.events(),
-                    bindings, new int[1])));
+                    bindings, new int[1], context.limit())));
         } catch (Unbound unbound) {
             List<LocalDate> dates = new ArrayList<>();
             for (LocalDate date : unbound.dates.apply(context)) {

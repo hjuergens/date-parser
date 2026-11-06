@@ -51,10 +51,30 @@
   // [first : step : last]: one element of the series, bound by values(), so the shifts after it apply to each
   function series(first, step, last, startOut, endOut) {
     return (c) => take(c, (c) => {
-      const start = single(first, c), end = single(last, c);
+      const start = single(first, c);
+      if (last === null) {   // an open series [first : step : ], only under a pick, which sets how many elements it yields
+        if (!c.limit) throw new Error('an open series needs a pick in front of the item');
+        return Array.from({ length: c.limit }, (_, k) => plus(start, { months: k * step.months, days: k * step.days,
+          business: k * step.business }, 1, c.market)).filter((d) => !(startOut && compare(d, start) <= 0));
+      }
+      const end = single(last, c);
       return expand(start, step, end, c.market)
         .filter((d) => !(startOut && compare(d, start) <= 0 || endOut && compare(d, end) >= 0));
     });
+  }
+
+  // 5TH ...: the count-th date of the item strictly after T, in the order the item yields them; 2ND LAST ...: counted
+  // from the last one. An open series grows until there are enough dates, up to 10000 elements
+  function pick(count, fromEnd, item) {
+    return (c) => {
+      if (count < 1) throw new Error(`count must be positive: ${count}`);
+      const t = base(c);
+      for (const limit of fromEnd ? [undefined] : [16, 256, 4096, 10000]) {
+        const hits = values(item, { ...c, limit }).filter((d) => d !== null && compare(d, t) > 0);
+        if (hits.length >= count) return fromEnd ? hits[hits.length - count] : hits[count - 1];
+      }
+      throw new Error(`no ${count}. date after the base date`);
+    };
   }
 
   // sorted and without duplicates
@@ -427,10 +447,22 @@ Schedule
 // 24 DEC IF MON TUE WED THU: the date only on these weekdays
 // 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays
 Item
-  = expr:Combined _ "IF" days:Weekdays {
+  = PickedItem
+  / expr:Combined _ "IF" days:Weekdays {
       return (c) => { const d = expr(c); return days.includes(WEEKDAYS[weekday(d)]) ? d : null; };
     }
   / Combined
+
+// 5TH [SPOT : 1Q : ] > EOQ > 3RD WED IN MONTH: the 5th date after T of the item, 2ND LAST from the last one; the item
+// starts with a series or an event, where several dates come from
+PickedItem
+  = count:$([0-9]+ ("ST" / "ND" / "RD" / "TH")) last:(_ "LAST")? _ start:(Series / name:Event { return event(name); })
+    shifts:(_ @Shift)* combines:(_ @Combine)* days:(_ "IF" @Weekdays)? {
+      const first = (c) => shifts.reduce((d, shift) => shift(d, c), start(c));
+      const expr = combines.reduce((left, combine) => combine(left), first);
+      const item = days ? (c) => { const d = expr(c); return days.includes(WEEKDAYS[weekday(d)]) ? d : null; } : expr;
+      return pick(ordinal(count), last !== null, item);
+    }
 
 // A & B includes the dates of B, A \\ B excludes them; the shifts after it apply to the result
 Combined
@@ -456,11 +488,18 @@ Weekdays
 // [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out. A series is
 // a date with several values, like an event: the shifts after it apply to each element
 Series
-  = open:("[" / "]") _ first:Expr _ ":" _ step:(@Period _ ":" _)? last:Expr _ close:("]" / "[") {
-      step ??= { months: 0, days: 1, business: 0 };
+  = open:("[" / "]") _ first:Endpoint _ ":" _
+    rest:(step:Period _ ":" _ last:Endpoint? { return [step, last]; } / last:Endpoint { return [null, last]; })
+    _ close:("]" / "[") {
+      const step = rest[0] ?? { months: 0, days: 1, business: 0 }, last = rest[1];
       if (step.months <= 0 && step.days <= 0 && step.business <= 0) throw new RangeError('step must be positive');
+      if (last === null && close === '[') throw new RangeError('an open series ends with ]');
       return series(first, step, last, open === ']', close === '[');
     }
+
+// an endpoint is one date, so it can't be a series: after the last ":" a "]" closes an open series [SPOT : 1Q : ]
+Endpoint
+  = start:SingleDate shifts:(_ @Shift)* { return (c) => shifts.reduce((d, shift) => shift(d, c), start(c)); }
 
 // periods are applied from left to right
 Expr
@@ -519,6 +558,11 @@ Chosen
   / name:Event { return eventAnchor(name); }
 
 Date
+  = Series
+  / SingleDate
+
+// a date that is not a series
+SingleDate
   = "TOM" { return (c) => plusBusinessDays(base(c), 1, c.market); }  // before "T": no lexer, so order matters
   / "T" { return base; }  // the base date
   / "SPOT" pair:(_ @Pair)? { return (c) => spot(base(c), pair, c.market); }
@@ -527,7 +571,6 @@ Date
   / m:Number _ "/" _ d:Number _ "/" _ y:Number { const value = date(y, m, d); return () => value; }  // US
   / annual:Annual { return (c) => annual(base(c).year); }
   / name:Event { return event(name); }
-  / Series
 
 // dates that recur every year, evaluated in the year of the base date
 Annual

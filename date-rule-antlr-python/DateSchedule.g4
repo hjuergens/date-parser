@@ -11,8 +11,9 @@ schedule
     ;
 
 // 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays
+// 5TH [SPOT : 1Q : ] > EOQ > 3RD WED IN MONTH: the 5th date after T of the item, 2ND LAST from the last one
 item
-    : expr combine* ('IF' (WEEKDAY+ | '{' WEEKDAY (',' WEEKDAY)* '}'))?
+    : (ORDINAL fromEnd='LAST'? (series | EVENT) shift* | expr) combine* ('IF' (WEEKDAY+ | '{' WEEKDAY (',' WEEKDAY)* '}'))?
     ;
 
 // A & B includes the dates of B, A \ B excludes them; the shifts after it apply to the result
@@ -29,7 +30,12 @@ operand
 // [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out (ISO 80000-2).
 // A series is a date with several values, like an event: the shifts after it apply to each element
 series
-    : left=('[' | ']') first=expr ':' (step=period ':')? last=expr right=(']' | '[')
+    : left=('[' | ']') first=endpoint ':' (step=period ':' last=endpoint? | last=endpoint) right=(']' | '[')
+    ;
+
+// an endpoint is one date, so it can't be a series: after the last ':' a ']' closes an open series [SPOT : 1Q : ]
+endpoint
+    : singleDate shift*
     ;
 
 // shifts are applied from left to right
@@ -86,6 +92,12 @@ chosen
     ;
 
 date
+    : singleDate                    # single
+    | series                        # seriesDate
+    ;
+
+// a date that is not a series
+singleDate
     : 'T'                           # base
     | 'TOM'                         # tom
     | 'SPOT' PAIR?                  # spotDate
@@ -94,7 +106,6 @@ date
     | m=NUM '/' d=NUM '/' y=NUM     # us
     | annual                        # inYear
     | EVENT                         # event
-    | series                        # seriesDate
     ;
 
 // dates that recur every year, evaluated in the year of the base date

@@ -266,16 +266,21 @@
           <tr><td>@FOMC + 1B</td><td>the business day after each FOMC decision of that year (a named event)</td></tr>
           <tr><td>[T : T + 7D] \ {1 JAN, 6 JAN} &amp; 25 DEC</td><td>exclude and include: sorted, without duplicates</td></tr>
           <tr><td>[T : 1Y : T + 2Y] &gt; {1 FEB, 1 MAY}</td><td>dates in year: 1 February and 1 May of three years</td></tr>
+          <tr><td>5TH [SPOT : 1Q : ] &gt; EOQ &gt; 3RD WED IN MONTH</td><td>pick: the 5th IMM date after <code>T</code>, from an open series</td></tr>
           <tr><td>T &gt; 2ND LAST BD IN MONTH</td><td>the second-to-last business day in the month of <code>T</code></td></tr>
         </tbody>
       </table>
       <pre><code>schedule = item { "," item } .
-item     = expr { combine } [ "IF" ( WEEKDAY { WEEKDAY }
-                       | "{" WEEKDAY { "," WEEKDAY } "}" ) ] .
+item     = expr { combine } [ condition ]
+         | pick ( series | EVENT ) { move } { combine } [ condition ] .
+pick     = ORDINAL [ "LAST" ] .            <span class="c">(* the n-th date after T *)</span>
+condition = "IF" ( WEEKDAY { WEEKDAY }
+                 | "{" WEEKDAY { "," WEEKDAY } "}" ) .
 combine  = ( "&amp;" | "\\" ) operand { move } .  <span class="c">(* include, exclude *)</span>
 operand  = date | "{" expr { "," expr } "}" .
-series   = ( "[" | "]" ) expr ":" [ period ":" ] expr
-           ( "]" | "[" ) .             <span class="c">(* ]a, b[: endpoint left out *)</span>
+series   = ( "[" | "]" ) endpoint ":" ( period ":" [ endpoint ] | endpoint )
+           ( "]" | "[" ) .             <span class="c">(* ]a, b[: endpoint left out; no end: open *)</span>
+endpoint = single_date { move } .
 expr     = date { move } .
 move     = ("+" | "-") period
          | "&gt;" ( "IMM" | "SPOT" [ PAIR ] | ROLL
@@ -291,11 +296,12 @@ count    = ORDINAL [ "LAST" ] | "LAST" .  <span class="c">(* 2ND LAST *)</span>
 select   = chosen                      <span class="c">(* 3RD WED IN MONTH *)</span>
          | "{" target { "," target } "}" .
 chosen   = WEEKDAY | "BD" | "IMM" | fixed | EVENT .
-date     = "T" | "TOM" | "SPOT" [ PAIR ]
+date     = single_date | series .
+single_date = "T" | "TOM" | "SPOT" [ PAIR ]
          | NUM ( "-" NUM "-" NUM       <span class="c">(* ISO    *)</span>
                | "." NUM "." NUM       <span class="c">(* German *)</span>
                | "/" NUM "/" NUM )     <span class="c">(* US     *)</span>
-         | annual | EVENT | series .
+         | annual | EVENT .
 annual   = fixed | "LAST" WEEKDAY MONTH .
 fixed    = NUM MONTH                   <span class="c">(* 4 JUL     *)</span>
          | NUM WEEKDAY MONTH           <span class="c">(* 3 MON JAN *)</span>

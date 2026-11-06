@@ -26,6 +26,17 @@
 %code {
   /** the rule of the schedule, set by a successful parse() */
   public Rule rule;
+
+  /** the moves and combines of an item applied to its start, then IF (null: none) */
+  static Expr item (Expr start, List<UnaryOperator<Expr>> moves, List<UnaryOperator<Expr>> combines, List<String> weekdays)
+  {
+    Expr d = start;
+    for (UnaryOperator<Expr> m : moves)
+      d = m.apply (d);
+    for (UnaryOperator<Expr> c : combines)
+      d = c.apply (d);
+    return weekdays == null ? d : ScheduleSemantics.onlyOn (d, weekdays);
+  }
 }
 
 %token <Integer> NUM "number"
@@ -52,7 +63,9 @@
 %token SOLARTERM "SOLARTERM"
 %token <Integer> ZONE "time zone"
 %type <Integer> zone count
-%type <Expr> item expr combined date series
+%type <Expr> item picked_item expr combined date series endpoint single_date
+%type <Integer> pick
+%type <ArrayList<String>> condition
 %type <UnaryOperator<Expr>> move combine
 %type <ArrayList<UnaryOperator<Expr>>> moves combines
 %type <ArrayList<Expr>> operand operand_exprs
@@ -80,9 +93,27 @@ exprs:
 
 /* 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays */
 item:
-  combined                          { $$ = $1; }
-| combined IF weekdays              { $$ = ScheduleSemantics.onlyOn ($1, $3); }
-| combined IF '{' weekday_set '}'   { $$ = ScheduleSemantics.onlyOn ($1, $4); }
+  combined condition                { $$ = $2 == null ? $1 : ScheduleSemantics.onlyOn ($1, $2); }
+| picked_item                       { $$ = $1; }
+;
+
+/* 5TH [SPOT : 1Q : ] > EOQ > 3RD WED IN MONTH: the 5th date after T of the item; its item starts with a series or an
+   event, where several dates come from */
+picked_item:
+  pick series moves combines condition { $$ = ScheduleSemantics.pick (Math.abs ($1), $1 < 0, item ($2, $3, $4, $5)); }
+| pick EVENT moves combines condition  { $$ = ScheduleSemantics.pick (Math.abs ($1), $1 < 0, item (ScheduleSemantics.event ($2), $3, $4, $5)); }
+;
+
+/* 2ND LAST from the last one: a negative count (0 is an error anyway) */
+pick:
+  ORDINAL                           { $$ = ScheduleSemantics.ordinal ($1); }
+| ORDINAL LAST                      { $$ = -ScheduleSemantics.ordinal ($1); }
+;
+
+condition:
+  %empty                            { $$ = null; }
+| IF weekdays                       { $$ = $2; }
+| IF '{' weekday_set '}'            { $$ = $3; }
 ;
 
 weekday_set:
@@ -93,8 +124,15 @@ weekday_set:
 /* [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out. A series is
    a date with several values, like an event: the shifts after it apply to each element */
 series:
-  start_out expr ':' period ':' expr end_out   { $$ = ScheduleSemantics.series ($2, $4, $6, $1, $7); }
-| start_out expr ':' expr end_out              { $$ = ScheduleSemantics.series ($2, null, $4, $1, $5); }
+  start_out endpoint ':' period ':' endpoint end_out   { $$ = ScheduleSemantics.series ($2, $4, $6, $1, $7); }
+| start_out endpoint ':' period ':' end_out            { $$ = ScheduleSemantics.series ($2, $4, null, $1, $6); }   /* open */
+| start_out endpoint ':' endpoint end_out              { $$ = ScheduleSemantics.series ($2, null, $4, $1, $5); }
+;
+
+/* an endpoint is one date, so it can't be a series: after the last ":" a "]" closes an open series */
+endpoint:
+  single_date                       { $$ = $1; }
+| endpoint move                     { $$ = $2.apply ($1); }
 ;
 
 start_out:
@@ -228,13 +266,18 @@ chosen:
 ;
 
 date:
+  single_date                       { $$ = $1; }
+| series                            { $$ = $1; }
+;
+
+/* a date that is not a series */
+single_date:
   BASE                              { $$ = ScheduleSemantics.BASE; }   /* T */
 | TOM                               { $$ = ScheduleSemantics.plus (ScheduleSemantics.BASE, ScheduleSemantics.period (1, "B")); }
 | SPOT                              { $$ = ScheduleSemantics.spot (ScheduleSemantics.BASE, null); }
 | SPOT PAIR                         { $$ = ScheduleSemantics.spot (ScheduleSemantics.BASE, $2); }
 | annual                            { $$ = ScheduleSemantics.inYear ($1); }
 | EVENT                             { $$ = ScheduleSemantics.event ($1); }   /* @FOMC */
-| series                            { $$ = $1; }
 | NUM '-' NUM '-' NUM               { $$ = ScheduleSemantics.literal (LocalDate.of ($1, $3, $5)); }   /* ISO */
 | NUM '.' NUM '.' NUM               { $$ = ScheduleSemantics.literal (LocalDate.of ($5, $3, $1)); }   /* German */
 | NUM '/' NUM '/' NUM               { $$ = ScheduleSemantics.literal (LocalDate.of ($5, $1, $3)); }   /* US */

@@ -67,7 +67,7 @@ typedef struct {
     int fixed;             /* D_FIXED */
     Annual annual;
     const char *event;
-    struct Expr *first, *last;  /* D_SERIES: [first : step : last], like an event a date with several values */
+    struct Expr *first, *last;  /* D_SERIES: [first : step : last], like an event a date with several values; last NULL: open */
     Period step;
     int start_out, end_out;     /* "]" at the start, "[" at the end: that endpoint is left out */
 } Date;
@@ -93,6 +93,8 @@ typedef struct Combine {
 typedef struct Item {
     Expr *expr;
     Combine *combines;
+    int has_pick, from_end;   /* 5TH [SPOT : 1Q : ] ...: the pick-th date after T, 2ND LAST from the last one */
+    long pick;
     int weekdays;          /* IF: a bit per weekday, 0 without IF */
     struct Item *next;
 } Item;

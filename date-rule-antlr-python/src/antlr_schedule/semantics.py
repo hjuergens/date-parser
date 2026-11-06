@@ -65,6 +65,7 @@ class Context:
     events: dict = field(default_factory=dict)
     bindings: tuple = ()
     cursor: list | None = field(default=None, compare=False)
+    limit: int | None = None   # how many elements an open series yields; set by a pick, None elsewhere
 
 
 class Unbound(Exception):
@@ -93,9 +94,34 @@ def event(name):
 
 
 def series_date(first, step, last, start_out, end_out):
-    """[first : step : last]: one element of the series, bound by values(), so the shifts after it apply to each"""
-    return lambda context: take(context, lambda c: series(single(first, c), step, single(last, c), start_out, end_out,
-                                                          c.market))
+    """[first : step : last]: one element of the series, bound by values(), so the shifts after it apply to each;
+    [first : step : ] (last None) is open, only under a pick, which sets how many elements it yields"""
+    def dates(c):
+        if last is not None:
+            return series(single(first, c), step, single(last, c), start_out, end_out, c.market)
+        if c.limit is None:
+            raise ValueError("an open series needs a pick in front of the item")
+        start = single(first, c)
+        return [d for d in (plus(start, step.times(k), 1, c.market) for k in range(c.limit)) if not (start_out and d <= start)]
+    return lambda context: take(context, dates)
+
+
+PICK_LIMITS = (16, 256, 4096, 10000)
+
+
+def pick(count, from_end, item):
+    """5TH ...: the count-th date of the item strictly after T, in the order the item yields them; 2ND LAST ...: counted
+    from the last one. An open series grows until there are enough dates, up to PICK_LIMITS[-1] elements"""
+    def at(context):
+        if count < 1:
+            raise ValueError(f"count must be positive: {count}")
+        t = base(context)
+        for limit in (None,) if from_end else PICK_LIMITS:
+            hits = [d for d in values(item, replace(context, limit=limit)) if d is not None and d > t]
+            if len(hits) >= count:
+                return hits[-count] if from_end else hits[count - 1]
+        raise ValueError(f"no {count}. date after {t}")
+    return at
 
 
 def combined(left, include, operand):

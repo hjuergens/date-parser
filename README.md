@@ -136,6 +136,9 @@ Periods follow `java.time`: months first (with the day clamped to the end of the
 `B` counts business days, Monday to Friday; `- 1B` counts backwards and `+ 0B` leaves even a Saturday as it is.
 A series yields `start + k * step` while the date isn't after the end, every day without a step; like an event it is a date
 with several values, so the shifts after it apply to each element.
+`>` means "move to", not "next": `> EOM`, `> SPOT`, `> FIX` and `> 3RD WED IN MONTH` don't look forward. So there is no
+`<` for "previous", which would suggest that `>` is "next" and leave `< EOM` or `< SPOT` without a meaning; backwards is
+`> PREV` (`T > PREV 2ND MON`, `T > PREV IMM`) or `-` a period.
 `> IMM` moves to the next IMM date strictly after the date (QuantLib's `IMM::nextDate` convention), so `2015-06-17 > IMM` is `2015-09-16`.
 `> SPOT` moves to the FX spot date: `+ 1B` for USD against CAD, TRY, PHP or RUB, `+ 2B` for every other pair
 or without a pair.

@@ -115,13 +115,17 @@ LINE_NOTES = {"sablecc": "grammar + evaluator", "cup": "parser + lexer", "bison"
               "peg": "incl. date arithmetic", "lark": "grammar + transformer", "antlr-python": "grammar + visitor",
               "instaparse": "grammar + transform"}
 
-# shared test cases, grouped by the comment headers of schedule.txt
+# shared test cases, grouped by the comment headers of schedule.txt: a header is a comment block after a blank line,
+# its title the block's first line; comments between cases stay in the group
 groups = []   # (title, market declarations, cases)
-previous = ""
+previous, header = "", None
 for line in (ROOT / "examples/schedule.txt").read_text(encoding="utf-8").splitlines():
+    if line.startswith("#") and not previous.strip():
+        header = line[1:].strip()
     if line.strip() and not line.startswith("#"):
-        if previous.startswith("#"):
-            groups.append((previous[1:].strip(), [], []))
+        if header is not None:
+            groups.append((header, [], []))
+            header = None
         if line.startswith(("market ", "event ")):
             groups[-1][1].append(line)
         else:

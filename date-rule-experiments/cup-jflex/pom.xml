@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>date-parser</artifactId>
+        <groupId>de.juergens</groupId>
+        <version>0.0.2-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>date-rule-cup-jflex</artifactId>
+    <version>0.0.3-SNAPSHOT</version>
+    <name>${project.artifactId}</name>
+
+    <description>
+        Date Rule Interpreter for date descriptions like \"next sunday\" and \"the day before christmas\" based on
+        cup and jflex
+    </description>
+
+
+    <properties>
+        <encoding>UTF-8</encoding>
+        <project.build.sourceEncoding>${encoding}</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>${encoding}</project.reporting.outputEncoding>
+        <project.resources.sourceEncoding>${encoding}</project.resources.sourceEncoding>
+        <cup.packageName>io.github.hjuergens</cup.packageName>
+        <cup.version>11b-20160615-3</cup.version>
+        <jflex.version>1.9.1</jflex.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.github.vbmacher</groupId>
+            <artifactId>java-cup-runtime</artifactId>
+            <version>${cup.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- checkstyle -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>validate</id>
+                        <phase>none<!--validate--></phase>
+                        <configuration>
+                            <encoding>UTF-8</encoding>
+                            <consoleOutput>false</consoleOutput>
+                            <failsOnError>false</failsOnError>
+                        </configuration>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- CUP: one execution per grammar -->
+            <plugin>
+                <groupId>com.github.vbmacher</groupId>
+                <artifactId>cup-maven-plugin</artifactId>
+                <version>${cup.version}</version>
+                <executions>
+                    <!-- src/main/cup/pascal.cup -> Sym.java (token constants) and PascalParser.java -->
+                    <execution>
+                        <id>pascal</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <cupDefinition>src/main/cup/pascal.cup</cupDefinition>
+                            <packageName>${cup.packageName}</packageName>
+                            <className>PascalParser</className>
+                            <symbolsName>Sym</symbolsName>
+                            <symbolsInterface>false</symbolsInterface>
+                        </configuration>
+                    </execution>
+                    <!-- src/main/cup/schedule.cup -> ScheduleSym.java and ScheduleParser.java -->
+                    <execution>
+                        <id>schedule</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <cupDefinition>src/main/cup/schedule.cup</cupDefinition>
+                            <packageName>io.github.hjuergens.schedule</packageName>
+                            <className>ScheduleParser</className>
+                            <symbolsName>ScheduleSym</symbolsName>
+                            <symbolsInterface>false</symbolsInterface>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- JFlex: src/main/jflex/*.jflex -> PascalLexer.java, ScheduleLexer.java -->
+            <plugin>
+                <groupId>de.jflex</groupId>
+                <artifactId>jflex-maven-plugin</artifactId>
+                <version>${jflex.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <sourceFileExcludes>
+                        <sourceFileExclude>**/Pascal*.java</sourceFileExclude>
+                        <sourceFileExclude>**/Sym.java</sourceFileExclude>
+                    </sourceFileExcludes>
+                </configuration>
+            </plugin>
+            <!-- checkstyle -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <configuration>
+                    <headerLocation>LICENSE.txt</headerLocation>
+                </configuration>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>checkstyle</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+        </plugins>
+    </reporting>
+</project>

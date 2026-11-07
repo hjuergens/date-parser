@@ -24,7 +24,6 @@
         <project.build.sourceEncoding>${encoding}</project.build.sourceEncoding>
         <project.reporting.outputEncoding>${encoding}</project.reporting.outputEncoding>
         <project.resources.sourceEncoding>${encoding}</project.resources.sourceEncoding>
-        <cup.packageName>io.github.hjuergens</cup.packageName>
         <cup.version>11b-20160615-3</cup.version>
         <jflex.version>1.9.1</jflex.version>
     </properties>
@@ -64,26 +63,12 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- CUP: one execution per grammar -->
+            <!-- CUP -->
             <plugin>
                 <groupId>com.github.vbmacher</groupId>
                 <artifactId>cup-maven-plugin</artifactId>
                 <version>${cup.version}</version>
                 <executions>
-                    <!-- src/main/cup/pascal.cup -> Sym.java (token constants) and PascalParser.java -->
-                    <execution>
-                        <id>pascal</id>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                        <configuration>
-                            <cupDefinition>src/main/cup/pascal.cup</cupDefinition>
-                            <packageName>${cup.packageName}</packageName>
-                            <className>PascalParser</className>
-                            <symbolsName>Sym</symbolsName>
-                            <symbolsInterface>false</symbolsInterface>
-                        </configuration>
-                    </execution>
                     <!-- src/main/cup/schedule.cup -> ScheduleSym.java and ScheduleParser.java -->
                     <execution>
                         <id>schedule</id>
@@ -100,7 +85,7 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- JFlex: src/main/jflex/*.jflex -> PascalLexer.java, ScheduleLexer.java -->
+            <!-- JFlex: src/main/jflex/schedule.jflex -> ScheduleLexer.java -->
             <plugin>
                 <groupId>de.jflex</groupId>
                 <artifactId>jflex-maven-plugin</artifactId>
@@ -123,8 +108,7 @@
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <configuration>
                     <sourceFileExcludes>
-                        <sourceFileExclude>**/Pascal*.java</sourceFileExclude>
-                        <sourceFileExclude>**/Sym.java</sourceFileExclude>
+                        <sourceFileExclude>**/ScheduleSym.java</sourceFileExclude>
                     </sourceFileExcludes>
                 </configuration>
             </plugin>

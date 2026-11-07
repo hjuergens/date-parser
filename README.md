@@ -18,18 +18,22 @@ Planned additions are in [TODO.md](TODO.md).
 
 | Module | Technology | Parser type | Language | What works | Tests |
 |---|---|---|---|---|---|
-| [date-rule-antlr-java](date-rule-antlr-java/README.md) | ANTLR 4.13 | ALL(*) (adaptive LL) | Java grammars, Joda-Time | **Most complete.** Periods (`14M7W9D`), shifts and selectors (`+3M1W`, `>>>wednesday`, `>Q`), term structures, lists, ISO and other date formats, iCalendar | 6059 TestNG + 3 specs2 IT |
-| [date-rule-combinators](date-rule-combinators/README.md) | Scala parser combinators 2.x | Recursive descent with backtracking | Scala 2.13, `java.time` | **Natural language:** "next thursday", "three weeks ago", "last monday in month", "2 London business days prior to the 3rd Wednesday …", seasons, business days | 158 JUnit/TestNG + 6088 ScalaTest |
-| [date-rule-coco](date-rule-coco/README.md) | Coco/R | LL(1) | Java | Date lists in ISO, German, and US notation → `LocalDate` | 5987 TestNG |
-| [date-rule-javacc](date-rule-javacc/README.md) | JavaCC (ParserGeneratorCC) | LL(k) | Java | Brace-matching demo grammar, JUnit 4 experiments | 6081 JUnit (+5 ignored) |
-| [date-rule-sablecc](date-rule-sablecc/README.md) | SableCC 2 | LALR(1) with typed AST | Java | Arithmetic expressions, AST walker and evaluator | 6081 TestNG |
-| [date-rule-cup-jflex](date-rule-cup-jflex/README.md) | JFlex 1.9 + CUP 11b | LALR(1) | Java | Pascal-subset lexer (its CUP grammar is a skeleton); complete CUP parser for the shared example | 5988 TestNG |
-| [date-rule-bison](date-rule-bison/README.md) | GNU Bison 3 (Java skeleton) | LALR(1) | Java | Infix calculator with error recovery. **Requires `bison`**; the module is empty without it | 5989 TestNG |
+| [date-rule-antlr-java](date-rule-antlr-java/README.md) | ANTLR 4.13 | ALL(*) (adaptive LL) | Java | The shared example with actions; its `ScheduleSemantics` is the one the other JVM modules copy, and [date-rule-runtime](date-rule-runtime/README.md) builds on it | 6070 TestNG |
+| [date-rule-combinators](date-rule-combinators/README.md) | Scala parser combinators 2.x | Recursive descent with backtracking | Scala 2.13, `java.time` | The shared example, scannerless | 6070 ScalaTest + 4 JUnit |
+| [date-rule-coco](date-rule-coco/README.md) | Coco/R | LL(1) | Java | The shared example, LL(1) without warnings | 6070 TestNG |
+| [date-rule-javacc](date-rule-javacc/README.md) | JavaCC (ParserGeneratorCC) | LL(k) | Java | The shared example | 6070 JUnit |
+| [date-rule-sablecc](date-rule-sablecc/README.md) | SableCC 2 | LALR(1) with typed AST | Java | The shared example; the grammar only builds the tree, an evaluator walks it | 6070 TestNG |
+| [date-rule-cup-jflex](date-rule-cup-jflex/README.md) | JFlex 1.9 + CUP 11b | LALR(1) | Java | The shared example | 6070 TestNG |
+| [date-rule-bison](date-rule-bison/README.md) | GNU Bison 3 (Java skeleton) | LALR(1) | Java | The shared example. **Requires `bison`**; the module is empty without it | 6070 TestNG |
 | [date-rule-flex-bison](date-rule-flex-bison/README.md) | Flex 2.6 + GNU Bison 3.8 (C skeleton) | LALR(1) | C11, Go via SWIG | The shared example; reentrant scanner and pure parser, the actions build a syntax tree that a C evaluator walks. A SWIG binding runs it from Go. Builds in Docker | 6070 cases + 6070 Go subtests |
-| [date-rule-peg](date-rule-peg/README.md) | Peggy (PEG.js successor) | PEG (packrat) | JavaScript | `(start:step:end)` range lists | 6075 `node:test` |
+| [date-rule-peg](date-rule-peg/README.md) | Peggy (PEG.js successor) | PEG (packrat) | JavaScript | The shared example; also runs in the browser playground of the site | 6070 `node:test` |
 | [date-rule-lark](date-rule-lark/README.md) | Lark 1.3 | Earley and LALR(1), one grammar | Python | The shared example, every case with both algorithms | 12140 pytest |
 | [date-rule-antlr-python](date-rule-antlr-python/README.md) | ANTLR 4.13, Python target | ALL(*) (adaptive LL) | Python | The shared example; grammar without actions, plus a visitor | 6070 pytest |
 | [date-rule-instaparse](date-rule-instaparse/README.md) | instaparse 1.5 | GLL (any context-free grammar) | Clojure 1.12 | The shared example; EBNF grammar read at run time, `insta/transform` onto the shared Java helper | 6070 TestNG |
+
+The modules hold only the shared example. Earlier experiments (Joda-Time periods and term structures in ANTLR,
+natural-language rules with Scala combinators, a Pascal lexer, a calculator, brace matching, arithmetic, range lists,
+an ANTLR/Clojure attempt) are parked, not built, in [date-rule-experiments](date-rule-experiments/README.md).
 
 Beside the parser modules, [date-rule-runtime](date-rule-runtime/README.md) changes rules at run time: a rules file in the
 schedule language (`rule @IMMH = T > NEXT 3 WED MAR`, `assert @IMMH [2026-11-02 @XNYS] => 2027-03-17`), read by the same ANTLR grammar, is validated, swapped

@@ -1,44 +1,13 @@
 # date-rule-cup-jflex
 
-A lexer built with [JFlex](https://jflex.de/) and token definitions built with [CUP](https://www2.cs.tum.edu/projects/cup/),
-the classic LALR(1) pair for Java (lex/yacc style).
+The [shared schedule example](../README.md#shared-example-schedule) with [JFlex](https://jflex.de/) (lexer) and [CUP](https://www2.cs.tum.edu/projects/cup/) (LALR(1) parser), the classic lex/yacc pair for Java,
+tested against [examples/schedule.txt](../examples/schedule.txt), [catalog.txt](../examples/catalog.txt) and
+[date-holidays.txt](../examples/date-holidays.txt).
 
-There are two examples: a lexer for a Pascal subset, and the shared date schedule grammar.
+The other experiments of this module (the Pascal lexer) are parked in
+[date-rule-experiments/cup-jflex](../date-rule-experiments/cup-jflex).
 
-## What it contains
-
-| File | Generates |
-|---|---|
-| [pascal.cup](src/main/cup/pascal.cup) | `Sym` (token constants) and `PascalParser` (with only a dummy rule) |
-| [pascal.jflex](src/main/jflex/pascal.jflex) | `PascalLexer`: keywords, identifiers, integer, real and char literals, operators, `{ comments }` |
-
-The lexer returns `java_cup.runtime.Symbol`s, with the line (`left`) and column (`right`) of each token.
-
-## Usage
-
-```java
-PascalLexer lexer = new PascalLexer(new StringReader("x := 42"));   // package io.github.hjuergens
-Symbol symbol;
-while ((symbol = lexer.next_token()).sym != Sym.EOF) {
-    // Sym.IDENT "x", Sym.ASSMNT, Sym.INT 42
-}
-```
-
-## Build and test
-
-```
-mvn -pl date-rule-cup-jflex verify
-```
-
-- `com.github.vbmacher:cup-maven-plugin` (CUP 11b) generates into `target/generated-sources/cup`.
-- `de.jflex:jflex-maven-plugin` (JFlex 1.9) generates into `target/generated-sources/jflex`.
-- There are 5988 TestNG tests: [PascalLexerTest](src/test/java/io/github/hjuergens/PascalLexerTest.java) and the shared example.
-
-For `pascal.cup`, CUP warns that the terminals are "declared but never used". That's expected while that grammar has no rules.
-
-## Shared example
-
-Implements the [shared schedule example](../README.md#shared-example-schedule) and is tested against [examples/schedule.txt](../examples/schedule.txt).
+## The grammar
 
 - [schedule.cup](src/main/cup/schedule.cup) uses left recursion for lists and period chains, which is natural for LALR(1).
 - CUP has no optional elements, so `> SPOT [PAIR]` is written as two alternatives.
@@ -54,6 +23,12 @@ Implements the [shared schedule example](../README.md#shared-example-schedule) a
 - Selection (`> 3RD WED IN MONTH`): `count ::= ORDINAL | ORDINAL LAST | LAST` returns a negative count from the end; `select ::= chosen | LBRACE targets RBRACE` keeps `LAST MON MAY` in braces, so `LAST` can only be the count there. No conflicts.
 - Named events: the JFlex rule `"@" [A-Z] [A-Z0-9_]*` returns `EVENT` with the name as value; in CUP it is one more alternative of `date` and `anchor`.
 
-## Status
+## Build and test
 
-Working. The Pascal CUP grammar is a skeleton: it has no productions apart from a dummy rule.
+```
+mvn -pl date-rule-cup-jflex verify
+```
+
+- `com.github.vbmacher:cup-maven-plugin` (CUP 11b) generates into `target/generated-sources/cup`.
+- `de.jflex:jflex-maven-plugin` (JFlex 1.9) generates into `target/generated-sources/jflex`.
+- [SchedulesTest](src/test/java/io/github/hjuergens/schedule/SchedulesTest.java) (TestNG) runs 6070 cases.

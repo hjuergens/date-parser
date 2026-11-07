@@ -1,0 +1,90 @@
+# date-rule-antlr-java
+
+> **Parked experiment, not built.** Moved out of `date-rule-antlr-java` so that module only holds the shared schedule example; this README is the module's as it was then. The schedule parts it mentions now live in [date-rule-antlr-java](../../date-rule-antlr-java).
+
+Date expressions and term structures parsed with [ANTLR 4](https://www.antlr.org/) (4.13).
+The grammars produce [Joda-Time](https://www.joda.org/joda-time/) periods and `DateTimeAdjuster`s,
+which shift a `DateTime` (for example "first day of the next quarter").
+
+This is the most complete module of the project.
+
+## What it parses
+
+| Grammar (`src/main/antlr4/io/github/hjuergens/time/`) | Input | Result |
+|---|---|---|
+| `Period.g4` | `28D`, `7W`, `14M7W9D`, `1M2D.1Y2M7W` | `org.joda.time.Period` |
+| `PeriodTerm.g4` | `+3M1W`, `+2Y3D-7W`, `>Q`, `>=Q`, `^>Q`, `>>>wednesday`, `<<D` | `DateTimeAdjuster` (shift or select) |
+| `TermStructure.g4` | `[3M,5M,7M]`, `(3M:1M:9M)`, `[3M,4M,6M]x(4M:1M:9M)` | lists of periods, futures, forward pairs |
+| `List.g4` | `(3:5:14)` → 3, 8, 13 | `List<Integer>` |
+| `Dates.g4` | `09/06/2015` | parse tree |
+| `ISO8601dates.g4` | `2015-06-09` | parse tree (syntax only, no calendar check) |
+| `AmbiguousDates.g4` | `32 May 1980 12h` | day and time parts as strings |
+| `ICalendar.g4` | iCalendar (RFC 5545) `VEVENT` | parse tree |
+| `DateSchedule.g4` | `2015-06-09 + 3M, 09.06.2015`, `[2015-01-15 : 1Q : 2015-12-31]`, `2015-06-09 > IMM`, `2015-06-12 > SPOT USDCAD + 2B` | `List<java.time.LocalDate>` |
+| `Cardinal.g4`, `Unit.g4`, `SimpleCalc.g4`, `DateRule.g4`, `Schedule.g4`, `NewDate.g4` | small building blocks and experiments | |
+
+In `PeriodTerm`, `>` means "next", `<` means "previous", and a trailing `=` means "or this one".
+`Q`, `M`, and `D` select the quarter, month, or day; a weekday name selects that day.
+
+## Usage
+
+```java
+// shift a date: the first day of the next quarter
+DateTimeAdjuster adjuster = SchedulerFactory.parseSchedule(">Q").next();
+DateTime next = adjuster.adjustInto(new DateTime(2016, 12, 5, 15, 18));   // 2017-01-01T00:00
+
+// forward periods: pairs of (begin, end) adjusters
+TermStructureLexer lexer = new TermStructureLexer(CharStreams.fromString("[3M,4M,6M]x(4M:1M:9M)"));
+TermStructureParser parser = new TermStructureParser(new CommonTokenStream(lexer));
+List<Pair<DateTimeAdjuster, DateTimeAdjuster>> forwards = parser.forwards().listOut;
+```
+
+## Build and test
+
+```
+mvn -pl date-rule-antlr-java verify
+```
+
+- The `antlr4-maven-plugin` generates lexers, parsers, listeners, and visitors into `target/generated-sources/antlr4`.
+- Unit tests use TestNG. Surefire runs the classes named `*Test`, plus `GenerateParseTreeAST` and `RingCheck` (the `includes`
+  in [pom.xml](pom.xml)); a test class with another name must be added there.
+- [RingCheck](src/test/scala/io/github/hjuergens/util/RingCheck.scala) is a ScalaCheck property test that runs through ScalaTest's `TestNGSuite`.
+- [RingSpec](src/integration-test/scala/io/github/hjuergens/util/RingSpec.scala) is a specs2 example run by failsafe in `verify`.
+- The `test` phase also runs ANTLR's `TestRig` on [dates.expr](src/test/resources/dates.expr) (exec-maven-plugin).
+
+## Shared example
+
+Implements the [shared schedule example](../README.md#shared-example-schedule) and is tested against [examples/schedule.txt](../examples/schedule.txt).
+
+- [DateSchedule.g4](src/main/antlr4/io/github/hjuergens/time/DateSchedule.g4) computes the values in actions (`returns [LocalDate value]`).
+- `DateSchedule.g4` has a second start rule, `ruleLine`, for one line of a rules file of [date-rule-runtime](../date-rule-runtime/README.md) (`rule @IMMH = …`, `assert @IMMH [2026-11-02 @XNYS] => …`); `DateSchedules.parseRuleLine` is its entry point, so that module reads its files without regular expressions.
+- `> SPOT [PAIR]` has a rule of its own (`spot returns [String pair]`). A `PAIR?` label inside the `( … )*` loop of `expr`
+  would be a field of the rule context, so a later `> SPOT` without pair would still see the pair of an earlier one.
+- Periods, business days (`B`), IMM and spot dates come from the shared `ScheduleSemantics`; `B` is a `TemporalAmount`
+  of its own, because `java.time.Period` can't express business days.
+- The actions build functions (`ScheduleSemantics.plus($value, $period.value)`), not dates. The attribute of `schedule` is
+  called `result`: ANTLR renames an attribute `rule` to `rule_`.
+- [DateSchedules.parse](src/main/java/io/github/hjuergens/time/DateSchedules.java) installs a throwing error listener and `BailErrorStrategy`, so the first error ends the parse.
+- Test: [DateSchedulesTest](src/test/java/io/github/hjuergens/time/DateSchedulesTest.java).
+- The same rules without actions run on ANTLR's Python target in [date-rule-antlr-python](../date-rule-antlr-python/README.md).
+
+```java
+Rule rule = DateSchedules.parse("[T : 1Q : T + 11M]");    // a function of base date and market
+rule.evaluate(new Context(LocalDate.of(2015, 1, 15), null));  // [2015-01-15, 2015-04-15, 2015-07-15, 2015-10-15]
+```
+
+Holiday rules and rolling (`4 JUL {SAT - 1D, SUN + 1D}`, `T > NEXT 3 MON JAN`, `> MODFOLLOWING`) are more alternatives in the
+loop of `expr`; `annual` is one rule used by `date` and by the anchor of `> NEXT`. The keyword `'EASTER'` wins over the six-letter
+`PAIR`, because ANTLR defines the implicit literal tokens before the lexer rules.
+Lunar month names (`1 SHAWWAL`, `10 TISHRI`, `1 ZHENGYUE`) are more alternatives of `MONTH`, which comes before `PAIR`
+for the same reason; `item` adds `'IF' (w+=WEEKDAY)+` to a list item (`24 DEC IF MON TUE WED THU`).
+Ordinals and sets (`> NEXT 3RD FRI`, `> NEXT {MON, FRI}`): the lexer rule `ORDINAL : [0-9]+ ('ST' | 'ND' | 'RD' | 'TH')` wins over `NUM` by the longer match; the count is a rule of its own, `ordinal returns [int n = 1] : (ORDINAL)? ;`, like `spot`, so a label in the loop of `expr` doesn't keep the count of an earlier shift, and `anchor` is a `target` or `'{' target (',' target)* '}'`.
+
+Named events: the lexer rule `EVENT : '@' [A-Z] [A-Z0-9_]*` is one more alternative of `date` and of `anchor`; the actions call `ScheduleSemantics.event` and `eventAnchor`, and `list` evaluates an item once per date of its event.
+
+## Status and limitations
+
+- Working: all grammars compile with ANTLR 4.13. There are 184 unit tests and 3 integration tests.
+- `ISO8601dates` only accepts dates with hyphens: `20150609` is lexed as two `FOUR_DIGIT` tokens and rejected.
+- `Unit.g4` defines lexer tokens (`nanos`, `forever`, …) that rule `unit` doesn't accept.
+- Uses Joda-Time, which is in maintenance mode; the combinators module uses `java.time` instead.

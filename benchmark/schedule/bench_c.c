@@ -62,7 +62,7 @@ static Checksum evaluate_round(char **files, int count) {
 int main(int argc, char **argv) {
     if (argc == 2 && !strcmp(argv[1], "0")) {
         char error[256], text[11];
-        Context context = { 0, 0, NULL, NULL };
+        Context context = { 0, 0, NULL, NULL, NULL };
         DateList dates;
         Schedule *s = schedule_parse("2015-06-09 + 3M", error, sizeof error);
         if (!s || schedule_evaluate(s, &context, &dates, error, sizeof error)) return 1;

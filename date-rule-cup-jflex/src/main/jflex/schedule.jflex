@@ -38,6 +38,8 @@ private Symbol symbol(int type, Object value) {
 "NEXT"          { return symbol(ScheduleSym.NEXT); }
 "PREV"          { return symbol(ScheduleSym.PREV); }
 "BD"            { return symbol(ScheduleSym.BD); }
+"FD"            { return symbol(ScheduleSym.FD); }
+"FIX"           { return symbol(ScheduleSym.FIX); }
 "LAST"          { return symbol(ScheduleSym.LAST); }
 "IF"            { return symbol(ScheduleSym.IF); }
 "IN"            { return symbol(ScheduleSym.IN); }
@@ -69,7 +71,7 @@ private Symbol symbol(int type, Object value) {
 /* a named event such as @FOMC; the value is the name without the sigil */
 "@" [A-Z] [A-Z0-9_]*
                 { return symbol(ScheduleSym.EVENT, yytext().substring(1)); }
-[DWMQHYB]       { return symbol(ScheduleSym.UNIT, yytext()); }
+[DWMQHYBF]      { return symbol(ScheduleSym.UNIT, yytext()); }
 "+"             { return symbol(ScheduleSym.PLUS); }
 "&"             { return symbol(ScheduleSym.AMP); }
 "\\"            { return symbol(ScheduleSym.BACKSLASH); }

@@ -7,7 +7,7 @@
 #include "schedule.h"
 
 int main(int argc, char **argv) {
-    Context context = { 0, 0, NULL, NULL };
+    Context context = { 0, 0, NULL, NULL, NULL };
     int i = 1;
     if (argc == 4 && !strcmp(argv[1], "-b")) {
         if (date_parse_iso(argv[2], &context.base)) {

@@ -154,6 +154,7 @@ typedef struct {
     const int *bindings;
     int count, *cursor;
     int limit;   /* how many elements an open series yields; set by a pick, 0 elsewhere */
+    Market *fixing;   /* the fixing calendar; NULL: Monday to Friday */
 } Ctx;
 
 /* the value of a node with several values that isn't bound */
@@ -209,7 +210,7 @@ static void evaluate_into(Eval *eval, const Schedule *schedule, const Ctx *ctx, 
 /* a schedule evaluated on its own, e.g. the rule of a market; its errors become errors of this evaluation */
 static DateList *nested(Eval *eval, const Schedule *schedule, const Ctx *ctx) {
     char error[256];
-    Context context = { ctx->has_base, ctx->base, ctx->market, ctx->events };
+    Context context = { ctx->has_base, ctx->base, ctx->market, ctx->events, ctx->fixing };
     DateList *list = temp(eval);
     if (schedule_evaluate(schedule, &context, list, error, sizeof error)) fail(eval, "%s", error);
     return list;
@@ -225,7 +226,7 @@ static int base(Eval *eval, const Ctx *ctx) {
 static const DateList *holidays(Eval *eval, Market *market, int year) {
     for (int i = 0; i < market->count; i++)
         if (market->years[i].year == year) return &market->years[i].holidays;
-    Ctx first = { 1, make(eval, year, 1, 1), NULL, NULL, NULL, 0, NULL, 0 };
+    Ctx first = { 1, make(eval, year, 1, 1), NULL, NULL, NULL, 0, NULL, 0, NULL };
     DateList *dates = nested(eval, market->rule, &first);
     if (market->count == market->capacity) {
         market->capacity = market->capacity ? 2 * market->capacity : 8;
@@ -261,8 +262,10 @@ static int plus_business_days(Eval *eval, int date, long long count, Market *mar
     return date;
 }
 
-/* months first (day clamped to the end of the month), then days; business days of the market on their own */
-static int plus(Eval *eval, int date, Period period, int sign, Market *market) {
+/* months first (day clamped to the end of the month), then days; business days of the market and fixing days of the
+ * fixing calendar on their own */
+static int plus(Eval *eval, int date, Period period, int sign, Market *market, Market *fixing) {
+    if (period.fixing) return plus_business_days(eval, date, sign * period.fixing, fixing);
     if (period.business) return plus_business_days(eval, date, sign * period.business, market);
     int year, month, day;
     date_split(date, &year, &month, &day);
@@ -274,14 +277,19 @@ static int plus(Eval *eval, int date, Period period, int sign, Market *market) {
     return add_days(eval, clamped, sign * period.days);
 }
 
-/* FX spot: T+1 for USD against CAD, TRY, PHP or RUB, otherwise T+2 (also without pair) */
-static int spot(Eval *eval, int trade, const char *pair, Market *market) {
+/* the business days from trade to spot: 1 for USD against CAD, TRY, PHP or RUB, otherwise 2 (also without pair) */
+static int spot_lag(const char *pair) {
     static const char *const T_PLUS_ONE[] = { "CAD", "TRY", "PHP", "RUB" };
     int one = 0;
     for (int i = 0; pair && i < 4; i++)
         one |= (!strncmp(pair, "USD", 3) && !strcmp(pair + 3, T_PLUS_ONE[i]))
             || (!strncmp(pair, T_PLUS_ONE[i], 3) && !strcmp(pair + 3, "USD"));
-    return plus_business_days(eval, trade, one ? 1 : 2, market);
+    return one ? 1 : 2;
+}
+
+/* FX spot: T+1 for USD against CAD, TRY, PHP or RUB, otherwise T+2 (also without pair) */
+static int spot(Eval *eval, int trade, const char *pair, Market *market) {
+    return plus_business_days(eval, trade, spot_lag(pair), market);
 }
 
 /* the IMM date (third Wednesday of March, June, September or December) strictly after (before) the date */
@@ -510,7 +518,7 @@ static int annual_in(Eval *eval, const Annual *annual, long year) {
 static DateList *occurrences(Eval *eval, const char *name, int year, const Ctx *ctx) {
     for (int i = 0; ctx->events && i < ctx->events->count; i++) {
         if (strcmp(ctx->events->names[i], name)) continue;
-        Ctx first = { 1, make(eval, year, 1, 1), ctx->market, ctx->events, NULL, 0, NULL, 0 };
+        Ctx first = { 1, make(eval, year, 1, 1), ctx->market, ctx->events, NULL, 0, NULL, 0, ctx->fixing };
         DateList *all = nested(eval, ctx->events->rules[i], &first), *kept = temp(eval);
         for (int j = 0; j < all->count; j++)
             if (year_of(all->dates[j]) == year) datelist_push(kept, all->dates[j]);
@@ -530,6 +538,8 @@ static int find(Eval *eval, const Anchor *anchor, int date, int direction, const
     }
     case AT_BUSINESS_DAY:
         return plus_business_days(eval, date, direction, ctx->market);
+    case AT_FIXING_DAY:
+        return plus_business_days(eval, date, direction, ctx->fixing);
     case AT_IMM:
         return imm(eval, date, direction);
     case AT_ANNUAL: {
@@ -629,8 +639,9 @@ static int date_at(Eval *eval, const Date *date, const Ctx *ctx) {
 static int shifted(Eval *eval, const Shift *shifts, int date, const Ctx *ctx) {
     for (const Shift *s = shifts; s && date != UNBOUND; s = s->next) {
         switch (s->kind) {
-        case S_PLUS: date = plus(eval, date, s->period, 1, ctx->market); break;
-        case S_MINUS: date = plus(eval, date, s->period, -1, ctx->market); break;
+        case S_PLUS: date = plus(eval, date, s->period, 1, ctx->market, ctx->fixing); break;
+        case S_MINUS: date = plus(eval, date, s->period, -1, ctx->market, ctx->fixing); break;
+        case S_FIX: date = plus_business_days(eval, date, -spot_lag(s->pair), ctx->fixing); break;
         case S_IMM: date = imm(eval, date, 1); break;
         case S_SPOT: date = spot(eval, date, s->pair, ctx->market); break;
         case S_ROLL: date = roll(eval, date, s->roll, ctx->market); break;
@@ -645,7 +656,7 @@ static int shifted(Eval *eval, const Shift *shifts, int date, const Ctx *ctx) {
             /* {SAT - 1D, SUN + 1D}: the first item for the weekday of the date applies, items don't chain */
             for (const Observe *o = s->observes; o; o = o->next)
                 if (o->weekday == weekday_of(date)) {
-                    date = plus(eval, date, o->period, o->sign, ctx->market);
+                    date = plus(eval, date, o->period, o->sign, ctx->market, ctx->fixing);
                     break;
                 }
             break;
@@ -677,16 +688,16 @@ static DateList *elements(Eval *eval, const Date *series, const Ctx *ctx) {
     if (!series->last) {   /* an open series [first : step : ], only under a pick, which sets how many elements it yields */
         if (!ctx->limit) fail(eval, "an open series needs a pick in front of the item");
         for (long long k = 0; k < ctx->limit; k++) {
-            Period step = { k * series->step.months, k * series->step.days, k * series->step.business };
-            int date = plus(eval, first, step, 1, ctx->market);
+            Period step = { k * series->step.months, k * series->step.days, k * series->step.business, k * series->step.fixing };
+            int date = plus(eval, first, step, 1, ctx->market, ctx->fixing);
             if (!(series->start_out && date <= first)) datelist_push(dates, date);
         }
         return dates;
     }
     int last = single(eval, series->last, ctx);
     for (long long k = 0;; k++) {
-        Period step = { k * series->step.months, k * series->step.days, k * series->step.business };
-        int date = plus(eval, first, step, 1, ctx->market);
+        Period step = { k * series->step.months, k * series->step.days, k * series->step.business, k * series->step.fixing };
+        int date = plus(eval, first, step, 1, ctx->market, ctx->fixing);
         if (date > last) return dates;
         if (!(series->start_out && date <= first) && !(series->end_out && date >= last)) datelist_push(dates, date);
     }
@@ -802,7 +813,7 @@ int schedule_evaluate(const Schedule *schedule, const Context *context, DateList
         datelist_free(out);
         status = -1;
     } else {
-        Ctx ctx = { context->has_base, context->base, context->market, context->events, NULL, 0, NULL, 0 };
+        Ctx ctx = { context->has_base, context->base, context->market, context->events, NULL, 0, NULL, 0, context->fixing };
         evaluate_into(eval, schedule, &ctx, out);
     }
     for (int i = 0; i < eval->count; i++) {

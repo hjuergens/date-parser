@@ -26,7 +26,7 @@ import static org.testng.Assert.expectThrows;
  */
 public class ScheduleParserTest {
 
-    private static final Pattern CONTEXT = Pattern.compile("\\[(\\d{4}-\\d{2}-\\d{2})(?: ([A-Z0-9_]+))?] (.*)");
+    private static final Pattern CONTEXT = Pattern.compile("\\[(\\d{4}-\\d{2}-\\d{2})(?: ([A-Z0-9_]+))?(?: ([A-Z0-9_]+))?] (.*)");
 
     /** the rule, or IllegalArgumentException with bison's message on a syntax error */
     static ScheduleSemantics.Rule parse(String text) {
@@ -71,8 +71,10 @@ public class ScheduleParserTest {
             if (prefix.matches()) {
                 ScheduleSemantics.Market market = prefix.group(2) == null ? null
                         : Objects.requireNonNull(markets.get(prefix.group(2)), "unknown market " + prefix.group(2));
-                context = new ScheduleSemantics.Context(LocalDate.parse(prefix.group(1)), market, events);
-                input = prefix.group(3);
+                ScheduleSemantics.Market fixing = prefix.group(3) == null ? null
+                        : Objects.requireNonNull(markets.get(prefix.group(3)), "unknown market " + prefix.group(3));
+                context = new ScheduleSemantics.Context(LocalDate.parse(prefix.group(1)), market, events, fixing);
+                input = prefix.group(4);
             }
             cases.add(new Object[]{input, context, dates});
         }

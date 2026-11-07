@@ -46,10 +46,10 @@ for (const line of files.flatMap((file) => readFileSync(new URL(`../../examples/
   const expected = line.slice(arrow + 2).trim();
   let input = line.slice(0, arrow).trim();
   let context = { events };
-  const prefix = input.match(/^\[(\d{4}-\d{2}-\d{2})(?: ([A-Z0-9_]+))?\] (.*)$/); // [base] or [base market]
+  const prefix = input.match(/^\[(\d{4}-\d{2}-\d{2})(?: ([A-Z0-9_]+))?(?: ([A-Z0-9_]+))?\] (.*)$/); // [base], [base market], [base market fixing]
   if (prefix) {
-    context = { base: date(prefix[1]), market: prefix[2] && markets.get(prefix[2]), events };
-    input = prefix[3];
+    context = { base: date(prefix[1]), market: prefix[2] && markets.get(prefix[2]), events, fixing: prefix[3] && markets.get(prefix[3]) };
+    input = prefix[4];
   }
   cases.push({
     input,

@@ -148,6 +148,8 @@ public final class ScheduleEvaluator {
                 date = ScheduleSemantics.minus(date, period(minus.getPeriod()));
             } else if (shift instanceof ASpotShift spot) {
                 date = ScheduleSemantics.spot(date, spot.getPair() == null ? null : spot.getPair().getText());
+            } else if (shift instanceof AFixShift fix) {
+                date = ScheduleSemantics.fix(date, fix.getPair() == null ? null : fix.getPair().getText());
             } else if (shift instanceof ARollShift roll) {
                 date = ScheduleSemantics.roll(date, roll.getRoll().getText());
             } else if (shift instanceof ANextShift next) {
@@ -230,6 +232,8 @@ public final class ScheduleEvaluator {
             return ScheduleSemantics.weekday(weekday.getWeekday().getText());
         } else if (node instanceof ABdChosen) {
             return ScheduleSemantics.BUSINESS_DAY;
+        } else if (node instanceof AFdChosen) {
+            return ScheduleSemantics.FIXING_DAY;
         } else if (node instanceof AImmChosen) {
             return ScheduleSemantics.IMM;
         } else if (node instanceof AEventChosen event) {

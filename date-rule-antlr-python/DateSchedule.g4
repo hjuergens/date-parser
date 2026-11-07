@@ -48,6 +48,7 @@ shift
     | '-' period                    # minus
     | '>' 'IMM'                     # imm
     | '>' 'SPOT' PAIR?              # spot
+    | '>' 'FIX' PAIR?               # fix
     | '>' ROLL                      # roll
     | '>' 'NEXT' ORDINAL? anchor    # next
     | '>' 'PREV' ORDINAL? anchor    # prev
@@ -86,6 +87,7 @@ target
 chosen
     : WEEKDAY                       # weekdayAnchor
     | 'BD'                          # businessDayAnchor
+    | 'FD'                          # fixingDayAnchor
     | 'IMM'                         # immAnchor
     | fixedAnnual                   # annualAnchor
     | EVENT                         # eventAnchor
@@ -131,7 +133,7 @@ NUM  : [0-9]+ ;
 ORDINAL : [0-9]+ ('ST' | 'ND' | 'RD' | 'TH') ;
 // the time zone of an equinox, solstice or solar term: UTC unless an offset follows
 ZONE : 'UTC' [+-] [0-9]+ ;
-UNIT : [DWMQHYB] ;
+UNIT : [DWMQHYBF] ;
 // Gregorian, then Hijri (Umm al-Qura), Hebrew and Chinese months
 MONTH   : 'JAN' | 'FEB' | 'MAR' | 'APR' | 'MAY' | 'JUN' | 'JUL' | 'AUG' | 'SEP' | 'OCT' | 'NOV' | 'DEC'
         | 'MUHARRAM' | 'SAFAR' | 'RABIALAWWAL' | 'RABIALTHANI' | 'JUMADAALULA' | 'JUMADAALAKHIRA' | 'RAJAB' | 'SHABAN'

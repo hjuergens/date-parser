@@ -235,11 +235,11 @@
     <h1>Twelve parsers, one date language</h1>
     <p class="lead">
       The same small language for dates, periods and ranges, implemented with twelve parser generators and
-      parser libraries, from LL(1) to LALR(1), Earley, GLL and PEG. Every implementation passes the same 448 test cases.
+      parser libraries, from LL(1) to LALR(1), Earley, GLL and PEG. Every implementation passes the same 466 test cases.
     </p>
     <ul class="stats">
       <li><strong>12</strong><span>implementations, 6 languages</span></li>
-      <li><strong>448</strong><span>shared test cases</span></li>
+      <li><strong>466</strong><span>shared test cases</span></li>
       <li><strong>0</strong><span>grammar conflicts</span></li>
       <li><strong>1</strong><span>specification file</span></li>
     </ul>
@@ -283,7 +283,7 @@ series   = ( "[" | "]" ) endpoint ":" ( period ":" [ endpoint ] | endpoint )
 endpoint = single_date { move } .
 expr     = date { move } .
 move     = ("+" | "-") period
-         | "&gt;" ( "IMM" | "SPOT" [ PAIR ] | ROLL
+         | "&gt;" ( "IMM" | "SPOT" [ PAIR ] | "FIX" [ PAIR ] | ROLL
                  | ("NEXT" | "PREV") [ ORDINAL ] anchor
                  | count select "IN" PERIOD
                  | "{" annual { "," annual } "}" )  <span class="c">(* dates in year *)</span>
@@ -295,7 +295,7 @@ target   = chosen | "LAST" WEEKDAY MONTH .
 count    = ORDINAL [ "LAST" ] | "LAST" .  <span class="c">(* 2ND LAST *)</span>
 select   = chosen                      <span class="c">(* 3RD WED IN MONTH *)</span>
          | "{" target { "," target } "}" .
-chosen   = WEEKDAY | "BD" | "IMM" | fixed | EVENT .
+chosen   = WEEKDAY | "BD" | "FD" | "IMM" | fixed | EVENT .
 date     = single_date | series .
 single_date = "T" | "TOM" | "SPOT" [ PAIR ]
          | NUM ( "-" NUM "-" NUM       <span class="c">(* ISO    *)</span>
@@ -309,7 +309,7 @@ fixed    = NUM MONTH                   <span class="c">(* 4 JUL     *)</span>
          | ("EQUINOX" | "SOLSTICE") MONTH [ ZONE ]
          | "SOLARTERM" NUM [ ZONE ] .  <span class="c">(* SOLARTERM 5 UTC+8 *)</span>
 period   = NUM ( "D" | "W" | "M"
-               | "Q" | "H" | "Y" | "B" ) .
+               | "Q" | "H" | "Y" | "B" | "F" ) .  <span class="c">(* F: fixing days *)</span>
 ROLL     = "FOLLOWING" | "PRECEDING" | "MODFOLLOWING"
          | "BOW" | "EOW" | "BOM" | "EOM" | "BOQ" | "EOQ"
          | "BOH" | "EOH" | "BOY" | "EOY" .
@@ -429,6 +429,7 @@ locals [List&lt;Annual&gt; annuals = new ArrayList&lt;&gt;()]
     | &#x27;-&#x27; period                    { $value = ScheduleSemantics.minus($before, $period.value); }
     | &#x27;&gt;&#x27; &#x27;IMM&#x27;                     { $value = ScheduleSemantics.nextImm($before); }
     | &#x27;&gt;&#x27; spot                      { $value = ScheduleSemantics.spot($before, $spot.pair); }
+    | &#x27;&gt;&#x27; &#x27;FIX&#x27; (p=PAIR)?           { $value = ScheduleSemantics.fix($before, $p == null ? null : $p.text); }
     | &#x27;&gt;&#x27; ROLL                      { $value = ScheduleSemantics.roll($before, $ROLL.text); }
     | &#x27;&gt;&#x27; &#x27;NEXT&#x27; ordinal anchor     { $value = ScheduleSemantics.next($before, $ordinal.n, $anchor.value); }
     | &#x27;&gt;&#x27; &#x27;PREV&#x27; ordinal anchor     { $value = ScheduleSemantics.previous($before, $ordinal.n, $anchor.value); }
@@ -460,11 +461,11 @@ def visitExpr(self, ctx):
 
 def visitPlus(self, ctx):
     period = self.visit(ctx.period())
-    return lambda d, context: semantics.plus(d, period, 1, context.market)
+    return lambda d, context: semantics.plus(d, period, 1, context.market, context.fixing)
 
 def visitMinus(self, ctx):
     period = self.visit(ctx.period())
-    return lambda d, context: semantics.plus(d, period, -1, context.market)
+    return lambda d, context: semantics.plus(d, period, -1, context.market, context.fixing)
 
 def visitImm(self, ctx):
     return lambda d, context: semantics.next_imm(d)
@@ -520,6 +521,9 @@ Move&lt;out ScheduleSemantics.Expr d, ScheduleSemantics.Expr before&gt;
 | &quot;&gt;&quot;
   ( &quot;IMM&quot;                               (. d = ScheduleSemantics.nextImm(before); .)
   | Spot&lt;out code&gt;                      (. d = ScheduleSemantics.spot(before, code); .)
+  | &quot;FIX&quot;                               (. code = null; .)   <span class="c">/* the fixing date of a value date */</span>
+    [ pair                              (. code = t.val; .)
+    ]                                   (. d = ScheduleSemantics.fix(before, code); .)
   | Roll&lt;out code&gt;                      (. d = ScheduleSemantics.roll(before, code); .)
   | &quot;NEXT&quot; Counted&lt;out a&gt;               (. d = ScheduleSemantics.next(before, a); .)
   | &quot;PREV&quot; Counted&lt;out a&gt;               (. d = ScheduleSemantics.previous(before, a); .)
@@ -558,7 +562,7 @@ Operand&lt;out List&lt;ScheduleSemantics.Expr&gt; exprs&gt; (. ScheduleSemantics
 
 <span class="c">/** one step, applied to everything on its left */</span>
 ScheduleSemantics.Expr Move(ScheduleSemantics.Expr before) :
-{ TemporalAmount p; String pair; Token roll, o = null, period; ScheduleSemantics.Anchor a; int n;
+{ TemporalAmount p; String pair; Token roll, o = null, period, p2 = null; ScheduleSemantics.Anchor a; int n;
   ScheduleSemantics.Annual an; List&lt;ScheduleSemantics.Annual&gt; annuals = new ArrayList&lt;ScheduleSemantics.Annual&gt;();
   List&lt;ScheduleSemantics.Shift&gt; shifts = new ArrayList&lt;ScheduleSemantics.Shift&gt;(); boolean fromEnd = false; }
 {
@@ -567,6 +571,7 @@ ScheduleSemantics.Expr Move(ScheduleSemantics.Expr before) :
 | &quot;&gt;&quot;
   ( &quot;IMM&quot; { return ScheduleSemantics.nextImm(before); }
   | pair = Spot() { return ScheduleSemantics.spot(before, pair); }
+  | &quot;FIX&quot; ( p2 = &lt;PAIR&gt; )? { return ScheduleSemantics.fix(before, p2 == null ? null : p2.image); }   <span class="c">// the fixing date</span>
   | roll = &lt;ROLL&gt; { return ScheduleSemantics.roll(before, roll.image); }
   | &quot;NEXT&quot; a = Counted() { return ScheduleSemantics.next(before, a); }
   | &quot;PREV&quot; a = Counted() { return ScheduleSemantics.previous(before, a); }
@@ -605,6 +610,7 @@ shift
     | {minus} minus period
     | {imm} gt imm
     | {spot} gt spot pair?
+    | {fix} gt fix pair?   <span class="c">/* the fixing date of a value date */</span>
     | {roll} gt roll
     | {next} gt next ordinal? anchor   <span class="c">/* NEXT 3RD FRI: the third Friday */</span>
     | {prev} gt prev ordinal? anchor
@@ -645,6 +651,7 @@ target
 chosen
     = {weekday} weekday
     | {bd} bd
+    | {fd} fd
     | {imm} imm
     | {annual} fixed_annual
     | {event} event;
@@ -694,6 +701,8 @@ move ::= PLUS period:p              {: RESULT = e -&gt; ScheduleSemantics.plus(e
        | GT IMM                     {: RESULT = e -&gt; ScheduleSemantics.nextImm(e); :}
        | GT SPOT                    {: RESULT = e -&gt; ScheduleSemantics.spot(e, null); :}
        | GT SPOT PAIR:p             {: RESULT = e -&gt; ScheduleSemantics.spot(e, p); :}
+       | GT FIX                     {: RESULT = e -&gt; ScheduleSemantics.fix(e, null); :}   <span class="c">/* the fixing date */</span>
+       | GT FIX PAIR:p              {: RESULT = e -&gt; ScheduleSemantics.fix(e, p); :}
        | GT ROLL:r                  {: RESULT = e -&gt; ScheduleSemantics.roll(e, r); :}
        | GT NEXT counted:a          {: RESULT = e -&gt; ScheduleSemantics.next(e, a); :}
        | GT PREV counted:a          {: RESULT = e -&gt; ScheduleSemantics.previous(e, a); :}
@@ -753,6 +762,8 @@ move:
 | &#x27;&gt;&#x27; IMM                           { $$ = (UnaryOperator&lt;Expr&gt;) e -&gt; ScheduleSemantics.nextImm (e); }
 | &#x27;&gt;&#x27; SPOT                          { $$ = (UnaryOperator&lt;Expr&gt;) e -&gt; ScheduleSemantics.spot (e, null); }
 | &#x27;&gt;&#x27; SPOT PAIR                     { String pair = $3; $$ = (UnaryOperator&lt;Expr&gt;) e -&gt; ScheduleSemantics.spot (e, pair); }
+| &#x27;&gt;&#x27; FIX                           { $$ = (UnaryOperator&lt;Expr&gt;) e -&gt; ScheduleSemantics.fix (e, null); }   <span class="c">/* the fixing date */</span>
+| &#x27;&gt;&#x27; FIX PAIR                      { String pair = $3; $$ = (UnaryOperator&lt;Expr&gt;) e -&gt; ScheduleSemantics.fix (e, pair); }
 | &#x27;&gt;&#x27; ROLL                          { String roll = $2; $$ = (UnaryOperator&lt;Expr&gt;) e -&gt; ScheduleSemantics.roll (e, roll); }
 | &#x27;&gt;&#x27; NEXT counted                  { Anchor a = $3; $$ = (UnaryOperator&lt;Expr&gt;) e -&gt; ScheduleSemantics.next (e, a); }
 | &#x27;&gt;&#x27; PREV counted                  { Anchor a = $3; $$ = (UnaryOperator&lt;Expr&gt;) e -&gt; ScheduleSemantics.previous (e, a); }
@@ -815,6 +826,7 @@ shift: &#x27;+&#x27; period               { $$ = shift(parse, S_PLUS); $$-&gt;pe
      | &#x27;-&#x27; period               { $$ = shift(parse, S_MINUS); $$-&gt;period = $2; }
      | &#x27;&gt;&#x27; IMM                  { $$ = shift(parse, S_IMM); }
      | &#x27;&gt;&#x27; SPOT pair            { $$ = shift(parse, S_SPOT); $$-&gt;pair = $3; }
+     | &#x27;&gt;&#x27; FIX pair             { $$ = shift(parse, S_FIX); $$-&gt;pair = $3; }   <span class="c">/* the fixing date of a value date */</span>
      | &#x27;&gt;&#x27; ROLL                 { $$ = shift(parse, S_ROLL); $$-&gt;roll = $2; }
      | &#x27;&gt;&#x27; NEXT anchor          { $$ = shift(parse, S_NEXT); $$-&gt;count = 1; $$-&gt;anchor = $3; }
      | &#x27;&gt;&#x27; NEXT ORDINAL anchor  { $$ = shift(parse, S_NEXT); $$-&gt;count = $3; $$-&gt;anchor = $4; }
@@ -851,10 +863,11 @@ Expr
   = start:Date shifts:(_ @Shift)* { return (c) =&gt; shifts.reduce((d, shift) =&gt; shift(d, c), start(c)); }
 
 Shift
-  = &quot;+&quot; _ p:Period { return (d, c) =&gt; plus(d, p, 1, c.market); }
-  / &quot;-&quot; _ p:Period { return (d, c) =&gt; plus(d, p, -1, c.market); }
+  = &quot;+&quot; _ p:Period { return (d, c) =&gt; plus(d, p, 1, c.market, c.fixing); }
+  / &quot;-&quot; _ p:Period { return (d, c) =&gt; plus(d, p, -1, c.market, c.fixing); }
   / &quot;&gt;&quot; _ &quot;IMM&quot; { return nextImm; }
   / &quot;&gt;&quot; _ &quot;SPOT&quot; pair:(_ @Pair)? { return (d, c) =&gt; spot(d, pair, c.market); }
+  / &quot;&gt;&quot; _ &quot;FIX&quot; pair:(_ @Pair)? { return (d, c) =&gt; fix(d, pair, c.fixing); }  <span class="c">// the fixing date of a value date</span>
   / &quot;&gt;&quot; _ convention:$(&quot;FOLLOWING&quot; / &quot;PRECEDING&quot; / &quot;MODFOLLOWING&quot; / &quot;BOW&quot; / &quot;EOW&quot; / &quot;BOM&quot; / &quot;EOM&quot; / &quot;BOQ&quot; / &quot;EOQ&quot; / &quot;BOH&quot; / &quot;EOH&quot; / &quot;BOY&quot; / &quot;EOY&quot;) {
       return (d, c) =&gt; roll(d, convention, c.market);
     }
@@ -865,7 +878,7 @@ Shift
       return (d, c) =&gt; select(d, count.n, count.fromEnd, anchor, period, c);
     }
   / &quot;{&quot; _ head:Observe tail:(_ &quot;,&quot; _ @Observe)* _ &quot;}&quot; {
-      return (d, c) =&gt; observe(d, [head, ...tail], c.market);
+      return (d, c) =&gt; observe(d, [head, ...tail], c.market, c.fixing);
     }</code></pre>
       <p class="pitfall"><strong>Pitfall.</strong> Peggy provides <code>range()</code> in actions, which silently shadows a helper of the same name.</p>
     </div>
@@ -881,6 +894,7 @@ shift: &quot;+&quot; period           -&gt; plus
      | &quot;-&quot; period           -&gt; minus
      | &quot;&gt;&quot; &quot;IMM&quot;            -&gt; imm
      | &quot;&gt;&quot; &quot;SPOT&quot; [PAIR]    -&gt; spot
+     | &quot;&gt;&quot; &quot;FIX&quot; [PAIR]     -&gt; fix
      | &quot;&gt;&quot; ROLL             -&gt; roll
      | &quot;&gt;&quot; &quot;NEXT&quot; [ORDINAL] anchor -&gt; next
      | &quot;&gt;&quot; &quot;PREV&quot; [ORDINAL] anchor -&gt; prev
@@ -902,6 +916,7 @@ count: ORDINAL              -&gt; from_start
 
 ?chosen: WEEKDAY            -&gt; weekday
        | &quot;BD&quot;               -&gt; business_day
+       | &quot;FD&quot;               -&gt; fixing_day
        | &quot;IMM&quot;              -&gt; imm_anchor
        | fixed_annual       -&gt; annual_anchor
        | EVENT              -&gt; event_anchor
@@ -912,6 +927,7 @@ count: ORDINAL              -&gt; from_start
 
 ?target: WEEKDAY            -&gt; weekday
       | &quot;BD&quot;                -&gt; business_day
+      | &quot;FD&quot;                -&gt; fixing_day
       | &quot;IMM&quot;               -&gt; imm_anchor
       | annual              -&gt; annual_anchor
       | EVENT               -&gt; event_anchor
@@ -949,11 +965,13 @@ period: NUM UNIT</code></pre>
       </div>
       <pre><code><span class="c">(* shifts are applied from left to right *)</span>
 expr     = date shift*
-&lt;shift&gt;  = plus | minus | imm | spot | roll | next | prev | select | dates-in-year | observance
+&lt;shift&gt;  = plus | minus | imm | spot | fix | roll | next | prev | select | dates-in-year | observance
 plus     = &lt;&#x27;+&#x27;&gt; period
 minus    = &lt;&#x27;-&#x27;&gt; period
 imm      = &lt;&#x27;&gt;&#x27;&gt; &lt;&#x27;IMM&#x27;&gt;
 spot     = &lt;&#x27;&gt;&#x27;&gt; &lt;&#x27;SPOT&#x27;&gt; PAIR?
+<span class="c">(* the fixing date of a value date *)</span>
+fix      = &lt;&#x27;&gt;&#x27;&gt; &lt;&#x27;FIX&#x27;&gt; PAIR?
 roll     = &lt;&#x27;&gt;&#x27;&gt; ROLL
 <span class="c">(* NEXT 3RD FRI: the third Friday *)</span>
 next     = &lt;&#x27;&gt;&#x27;&gt; &lt;&#x27;NEXT&#x27;&gt; ORDINAL? anchor
@@ -1319,6 +1337,7 @@ observe  = WEEKDAY SIGN period
       <h3>markets declared from holiday rules</h3>
       <p class="market"><code>market XNYS = 1 JAN {SUN + 1D}, 3 MON JAN, 3 MON FEB, EASTER - 2D, LAST MON MAY, 19 JUN {SAT - 1D, SUN + 1D}, 4 JUL {SAT - 1D, SUN + 1D}, 1 MON SEP, 4 THU NOV, 25 DEC {SAT - 1D, SUN + 1D}</code></p>
       <p class="market"><code>market XEVE = 1 JAN {SAT - 1D, SUN + 1D}</code></p>
+      <p class="market"><code>market XTGT = 1 JAN, EASTER - 2D, EASTER + 1D, 1 MAY, 25 DEC, 26 DEC</code></p>
       <table class="cases">
         <tbody>
           <tr><td><code><span class="ctx">[2025-07-03 XNYS]</span> T + 1B</code></td><td><span class="date">2025-07-07</span></td></tr>
@@ -1703,6 +1722,31 @@ observe  = WEEKDAY SIGN period
       </table>
       </section>
       <section>
+      <h3>fixing calendar</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-04-01]</span> T + 2F</code></td><td><span class="date">2026-04-03</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-04-01 XNYS XTGT]</span> T + 2F</code></td><td><span class="date">2026-04-07</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-04-01 XNYS XTGT]</span> T + 2B</code></td><td><span class="date">2026-04-06</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-04-01 XNYS XTGT]</span> T &gt; SPOT &gt; FIX</code></td><td><span class="date">2026-04-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-04-01 XNYS XTGT]</span> T &gt; SPOT USDCAD &gt; FIX USDCAD</code></td><td><span class="date">2026-04-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-04-07 XNYS XTGT]</span> T - 1F</code></td><td><span class="date">2026-04-02</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-04-02 XNYS XTGT]</span> T &gt; NEXT FD</code></td><td><span class="date">2026-04-07</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-04-02 XNYS]</span> T &gt; NEXT FD</code></td><td><span class="date">2026-04-03</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-04-01 XNYS XTGT]</span> T &gt; 2ND FD IN MONTH</code></td><td><span class="date">2026-04-02</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-04-01 XNYS XTGT]</span> T &gt; 3RD LAST FD IN MONTH</code></td><td><span class="date">2026-04-28</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-04-01 XNYS XTGT]</span> [T : 1F : T + 7D]</code></td><td><span class="date">2026-04-01</span>, <span class="date">2026-04-02</span>, <span class="date">2026-04-07</span>, <span class="date">2026-04-08</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-04-30 XNYS XTGT]</span> T + 1B</code></td><td><span class="date">2026-05-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-04-30 XNYS XTGT]</span> T + 1F</code></td><td><span class="date">2026-05-04</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-04-30 XNYS XTGT]</span> T &gt; NEXT {BD, FD}</code></td><td><span class="date">2026-05-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-04-01 XNYS XTGT]</span> T &gt; FIX EUR</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-04-01 XNYS XTGT]</span> T + 2FD</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-04-01 XNYS XTGT]</span> T &gt; FD</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-04-01 XNYS XTGT]</span> T &gt; FIX USDCAD USDCAD</code></td><td><span class="err">error</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
       <h3>in this one; the comment gives the MaturityRule expression</h3>
       <table class="cases">
         <tbody>
@@ -1939,7 +1983,8 @@ docker run --rm -v "$PWD:/work" -w /work/date-rule-flex-bison date-rule-flex-bis
 
   // the rule of a schedule; base date, market and events only come with the evaluation
   function rule(dates) {
-    return (context = {}) => dates({ base: context.base, market: context.market ?? WEEKENDS, events: context.events ?? {} });
+    return (context = {}) => dates({ base: context.base, market: context.market ?? WEEKENDS, events: context.events ?? {},
+      fixing: context.fixing ?? WEEKENDS });
   }
 
   // thrown by a node with several values that is not bound yet; values() catches it and evaluates the expression once
@@ -1968,11 +2013,11 @@ docker run --rm -v "$PWD:/work" -w /work/date-rule-flex-bison date-rule-flex-bis
       const start = single(first, c);
       if (last === null) {   // an open series [first : step : ], only under a pick, which sets how many elements it yields
         if (!c.limit) throw new Error('an open series needs a pick in front of the item');
-        return Array.from({ length: c.limit }, (_, k) => plus(start, { months: k * step.months, days: k * step.days,
-          business: k * step.business }, 1, c.market)).filter((d) => !(startOut && compare(d, start) <= 0));
+        return Array.from({ length: c.limit }, (_, k) => plus(start, { months: k * step.months, days: k * step.days, business: k * step.business, fixing: k * (step.fixing ?? 0) }, 1, c.market, c.fixing))
+          .filter((d) => !(startOut && compare(d, start) <= 0));
       }
       const end = single(last, c);
-      return expand(start, step, end, c.market)
+      return expand(start, step, end, c.market, c.fixing)
         .filter((d) => !(startOut && compare(d, start) <= 0 || endOut && compare(d, end) >= 0));
     });
   }
@@ -2017,7 +2062,7 @@ docker run --rm -v "$PWD:/work" -w /work/date-rule-flex-bison date-rule-flex-bis
   // the dates of the event in the year: its rule evaluated with the first of January as base date
   function occurrences(name, year, c) {
     if (!c.events[name]) throw new Error(`no event ${name}`);
-    return c.events[name]({ base: { year, month: 1, day: 1 }, market: c.market, events: c.events })
+    return c.events[name]({ base: { year, month: 1, day: 1 }, market: c.market, events: c.events, fixing: c.fixing })
       .filter((d) => d.year === year).sort(compare);
   }
 
@@ -2045,7 +2090,8 @@ docker run --rm -v "$PWD:/work" -w /work/date-rule-flex-bison date-rule-flex-bis
     return context.base;
   }
 
-  function plus(d, period, sign, market) {
+  function plus(d, period, sign, market, fixing = WEEKENDS) {
+    if (period.fixing) return plusBusinessDays(d, sign * period.fixing, fixing);
     if (period.business) return plusBusinessDays(d, sign * period.business, market);
     const total = d.year * 12 + (d.month - 1) + sign * period.months;
     const year = Math.floor(total / 12);
@@ -2078,7 +2124,16 @@ docker run --rm -v "$PWD:/work" -w /work/date-rule-flex-bison date-rule-flex-bis
 
   // FX spot: T+1 for USD against CAD, TRY, PHP or RUB, otherwise T+2
   function spot(d, pair, market) {
-    return plusBusinessDays(d, /^(USD(CAD|TRY|PHP|RUB)|(CAD|TRY|PHP|RUB)USD)$/.test(pair) ? 1 : 2, market);
+    return plusBusinessDays(d, spotLag(pair), market);
+  }
+
+  function spotLag(pair) {
+    return /^(USD(CAD|TRY|PHP|RUB)|(CAD|TRY|PHP|RUB)USD)$/.test(pair) ? 1 : 2;
+  }
+
+  // > FIX [PAIR]: the fixing date of a value date, the spot lag of the pair before it in fixing days
+  function fix(d, pair, fixing) {
+    return plusBusinessDays(d, -spotLag(pair), fixing);
   }
 
   // the IMM date strictly before d
@@ -2335,9 +2390,9 @@ docker run --rm -v "$PWD:/work" -w /work/date-rule-flex-bison date-rule-flex-bis
   }
 
   // the first shift for the weekday of d applies; shifts don't chain
-  function observe(d, shifts, market) {
+  function observe(d, shifts, market, fixing) {
     const shift = shifts.find((s) => WEEKDAYS.indexOf(s.weekday) === weekday(d));
-    return shift ? plus(d, shift.period, shift.sign, market) : d;
+    return shift ? plus(d, shift.period, shift.sign, market, fixing) : d;
   }
 
   function compare(a, b) {
@@ -2345,10 +2400,10 @@ docker run --rm -v "$PWD:/work" -w /work/date-rule-flex-bison date-rule-flex-bis
   }
 
   // not "range": Peggy provides range() (the location of the match) in actions
-  function expand(first, step, last, market) {
+  function expand(first, step, last, market, fixing = WEEKENDS) {
     const dates = [];
     for (let k = 0; ; k++) {
-      const d = plus(first, { months: k * step.months, days: k * step.days, business: k * step.business }, 1, market);
+      const d = plus(first, { months: k * step.months, days: k * step.days, business: k * step.business, fixing: k * (step.fixing ?? 0) }, 1, market, fixing);
       if (compare(d, last) > 0) return dates;
       dates.push(d);
     }
@@ -2406,7 +2461,7 @@ Series
     rest:(step:Period _ ":" _ last:Endpoint? { return [step, last]; } / last:Endpoint { return [null, last]; })
     _ close:("]" / "[") {
       const step = rest[0] ?? { months: 0, days: 1, business: 0 }, last = rest[1];
-      if (step.months <= 0 && step.days <= 0 && step.business <= 0) throw new RangeError('step must be positive');
+      if (step.months <= 0 && step.days <= 0 && step.business <= 0 && !(step.fixing > 0)) throw new RangeError('step must be positive');
       if (last === null && close === '[') throw new RangeError('an open series ends with ]');
       return series(first, step, last, open === ']', close === '[');
     }
@@ -2420,10 +2475,11 @@ Expr
   = start:Date shifts:(_ @Shift)* { return (c) => shifts.reduce((d, shift) => shift(d, c), start(c)); }
 
 Shift
-  = "+" _ p:Period { return (d, c) => plus(d, p, 1, c.market); }
-  / "-" _ p:Period { return (d, c) => plus(d, p, -1, c.market); }
+  = "+" _ p:Period { return (d, c) => plus(d, p, 1, c.market, c.fixing); }
+  / "-" _ p:Period { return (d, c) => plus(d, p, -1, c.market, c.fixing); }
   / ">" _ "IMM" { return nextImm; }
   / ">" _ "SPOT" pair:(_ @Pair)? { return (d, c) => spot(d, pair, c.market); }
+  / ">" _ "FIX" pair:(_ @Pair)? { return (d, c) => fix(d, pair, c.fixing); }  // the fixing date of a value date
   / ">" _ convention:$("FOLLOWING" / "PRECEDING" / "MODFOLLOWING" / "BOW" / "EOW" / "BOM" / "EOM" / "BOQ" / "EOQ" / "BOH" / "EOH" / "BOY" / "EOY") {
       return (d, c) => roll(d, convention, c.market);
     }
@@ -2434,7 +2490,7 @@ Shift
       return (d, c) => select(d, count.n, count.fromEnd, anchor, period, c);
     }
   / "{" _ head:Observe tail:(_ "," _ @Observe)* _ "}" {
-      return (d, c) => observe(d, [head, ...tail], c.market);
+      return (d, c) => observe(d, [head, ...tail], c.market, c.fixing);
     }
 
 Observe
@@ -2467,6 +2523,7 @@ Target
 Chosen
   = wd:Weekday { return weekdayAnchor(wd); }
   / "BD" { return (d, direction, c) => plusBusinessDays(d, direction, c.market); }
+  / "FD" { return (d, direction, c) => plusBusinessDays(d, direction, c.fixing); }
   / "IMM" { return (d, direction) => direction > 0 ? nextImm(d) : previousImm(d); }
   / annual:FixedAnnual { return annualAnchor(annual); }
   / name:Event { return eventAnchor(name); }
@@ -2528,7 +2585,7 @@ Pair
     pair:$[A-Z]|6| { return pair; }
 
 Period
-  = n:Number _ unit:[DWMQHYB] {
+  = n:Number _ unit:[DWMQHYBF] {
       switch (unit) {
         case 'D': return { months: 0, days: n, business: 0 };
         case 'W': return { months: 0, days: 7 * n, business: 0 };
@@ -2537,6 +2594,7 @@ Period
         case 'H': return { months: 6 * n, days: 0, business: 0 };
         case 'Y': return { months: 12 * n, days: 0, business: 0 };
         case 'B': return { months: 0, days: 0, business: n };
+        case 'F': return { months: 0, days: 0, business: 0, fixing: n };
       }
     }
 
@@ -2551,6 +2609,7 @@ _ "whitespace"
   "XTEST": "2015-06-10, 2015-07-03, 2015-12-25",
   "XNYS": "1 JAN {SUN + 1D}, 3 MON JAN, 3 MON FEB, EASTER - 2D, LAST MON MAY, 19 JUN {SAT - 1D, SUN + 1D}, 4 JUL {SAT - 1D, SUN + 1D}, 1 MON SEP, 4 THU NOV, 25 DEC {SAT - 1D, SUN + 1D}",
   "XEVE": "1 JAN {SAT - 1D, SUN + 1D}",
+  "XTGT": "1 JAN, EASTER - 2D, EASTER + 1D, 1 MAY, 25 DEC, 26 DEC",
   "XFED": "1 JAN {SAT - 1D, SUN + 1D}, 3 MON JAN, 3 MON FEB, LAST MON MAY, 19 JUN {SAT - 1D, SUN + 1D}, 4 JUL {SAT - 1D, SUN + 1D}, 1 MON SEP, 2 MON OCT, 11 NOV {SAT - 1D, SUN + 1D}, 4 THU NOV, 25 DEC {SAT - 1D, SUN + 1D}"
  },
  "events": {

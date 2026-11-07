@@ -14,7 +14,7 @@ Helpers
 Tokens
 	number = digit+;
 	ordinal = digit+ ('ST' | 'ND' | 'RD' | 'TH');   /* 1ST, 2ND, 3RD, 4TH; the longer match wins over number */
-	unit = 'D' | 'W' | 'M' | 'Q' | 'H' | 'Y' | 'B';
+	unit = 'D' | 'W' | 'M' | 'Q' | 'H' | 'Y' | 'B' | 'F';
 	imm = 'IMM';
 	spot = 'SPOT';
 	base = 'T';
@@ -22,6 +22,8 @@ Tokens
 	next = 'NEXT';
 	prev = 'PREV';
 	bd = 'BD';
+	fd = 'FD';
+	fix = 'FIX';
 	last = 'LAST';
 	if = 'IF';
 	in = 'IN';
@@ -116,6 +118,7 @@ Productions
 		| {minus} minus period
 		| {imm} gt imm
 		| {spot} gt spot pair?
+		| {fix} gt fix pair?   /* the fixing date of a value date */
 		| {roll} gt roll
 		| {next} gt next ordinal? anchor   /* NEXT 3RD FRI: the third Friday */
 		| {prev} gt prev ordinal? anchor
@@ -156,6 +159,7 @@ Productions
 	chosen
 		= {weekday} weekday
 		| {bd} bd
+		| {fd} fd
 		| {imm} imm
 		| {annual} fixed_annual
 		| {event} event;

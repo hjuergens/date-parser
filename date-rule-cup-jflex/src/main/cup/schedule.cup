@@ -23,7 +23,7 @@ action code {:
     }
 :};
 
-terminal            PLUS, MINUS, GT, IMM, SPOT, BASE, TOM, NEXT, PREV, BD, LAST, EASTER, IF, IN;
+terminal            PLUS, MINUS, GT, IMM, SPOT, BASE, TOM, NEXT, PREV, BD, LAST, EASTER, IF, IN, FD, FIX;
 terminal            DOT, SLASH, COMMA, COLON, LBRACKET, RBRACKET, LBRACE, RBRACE, AMP, BACKSLASH;
 terminal Integer    NUM;
 terminal String     UNIT, PAIR, MONTH, WEEKDAY, ROLL, EVENT, SEASON, ZONE, ORDINAL, PERIOD;
@@ -125,6 +125,8 @@ move ::= PLUS period:p              {: RESULT = e -> ScheduleSemantics.plus(e, p
        | GT IMM                     {: RESULT = e -> ScheduleSemantics.nextImm(e); :}
        | GT SPOT                    {: RESULT = e -> ScheduleSemantics.spot(e, null); :}
        | GT SPOT PAIR:p             {: RESULT = e -> ScheduleSemantics.spot(e, p); :}
+       | GT FIX                     {: RESULT = e -> ScheduleSemantics.fix(e, null); :}   /* the fixing date */
+       | GT FIX PAIR:p              {: RESULT = e -> ScheduleSemantics.fix(e, p); :}
        | GT ROLL:r                  {: RESULT = e -> ScheduleSemantics.roll(e, r); :}
        | GT NEXT counted:a          {: RESULT = e -> ScheduleSemantics.next(e, a); :}
        | GT PREV counted:a          {: RESULT = e -> ScheduleSemantics.previous(e, a); :}
@@ -204,6 +206,7 @@ target ::= chosen:a                 {: RESULT = a; :}
 
 chosen ::= WEEKDAY:w                {: RESULT = ScheduleSemantics.weekday(w); :}
          | BD                       {: RESULT = ScheduleSemantics.BUSINESS_DAY; :}
+         | FD                       {: RESULT = ScheduleSemantics.FIXING_DAY; :}
          | IMM                      {: RESULT = ScheduleSemantics.IMM; :}
          | fixed_annual:a           {: RESULT = ScheduleSemantics.annual(a); :}
          | EVENT:n                  {: RESULT = ScheduleSemantics.eventAnchor(n); :}

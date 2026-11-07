@@ -15,6 +15,10 @@
 # series or a set of dates {1 JAN, 6 JAN}. Left to right, each shift applies to everything on its left: in
 # "[a : b] & c + 1D" every date of the union moves a day. Dates in year: "> {1 FEB, 1 MAY}" replaces a date with these
 # annual dates in its year, so "[T : 1Y : T + 2Y] > {1 FEB, 1 MAY}" is 1 February and 1 May of three years.
+# Fixing calendar: a second market says which days are fixing days ([<base> <market> <fixing market>] in the cases;
+# without one, Monday to Friday). "+ 2F" counts fixing days, "> NEXT FD" moves to the next fixing day, "> FIX [PAIR]"
+# moves a value date to its fixing date, the pair's spot lag (2, or 1 for USD against CAD, TRY, PHP, RUB) in fixing days
+# before it. XTGT is TARGET2: closed on 1 January, Good Friday, Easter Monday, 1 May, 25 and 26 December.
 # Picks: "5TH [SPOT : 1Q : ] > EOQ > 3RD WED IN MONTH" is the 5th date of the item strictly after T, in the order the item
 # yields them (MaturityRule's next(5, ... every(quarter))); "2ND LAST" counts from the last one. A series with an empty
 # end, [SPOT : 1Q : ], is open and needs a pick in front of the item (a pick looks at up to 10000 elements); LAST needs
@@ -209,6 +213,7 @@ EASTER => error
 # markets declared from holiday rules
 market XNYS = 1 JAN {SUN + 1D}, 3 MON JAN, 3 MON FEB, EASTER - 2D, LAST MON MAY, 19 JUN {SAT - 1D, SUN + 1D}, 4 JUL {SAT - 1D, SUN + 1D}, 1 MON SEP, 4 THU NOV, 25 DEC {SAT - 1D, SUN + 1D}
 market XEVE = 1 JAN {SAT - 1D, SUN + 1D}
+market XTGT = 1 JAN, EASTER - 2D, EASTER + 1D, 1 MAY, 25 DEC, 26 DEC
 [2025-07-03 XNYS] T + 1B => 2025-07-07
 [2026-07-02 XNYS] T + 1B => 2026-07-06
 [2025-04-17 XNYS] T + 1B => 2025-04-21
@@ -527,6 +532,26 @@ market XFED = 1 JAN {SAT - 1D, SUN + 1D}, 3 MON JAN, 3 MON FEB, LAST MON MAY, 19
 [2026-11-02] [T : 1D : [ => error
 [2026-11-02] 2ND T + 1D => error
 [2026-11-02] 1ST LAST MON MAY => error
+
+# fixing calendar
+[2026-04-01] T + 2F => 2026-04-03
+[2026-04-01 XNYS XTGT] T + 2F => 2026-04-07
+[2026-04-01 XNYS XTGT] T + 2B => 2026-04-06
+[2026-04-01 XNYS XTGT] T > SPOT > FIX => 2026-04-01
+[2026-04-01 XNYS XTGT] T > SPOT USDCAD > FIX USDCAD => 2026-04-01
+[2026-04-07 XNYS XTGT] T - 1F => 2026-04-02
+[2026-04-02 XNYS XTGT] T > NEXT FD => 2026-04-07
+[2026-04-02 XNYS] T > NEXT FD => 2026-04-03
+[2026-04-01 XNYS XTGT] T > 2ND FD IN MONTH => 2026-04-02
+[2026-04-01 XNYS XTGT] T > 3RD LAST FD IN MONTH => 2026-04-28
+[2026-04-01 XNYS XTGT] [T : 1F : T + 7D] => 2026-04-01, 2026-04-02, 2026-04-07, 2026-04-08
+[2026-04-30 XNYS XTGT] T + 1B => 2026-05-01
+[2026-04-30 XNYS XTGT] T + 1F => 2026-05-04
+[2026-04-30 XNYS XTGT] T > NEXT {BD, FD} => 2026-05-01
+[2026-04-01 XNYS XTGT] T > FIX EUR => error
+[2026-04-01 XNYS XTGT] T + 2FD => error
+[2026-04-01 XNYS XTGT] T > FD => error
+[2026-04-01 XNYS XTGT] T > FIX USDCAD USDCAD => error
 
 # MaturityRule: the examples of another maturity rule language (selectors such as "lastday of month(5) of sp")
 # in this one; the comment gives the MaturityRule expression

@@ -1,6 +1,6 @@
 # Plan: the schedule language at least as expressive as MaturityRule
 
-Status: approved 2026-11-04; steps 1 (brackets, prefix), 2 (selection, weeks), 3 (series), 4 (include &, exclude \\, dates in year) and 5 (picks, open series) done; step 6 (fixing calendar) next. Builds on [intervals-and-series.md](intervals-and-series.md).
+Status: approved 2026-11-04; steps 1 (brackets, prefix), 2 (selection, weeks), 3 (series), 4 (include &, exclude \, dates in year), 5 (picks, open series) and 6 (fixing calendar) done; step 7 (parity cases) next. Builds on [intervals-and-series.md](intervals-and-series.md).
 
 ## Context
 The goal: the schedule language ("date-rule") to express every MaturityRule rule. The source is
@@ -34,15 +34,15 @@ This document is that plan; the intervals plan points here.
 | `firstday`/`lastday of` P | `> BOM`/`> EOM` … `> BOY`/`> EOY`; new: `> BOW`/`> EOW` | BOW/EOW new |
 | `day(n) of` P | `> BOM + (n-1)D` (likewise for each period) | done |
 | `wednesday(n) of` P, `business(n) of` P | `> nTH WED IN MONTH`, `> nTH BD IN MONTH`, `> LAST BD IN MONTH`, `> 2ND LAST …` | step 2 |
-| `fixing(n) of` P | `> nTH FD IN MONTH` | step 6 |
+| `fixing(n) of` P | `> nTH FD IN MONTH` | done |
 | `month(n) of` Date (and week, quarter, …) | `+ (n-1)M > BOM`: the period of the date shifted by n-1 | done (translation) |
 | `month(n) of` P (nth month of a quarter, …) | `> BOQ + (n-1)M`; weeks: `> BOM > BOW + (n-1)W` (the week holding the first day) | translation, BOW new |
 | `january(n) of` Date | `> BOM - 1D > NEXT nTH 1 JAN` (the current January counts) | translation |
 | `every(k, P)` | series `[X : kP : ]`, shifts after it apply to each element | steps 3 and 5 |
 | `next(n, seq)` (nth result after **today**) | pick `nTH [X : kP : ] …`: nth date after T, counting the dates after the shifts | step 5 |
 | `a or b` | sets `{…}`, merge `+`/`-` of series | step 4 |
-| `fix` | `> FIX [PAIR]`: the fixing date of a value date | step 6 |
-| `fixing(n) from` | `+ nF` | step 6 |
+| `fix` | `> FIX [PAIR]`: the fixing date of a value date | done |
+| `fixing(n) from` | `+ nF` | done |
 | `<k>` maturity series (DOL) | series: `[SPOT : 1M : SPOT + 19M] > EOM + 2B` | step 3 |
 | `on`, `onn`, `tn`, `tnn`, `forcedOn` | left out (decided); e.g. `TOM`, `T + 1B`, `T + 1D` | — |
 

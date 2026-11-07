@@ -39,7 +39,7 @@ static Annual annual(AnnualKind kind, long n, int weekday, int month) {
 
 /* a series date; an error if the step isn't positive */
 static int series(Parse *parse, Date *date, int start_out, Expr *first, Period step, Expr *last, int end_out) {
-    if (step.months <= 0 && step.days <= 0 && step.business <= 0) {
+    if (step.months <= 0 && step.days <= 0 && step.business <= 0 && step.fixing <= 0) {
         snprintf(parse->error, parse->size, "step must be positive");
         return -1;
     }
@@ -80,6 +80,7 @@ static int fixed(Parse *parse, long year, long month, long day, int *date) {
 }
 
 %token TODAY "T" TOM "TOM" SPOT "SPOT" IMM "IMM" NEXT "NEXT" PREV "PREV" BD "BD" LAST "LAST" EASTER "EASTER"
+%token FD "FD" FIX "FIX"
 %token SOLARTERM "SOLARTERM" IF "IF" IN "IN"
 %token <num> NUM ORDINAL ZONE
 %token <code> MONTH WEEKDAY ROLL UNIT SEASON PERIOD
@@ -178,7 +179,7 @@ series: start_out endpoint ':' period ':' endpoint end_out
       | start_out endpoint ':' period ':' end_out    /* an open series [SPOT : 1Q : ] */
                                 { if (series(parse, &$$, $1, $2, $4, NULL, $6)) YYERROR; }
       | start_out endpoint ':' endpoint end_out
-                                { if (series(parse, &$$, $1, $2, (Period) { 0, 1, 0 }, $4, $5)) YYERROR; }
+                                { if (series(parse, &$$, $1, $2, (Period) { 0, 1, 0, 0 }, $4, $5)) YYERROR; }
       ;
 
 /* an endpoint is one date, so it can't be a series: after the last ":" a "]" closes an open series */
@@ -203,6 +204,7 @@ shift: '+' period               { $$ = shift(parse, S_PLUS); $$->period = $2; }
      | '-' period               { $$ = shift(parse, S_MINUS); $$->period = $2; }
      | '>' IMM                  { $$ = shift(parse, S_IMM); }
      | '>' SPOT pair            { $$ = shift(parse, S_SPOT); $$->pair = $3; }
+     | '>' FIX pair             { $$ = shift(parse, S_FIX); $$->pair = $3; }   /* the fixing date of a value date */
      | '>' ROLL                 { $$ = shift(parse, S_ROLL); $$->roll = $2; }
      | '>' NEXT anchor          { $$ = shift(parse, S_NEXT); $$->count = 1; $$->anchor = $3; }
      | '>' NEXT ORDINAL anchor  { $$ = shift(parse, S_NEXT); $$->count = $3; $$->anchor = $4; }
@@ -264,6 +266,7 @@ target: chosen
 
 chosen: WEEKDAY                 { $$ = anchor(parse, AT_WEEKDAY); $$->weekday = $1; }
       | BD                      { $$ = anchor(parse, AT_BUSINESS_DAY); }
+      | FD                      { $$ = anchor(parse, AT_FIXING_DAY); }
       | IMM                     { $$ = anchor(parse, AT_IMM); }
       | fixed_annual            { $$ = anchor(parse, AT_ANNUAL); $$->annual = $1; }
       | EVENT                   { $$ = anchor(parse, AT_EVENT); $$->event = $1; }
@@ -299,7 +302,7 @@ fixed_annual: NUM MONTH         { $$ = annual(MONTH_DAY, $1, 0, $2); }
       ;
 
 period: NUM UNIT                {
-                                    $$ = (Period) { 0, 0, 0 };
+                                    $$ = (Period) { 0, 0, 0, 0 };
                                     switch ($2) {
                                     case 'D': $$.days = $1; break;
                                     case 'W': $$.days = 7 * $1; break;
@@ -307,6 +310,7 @@ period: NUM UNIT                {
                                     case 'Q': $$.months = 3 * $1; break;
                                     case 'H': $$.months = 6 * $1; break;
                                     case 'Y': $$.months = 12 * $1; break;
+                                    case 'F': $$.fixing = $1; break;
                                     default: $$.business = $1;
                                     }
                                 }

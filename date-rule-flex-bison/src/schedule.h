@@ -20,6 +20,7 @@ typedef struct {
     int has_base, base;   /* T, only needed if the schedule uses it */
     Market *market;       /* NULL: Monday to Friday */
     const Events *events; /* NULL: none */
+    Market *fixing;       /* the fixing calendar (F, FD, FIX); NULL: Monday to Friday */
 } Context;
 
 /* NULL on a syntax error, with the message in error */

@@ -98,11 +98,11 @@ class Rules(DateScheduleVisitor):
 
     def visitPlus(self, ctx):
         period = self.visit(ctx.period())
-        return lambda d, context: semantics.plus(d, period, 1, context.market)
+        return lambda d, context: semantics.plus(d, period, 1, context.market, context.fixing)
 
     def visitMinus(self, ctx):
         period = self.visit(ctx.period())
-        return lambda d, context: semantics.plus(d, period, -1, context.market)
+        return lambda d, context: semantics.plus(d, period, -1, context.market, context.fixing)
 
     def visitImm(self, ctx):
         return lambda d, context: semantics.next_imm(d)
@@ -146,13 +146,20 @@ class Rules(DateScheduleVisitor):
 
     def visitObservance(self, ctx):
         shifts = [self.visit(observe) for observe in ctx.observe()]
-        return lambda d, context: semantics.observe(d, shifts, context.market)
+        return lambda d, context: semantics.observe(d, shifts, context.market, context.fixing)
 
     def visitObserve(self, ctx):
         return ctx.WEEKDAY().getText(), self.visit(ctx.period()), 1 if ctx.sign.text == "+" else -1
 
     def visitWeekdayAnchor(self, ctx):
         return semantics.weekday_anchor(ctx.WEEKDAY().getText())
+
+    def visitFix(self, ctx):
+        pair = ctx.PAIR() and ctx.PAIR().getText()
+        return lambda d, context: semantics.fix(d, pair, context.fixing)
+
+    def visitFixingDayAnchor(self, ctx):
+        return semantics.fixing_day_anchor
 
     def visitBusinessDayAnchor(self, ctx):
         return semantics.business_day_anchor

@@ -27,26 +27,34 @@ static char *read_file(const char *path) {
     return text;
 }
 
-/* [base] text or [base market] text, base an ISO date and market of capitals, digits and _: 1 if the prefix is there
- * (then it is cut off); a series such as [2026-01-01 : 2026-01-31] is no prefix */
-static int prefix(char *text, int *base, char **market, char **rest) {
+/* [base] text, [base market] text or [base market fixing] text, base an ISO date and the calendars of capitals, digits
+ * and _: 1 if the prefix is there (then it is cut off); a series such as [2026-01-01 : 2026-01-31] is no prefix */
+static int prefix(char *text, int *base, char **market, char **fixing, char **rest) {
     char date[11];
     if (text[0] != '[' || strlen(text) < 13) return 0;
     memcpy(date, text + 1, 10);
     date[10] = 0;
     if (date_parse_iso(date, base)) return 0;
-    char *p = text + 11;
-    *market = NULL;
-    if (*p == ' ' && p[1] != ']') {
+    char *p = text + 11, *names[2] = { NULL, NULL };
+    for (int i = 0; i < 2 && *p == ' ' && p[1] != ']'; i++) {
         char *name = ++p;
         while ((*p >= 'A' && *p <= 'Z') || (*p >= '0' && *p <= '9') || *p == '_') p++;
         if (p == name) return 0;
-        *market = name;
+        names[i] = name;
     }
     if (p[0] != ']' || p[1] != ' ') return 0;
+    if (names[1]) names[1][-1] = 0;
     *p = 0;
+    *market = names[0];
+    *fixing = names[1];
     *rest = p + 2;
     return 1;
+}
+
+static Market *find_market(Spec *spec, const char *name) {
+    for (int m = 0; name && m < spec->market_count; m++)
+        if (!strcmp(spec->names[m], name)) return spec->markets[m];
+    return NULL;
 }
 
 static void declare(Spec *spec, char *line, int number, const char *path) {
@@ -78,15 +86,15 @@ static void add_case(Spec *spec, char *line, int number) {
         return;
     }
     *arrow = 0;
-    Case c = { number, text, NULL, NULL, { 0, 0, NULL, spec->events }, NULL };
-    char *input = strip(trimmed), *market, *rest;
+    Case c = { number, text, NULL, NULL, { 0, 0, NULL, spec->events, NULL }, NULL };
+    char *input = strip(trimmed), *market, *fixing, *rest;
     c.expected = strdup(strip(arrow + 2));
-    if (prefix(input, &c.context.base, &market, &rest)) {
+    if (prefix(input, &c.context.base, &market, &fixing, &rest)) {
         input = rest;
         c.context.has_base = 1;
-        for (int m = 0; market && m < spec->market_count; m++)
-            if (!strcmp(spec->names[m], market)) c.context.market = spec->markets[m];
-        if (market && !c.context.market) c.missing_market = "missing";
+        c.context.market = find_market(spec, market);
+        c.context.fixing = find_market(spec, fixing);
+        if ((market && !c.context.market) || (fixing && !c.context.fixing)) c.missing_market = "missing";
     }
     c.input = strdup(input);
     spec->cases = realloc(spec->cases, (spec->count + 1) * sizeof(Case));

@@ -97,16 +97,22 @@ class Rules(Transformer):
         return at
 
     def plus(self, period):
-        return lambda d, context: semantics.plus(d, period, 1, context.market)
+        return lambda d, context: semantics.plus(d, period, 1, context.market, context.fixing)
 
     def minus(self, period):
-        return lambda d, context: semantics.plus(d, period, -1, context.market)
+        return lambda d, context: semantics.plus(d, period, -1, context.market, context.fixing)
 
     def imm(self):
         return lambda d, context: semantics.next_imm(d)
 
     def spot(self, pair):
         return lambda d, context: context.market.spot(d, pair and str(pair))
+
+    def fix(self, pair):
+        return lambda d, context: semantics.fix(d, pair and str(pair), context.fixing)
+
+    def fixing_day(self):
+        return semantics.fixing_day_anchor
 
     def roll(self, convention):
         return lambda d, context: semantics.roll(d, str(convention), context.market)
@@ -131,7 +137,7 @@ class Rules(Transformer):
         return semantics.ordinal(str(ordinal)), True
 
     def observance(self, *shifts):
-        return lambda d, context: semantics.observe(d, shifts, context.market)
+        return lambda d, context: semantics.observe(d, shifts, context.market, context.fixing)
 
     def observe_plus(self, weekday, period):
         return str(weekday), period, 1

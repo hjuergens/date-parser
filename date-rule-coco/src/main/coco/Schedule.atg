@@ -23,7 +23,7 @@ COMPILER Schedule
   private boolean isStep() {
     scanner.ResetPeek();
     Token next = scanner.Peek();
-    return la.kind == _number && next.val.length() == 1 && "DWMQHYB".contains(next.val);
+    return la.kind == _number && next.val.length() == 1 && "DWMQHYBF".contains(next.val);
   }
 
   // error recovery may still run semantic actions, so they must not fail on garbage
@@ -119,6 +119,9 @@ PRODUCTIONS
   | ">"
     ( "IMM"                               (. d = ScheduleSemantics.nextImm(before); .)
     | Spot<out code>                      (. d = ScheduleSemantics.spot(before, code); .)
+    | "FIX"                               (. code = null; .)   /* the fixing date of a value date */
+      [ pair                              (. code = t.val; .)
+      ]                                   (. d = ScheduleSemantics.fix(before, code); .)
     | Roll<out code>                      (. d = ScheduleSemantics.roll(before, code); .)
     | "NEXT" Counted<out a>               (. d = ScheduleSemantics.next(before, a); .)
     | "PREV" Counted<out a>               (. d = ScheduleSemantics.previous(before, a); .)
@@ -203,6 +206,7 @@ PRODUCTIONS
   Chosen<out ScheduleSemantics.Anchor a>  (. String w; int n; ScheduleSemantics.Annual an; a = ScheduleSemantics.IMM; .)
   = Weekday<out w>                        (. a = ScheduleSemantics.weekday(w); .)
   | "BD"                                  (. a = ScheduleSemantics.BUSINESS_DAY; .)
+  | "FD"                                  (. a = ScheduleSemantics.FIXING_DAY; .)
   | "IMM"
   | Number<out n> AnnualTail<out an, n>   (. a = ScheduleSemantics.annual(an); .)
   | FixedWord<out an>                     (. a = ScheduleSemantics.annual(an); .)
@@ -284,6 +288,7 @@ PRODUCTIONS
     | "H"                                 (. p = Period.ofMonths(6 * n); .)
     | "Y"                                 (. p = Period.ofYears(n); .)
     | "B"                                 (. p = new ScheduleSemantics.BusinessDays(n); .)
+    | "F"                                 (. p = new ScheduleSemantics.FixingDays(n); .)
     ).
 
   Number<out int n>                       (. n = 0; .)

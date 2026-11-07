@@ -129,6 +129,7 @@ locals [List<Annual> annuals = new ArrayList<>()]
     | '-' period                    { $value = ScheduleSemantics.minus($before, $period.value); }
     | '>' 'IMM'                     { $value = ScheduleSemantics.nextImm($before); }
     | '>' spot                      { $value = ScheduleSemantics.spot($before, $spot.pair); }
+    | '>' 'FIX' (p=PAIR)?           { $value = ScheduleSemantics.fix($before, $p == null ? null : $p.text); }
     | '>' ROLL                      { $value = ScheduleSemantics.roll($before, $ROLL.text); }
     | '>' 'NEXT' ordinal anchor     { $value = ScheduleSemantics.next($before, $ordinal.n, $anchor.value); }
     | '>' 'PREV' ordinal anchor     { $value = ScheduleSemantics.previous($before, $ordinal.n, $anchor.value); }
@@ -193,6 +194,7 @@ target returns [Anchor value]
 chosen returns [Anchor value]
     : WEEKDAY                       { $value = ScheduleSemantics.weekday($WEEKDAY.text); }
     | 'BD'                          { $value = ScheduleSemantics.BUSINESS_DAY; }
+    | 'FD'                          { $value = ScheduleSemantics.FIXING_DAY; }
     | 'IMM'                         { $value = ScheduleSemantics.IMM; }
     | fixedAnnual                   { $value = ScheduleSemantics.annual($fixedAnnual.value); }
     | EVENT                         { $value = ScheduleSemantics.eventAnchor($EVENT.text.substring(1)); }
@@ -250,7 +252,7 @@ NUM  : [0-9]+ ;
 ZONE : 'UTC' [+-] [0-9]+ ;
 // 1ST, 2ND, 3RD, 4TH: the longer match wins over NUM
 ORDINAL : [0-9]+ ('ST' | 'ND' | 'RD' | 'TH') ;
-UNIT : [DWMQHYB] ;
+UNIT : [DWMQHYBF] ;
 // Gregorian, then Hijri (Umm al-Qura), Hebrew and Chinese months
 MONTH   : 'JAN' | 'FEB' | 'MAR' | 'APR' | 'MAY' | 'JUN' | 'JUL' | 'AUG' | 'SEP' | 'OCT' | 'NOV' | 'DEC'
         | 'MUHARRAM' | 'SAFAR' | 'RABIALAWWAL' | 'RABIALTHANI' | 'JUMADAALULA' | 'JUMADAALAKHIRA' | 'RAJAB' | 'SHABAN'

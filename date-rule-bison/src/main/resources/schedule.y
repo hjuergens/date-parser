@@ -49,6 +49,8 @@
 %token NEXT "NEXT"
 %token PREV "PREV"
 %token BD "BD"
+%token FD "FD"
+%token FIX "FIX"
 %token LAST "LAST"
 %token EASTER "EASTER"
 %token IF "IF"
@@ -164,6 +166,8 @@ move:
 | '>' IMM                           { $$ = (UnaryOperator<Expr>) e -> ScheduleSemantics.nextImm (e); }
 | '>' SPOT                          { $$ = (UnaryOperator<Expr>) e -> ScheduleSemantics.spot (e, null); }
 | '>' SPOT PAIR                     { String pair = $3; $$ = (UnaryOperator<Expr>) e -> ScheduleSemantics.spot (e, pair); }
+| '>' FIX                           { $$ = (UnaryOperator<Expr>) e -> ScheduleSemantics.fix (e, null); }   /* the fixing date */
+| '>' FIX PAIR                      { String pair = $3; $$ = (UnaryOperator<Expr>) e -> ScheduleSemantics.fix (e, pair); }
 | '>' ROLL                          { String roll = $2; $$ = (UnaryOperator<Expr>) e -> ScheduleSemantics.roll (e, roll); }
 | '>' NEXT counted                  { Anchor a = $3; $$ = (UnaryOperator<Expr>) e -> ScheduleSemantics.next (e, a); }
 | '>' PREV counted                  { Anchor a = $3; $$ = (UnaryOperator<Expr>) e -> ScheduleSemantics.previous (e, a); }
@@ -260,6 +264,7 @@ target:
 chosen:
   WEEKDAY                           { $$ = ScheduleSemantics.weekday ($1); }
 | BD                                { $$ = ScheduleSemantics.BUSINESS_DAY; }
+| FD                                { $$ = ScheduleSemantics.FIXING_DAY; }
 | IMM                               { $$ = ScheduleSemantics.IMM; }
 | fixed_annual                      { $$ = ScheduleSemantics.annual ($1); }
 | EVENT                             { $$ = ScheduleSemantics.eventAnchor ($1); }
@@ -371,6 +376,10 @@ class ScheduleLexer implements ScheduleParser.Lexer {
           return PREV;
         if (word.equals ("BD"))
           return BD;
+        if (word.equals ("FD"))
+          return FD;
+        if (word.equals ("FIX"))
+          return FIX;
         if (word.equals ("LAST"))
           return LAST;
         if (word.equals ("IF"))
@@ -407,7 +416,7 @@ class ScheduleLexer implements ScheduleParser.Lexer {
           }
         if (word.length () == 6)
           return PAIR;   /* currency pair such as EURUSD */
-        if (word.length () == 1 && "DWMQHYB".contains (word))
+        if (word.length () == 1 && "DWMQHYBF".contains (word))
           return UNIT;
         return YYUNDEF;
       }

@@ -10,7 +10,7 @@ from lark_schedule import parse
 from lark_schedule.semantics import WEEKENDS, Context, RuleMarket
 
 EXAMPLES = Path(__file__).resolve().parents[2] / "examples"
-PREFIX = re.compile(r"\[(\d{4}-\d{2}-\d{2})(?: ([A-Z0-9_]+))?\] (.*)")  # [base] or [base market]
+PREFIX = re.compile(r"\[(\d{4}-\d{2}-\d{2})(?: ([A-Z0-9_]+))?(?: ([A-Z0-9_]+))?\] (.*)")  # [base], [base market] or [base market fixing]
 
 
 def cases(file):
@@ -29,8 +29,9 @@ def cases(file):
         text, expected = line.rsplit("=>", 1)
         text, context = text.strip(), Context(events=events)
         if prefix := PREFIX.fullmatch(text):
-            base, market, text = prefix.groups()
-            context = Context(date.fromisoformat(base), markets[market] if market else WEEKENDS, events)
+            base, market, fixing, text = prefix.groups()
+            context = Context(date.fromisoformat(base), markets[market] if market else WEEKENDS, events,
+                              markets[fixing] if fixing else WEEKENDS)
         yield pytest.param(text, context, expected.strip(), id=line)
 
 

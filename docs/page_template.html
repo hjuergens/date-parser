@@ -283,7 +283,7 @@ series   = ( "[" | "]" ) endpoint ":" ( period ":" [ endpoint ] | endpoint )
 endpoint = single_date { move } .
 expr     = date { move } .
 move     = ("+" | "-") period
-         | "&gt;" ( "IMM" | "SPOT" [ PAIR ] | ROLL
+         | "&gt;" ( "IMM" | "SPOT" [ PAIR ] | "FIX" [ PAIR ] | ROLL
                  | ("NEXT" | "PREV") [ ORDINAL ] anchor
                  | count select "IN" PERIOD
                  | "{" annual { "," annual } "}" )  <span class="c">(* dates in year *)</span>
@@ -295,7 +295,7 @@ target   = chosen | "LAST" WEEKDAY MONTH .
 count    = ORDINAL [ "LAST" ] | "LAST" .  <span class="c">(* 2ND LAST *)</span>
 select   = chosen                      <span class="c">(* 3RD WED IN MONTH *)</span>
          | "{" target { "," target } "}" .
-chosen   = WEEKDAY | "BD" | "IMM" | fixed | EVENT .
+chosen   = WEEKDAY | "BD" | "FD" | "IMM" | fixed | EVENT .
 date     = single_date | series .
 single_date = "T" | "TOM" | "SPOT" [ PAIR ]
          | NUM ( "-" NUM "-" NUM       <span class="c">(* ISO    *)</span>
@@ -309,7 +309,7 @@ fixed    = NUM MONTH                   <span class="c">(* 4 JUL     *)</span>
          | ("EQUINOX" | "SOLSTICE") MONTH [ ZONE ]
          | "SOLARTERM" NUM [ ZONE ] .  <span class="c">(* SOLARTERM 5 UTC+8 *)</span>
 period   = NUM ( "D" | "W" | "M"
-               | "Q" | "H" | "Y" | "B" ) .
+               | "Q" | "H" | "Y" | "B" | "F" ) .  <span class="c">(* F: fixing days *)</span>
 ROLL     = "FOLLOWING" | "PRECEDING" | "MODFOLLOWING"
          | "BOW" | "EOW" | "BOM" | "EOM" | "BOQ" | "EOQ"
          | "BOH" | "EOH" | "BOY" | "EOY" .

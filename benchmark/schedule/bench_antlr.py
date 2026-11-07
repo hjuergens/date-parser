@@ -13,7 +13,7 @@ from datetime import date
 from antlr_schedule import parse
 from antlr_schedule.semantics import WEEKENDS, Context, RuleMarket
 
-PREFIX = re.compile(r"\[(\d{4}-\d{2}-\d{2})(?: ([A-Z0-9_]+))?\] (.*)")  # [base] or [base market]
+PREFIX = re.compile(r"\[(\d{4}-\d{2}-\d{2})(?: ([A-Z0-9_]+))?(?: ([A-Z0-9_]+))?\] (.*)")  # [base] or [base market]
 EPOCH = date(1970, 1, 1)
 
 
@@ -38,8 +38,9 @@ def load(path):
         text = line.rsplit("=>", 1)[0].strip()
         context = Context(events=events)
         if prefix := PREFIX.fullmatch(text):
-            base, market, text = prefix.groups()
-            context = Context(date.fromisoformat(base), markets.get(market) if market else WEEKENDS, events)
+            base, market, fixing, text = prefix.groups()
+            context = Context(date.fromisoformat(base), markets.get(market) if market else WEEKENDS, events,
+                              markets.get(fixing, WEEKENDS) if fixing else WEEKENDS)
         cases.append((text, context if context.market is not None else None))
     return cases
 

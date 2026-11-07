@@ -35,7 +35,7 @@ type Spec struct {
 	events  *schedule.Events
 }
 
-var prefix = regexp.MustCompile(`^\[(\d{4}-\d{2}-\d{2})(?: ([A-Z0-9_]+))?\] (.*)$`) // [base] or [base market]
+var prefix = regexp.MustCompile(`^\[(\d{4}-\d{2}-\d{2})(?: ([A-Z0-9_]+))?(?: ([A-Z0-9_]+))?\] (.*)$`) // [base], [base market] or [base market fixing]
 
 // Load reads a spec file; close it when done.
 func Load(path string) (*Spec, error) {
@@ -80,10 +80,15 @@ func Load(path string) (*Spec, error) {
 			if err != nil {
 				return nil, fmt.Errorf("%s:%d: %v", path, i+1, err)
 			}
-			c.Context.Base, c.Input = &base, m[3]
+			c.Context.Base, c.Input = &base, m[4]
 			if m[2] != "" {
 				if c.Context.Market = s.markets[m[2]]; c.Context.Market == nil {
 					c.MissingMarket = m[2]
+				}
+			}
+			if m[3] != "" {
+				if c.Context.Fixing = s.markets[m[3]]; c.Context.Fixing == nil {
+					c.MissingMarket = m[3]
 				}
 			}
 		}

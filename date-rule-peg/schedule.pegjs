@@ -25,7 +25,8 @@
 
   // the rule of a schedule; base date, market and events only come with the evaluation
   function rule(dates) {
-    return (context = {}) => dates({ base: context.base, market: context.market ?? WEEKENDS, events: context.events ?? {} });
+    return (context = {}) => dates({ base: context.base, market: context.market ?? WEEKENDS, events: context.events ?? {},
+      fixing: context.fixing ?? WEEKENDS });
   }
 
   // thrown by a node with several values that is not bound yet; values() catches it and evaluates the expression once
@@ -54,11 +55,11 @@
       const start = single(first, c);
       if (last === null) {   // an open series [first : step : ], only under a pick, which sets how many elements it yields
         if (!c.limit) throw new Error('an open series needs a pick in front of the item');
-        return Array.from({ length: c.limit }, (_, k) => plus(start, { months: k * step.months, days: k * step.days,
-          business: k * step.business }, 1, c.market)).filter((d) => !(startOut && compare(d, start) <= 0));
+        return Array.from({ length: c.limit }, (_, k) => plus(start, { months: k * step.months, days: k * step.days, business: k * step.business, fixing: k * (step.fixing ?? 0) }, 1, c.market, c.fixing))
+          .filter((d) => !(startOut && compare(d, start) <= 0));
       }
       const end = single(last, c);
-      return expand(start, step, end, c.market)
+      return expand(start, step, end, c.market, c.fixing)
         .filter((d) => !(startOut && compare(d, start) <= 0 || endOut && compare(d, end) >= 0));
     });
   }
@@ -103,7 +104,7 @@
   // the dates of the event in the year: its rule evaluated with the first of January as base date
   function occurrences(name, year, c) {
     if (!c.events[name]) throw new Error(`no event ${name}`);
-    return c.events[name]({ base: { year, month: 1, day: 1 }, market: c.market, events: c.events })
+    return c.events[name]({ base: { year, month: 1, day: 1 }, market: c.market, events: c.events, fixing: c.fixing })
       .filter((d) => d.year === year).sort(compare);
   }
 
@@ -131,7 +132,8 @@
     return context.base;
   }
 
-  function plus(d, period, sign, market) {
+  function plus(d, period, sign, market, fixing = WEEKENDS) {
+    if (period.fixing) return plusBusinessDays(d, sign * period.fixing, fixing);
     if (period.business) return plusBusinessDays(d, sign * period.business, market);
     const total = d.year * 12 + (d.month - 1) + sign * period.months;
     const year = Math.floor(total / 12);
@@ -164,7 +166,16 @@
 
   // FX spot: T+1 for USD against CAD, TRY, PHP or RUB, otherwise T+2
   function spot(d, pair, market) {
-    return plusBusinessDays(d, /^(USD(CAD|TRY|PHP|RUB)|(CAD|TRY|PHP|RUB)USD)$/.test(pair) ? 1 : 2, market);
+    return plusBusinessDays(d, spotLag(pair), market);
+  }
+
+  function spotLag(pair) {
+    return /^(USD(CAD|TRY|PHP|RUB)|(CAD|TRY|PHP|RUB)USD)$/.test(pair) ? 1 : 2;
+  }
+
+  // > FIX [PAIR]: the fixing date of a value date, the spot lag of the pair before it in fixing days
+  function fix(d, pair, fixing) {
+    return plusBusinessDays(d, -spotLag(pair), fixing);
   }
 
   // the IMM date strictly before d
@@ -421,9 +432,9 @@
   }
 
   // the first shift for the weekday of d applies; shifts don't chain
-  function observe(d, shifts, market) {
+  function observe(d, shifts, market, fixing) {
     const shift = shifts.find((s) => WEEKDAYS.indexOf(s.weekday) === weekday(d));
-    return shift ? plus(d, shift.period, shift.sign, market) : d;
+    return shift ? plus(d, shift.period, shift.sign, market, fixing) : d;
   }
 
   function compare(a, b) {
@@ -431,10 +442,10 @@
   }
 
   // not "range": Peggy provides range() (the location of the match) in actions
-  function expand(first, step, last, market) {
+  function expand(first, step, last, market, fixing = WEEKENDS) {
     const dates = [];
     for (let k = 0; ; k++) {
-      const d = plus(first, { months: k * step.months, days: k * step.days, business: k * step.business }, 1, market);
+      const d = plus(first, { months: k * step.months, days: k * step.days, business: k * step.business, fixing: k * (step.fixing ?? 0) }, 1, market, fixing);
       if (compare(d, last) > 0) return dates;
       dates.push(d);
     }
@@ -492,7 +503,7 @@ Series
     rest:(step:Period _ ":" _ last:Endpoint? { return [step, last]; } / last:Endpoint { return [null, last]; })
     _ close:("]" / "[") {
       const step = rest[0] ?? { months: 0, days: 1, business: 0 }, last = rest[1];
-      if (step.months <= 0 && step.days <= 0 && step.business <= 0) throw new RangeError('step must be positive');
+      if (step.months <= 0 && step.days <= 0 && step.business <= 0 && !(step.fixing > 0)) throw new RangeError('step must be positive');
       if (last === null && close === '[') throw new RangeError('an open series ends with ]');
       return series(first, step, last, open === ']', close === '[');
     }
@@ -506,10 +517,11 @@ Expr
   = start:Date shifts:(_ @Shift)* { return (c) => shifts.reduce((d, shift) => shift(d, c), start(c)); }
 
 Shift
-  = "+" _ p:Period { return (d, c) => plus(d, p, 1, c.market); }
-  / "-" _ p:Period { return (d, c) => plus(d, p, -1, c.market); }
+  = "+" _ p:Period { return (d, c) => plus(d, p, 1, c.market, c.fixing); }
+  / "-" _ p:Period { return (d, c) => plus(d, p, -1, c.market, c.fixing); }
   / ">" _ "IMM" { return nextImm; }
   / ">" _ "SPOT" pair:(_ @Pair)? { return (d, c) => spot(d, pair, c.market); }
+  / ">" _ "FIX" pair:(_ @Pair)? { return (d, c) => fix(d, pair, c.fixing); }  // the fixing date of a value date
   / ">" _ convention:$("FOLLOWING" / "PRECEDING" / "MODFOLLOWING" / "BOW" / "EOW" / "BOM" / "EOM" / "BOQ" / "EOQ" / "BOH" / "EOH" / "BOY" / "EOY") {
       return (d, c) => roll(d, convention, c.market);
     }
@@ -520,7 +532,7 @@ Shift
       return (d, c) => select(d, count.n, count.fromEnd, anchor, period, c);
     }
   / "{" _ head:Observe tail:(_ "," _ @Observe)* _ "}" {
-      return (d, c) => observe(d, [head, ...tail], c.market);
+      return (d, c) => observe(d, [head, ...tail], c.market, c.fixing);
     }
 
 Observe
@@ -553,6 +565,7 @@ Target
 Chosen
   = wd:Weekday { return weekdayAnchor(wd); }
   / "BD" { return (d, direction, c) => plusBusinessDays(d, direction, c.market); }
+  / "FD" { return (d, direction, c) => plusBusinessDays(d, direction, c.fixing); }
   / "IMM" { return (d, direction) => direction > 0 ? nextImm(d) : previousImm(d); }
   / annual:FixedAnnual { return annualAnchor(annual); }
   / name:Event { return eventAnchor(name); }
@@ -614,7 +627,7 @@ Pair
     pair:$[A-Z]|6| { return pair; }
 
 Period
-  = n:Number _ unit:[DWMQHYB] {
+  = n:Number _ unit:[DWMQHYBF] {
       switch (unit) {
         case 'D': return { months: 0, days: n, business: 0 };
         case 'W': return { months: 0, days: 7 * n, business: 0 };
@@ -623,6 +636,7 @@ Period
         case 'H': return { months: 6 * n, days: 0, business: 0 };
         case 'Y': return { months: 12 * n, days: 0, business: 0 };
         case 'B': return { months: 0, days: 0, business: n };
+        case 'F': return { months: 0, days: 0, business: 0, fixing: n };
       }
     }
 

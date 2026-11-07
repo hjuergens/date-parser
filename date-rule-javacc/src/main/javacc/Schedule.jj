@@ -41,7 +41,7 @@ SKIP : { " " | "\t" | "\r" | "\n" }
 TOKEN : {
   < NUM : (["0"-"9"])+ >
 | < ORDINAL : (["0"-"9"])+ ("ST" | "ND" | "RD" | "TH") >   // 1ST, 2ND, 3RD, 4TH; the longer match wins over NUM
-| < UNIT : ["D", "W", "M", "Q", "H", "Y", "B"] >
+| < UNIT : ["D", "W", "M", "Q", "H", "Y", "B", "F"] >
   // Gregorian, then Hijri (Umm al-Qura), Hebrew and Chinese months
 | < MONTH : "JAN" | "FEB" | "MAR" | "APR" | "MAY" | "JUN" | "JUL" | "AUG" | "SEP" | "OCT" | "NOV" | "DEC"
           | "MUHARRAM" | "SAFAR" | "RABIALAWWAL" | "RABIALTHANI" | "JUMADAALULA" | "JUMADAALAKHIRA" | "RAJAB" | "SHABAN"
@@ -129,7 +129,7 @@ ScheduleSemantics.Expr Expr() :
 
 /** one step, applied to everything on its left */
 ScheduleSemantics.Expr Move(ScheduleSemantics.Expr before) :
-{ TemporalAmount p; String pair; Token roll, o = null, period; ScheduleSemantics.Anchor a; int n;
+{ TemporalAmount p; String pair; Token roll, o = null, period, p2 = null; ScheduleSemantics.Anchor a; int n;
   ScheduleSemantics.Annual an; List<ScheduleSemantics.Annual> annuals = new ArrayList<ScheduleSemantics.Annual>();
   List<ScheduleSemantics.Shift> shifts = new ArrayList<ScheduleSemantics.Shift>(); boolean fromEnd = false; }
 {
@@ -138,6 +138,7 @@ ScheduleSemantics.Expr Move(ScheduleSemantics.Expr before) :
 | ">"
   ( "IMM" { return ScheduleSemantics.nextImm(before); }
   | pair = Spot() { return ScheduleSemantics.spot(before, pair); }
+  | "FIX" ( p2 = <PAIR> )? { return ScheduleSemantics.fix(before, p2 == null ? null : p2.image); }   // the fixing date
   | roll = <ROLL> { return ScheduleSemantics.roll(before, roll.image); }
   | "NEXT" a = Counted() { return ScheduleSemantics.next(before, a); }
   | "PREV" a = Counted() { return ScheduleSemantics.previous(before, a); }
@@ -214,6 +215,7 @@ ScheduleSemantics.Anchor Chosen() :
 {
   w = <WEEKDAY> { return ScheduleSemantics.weekday(w.image); }
 | "BD" { return ScheduleSemantics.BUSINESS_DAY; }
+| "FD" { return ScheduleSemantics.FIXING_DAY; }
 | "IMM" { return ScheduleSemantics.IMM; }
 | n = Number() an = AnnualTail(n) { return ScheduleSemantics.annual(an); }
 | an = FixedWord() { return ScheduleSemantics.annual(an); }

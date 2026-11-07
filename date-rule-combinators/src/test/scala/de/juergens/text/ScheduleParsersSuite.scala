@@ -15,7 +15,7 @@ import scala.jdk.CollectionConverters._
  */
 class ScheduleParsersSuite extends AnyFunSuite {
 
-  private val Prefix = """\[(\d{4}-\d{2}-\d{2})(?: ([A-Z0-9_]+))?] (.*)""".r   // [base] or [base market]
+  private val Prefix = """\[(\d{4}-\d{2}-\d{2})(?: ([A-Z0-9_]+))?(?: ([A-Z0-9_]+))?] (.*)""".r   // [base] or [base market]
 
   private val cases: Seq[(String, Context, Option[List[LocalDate]])] = {
     val markets = mutable.Map.empty[String, Market]
@@ -39,9 +39,9 @@ class ScheduleParsersSuite extends AnyFunSuite {
             case dates => Some(dates.split(",").map(d => LocalDate.parse(d.trim)).toList)
           }
           line.substring(0, arrow).trim match {
-            case Prefix(base, market, input) =>
+            case Prefix(base, market, fixing, input) =>
               Some((input, Context(Some(LocalDate.parse(base)), Option(market).map(markets).getOrElse(Market.Weekends),
-                events.toMap), expected))
+                events.toMap, fixing = Option(fixing).map(markets).getOrElse(Market.Weekends)), expected))
             case input => Some((input, Context(events = events.toMap), expected))
           }
         }

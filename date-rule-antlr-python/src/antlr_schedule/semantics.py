@@ -28,8 +28,17 @@ class Market:
 
     def spot(self, trade, pair=None):
         """FX spot: T+1 for USD against CAD, TRY, PHP or RUB, otherwise T+2 (also without pair)"""
-        t_plus_one = pair and re.fullmatch(r"USD(CAD|TRY|PHP|RUB)|(CAD|TRY|PHP|RUB)USD", pair)
-        return plus_business_days(trade, 1 if t_plus_one else 2, self)
+        return plus_business_days(trade, spot_lag(pair), self)
+
+
+def spot_lag(pair):
+    """the business days from trade to spot: 1 for USD against CAD, TRY, PHP or RUB, otherwise 2 (also without pair)"""
+    return 1 if pair and re.fullmatch(r"USD(CAD|TRY|PHP|RUB)|(CAD|TRY|PHP|RUB)USD", pair) else 2
+
+
+def fix(value_date, pair, fixing):
+    """> FIX [PAIR]: the fixing date of a value date, the spot lag of the pair before it in fixing days"""
+    return plus_business_days(value_date, -spot_lag(pair), fixing)
 
 
 WEEKENDS = Market()
@@ -63,6 +72,7 @@ class Context:
     base: date | None = None
     market: Market = WEEKENDS
     events: dict = field(default_factory=dict)
+    fixing: Market = WEEKENDS   # the fixing calendar: which days are fixing days (F, FD, FIX)
     bindings: tuple = ()
     cursor: list | None = field(default=None, compare=False)
     limit: int | None = None   # how many elements an open series yields; set by a pick, None elsewhere
@@ -98,11 +108,12 @@ def series_date(first, step, last, start_out, end_out):
     [first : step : ] (last None) is open, only under a pick, which sets how many elements it yields"""
     def dates(c):
         if last is not None:
-            return series(single(first, c), step, single(last, c), start_out, end_out, c.market)
+            return series(single(first, c), step, single(last, c), start_out, end_out, c.market, c.fixing)
         if c.limit is None:
             raise ValueError("an open series needs a pick in front of the item")
         start = single(first, c)
-        return [d for d in (plus(start, step.times(k), 1, c.market) for k in range(c.limit)) if not (start_out and d <= start)]
+        return [d for d in (plus(start, step.times(k), 1, c.market, c.fixing) for k in range(c.limit))
+                if not (start_out and d <= start)]
     return lambda context: take(context, dates)
 
 
@@ -145,7 +156,7 @@ def occurrences(name, year, context):
     """the dates of the event in the year: its rule evaluated with the first of January as base date"""
     if name not in context.events:
         raise ValueError(f"no event {name}")
-    first = Context(date(year, 1, 1), context.market, context.events)
+    first = Context(date(year, 1, 1), context.market, context.events, context.fixing)
     return sorted(d for d in context.events[name](first) if d.year == year)
 
 
@@ -175,27 +186,32 @@ def base(context):
 
 @dataclass(frozen=True)
 class Period:
-    """months and days as in java.time.Period, or business days (unit B)"""
+    """months and days as in java.time.Period, or business days (unit B) or fixing days (unit F)"""
     months: int = 0
     days: int = 0
     business: int = 0
+    fixing: int = 0
 
     def times(self, k):
-        return Period(k * self.months, k * self.days, k * self.business)
+        return Period(k * self.months, k * self.days, k * self.business, k * self.fixing)
 
     def is_positive(self):
-        return self.months > 0 or self.days > 0 or self.business > 0
+        return self.months > 0 or self.days > 0 or self.business > 0 or self.fixing > 0
 
 
 def period(count, unit):
-    """count times D (day), W (week), M (month), Q (quarter), H (half year), Y (year) or B (business day)"""
+    """count times D (day), W (week), M (month), Q (quarter), H (half year), Y (year), B (business day) or F (fixing
+    day)"""
     return {"D": Period(days=count), "W": Period(days=7 * count), "M": Period(months=count),
             "Q": Period(months=3 * count), "H": Period(months=6 * count), "Y": Period(months=12 * count),
-            "B": Period(business=count)}[unit]
+            "B": Period(business=count), "F": Period(fixing=count)}[unit]
 
 
-def plus(d, p, sign, market):
-    """months first (day clamped to the end of the month), then days; business days of the market on their own"""
+def plus(d, p, sign, market, fixing=WEEKENDS):
+    """months first (day clamped to the end of the month), then days; business days of the market and fixing days of
+    the fixing calendar on their own"""
+    if p.fixing:
+        return plus_business_days(d, sign * p.fixing, fixing)
     if p.business:
         return plus_business_days(d, sign * p.business, market)
     year, month = divmod(d.year * 12 + d.month - 1 + sign * p.months, 12)
@@ -226,19 +242,19 @@ def next_imm(d):
         year, month = (year + 1, 1) if month == 12 else (year, month + 1)
 
 
-def expand(first, step, last, market):
+def expand(first, step, last, market, fixing=WEEKENDS):
     """first + k * step for k = 0, 1, ... while not after last"""
     dates = []
     for k in itertools.count():
-        d = plus(first, step.times(k), 1, market)
+        d = plus(first, step.times(k), 1, market, fixing)
         if d > last:
             return dates
         dates.append(d)
 
 
-def series(first, step, last, start_out, end_out, market):
+def series(first, step, last, start_out, end_out, market, fixing=WEEKENDS):
     """[first : step : last]: first + k * step while not after last; start_out and end_out leave out an endpoint"""
-    return [d for d in expand(first, step, last, market) if not (start_out and d <= first or end_out and d >= last)]
+    return [d for d in expand(first, step, last, market, fixing) if not (start_out and d <= first or end_out and d >= last)]
 
 
 def previous_imm(d):
@@ -496,6 +512,11 @@ def select(anchor, count, from_end, period):
     return shift
 
 
+def fixing_day_anchor(d, direction, context):
+    """FD: the next (previous) fixing day of the fixing calendar"""
+    return plus_business_days(d, direction, context.fixing)
+
+
 def business_day_anchor(d, direction, context):
     return plus_business_days(d, direction, context.market)
 
@@ -543,10 +564,10 @@ def roll(d, convention, market):
     raise ValueError(f"unknown convention: {convention}")
 
 
-def observe(d, shifts, market):
+def observe(d, shifts, market, fixing=WEEKENDS):
     """shifts: (weekday, period, sign) such as {SAT - 1D, SUN + 1D}; the first for the weekday of d applies,
     shifts don't chain"""
     for weekday, p, sign in shifts:
         if WEEKDAYS.index(weekday) == d.weekday():
-            return plus(d, p, sign, market)
+            return plus(d, p, sign, market, fixing)
     return d

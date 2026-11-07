@@ -35,12 +35,13 @@ type Events struct {
 	c cschedule.Events
 }
 
-// Context is what a rule is evaluated against. A nil Base is fine unless the rule uses T; a nil Market means Monday
-// to Friday.
+// Context is what a rule is evaluated against. A nil Base is fine unless the rule uses T; a nil Market or Fixing
+// (the fixing calendar of F, FD and FIX) means Monday to Friday.
 type Context struct {
 	Base   *time.Time
 	Market *Market
 	Events *Events
+	Fixing *Market
 }
 
 // Parse returns the rule of a schedule, or the syntax error.
@@ -86,6 +87,9 @@ func (s *Schedule) Evaluate(context Context) ([]time.Time, error) {
 	}
 	if context.Market != nil {
 		c.SetMarket(context.Market.c)
+	}
+	if context.Fixing != nil {
+		c.SetFixing(context.Fixing.c)
 	}
 	if context.Events != nil {
 		c.SetEvents(context.Events.c)

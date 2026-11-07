@@ -41,9 +41,13 @@ public final class ScheduleSemantics {
 
         /** the FX spot date: T+1 for USD against CAD, TRY, PHP or RUB, otherwise T+2 (also without pair) */
         default LocalDate spot(LocalDate trade, String pair) {
-            int lag = pair != null && pair.matches("USD(CAD|TRY|PHP|RUB)|(CAD|TRY|PHP|RUB)USD") ? 1 : 2;
-            return plusBusinessDays(trade, lag, this);
+            return plusBusinessDays(trade, spotLag(pair), this);
         }
+    }
+
+    /** the business days from trade to spot: 1 for USD against CAD, TRY, PHP or RUB, otherwise 2 (also without pair) */
+    public static int spotLag(String pair) {
+        return pair != null && pair.matches("USD(CAD|TRY|PHP|RUB)|(CAD|TRY|PHP|RUB)USD") ? 1 : 2;
     }
 
     /** the default market: Monday to Friday, no holidays */
@@ -79,22 +83,28 @@ public final class ScheduleSemantics {
      * what a rule is evaluated against: the base date (only needed for T), the market (default: weekends only) and
      * the named events; bindings are the values values() chose for the nodes with several values (events, series,
      * combinations, dates in year), in the order the evaluation reaches them, counted by cursor; limit is how many
-     * elements an open series yields, set by a pick (null elsewhere)
+     * elements an open series yields, set by a pick (null elsewhere); fixing is the fixing calendar (F, FD, FIX; default:
+     * Monday to Friday)
      */
-    public record Context(LocalDate base, Market market, Map<String, Rule> events, List<LocalDate> bindings, int[] cursor,
-                          Integer limit) {
+    public record Context(LocalDate base, Market market, Map<String, Rule> events, Market fixing, List<LocalDate> bindings,
+                          int[] cursor, Integer limit) {
         public Context {
             market = market == null ? WEEKENDS : market;
             events = events == null ? Map.of() : events;
+            fixing = fixing == null ? WEEKENDS : fixing;
             bindings = bindings == null ? List.of() : bindings;
         }
 
         public Context(LocalDate base, Market market) {
-            this(base, market, null, null, null, null);
+            this(base, market, null, null, null, null, null);
         }
 
         public Context(LocalDate base, Market market, Map<String, Rule> events) {
-            this(base, market, events, null, null, null);
+            this(base, market, events, null, null, null, null);
+        }
+
+        public Context(LocalDate base, Market market, Map<String, Rule> events, Market fixing) {
+            this(base, market, events, fixing, null, null, null);
         }
     }
 
@@ -121,11 +131,11 @@ public final class ScheduleSemantics {
     };
 
     public static Expr plus(Expr expr, TemporalAmount amount) {
-        return context -> plus(expr.at(context), amount, 1, context.market());
+        return context -> plus(expr.at(context), amount, 1, context.market(), context.fixing());
     }
 
     public static Expr minus(Expr expr, TemporalAmount amount) {
-        return context -> plus(expr.at(context), amount, -1, context.market());
+        return context -> plus(expr.at(context), amount, -1, context.market(), context.fixing());
     }
 
     public static Expr nextImm(Expr expr) {
@@ -134,6 +144,11 @@ public final class ScheduleSemantics {
 
     public static Expr spot(Expr expr, String pair) {
         return context -> context.market().spot(expr.at(context), pair);
+    }
+
+    /** &gt; FIX [PAIR]: the fixing date of a value date, the spot lag of the pair before it in fixing days */
+    public static Expr fix(Expr expr, String pair) {
+        return context -> plusBusinessDays(expr.at(context), -spotLag(pair), context.fixing());
     }
 
     /**
@@ -194,8 +209,8 @@ public final class ScheduleSemantics {
             }
             LocalDate base = BASE.at(context);
             for (Integer limit : fromEnd ? new Integer[] {null} : new Integer[] {16, 256, 4096, 10000}) {
-                List<LocalDate> hits = values(item, new Context(context.base(), context.market(), context.events(), null,
-                        null, limit)).stream().filter(date -> date != null && date.isAfter(base)).toList();
+                List<LocalDate> hits = values(item, new Context(context.base(), context.market(), context.events(),
+                        context.fixing(), null, null, limit)).stream().filter(date -> date != null && date.isAfter(base)).toList();
                 if (hits.size() >= count) {
                     return fromEnd ? hits.get(hits.size() - count) : hits.get(count - 1);
                 }
@@ -234,8 +249,7 @@ public final class ScheduleSemantics {
                 }
                 List<LocalDate> dates = new ArrayList<>();
                 for (int k = 0; k < c.limit(); k++) {
-                    LocalDate date = every instanceof BusinessDays days ? plusBusinessDays(start, k * days.count(), c.market())
-                            : start.plus(((Period) every).multipliedBy(k));
+                    LocalDate date = nth(start, every, k, c);
                     if (!(startOut && !date.isAfter(start))) {
                         dates.add(date);
                     }
@@ -243,7 +257,7 @@ public final class ScheduleSemantics {
                 return dates;
             }
             LocalDate end = single(last, c);
-            return range(start, every, end, c.market()).stream()
+            return range(start, every, end, c).stream()
                     .filter(date -> !(startOut && !date.isAfter(start) || endOut && !date.isBefore(end))).toList();
         });
     }
@@ -254,7 +268,7 @@ public final class ScheduleSemantics {
         if (rule == null) {
             throw new IllegalArgumentException("no event " + name);
         }
-        return rule.evaluate(new Context(LocalDate.of(year, 1, 1), context.market(), context.events())).stream()
+        return rule.evaluate(new Context(LocalDate.of(year, 1, 1), context.market(), context.events(), context.fixing())).stream()
                 .filter(date -> date.getYear() == year).sorted().toList();
     }
 
@@ -269,7 +283,7 @@ public final class ScheduleSemantics {
     private static List<LocalDate> values(Expr expr, Context context, List<LocalDate> bindings) {
         try {
             return Collections.singletonList(expr.at(new Context(context.base(), context.market(), context.events(),
-                    bindings, new int[1], context.limit())));
+                    context.fixing(), bindings, new int[1], context.limit())));
         } catch (Unbound unbound) {
             List<LocalDate> dates = new ArrayList<>();
             for (LocalDate date : unbound.dates.apply(context)) {
@@ -526,6 +540,10 @@ public final class ScheduleSemantics {
     public static final Anchor BUSINESS_DAY = (date, direction, context) ->
             plusBusinessDays(date, direction, context.market());
 
+    /** FD: a fixing day of the fixing calendar */
+    public static final Anchor FIXING_DAY = (date, direction, context) ->
+            plusBusinessDays(date, direction, context.fixing());
+
     public static final Anchor IMM = (date, direction, context) -> direction > 0 ? nextImm(date) : previousImm(date);
 
     /** the occurrence of the event strictly after (before) the date, in its year or the next (previous) */
@@ -641,7 +659,7 @@ public final class ScheduleSemantics {
             LocalDate date = expr.at(context);
             for (Shift shift : copy) {
                 if (shift.weekday() == date.getDayOfWeek()) {
-                    return plus(date, shift.amount(), shift.sign(), context.market());
+                    return plus(date, shift.amount(), shift.sign(), context.market(), context.fixing());
                 }
             }
             return date;
@@ -693,6 +711,7 @@ public final class ScheduleSemantics {
             case "H": return Period.ofMonths(6 * count);
             case "Y": return Period.ofYears(count);
             case "B": return new BusinessDays(count);
+            case "F": return new FixingDays(count);
             default: throw new IllegalArgumentException("unknown unit: " + unit);
         }
     }
@@ -721,8 +740,35 @@ public final class ScheduleSemantics {
         }
     }
 
+    /** fixing days; which days these are depends on the fixing calendar, so they are only applied by plus(…, fixing) */
+    public record FixingDays(int count) implements TemporalAmount {
+
+        @Override
+        public long get(TemporalUnit unit) {
+            throw new UnsupportedTemporalTypeException("fixing days have no unit: " + unit);
+        }
+
+        @Override
+        public List<TemporalUnit> getUnits() {
+            return List.of();
+        }
+
+        @Override
+        public Temporal addTo(Temporal temporal) {
+            throw new UnsupportedTemporalTypeException("fixing days need a fixing calendar");
+        }
+
+        @Override
+        public Temporal subtractFrom(Temporal temporal) {
+            throw new UnsupportedTemporalTypeException("fixing days need a fixing calendar");
+        }
+    }
+
     public static boolean isPositive(TemporalAmount step) {
         if (step instanceof BusinessDays days) {
+            return days.count() > 0;
+        }
+        if (step instanceof FixingDays days) {
             return days.count() > 0;
         }
         Period period = (Period) step;
@@ -731,6 +777,14 @@ public final class ScheduleSemantics {
 
     /** date plus amount (minus for sign -1): periods as in java.time, business days of the market */
     public static LocalDate plus(LocalDate date, TemporalAmount amount, int sign, Market market) {
+        return plus(date, amount, sign, market, WEEKENDS);
+    }
+
+    /** ... and fixing days of the fixing calendar */
+    public static LocalDate plus(LocalDate date, TemporalAmount amount, int sign, Market market, Market fixing) {
+        if (amount instanceof FixingDays days) {
+            return plusBusinessDays(date, sign * days.count(), fixing);
+        }
         if (amount instanceof BusinessDays days) {
             return plusBusinessDays(date, sign * days.count(), market);
         }
@@ -769,12 +823,21 @@ public final class ScheduleSemantics {
         }
     }
 
-    private static List<LocalDate> range(LocalDate start, TemporalAmount step, LocalDate end, Market market) {
+    /** start + k * step */
+    private static LocalDate nth(LocalDate start, TemporalAmount step, int k, Context context) {
+        if (step instanceof BusinessDays days) {
+            return plusBusinessDays(start, k * days.count(), context.market());
+        }
+        if (step instanceof FixingDays days) {
+            return plusBusinessDays(start, k * days.count(), context.fixing());
+        }
+        return start.plus(((Period) step).multipliedBy(k));
+    }
+
+    private static List<LocalDate> range(LocalDate start, TemporalAmount step, LocalDate end, Context context) {
         List<LocalDate> dates = new ArrayList<>();
         for (int k = 0; ; k++) {
-            LocalDate date = step instanceof BusinessDays days
-                    ? plusBusinessDays(start, k * days.count(), market)
-                    : start.plus(((Period) step).multipliedBy(k));
+            LocalDate date = nth(start, step, k, context);
             if (date.isAfter(end)) {
                 return dates;
             }

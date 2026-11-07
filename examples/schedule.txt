@@ -587,6 +587,94 @@ market XFED = 1 JAN {SAT - 1D, SUN + 1D}, 3 MON JAN, 3 MON FEB, LAST MON MAY, 19
 [2026-11-02] SPOT + 6M => 2027-05-04
 [2026-11-02] SPOT + 1H => 2027-05-04
 [2026-11-02] SPOT + 3B => 2026-11-09
+# day(1), business(2), quarter(1), year(1) from today; monday(2) from today, monday(-2) from today
+[2026-11-02] T + 1D => 2026-11-03
+[2026-11-02] T + 2B => 2026-11-04
+[2026-11-02] T + 1Q => 2027-02-02
+[2026-11-02] T + 1Y => 2027-11-02
+[2026-11-02] T > NEXT 2ND MON => 2026-11-16
+[2026-11-02] T > PREV 2ND MON => 2026-10-19
+# firstday of week of today, lastday of week of today, day(10) of month of today
+[2026-11-02] T > BOW => 2026-11-02
+[2026-11-02] T > EOW => 2026-11-08
+[2026-11-02] T > BOM + 9D => 2026-11-10
+# wednesday(3) of month of today, business(5) of month of today, business(-1) of month of today, business(2) of quarter of today
+[2026-11-02] T > 3RD WED IN MONTH => 2026-11-18
+[2026-11-02 XNYS] T > 5TH BD IN MONTH => 2026-11-06
+[2026-11-02 XNYS] T > LAST BD IN MONTH => 2026-11-30
+[2026-11-02] T > 2ND BD IN QUARTER => 2026-10-02
+# fixing(3) of month of today, fixing(2) from today, fix of sp (TARGET2 fixing calendar)
+[2026-04-01 XNYS XTGT] T > 3RD FD IN MONTH => 2026-04-07
+[2026-04-01 XNYS XTGT] T + 2F => 2026-04-07
+[2026-04-01 XNYS XTGT] SPOT > FIX => 2026-04-01
+# firstday of month(3) of today, firstday of month(2) of quarter of today, firstday of week(2) of month of today,
+# firstday of january(2) of today
+[2026-11-02] T + 2M > BOM => 2027-01-01
+[2026-11-02] T > BOQ + 1M > BOM => 2026-11-01
+[2026-11-02] T > BOM > BOW + 1W => 2026-11-02
+[2026-11-02] T > BOM - 1D > NEXT 2ND 1 JAN => 2028-01-01
+# next(3, firstday of every(month)) of today; next(monday or friday) of today; (monday or friday) of week of today
+[2026-11-02] 3RD [T > BOM : 1M : ] => 2027-02-01
+[2026-11-02] T > NEXT {MON, FRI} => 2026-11-06
+[2026-11-02] [T > BOW : T > EOW] IF {MON, FRI} => 2026-11-02, 2026-11-06
+# IMMH, IMMM, IMMU, IMMZ: next(wednesday(3) of every(march)) of today, … june, september, december
+[2026-11-02] T > NEXT 3 WED MAR => 2027-03-17
+[2026-11-02] T > NEXT 3 WED JUN => 2027-06-16
+[2026-11-02] T > NEXT 3 WED SEP => 2027-09-15
+[2026-11-02] T > NEXT 3 WED DEC => 2026-12-16
+[2026-12-16] T > NEXT 3 WED DEC => 2027-12-15
+[2026-11-02] 1ST [T > BOY : 1Y : ] + 2M > 3RD WED IN MONTH => 2027-03-17
+# IMMH1 … IMMZ1: next(2, wednesday(3) of every(march)) of today, …
+[2026-11-02] T > NEXT 2ND 3 WED MAR => 2028-03-15
+[2026-11-02] T > NEXT 2ND 3 WED JUN => 2028-06-21
+[2026-11-02] T > NEXT 2ND 3 WED SEP => 2028-09-20
+[2026-11-02] T > NEXT 2ND 3 WED DEC => 2027-12-15
+[2026-11-02] 2ND [T > BOY : 1Y : ] + 11M > 3RD WED IN MONTH => 2027-12-15
+# IMMH2 … IMMZ2: next(3, wednesday(3) of every(march)) of today, …
+[2026-11-02] T > NEXT 3RD 3 WED MAR => 2029-03-21
+[2026-11-02] T > NEXT 3RD 3 WED JUN => 2029-06-20
+[2026-11-02] T > NEXT 3RD 3 WED SEP => 2029-09-19
+[2026-11-02] T > NEXT 3RD 3 WED DEC => 2028-12-20
+# BOM_Jan, EOM_Mar, BOM_Apr, EOM_Jun, BOM_Jul, EOM_Sep, BOM_Oct, EOM_Dec: next(firstday of every(jan)) of today, next(lastday of every(mar)) of today, …
+[2026-11-02] T > NEXT 1 JAN => 2027-01-01
+[2026-11-02] T > NEXT 31 MAR => 2027-03-31
+[2026-11-02] T > NEXT 1 APR => 2027-04-01
+[2026-11-02] T > NEXT 30 JUN => 2027-06-30
+[2026-11-02] T > NEXT 1 JUL => 2027-07-01
+[2026-11-02] T > NEXT 30 SEP => 2027-09-30
+[2026-11-02] T > NEXT 1 OCT => 2027-10-01
+[2026-11-02] T > NEXT 31 DEC => 2026-12-31
+[2026-12-31] T > NEXT 31 DEC => 2027-12-31
+# BOM_Jan1 … EOM_Dec1: next(2, firstday of every(jan)) of today, …
+[2026-11-02] T > NEXT 2ND 1 JAN => 2028-01-01
+[2026-11-02] T > NEXT 2ND 31 MAR => 2028-03-31
+[2026-11-02] T > NEXT 2ND 1 APR => 2028-04-01
+[2026-11-02] T > NEXT 2ND 30 JUN => 2028-06-30
+[2026-11-02] T > NEXT 2ND 1 JUL => 2028-07-01
+[2026-11-02] T > NEXT 2ND 30 SEP => 2028-09-30
+[2026-11-02] T > NEXT 2ND 1 OCT => 2028-10-01
+[2026-11-02] T > NEXT 2ND 31 DEC => 2027-12-31
+# BOM_Jan2 … EOM_Dec2: next(3, firstday of every(jan)) of today, …
+[2026-11-02] T > NEXT 3RD 1 JAN => 2029-01-01
+[2026-11-02] T > NEXT 3RD 31 MAR => 2029-03-31
+[2026-11-02] T > NEXT 3RD 1 APR => 2029-04-01
+[2026-11-02] T > NEXT 3RD 30 JUN => 2029-06-30
+[2026-11-02] T > NEXT 3RD 1 JUL => 2029-07-01
+[2026-11-02] T > NEXT 3RD 30 SEP => 2029-09-30
+[2026-11-02] T > NEXT 3RD 1 OCT => 2029-10-01
+[2026-11-02] T > NEXT 3RD 31 DEC => 2028-12-31
+# DOL series: business(2) from lastday of month(<k>) of sp, k = 1..3; the second one alone
+[2026-11-02 XNYS] [SPOT + 1M : 1M : SPOT + 3M] > EOM + 2B => 2027-01-05, 2027-02-02, 2027-03-02
+[2026-11-02 XNYS] 2ND [SPOT + 1M : 1M : ] > EOM + 2B => 2027-02-02
+# front IMM: next(wednesday(3) of month(3) of every(quarter)) of today; 2nd Wednesday next month: wednesday(2) of month(2) of today
+[2026-11-02] T > IMM => 2026-12-16
+[2026-11-02] 1ST [T > BOQ : 1Q : ] + 2M > 3RD WED IN MONTH => 2026-12-16
+[2026-11-02] T + 1M > 2ND WED IN MONTH => 2026-12-09
+# wednesday(3) of month(2) of sp, directly (the trick with NEXT 3RD WED is above)
+[2026-11-02] SPOT + 1M > 3RD WED IN MONTH => 2026-12-16
+# wednesday(3) of jun(1) of (business(2) from today): a past date; next(wednesday(3) of every(jun)) of (business(2) from today)
+[2026-06-19] T + 2B > BOM - 1D > NEXT 1 JUN > 3RD WED IN MONTH => 2026-06-17
+[2026-06-19] T + 2B > NEXT 3 WED JUN => 2027-06-16
 
 # invalid dates
 2015-02-29 => error

@@ -235,11 +235,11 @@
     <h1>Twelve parsers, one date language</h1>
     <p class="lead">
       The same small language for dates, periods and ranges, implemented with twelve parser generators and
-      parser libraries, from LL(1) to LALR(1), Earley, GLL and PEG. Every implementation passes the same 466 test cases.
+      parser libraries, from LL(1) to LALR(1), Earley, GLL and PEG. Every implementation passes the same 537 test cases.
     </p>
     <ul class="stats">
       <li><strong>12</strong><span>implementations, 6 languages</span></li>
-      <li><strong>466</strong><span>shared test cases</span></li>
+      <li><strong>537</strong><span>shared test cases</span></li>
       <li><strong>0</strong><span>grammar conflicts</span></li>
       <li><strong>1</strong><span>specification file</span></li>
     </ul>
@@ -1853,6 +1853,189 @@ observe  = WEEKDAY SIGN period
           <tr><td><code><span class="ctx">[2026-11-02]</span> SPOT + 6M</code></td><td><span class="date">2027-05-04</span></td></tr>
           <tr><td><code><span class="ctx">[2026-11-02]</span> SPOT + 1H</code></td><td><span class="date">2027-05-04</span></td></tr>
           <tr><td><code><span class="ctx">[2026-11-02]</span> SPOT + 3B</code></td><td><span class="date">2026-11-09</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>day(1), business(2), quarter(1), year(1) from today; monday(2) from today, monday(-2) from today</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T + 1D</code></td><td><span class="date">2026-11-03</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T + 2B</code></td><td><span class="date">2026-11-04</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T + 1Q</code></td><td><span class="date">2027-02-02</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T + 1Y</code></td><td><span class="date">2027-11-02</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 2ND MON</code></td><td><span class="date">2026-11-16</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; PREV 2ND MON</code></td><td><span class="date">2026-10-19</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>firstday of week of today, lastday of week of today, day(10) of month of today</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; BOW</code></td><td><span class="date">2026-11-02</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; EOW</code></td><td><span class="date">2026-11-08</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; BOM + 9D</code></td><td><span class="date">2026-11-10</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>wednesday(3) of month of today, business(5) of month of today, business(-1) of month of today, business(2) of quarter of today</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; 3RD WED IN MONTH</code></td><td><span class="date">2026-11-18</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02 XNYS]</span> T &gt; 5TH BD IN MONTH</code></td><td><span class="date">2026-11-06</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02 XNYS]</span> T &gt; LAST BD IN MONTH</code></td><td><span class="date">2026-11-30</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; 2ND BD IN QUARTER</code></td><td><span class="date">2026-10-02</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>fixing(3) of month of today, fixing(2) from today, fix of sp (TARGET2 fixing calendar)</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-04-01 XNYS XTGT]</span> T &gt; 3RD FD IN MONTH</code></td><td><span class="date">2026-04-07</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-04-01 XNYS XTGT]</span> T + 2F</code></td><td><span class="date">2026-04-07</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-04-01 XNYS XTGT]</span> SPOT &gt; FIX</code></td><td><span class="date">2026-04-01</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>firstday of january(2) of today</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T + 2M &gt; BOM</code></td><td><span class="date">2027-01-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; BOQ + 1M &gt; BOM</code></td><td><span class="date">2026-11-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; BOM &gt; BOW + 1W</code></td><td><span class="date">2026-11-02</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; BOM - 1D &gt; NEXT 2ND 1 JAN</code></td><td><span class="date">2028-01-01</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>next(3, firstday of every(month)) of today; next(monday or friday) of today; (monday or friday) of week of today</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> 3RD [T &gt; BOM : 1M : ]</code></td><td><span class="date">2027-02-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT {MON, FRI}</code></td><td><span class="date">2026-11-06</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> [T &gt; BOW : T &gt; EOW] IF {MON, FRI}</code></td><td><span class="date">2026-11-02</span>, <span class="date">2026-11-06</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>IMMH, IMMM, IMMU, IMMZ: next(wednesday(3) of every(march)) of today, … june, september, december</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 3 WED MAR</code></td><td><span class="date">2027-03-17</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 3 WED JUN</code></td><td><span class="date">2027-06-16</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 3 WED SEP</code></td><td><span class="date">2027-09-15</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 3 WED DEC</code></td><td><span class="date">2026-12-16</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-12-16]</span> T &gt; NEXT 3 WED DEC</code></td><td><span class="date">2027-12-15</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> 1ST [T &gt; BOY : 1Y : ] + 2M &gt; 3RD WED IN MONTH</code></td><td><span class="date">2027-03-17</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>IMMH1 … IMMZ1: next(2, wednesday(3) of every(march)) of today, …</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 2ND 3 WED MAR</code></td><td><span class="date">2028-03-15</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 2ND 3 WED JUN</code></td><td><span class="date">2028-06-21</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 2ND 3 WED SEP</code></td><td><span class="date">2028-09-20</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 2ND 3 WED DEC</code></td><td><span class="date">2027-12-15</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> 2ND [T &gt; BOY : 1Y : ] + 11M &gt; 3RD WED IN MONTH</code></td><td><span class="date">2027-12-15</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>IMMH2 … IMMZ2: next(3, wednesday(3) of every(march)) of today, …</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 3RD 3 WED MAR</code></td><td><span class="date">2029-03-21</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 3RD 3 WED JUN</code></td><td><span class="date">2029-06-20</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 3RD 3 WED SEP</code></td><td><span class="date">2029-09-19</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 3RD 3 WED DEC</code></td><td><span class="date">2028-12-20</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>BOM_Jan, EOM_Mar, BOM_Apr, EOM_Jun, BOM_Jul, EOM_Sep, BOM_Oct, EOM_Dec: next(firstday of every(jan)) of today, next(lastday of every(mar)) of today, …</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 1 JAN</code></td><td><span class="date">2027-01-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 31 MAR</code></td><td><span class="date">2027-03-31</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 1 APR</code></td><td><span class="date">2027-04-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 30 JUN</code></td><td><span class="date">2027-06-30</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 1 JUL</code></td><td><span class="date">2027-07-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 30 SEP</code></td><td><span class="date">2027-09-30</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 1 OCT</code></td><td><span class="date">2027-10-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 31 DEC</code></td><td><span class="date">2026-12-31</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-12-31]</span> T &gt; NEXT 31 DEC</code></td><td><span class="date">2027-12-31</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>BOM_Jan1 … EOM_Dec1: next(2, firstday of every(jan)) of today, …</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 2ND 1 JAN</code></td><td><span class="date">2028-01-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 2ND 31 MAR</code></td><td><span class="date">2028-03-31</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 2ND 1 APR</code></td><td><span class="date">2028-04-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 2ND 30 JUN</code></td><td><span class="date">2028-06-30</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 2ND 1 JUL</code></td><td><span class="date">2028-07-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 2ND 30 SEP</code></td><td><span class="date">2028-09-30</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 2ND 1 OCT</code></td><td><span class="date">2028-10-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 2ND 31 DEC</code></td><td><span class="date">2027-12-31</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>BOM_Jan2 … EOM_Dec2: next(3, firstday of every(jan)) of today, …</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 3RD 1 JAN</code></td><td><span class="date">2029-01-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 3RD 31 MAR</code></td><td><span class="date">2029-03-31</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 3RD 1 APR</code></td><td><span class="date">2029-04-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 3RD 30 JUN</code></td><td><span class="date">2029-06-30</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 3RD 1 JUL</code></td><td><span class="date">2029-07-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 3RD 30 SEP</code></td><td><span class="date">2029-09-30</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 3RD 1 OCT</code></td><td><span class="date">2029-10-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; NEXT 3RD 31 DEC</code></td><td><span class="date">2028-12-31</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>DOL series: business(2) from lastday of month(&lt;k&gt;) of sp, k = 1..3; the second one alone</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-11-02 XNYS]</span> [SPOT + 1M : 1M : SPOT + 3M] &gt; EOM + 2B</code></td><td><span class="date">2027-01-05</span>, <span class="date">2027-02-02</span>, <span class="date">2027-03-02</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02 XNYS]</span> 2ND [SPOT + 1M : 1M : ] &gt; EOM + 2B</code></td><td><span class="date">2027-02-02</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>front IMM: next(wednesday(3) of month(3) of every(quarter)) of today; 2nd Wednesday next month: wednesday(2) of month(2) of today</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T &gt; IMM</code></td><td><span class="date">2026-12-16</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> 1ST [T &gt; BOQ : 1Q : ] + 2M &gt; 3RD WED IN MONTH</code></td><td><span class="date">2026-12-16</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> T + 1M &gt; 2ND WED IN MONTH</code></td><td><span class="date">2026-12-09</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>wednesday(3) of month(2) of sp, directly (the trick with NEXT 3RD WED is above)</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-11-02]</span> SPOT + 1M &gt; 3RD WED IN MONTH</code></td><td><span class="date">2026-12-16</span></td></tr>
+        </tbody>
+      </table>
+      </section>
+      <section>
+      <h3>wednesday(3) of jun(1) of (business(2) from today): a past date; next(wednesday(3) of every(jun)) of (business(2) from today)</h3>
+      <table class="cases">
+        <tbody>
+          <tr><td><code><span class="ctx">[2026-06-19]</span> T + 2B &gt; BOM - 1D &gt; NEXT 1 JUN &gt; 3RD WED IN MONTH</code></td><td><span class="date">2026-06-17</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-06-19]</span> T + 2B &gt; NEXT 3 WED JUN</code></td><td><span class="date">2027-06-16</span></td></tr>
         </tbody>
       </table>
       </section>

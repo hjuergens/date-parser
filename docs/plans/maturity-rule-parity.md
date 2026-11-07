@@ -1,6 +1,6 @@
 # Plan: the schedule language at least as expressive as MaturityRule
 
-Status: approved 2026-11-04; steps 1 (brackets, prefix), 2 (selection, weeks), 3 (series), 4 (include &, exclude \, dates in year), 5 (picks, open series) and 6 (fixing calendar) done; step 7 (parity cases) next. Builds on [intervals-and-series.md](intervals-and-series.md).
+Status: approved 2026-11-04; steps 1 (brackets, prefix), 2 (selection, weeks), 3 (series), 4 (include &, exclude \, dates in year), 5 (picks, open series), 6 (fixing calendar) and 7 (parity cases) done. Builds on [intervals-and-series.md](intervals-and-series.md).
 
 ## Context
 The goal: the schedule language ("date-rule") to express every MaturityRule rule. The source is

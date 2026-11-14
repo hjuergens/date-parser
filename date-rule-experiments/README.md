@@ -18,3 +18,5 @@ README and build file as they were at the move.
 | [sablecc](sablecc) | date-rule-sablecc | Arithmetic expressions (`tiny`, `simpleAdder`) with a stack evaluator |
 | [peg](peg) | date-rule-peg | `(start:step:end)` range lists (`list.pegjs`) with a browser demo |
 | [antlr-clojure](antlr-clojure) | date-rule-antlr-clojure | A Leiningen project calling ANTLR from Clojure (JSON and selector grammars) |
+| [parsec](parsec) | date-parsec (top level) | A Cabal project with Haskell Parsec: a CSV parser (Real World Haskell), the start of a boolean expression grammar, hello-world mains; no date rules yet |
+| [xtext](xtext) | TimeSchedulLanguage (top level) | An Xtext DSL project (runtime, IDE and IntelliJ plugins, Gradle and Maven builds) with Xtext's example entity grammar, not yet a schedule language |

@@ -21,8 +21,8 @@ mise run -q generate:antlr-python > /dev/null
 (cd date-rule-antlr-python && uv sync -q)
 python=date-rule-antlr-python/.venv/bin/python
 export PYTHONPATH=date-rule-antlr-python/src   # the module isn't installed into its venv (uv: package = false)
-mvn -q -pl date-rule-compiled -am install -DskipTests > /dev/null
-mvn -q -pl date-rule-compiled dependency:build-classpath -Dmdep.outputFile="$work/classpath" > /dev/null
+mvn -q -pl date-rule-compiled -am install -DskipTests
+mvn -q -pl date-rule-compiled dependency:build-classpath -Dmdep.outputFile="$work/classpath"
 java_cp="date-rule-compiled/target/classes:$(cat "$work/classpath"):$work/java"
 javac -d "$work/java" -cp "$java_cp" benchmark/schedule/BenchJava.java
 

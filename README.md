@@ -38,6 +38,9 @@ an ANTLR/Clojure attempt) are parked, not built, in [date-rule-experiments](date
 Beside the parser modules, [date-rule-runtime](date-rule-runtime/README.md) changes rules at run time: a rules file in the
 schedule language (`rule @IMMH = T > NEXT 3 WED MAR`, `assert @IMMH [2026-11-02 @XNYS] => 2027-03-17`), read by the same ANTLR grammar, is validated, swapped
 atomically and reloaded when it is saved, in Java and without HotSwap or JVMTI.
+[date-rule-compiled](date-rule-compiled/README.md) compiles a rule of the same grammar to JVM bytecode with
+[ASM](https://asm.ow2.io/): one class per rule, loaded by a class loader of its own, so a replaced rule is unloaded with
+its loader (6070 TestNG).
 
 Each module also implements the [shared schedule example](#shared-example-schedule), so all twelve implementations
 can be compared on the same language. Each module README has a section on how its tool handles it.

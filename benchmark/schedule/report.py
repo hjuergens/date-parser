@@ -7,7 +7,8 @@ import statistics
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-NAMES = {"c": "C, native", "go-swig": "Go → SWIG → C", "antlr-python": "ANTLR 4, Python target"}
+NAMES = {"c": "C, native", "go-swig": "Go → SWIG → C", "antlr-python": "ANTLR 4, Python target",
+         "antlr-java": "ANTLR 4, Java target", "compiled": "ANTLR 4, Java, compiled to bytecode"}
 
 
 def ms(seconds):
@@ -29,9 +30,10 @@ def main():
         lines += [f"## {m['cpu']}", "",
                   f"{m['threads']} threads, {m['memory_gb']} GB visible to Linux, {m['os']}, Docker {m['docker']}. "
                   f"{len(runs)} runs of {runs[0]['rounds']} rounds each, commit {', '.join(sorted({r['commit'] for r in runs}))}.",
-                  "", f"Tools: {v['cc']}; {v['go']}; {v['swig']}; Python {v['python']}, antlr4-python3-runtime {v['antlr4-runtime']}.", "",
-                  "| Implementation | Parse, ms per round | µs per case | vs C | Parse and evaluate, ms per round | µs per case | vs C | Start-up, ms |",
-                  "|---|---|---|---|---|---|---|---|"]
+                  "", f"Tools: {v['cc']}; {v['go']}; {v['swig']}; Python {v['python']}, antlr4-python3-runtime {v['antlr4-runtime']}"
+                  + (f"; {v['java']}" if "java" in v else "") + ".", "",
+                  "| Implementation | Parse, ms per round | µs per case | vs C | Parse and evaluate, ms per round | µs per case | vs C | Start-up, ms | Evaluate only, µs per case |",
+                  "|---|---|---|---|---|---|---|---|---|"]
         medians, parse_medians = {}, {}
         for name in NAMES:
             results = [r for run in runs for r in run["results"] if r["implementation"] == name]
@@ -44,12 +46,14 @@ def main():
             parse_medians[name] = statistics.median(parse)
             checksums.update(json.dumps(r["checksum"], sort_keys=True) for r in results)
             startup = statistics.median(r["startup_ms"] for r in results)
+            only = [t for r in results for t in r.get("evaluate_only", [])]
+            only = f"{statistics.median(only) / cases * 1e6:,.2f}" if only else "–"
             ratio = medians[name] / medians["c"] if "c" in medians else float("nan")
             parse_ratio = parse_medians[name] / parse_medians["c"] if "c" in parse_medians else float("nan")
             lines.append(f"| {NAMES[name]} | {ms(statistics.median(parse))} ({ms(min(parse))}–{ms(max(parse))}) "
                          f"| {statistics.median(parse) / cases * 1e6:,.1f} | {parse_ratio:,.1f}× "
                          f"| {ms(statistics.median(evaluate))} ({ms(min(evaluate))}–{ms(max(evaluate))}) "
-                         f"| {statistics.median(evaluate) / cases * 1e6:,.1f} | {ratio:,.1f}× | {startup:,.1f} |")
+                         f"| {statistics.median(evaluate) / cases * 1e6:,.1f} | {ratio:,.1f}× | {startup:,.1f} | {only} |")
         lines.append("")
     if len(checksums) == 1:
         c = json.loads(checksums.pop())

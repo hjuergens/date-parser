@@ -322,15 +322,21 @@ public final class ScheduleSemantics {
         return year -> LocalDate.of(year, month(month), day);
     }
 
+    /** "day month year" -> the dates lunar() found: the search converts every day of the year, so it runs once */
+    private static final Map<String, List<LocalDate>> LUNAR_DATES = new java.util.concurrent.ConcurrentHashMap<>();
+
     /** the day of a Hijri (Umm al-Qura), Hebrew or Chinese month in the Gregorian year; an error if it occurs twice or not at all */
     private static LocalDate lunar(int day, String month, int year) {
-        Calendar hebrew = new HebrewCalendar();
-        List<LocalDate> hits = new ArrayList<>();
-        for (LocalDate date = LocalDate.of(year, 1, 1); date.getYear() == year; date = date.plusDays(1)) {
-            if (lunarMonth(date, month, hebrew).equals(month) && dayOfMonth(date, month, hebrew) == day) {
-                hits.add(date);
+        List<LocalDate> hits = LUNAR_DATES.computeIfAbsent(day + " " + month + " " + year, key -> {
+            Calendar hebrew = new HebrewCalendar();
+            List<LocalDate> found = new ArrayList<>();
+            for (LocalDate date = LocalDate.of(year, 1, 1); date.getYear() == year; date = date.plusDays(1)) {
+                if (lunarMonth(date, month, hebrew).equals(month) && dayOfMonth(date, month, hebrew) == day) {
+                    found.add(date);
+                }
             }
-        }
+            return List.copyOf(found);
+        });
         if (hits.size() != 1) {
             throw new java.time.DateTimeException(day + " " + month + " occurs " + hits.size() + " times in " + year);
         }
@@ -594,23 +600,25 @@ public final class ScheduleSemantics {
      * > 2ND LAST BD IN MONTH ({@code fromEnd}): backwards from the day after it ends; an error if that leaves the period
      */
     public static Expr select(Expr expr, int count, boolean fromEnd, Anchor anchor, String period) {
-        return context -> {
-            if (count < 1) {
-                throw new IllegalArgumentException("count must be positive: " + count);
-            }
-            LocalDate date = expr.at(context);
-            String unit = period.equals("HALFYEAR") ? "H" : period.substring(0, 1);   // WEEK, MONTH, QUARTER, YEAR
-            LocalDate first = roll(date, "BO" + unit, context.market());
-            LocalDate last = roll(date, "EO" + unit, context.market());
-            LocalDate found = fromEnd ? last.plusDays(1) : first.minusDays(1);
-            for (int i = 0; i < count; i++) {
-                found = anchor.from(found, fromEnd ? -1 : 1, context);
-            }
-            if (found.isBefore(first) || found.isAfter(last)) {
-                throw new IllegalArgumentException("no " + count + ". match in the " + period.toLowerCase() + " of " + date);
-            }
-            return found;
-        };
+        return context -> select(expr.at(context), count, fromEnd, anchor, period, context);
+    }
+
+    /** the same for a date */
+    public static LocalDate select(LocalDate date, int count, boolean fromEnd, Anchor anchor, String period, Context context) {
+        if (count < 1) {
+            throw new IllegalArgumentException("count must be positive: " + count);
+        }
+        String unit = period.equals("HALFYEAR") ? "H" : period.substring(0, 1);   // WEEK, MONTH, QUARTER, YEAR
+        LocalDate first = roll(date, "BO" + unit, context.market());
+        LocalDate last = roll(date, "EO" + unit, context.market());
+        LocalDate found = fromEnd ? last.plusDays(1) : first.minusDays(1);
+        for (int i = 0; i < count; i++) {
+            found = anchor.from(found, fromEnd ? -1 : 1, context);
+        }
+        if (found.isBefore(first) || found.isAfter(last)) {
+            throw new IllegalArgumentException("no " + count + ". match in the " + period.toLowerCase() + " of " + date);
+        }
+        return found;
     }
 
     /**
@@ -655,15 +663,17 @@ public final class ScheduleSemantics {
     /** the first shift for the weekday of the date applies; shifts don't chain */
     public static Expr observe(Expr expr, List<Shift> shifts) {
         List<Shift> copy = new ArrayList<>(shifts);
-        return context -> {
-            LocalDate date = expr.at(context);
-            for (Shift shift : copy) {
-                if (shift.weekday() == date.getDayOfWeek()) {
-                    return plus(date, shift.amount(), shift.sign(), context.market(), context.fixing());
-                }
+        return context -> observe(expr.at(context), copy, context);
+    }
+
+    /** the same for a date */
+    public static LocalDate observe(LocalDate date, List<Shift> shifts, Context context) {
+        for (Shift shift : shifts) {
+            if (shift.weekday() == date.getDayOfWeek()) {
+                return plus(date, shift.amount(), shift.sign(), context.market(), context.fixing());
             }
-            return date;
-        };
+        }
+        return date;
     }
 
     private static final List<String> MONTHS =

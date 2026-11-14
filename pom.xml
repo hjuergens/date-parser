@@ -19,6 +19,8 @@
         <module>date-rule-instaparse</module>
         <!-- rules in the schedule language, changed at run time (on top of date-rule-antlr-java) -->
         <module>date-rule-runtime</module>
+        <!-- the same rules compiled to bytecode, one class per rule (on top of date-rule-antlr-java) -->
+        <module>date-rule-compiled</module>
     </modules>
     <name>${project.artifactId}</name>
     <description>Date Parser - evaluating various technologies</description>

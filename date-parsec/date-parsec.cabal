@@ -1,0 +1,18 @@
+name:           date-parsec
+version:        0.1
+cabal-version:  >= 1.2
+build-type:     Simple
+author:         Hartmut Jürgens
+homepage:       https://github.com/hjuergens
+
+executable date-parsec
+  build-depends:   
+                   base >= 4,
+                   parsec >=3.1
+  hs-source-dirs:  src
+  ghc-options:     -Wall -rtsopts
+  other-modules:   
+                   CSV_Parser,
+                   ExpressionGrammar
+  main-is:         Main.hs
+

@@ -1,0 +1,10 @@
+SMAP
+MyDslStandaloneSetup.java
+Xtend
+*S Xtend
+*F
++ 0 MyDslStandaloneSetup.xtend
+src/main/java/net/sf/hajuergens/mydsl/MyDslStandaloneSetup.xtend
+*L
+13:11,2
+*E

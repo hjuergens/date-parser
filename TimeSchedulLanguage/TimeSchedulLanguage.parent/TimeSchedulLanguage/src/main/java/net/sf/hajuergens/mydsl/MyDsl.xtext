@@ -1,0 +1,20 @@
+grammar net.sf.hajuergens.mydsl.MyDsl with org.eclipse.xtext.common.Terminals
+
+generate myDsl "http://www.sf.net/hajuergens/mydsl/MyDsl"
+
+MyDsl :
+	(elements+=Type)*;
+
+Type:
+	DataType | Entity;
+
+DataType:
+	'datatype' name=ID;
+
+Entity:
+	'entity' name=ID ('extends' superType=[Entity])? '{'
+	(features+=Feature)*
+	'}';
+
+Feature:
+	(many?='many')? name=ID ':' type=[Type];

@@ -1,0 +1,93 @@
+<idea-plugin version="2">
+	<extensions defaultExtensionNs="org.eclipse.xtext.idea">
+		<package
+			uri="http://www.sf.net/hajuergens/mydsl/MyDsl"
+			class="net.sf.hajuergens.mydsl.myDsl.MyDslPackage"
+		/>
+		<resourceFactory 
+			type="tsl"
+			class="org.eclipse.xtext.resource.IResourceFactory"
+			factoryClass="net.sf.hajuergens.mydsl.idea.MyDslExtensionFactory"
+		/>
+		<resourceServiceProvider
+			uriExtension="tsl"
+			class="org.eclipse.xtext.idea.resource.IResourceIdeaServiceProvider"
+			factoryClass="net.sf.hajuergens.mydsl.idea.MyDslExtensionFactory"
+		/>
+
+		<lang.setup
+			language="net.sf.hajuergens.mydsl.MyDsl"
+			implementationClass="net.sf.hajuergens.mydsl.idea.MyDslIdeaSetup"
+		/>
+	</extensions>
+
+	<extensions defaultExtensionNs="com.intellij">
+		<psi.treeChangePreprocessor implementation="net.sf.hajuergens.mydsl.idea.lang.psi.MyDslCodeBlockModificationListener"/>
+
+		<fileTypeFactory implementation="net.sf.hajuergens.mydsl.idea.lang.MyDslFileTypeFactory"/>
+		<stubElementTypeHolder class="net.sf.hajuergens.mydsl.idea.lang.MyDslElementTypeProvider"/>
+		<lang.ast.factory 
+			language="net.sf.hajuergens.mydsl.MyDsl"
+			factoryClass="net.sf.hajuergens.mydsl.idea.MyDslExtensionFactory"
+			implementationClass="org.eclipse.xtext.idea.lang.BaseXtextASTFactory"
+		/>
+		<lang.parserDefinition 
+			language="net.sf.hajuergens.mydsl.MyDsl"
+			factoryClass="net.sf.hajuergens.mydsl.idea.MyDslExtensionFactory"
+			implementationClass="net.sf.hajuergens.mydsl.idea.lang.parser.MyDslParserDefinition"
+		/>
+		<lang.findUsagesProvider 
+			language="net.sf.hajuergens.mydsl.MyDsl"
+			factoryClass="net.sf.hajuergens.mydsl.idea.MyDslExtensionFactory"
+			implementationClass="org.eclipse.xtext.idea.findusages.BaseXtextFindUsageProvider"
+		/>
+		<lang.refactoringSupport 
+			language="net.sf.hajuergens.mydsl.MyDsl"
+			factoryClass="net.sf.hajuergens.mydsl.idea.MyDslExtensionFactory"
+			implementationClass="org.eclipse.xtext.idea.refactoring.BaseXtextRefactoringSupportProvider"
+		/>
+		<lang.namesValidator 
+			language="net.sf.hajuergens.mydsl.MyDsl"
+			factoryClass="net.sf.hajuergens.mydsl.idea.MyDslExtensionFactory"
+			implementationClass="com.intellij.lang.refactoring.NamesValidator"
+		/>
+		<lang.syntaxHighlighterFactory key="net.sf.hajuergens.mydsl.MyDsl" implementationClass="net.sf.hajuergens.mydsl.idea.highlighting.MyDslSyntaxHighlighterFactory" />
+		<lang.braceMatcher 
+			language="net.sf.hajuergens.mydsl.MyDsl"
+			factoryClass="net.sf.hajuergens.mydsl.idea.MyDslExtensionFactory"
+			implementationClass="com.intellij.lang.PairedBraceMatcher"
+		/>
+		<annotator 
+			language="net.sf.hajuergens.mydsl.MyDsl"
+			factoryClass="net.sf.hajuergens.mydsl.idea.MyDslExtensionFactory"
+			implementationClass="org.eclipse.xtext.idea.annotation.IssueAnnotator"
+		/>
+		<completion.contributor language="net.sf.hajuergens.mydsl.MyDsl" implementationClass="net.sf.hajuergens.mydsl.idea.completion.MyDslCompletionContributor"/>
+		<pom.declarationSearcher implementation="net.sf.hajuergens.mydsl.idea.lang.pom.MyDslPomDeclarationSearcher"/>
+
+		<lang.psiStructureViewFactory 
+			language="net.sf.hajuergens.mydsl.MyDsl"
+			factoryClass="net.sf.hajuergens.mydsl.idea.MyDslExtensionFactory"
+			implementationClass="com.intellij.lang.PsiStructureViewFactory"
+		/>
+		<facetType implementation="net.sf.hajuergens.mydsl.idea.facet.MyDslFacetType"/>
+      	<lang.documentationProvider 
+      		language="net.sf.hajuergens.mydsl.MyDsl"
+      		factoryClass="net.sf.hajuergens.mydsl.idea.MyDslExtensionFactory"
+      		implementationClass="org.eclipse.xtext.idea.documentation.IdeaDocumentationProvider"
+      	/>
+		<colorSettingsPage implementation="net.sf.hajuergens.mydsl.idea.highlighting.MyDslColorSettingsPage"/>
+		<highlightVisitor implementation="net.sf.hajuergens.mydsl.idea.highlighting.MyDslSemanticHighlightVisitor"/>
+
+		<lang.formatter 
+			language="net.sf.hajuergens.mydsl.MyDsl"
+			factoryClass="net.sf.hajuergens.mydsl.idea.MyDslExtensionFactory"
+			implementationClass="com.intellij.formatting.FormattingModelBuilder"
+		/>
+		<lang.commenter 
+			language="net.sf.hajuergens.mydsl.MyDsl"
+			factoryClass="net.sf.hajuergens.mydsl.idea.MyDslExtensionFactory"
+			implementationClass="com.intellij.lang.CodeDocumentationAwareCommenter"
+		/>
+	</extensions>
+</idea-plugin>

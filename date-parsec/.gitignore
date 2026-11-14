@@ -1,0 +1,5 @@
+dist/
+.dist-buildwrapper/
+.cabal-sandbox/
+cabal.sandbox.config
+_darcs/

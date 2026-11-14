@@ -413,7 +413,7 @@ ORDINAL  = NUM ("ST" | "ND" | "RD" | "TH") .  <span class="c">(* 3RD, one token 
     <div role="tabpanel" id="panel-antlr-java" aria-labelledby="tab-antlr-java">
       <div class="panel-head">
         <span class="kind">ALL(*) · adaptive LL</span><span class="lang">Java</span>
-        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-antlr-java/src/main/antlr4/io/github/hjuergens/time/DateSchedule.g4">DateSchedule.g4 ↗</a>
+        <a href="https://github.com/hjuergens/date-parser/blob/main/date-rule-antlr-java/src/main/antlr4/io/github/hjuergens/time/DateSchedule.g4">DateSchedule.g4 ↗</a>
       </div>
       <pre><code><span class="c">// periods are applied from left to right</span>
 expr returns [Expr value]
@@ -446,7 +446,7 @@ locals [List&lt;Annual&gt; annuals = new ArrayList&lt;&gt;()]
     <div role="tabpanel" id="panel-antlr-python" aria-labelledby="tab-antlr-python" hidden>
       <div class="panel-head">
         <span class="kind">ALL(*) · adaptive LL</span><span class="lang">Python</span>
-        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-antlr-python/src/antlr_schedule/__init__.py">__init__.py ↗</a>
+        <a href="https://github.com/hjuergens/date-parser/blob/main/date-rule-antlr-python/src/antlr_schedule/__init__.py">__init__.py ↗</a>
       </div>
       <pre><code># shifts are applied from left to right
 def visitExpr(self, ctx):
@@ -482,7 +482,7 @@ def visitRoll(self, ctx):
     <div role="tabpanel" id="panel-combinators" aria-labelledby="tab-combinators" hidden>
       <div class="panel-head">
         <span class="kind">Recursive descent with backtracking</span><span class="lang">Scala 2.13</span>
-        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-combinators/src/main/scala/de/juergens/text/ScheduleParsers.scala">ScheduleParsers.scala ↗</a>
+        <a href="https://github.com/hjuergens/date-parser/blob/main/date-rule-combinators/src/main/scala/de/juergens/text/ScheduleParsers.scala">ScheduleParsers.scala ↗</a>
       </div>
       <pre><code>def date: Parser[Context =&gt; LocalDate] = series | singleDate
 
@@ -504,7 +504,7 @@ def expr: Parser[Context =&gt; LocalDate] = date ~ rep(shift) ^^ {
     <div role="tabpanel" id="panel-coco" aria-labelledby="tab-coco" hidden>
       <div class="panel-head">
         <span class="kind">LL(1)</span><span class="lang">Java</span>
-        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-coco/src/main/coco/Schedule.atg">Schedule.atg ↗</a>
+        <a href="https://github.com/hjuergens/date-parser/blob/main/date-rule-coco/src/main/coco/Schedule.atg">Schedule.atg ↗</a>
       </div>
       <pre><code>Expr&lt;out ScheduleSemantics.Expr d&gt;
 = Date&lt;out d&gt;
@@ -551,7 +551,7 @@ Operand&lt;out List&lt;ScheduleSemantics.Expr&gt; exprs&gt; (. ScheduleSemantics
     <div role="tabpanel" id="panel-javacc" aria-labelledby="tab-javacc" hidden>
       <div class="panel-head">
         <span class="kind">LL(k), here LL(1)</span><span class="lang">Java</span>
-        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-javacc/src/main/javacc/Schedule.jj">Schedule.jj ↗</a>
+        <a href="https://github.com/hjuergens/date-parser/blob/main/date-rule-javacc/src/main/javacc/Schedule.jj">Schedule.jj ↗</a>
       </div>
       <pre><code>ScheduleSemantics.Expr Expr() :
 { ScheduleSemantics.Expr d; }
@@ -601,7 +601,7 @@ List&lt;ScheduleSemantics.Expr&gt; Operand() :
     <div role="tabpanel" id="panel-sablecc" aria-labelledby="tab-sablecc" hidden>
       <div class="panel-head">
         <span class="kind">LALR(1) with typed AST</span><span class="lang">Java</span>
-        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-sablecc/src/main/sablecc/schedule.grammar">schedule.grammar ↗</a>
+        <a href="https://github.com/hjuergens/date-parser/blob/main/date-rule-sablecc/src/main/sablecc/schedule.grammar">schedule.grammar ↗</a>
       </div>
       <pre><code>expr = date shift*;
 
@@ -688,7 +688,7 @@ period = number unit;</code></pre>
     <div role="tabpanel" id="panel-cup" aria-labelledby="tab-cup" hidden>
       <div class="panel-head">
         <span class="kind">LALR(1)</span><span class="lang">Java</span>
-        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-cup-jflex/src/main/cup/schedule.cup">schedule.cup ↗</a>
+        <a href="https://github.com/hjuergens/date-parser/blob/main/date-rule-cup-jflex/src/main/cup/schedule.cup">schedule.cup ↗</a>
       </div>
       <pre><code><span class="c">/* periods are applied from left to right */</span>
 expr ::= date:d                     {: RESULT = d; :}
@@ -746,7 +746,7 @@ operand_exprs ::= expr:e            {: RESULT = new ArrayList&lt;&gt;(); RESULT.
     <div role="tabpanel" id="panel-bison" aria-labelledby="tab-bison" hidden>
       <div class="panel-head">
         <span class="kind">LALR(1)</span><span class="lang">Java skeleton</span>
-        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-bison/src/main/resources/schedule.y">schedule.y ↗</a>
+        <a href="https://github.com/hjuergens/date-parser/blob/main/date-rule-bison/src/main/resources/schedule.y">schedule.y ↗</a>
       </div>
       <pre><code><span class="c">/* periods are applied from left to right */</span>
 expr:
@@ -815,7 +815,7 @@ operand_exprs:
     <div role="tabpanel" id="panel-flex-bison" aria-labelledby="tab-flex-bison" hidden>
       <div class="panel-head">
         <span class="kind">LALR(1)</span><span class="lang">C</span>
-        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-flex-bison/src/parser.y">parser.y ↗</a>
+        <a href="https://github.com/hjuergens/date-parser/blob/main/date-rule-flex-bison/src/parser.y">parser.y ↗</a>
       </div>
       <pre><code><span class="c">/* shifts are applied from left to right */</span>
 expr: date                      { $$ = NEW(Expr); $$-&gt;date = $1; }
@@ -856,7 +856,7 @@ pair: %empty                    { $$ = NULL; }
     <div role="tabpanel" id="panel-peg" aria-labelledby="tab-peg" hidden>
       <div class="panel-head">
         <span class="kind">PEG · ordered choice</span><span class="lang">JavaScript</span>
-        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-peg/schedule.pegjs">schedule.pegjs ↗</a>
+        <a href="https://github.com/hjuergens/date-parser/blob/main/date-rule-peg/schedule.pegjs">schedule.pegjs ↗</a>
       </div>
       <pre><code><span class="c">// periods are applied from left to right</span>
 Expr
@@ -885,7 +885,7 @@ Shift
     <div role="tabpanel" id="panel-lark" aria-labelledby="tab-lark" hidden>
       <div class="panel-head">
         <span class="kind">Earley and LALR(1), one grammar</span><span class="lang">Python</span>
-        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-lark/src/lark_schedule/schedule.lark">schedule.lark ↗</a>
+        <a href="https://github.com/hjuergens/date-parser/blob/main/date-rule-lark/src/lark_schedule/schedule.lark">schedule.lark ↗</a>
       </div>
       <pre><code><span class="c">// shifts are applied from left to right</span>
 expr: date shift*
@@ -961,7 +961,7 @@ period: NUM UNIT</code></pre>
     <div role="tabpanel" id="panel-instaparse" aria-labelledby="tab-instaparse" hidden>
       <div class="panel-head">
         <span class="kind">GLL · any context-free grammar</span><span class="lang">Clojure</span>
-        <a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-instaparse/src/main/clojure/io/github/hjuergens/instaparse/schedule.ebnf">schedule.ebnf ↗</a>
+        <a href="https://github.com/hjuergens/date-parser/blob/main/date-rule-instaparse/src/main/clojure/io/github/hjuergens/instaparse/schedule.ebnf">schedule.ebnf ↗</a>
       </div>
       <pre><code><span class="c">(* shifts are applied from left to right *)</span>
 expr     = date shift*
@@ -1003,84 +1003,84 @@ observe  = WEEKDAY SIGN period
         </thead>
         <tbody>
         <tr>
-          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-antlr-java/src/main/antlr4/io/github/hjuergens/time/DateSchedule.g4">ANTLR 4 · Java</a></th>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/main/date-rule-antlr-java/src/main/antlr4/io/github/hjuergens/time/DateSchedule.g4">ANTLR 4 · Java</a></th>
           <td>ALL(*) · adaptive LL</td>
           <td class="num">99</td>
           <td>Actions with <code>returns […]</code> attributes</td>
           <td>Throwing error listener plus <code>BailErrorStrategy</code></td>
         </tr>
         <tr>
-          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-antlr-python/src/antlr_schedule/__init__.py">ANTLR 4 · Python</a></th>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/main/date-rule-antlr-python/src/antlr_schedule/__init__.py">ANTLR 4 · Python</a></th>
           <td>ALL(*) · adaptive LL</td>
           <td class="num">67 + 104<small>grammar + visitor</small></td>
           <td>Visitor over the parse tree; the grammar has no actions</td>
           <td>Error listener on lexer and parser that raises</td>
         </tr>
         <tr>
-          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-combinators/src/main/scala/de/juergens/text/ScheduleParsers.scala">Scala combinators</a></th>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/main/date-rule-combinators/src/main/scala/de/juergens/text/ScheduleParsers.scala">Scala combinators</a></th>
           <td>Recursive descent with backtracking</td>
           <td class="num">215</td>
           <td><code>^^</code> functions, <code>foldLeft</code> over the shifts</td>
           <td><code>NoSuccess</code> result, turned into an exception</td>
         </tr>
         <tr>
-          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-coco/src/main/coco/Schedule.atg">Coco/R</a></th>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/main/date-rule-coco/src/main/coco/Schedule.atg">Coco/R</a></th>
           <td>LL(1)</td>
           <td class="num">132</td>
           <td><code>(. … .)</code> actions with <code>out</code> parameters</td>
           <td><code>errors.count</code>, messages written to a stream</td>
         </tr>
         <tr>
-          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-javacc/src/main/javacc/Schedule.jj">JavaCC</a></th>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/main/date-rule-javacc/src/main/javacc/Schedule.jj">JavaCC</a></th>
           <td>LL(k), here LL(1)</td>
           <td class="num">143</td>
           <td>Java code inside the productions; each declares its locals</td>
           <td><code>ParseException</code>, <code>TokenMgrException</code></td>
         </tr>
         <tr>
-          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-sablecc/src/main/sablecc/schedule.grammar">SableCC</a></th>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/main/date-rule-sablecc/src/main/sablecc/schedule.grammar">SableCC</a></th>
           <td>LALR(1) with typed AST</td>
           <td class="num">88 + 131<small>grammar + evaluator</small></td>
           <td>Separate evaluator walking the generated typed tree</td>
           <td><code>ParserException</code>, <code>LexerException</code></td>
         </tr>
         <tr>
-          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-cup-jflex/src/main/cup/schedule.cup">JFlex + CUP</a></th>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/main/date-rule-cup-jflex/src/main/cup/schedule.cup">JFlex + CUP</a></th>
           <td>LALR(1)</td>
           <td class="num">75 + 59<small>parser + lexer</small></td>
           <td><code>{: … :}</code> actions, left-recursive rules</td>
           <td><code>parse()</code> throws on the first syntax error</td>
         </tr>
         <tr>
-          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-bison/src/main/resources/schedule.y">GNU Bison</a></th>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/main/date-rule-bison/src/main/resources/schedule.y">GNU Bison</a></th>
           <td>LALR(1)</td>
           <td class="num">198<small>incl. hand-written scanner</small></td>
           <td><code>{ … }</code> actions, left-recursive rules</td>
           <td><code>parse()</code> returns <code>false</code></td>
         </tr>
         <tr>
-          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-flex-bison/src/parser.y">Flex + Bison · C</a></th>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/main/date-rule-flex-bison/src/parser.y">Flex + Bison · C</a></th>
           <td>LALR(1)</td>
           <td class="num">160 + 94<small>parser + scanner</small></td>
           <td><code>{ … }</code> actions build a syntax tree, which a C evaluator walks with the context</td>
           <td><code>yyparse()</code> returns non-zero; the scanner returns <code>YYerror</code> with its own message</td>
         </tr>
         <tr>
-          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-peg/schedule.pegjs">Peggy</a></th>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/main/date-rule-peg/schedule.pegjs">Peggy</a></th>
           <td>PEG · ordered choice</td>
           <td class="num">275<small>incl. date arithmetic</small></td>
           <td>Action blocks; date arithmetic written by hand</td>
           <td><code>SyntaxError</code> with expected tokens</td>
         </tr>
         <tr>
-          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-lark/src/lark_schedule/schedule.lark">Lark</a></th>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/main/date-rule-lark/src/lark_schedule/schedule.lark">Lark</a></th>
           <td>Earley and LALR(1), one grammar</td>
           <td class="num">47 + 89<small>grammar + transformer</small></td>
           <td><code>Transformer</code>, one method per rule alias</td>
           <td><code>UnexpectedInput</code>; <code>VisitError</code> wraps exceptions of the transformer</td>
         </tr>
         <tr>
-          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/master/date-rule-instaparse/src/main/clojure/io/github/hjuergens/instaparse/schedule.ebnf">instaparse</a></th>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/main/date-rule-instaparse/src/main/clojure/io/github/hjuergens/instaparse/schedule.ebnf">instaparse</a></th>
           <td>GLL · any context-free grammar</td>
           <td class="num">44 + 48<small>grammar + transform</small></td>
           <td><code>insta/transform</code>, one function per tag, calling the shared Java helper</td>
@@ -1147,10 +1147,10 @@ observe  = WEEKDAY SIGN period
   <section aria-labelledby="cases">
     <h2 id="cases">The shared test cases</h2>
     <p class="lead">
-      From <a href="https://github.com/hjuergens/date-parser/blob/master/examples/schedule.txt">examples/schedule.txt</a>. Each module has a test that reads this file,
+      From <a href="https://github.com/hjuergens/date-parser/blob/main/examples/schedule.txt">examples/schedule.txt</a>. Each module has a test that reads this file,
       so adding a line here tests all twelve implementations. They also read 2186 cases in
-      <a href="https://github.com/hjuergens/date-parser/blob/master/examples/catalog.txt">examples/catalog.txt</a>, generated from a holiday rule catalog, and 3347 in
-      <a href="https://github.com/hjuergens/date-parser/blob/master/examples/date-holidays.txt">examples/date-holidays.txt</a>, generated from date-holidays (neither listed here).
+      <a href="https://github.com/hjuergens/date-parser/blob/main/examples/catalog.txt">examples/catalog.txt</a>, generated from a holiday rule catalog, and 3347 in
+      <a href="https://github.com/hjuergens/date-parser/blob/main/examples/date-holidays.txt">examples/date-holidays.txt</a>, generated from date-holidays (neither listed here).
     </p>
     <div class="case-groups">
       <section>

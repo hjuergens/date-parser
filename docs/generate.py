@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-REPO = "https://github.com/hjuergens/date-parser/blob/master/"
+REPO = "https://github.com/hjuergens/date-parser/blob/main/"
 
 
 def between(path, start, end, include_end=False):

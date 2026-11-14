@@ -35,7 +35,7 @@ something the user can act on.
    Read the relevant grammar or README before claiming anything about it.
 4. Report a short table: verdict, question link, one-line reason. For each **answer**, add:
    the key points the answer should make (as bullets, not prose), the exact repo files or page
-   section to cite (GitHub links on `master`), and a code excerpt from the repo if one helps.
+   section to cite (GitHub links on `main`), and a code excerpt from the repo if one helps.
 5. **Evergreen questions** (only when the user asks for them, or when no new candidates are pending):
    few new questions appear in these tags, but old comparison questions keep getting views, and
    answering them is welcome when the answer adds something new. Search titles, sorted by votes, e.g.

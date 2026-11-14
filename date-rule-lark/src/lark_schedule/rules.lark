@@ -1,0 +1,213 @@
+// Rule files: the schedule language (schedule.lark) inside declarations with scope, validity, kind and provenance.
+// From the O-73 draft of holidays-events (docs/rule-grammar.md, section 2); LALR(1), no conflicts.
+// Two start rules: rule_file (declarations) and exprs (one expression, a superset of schedule.lark).
+// The extensions of the schedule language are marked with "+".
+
+// ================= declarations =================
+
+rule_file: declaration*
+
+?declaration: rule
+            | weekend_decl
+            | calendar_decl
+
+rule: "rule" KEY "for" KEY "in" scope_sel validity? "=" exprs attributes? provenance? ";"
+scope_sel: SCOPE ("," SCOPE)* ("except" SCOPE ("," SCOPE)*)?
+validity: "valid" ("from" iso_date)? ("to" iso_date)?
+
+weekend_decl: "weekend" SCOPE "=" weekday_set ("from" iso_date)? ";"
+calendar_decl: "calendar" KEY "=" calendar ";"
+
+attributes: "with" attribute ("," attribute)*
+attribute: "kind" "=" kind                          -> kind_attribute
+         | "session" time "-" time ("tz" STRING)?   -> session
+         | "precision" "=" precision                -> precision_attribute
+         | "note" STRING                            -> note
+!kind: "closed" | "non_working" | "short_day" | "working_day" | "paid_no_rest" | "tourist"
+!precision: "day" | "month"
+time: NUM ":" NUM
+
+provenance: "cites" citation ("," citation)*
+citation: STRING ("art" STRING)? ("url" STRING)? "label" label
+!label: "official" | "benchmark" | "practice" | "secondary"
+
+// ================= calendars =================
+
+// a calendar says which days are business days; "&" requires all of its terms
+calendar: cal_term ("&" cal_term)*
+cal_term: SCOPE ignore?                             -> scope_calendar
+        | KEY                                       -> named_calendar
+        | "(" calendar ")"
+// USD on T+1 does not count, unless for ARS, BRL, CLP, MXN
+ignore: "ignore" "at" "T" "+" NUM ("unless" "{" CCY ("," CCY)* "}")?
+
+// + in an expression one term only, as "&" there is include: ON country:BR, ON usd_eur, ON (a & b).
+// Without ON the calendar of the rule's scope; a calendar with the rule's own scope reads the holidays of the other
+// rules of that scope (set-level evaluation)
+on: "ON" (SCOPE | KEY | "(" calendar ")")
+
+// ================= expressions =================
+
+exprs: item ("," item)*
+
+// the condition applies to every date of the item; + the shifts after it to the dates it keeps
+item: expr combine* if_clause?
+    | pick (series | REF) shift* combine* if_clause?   -> picked_item
+if_clause: "IF" condition shift*
+
+// 5TH [SPOT : 1Q : ] > EOQ, 2ND LAST
+pick: ORDINAL [LAST_WORD]
+LAST_WORD: "LAST"
+
+combine: "&" operand shift*                -> include
+       | "\\" operand shift*               -> exclude
+
+operand: date                              -> single_operand
+       | "{" expr ("," expr)* "}"          -> set_operand
+
+expr: date shift*
+
+?date: single_date
+     | series                              -> element
+
+// [a : step : b]; "]" at the start or "[" at the end leaves that endpoint out
+series: start_bracket endpoint ":" period ":" [endpoint] end_bracket
+      | start_bracket endpoint ":" endpoint end_bracket -> series_every_day
+endpoint: single_date shift*
+start_bracket: "[" -> start_in
+             | "]" -> start_out
+end_bracket: "]"   -> end_in
+           | "["   -> end_out
+
+?single_date: "T"                          -> base
+            | "TOM"                        -> tom
+            | "SPOT" [PAIR] [on]           -> spot_date
+            | NUM "-" NUM "-" NUM          -> iso
+            | NUM "." NUM "." NUM          -> german
+            | NUM "/" NUM "/" NUM          -> us
+            | annual                       -> in_year
+            | REF                          -> ref
+            | "ANNOUNCED" "BY" KEY ["ELSE" operand] -> announced   // + G11
+
+iso_date: NUM "-" NUM "-" NUM
+
+?annual: fixed_annual
+       | "LAST" WEEKDAY MONTH              -> last_weekday
+
+?fixed_annual: NUM MONTH [hijri_method]    -> month_day            // + method
+             | NUM WEEKDAY MONTH           -> nth_weekday
+             | "EASTER"                    -> easter
+             | "ORTHODOX" "EASTER"         -> orthodox_easter      // +
+             | SEASON MONTH [zone]         -> season               // + IANA zone
+             | "SOLARTERM" NUM [zone]      -> solar_term
+             | "HINDU" KEY                 -> hindu                // +
+
+hijri_method: "BY" (UMMALQURA | SIGHTING | DIYANET | "FOLLOW" SCOPE)
+UMMALQURA: "UMMALQURA"
+SIGHTING: "SIGHTING"
+DIYANET: "DIYANET"
+zone: ZONE | STRING
+
+// shifts are applied from left to right
+shift: "+" period [ENDEND] [on]            -> plus                 // + ENDEND, on
+     | "-" period [ENDEND] [on]            -> minus
+     | ">" "IMM"                           -> imm
+     | ">" "SPOT" [PAIR] [on]              -> spot
+     | ">" "FIX" [PAIR]                    -> fix
+     | ">" ROLL [on]                       -> roll
+     | ">" "NEXT" [ORDINAL] anchor         -> next
+     | ">" "PREV" [ORDINAL] anchor         -> prev
+     | ">" "NEAREST" anchor                -> nearest              // + ties go forward
+     | ">" count selection "IN" PERIOD     -> select
+     | ">" "{" annual ("," annual)* "}"    -> dates_in_year
+     | ">" "POSTPONE" ROLL [on] "MAX" period [CUMULATIVE] -> postpone   // + G18
+     | "{" observe ("," observe)* "}"      -> observance
+ENDEND: "ENDEND"
+CUMULATIVE: "CUMULATIVE"
+
+// + several weekdays per entry and moves as targets: {TUE WED > PREV MON, THU FRI > NEXT MON}
+observe: WEEKDAY+ "+" period               -> observe_plus
+       | WEEKDAY+ "-" period               -> observe_minus
+       | WEEKDAY+ ">" "NEXT" anchor        -> observe_next
+       | WEEKDAY+ ">" "PREV" anchor        -> observe_prev
+       | WEEKDAY+ ">" "NEAREST" anchor     -> observe_nearest
+       | WEEKDAY+ ">" ROLL [on]            -> observe_roll
+
+count: ORDINAL                             -> from_start
+     | "LAST"                              -> last
+     | ORDINAL "LAST"                      -> from_end
+
+// the targets of a selection; an annual date starting with LAST only in braces, as LAST also starts the count
+?selection: chosen
+          | "{" target ("," target)* "}"   -> any_of
+
+?anchor: target
+       | "{" target ("," target)* "}"      -> any_of
+
+?target: chosen
+       | "LAST" WEEKDAY MONTH              -> last_weekday
+
+?chosen: WEEKDAY                           -> weekday
+       | "IMM"                             -> imm_anchor
+       | fixed_annual                      -> annual_anchor
+       | REF                               -> ref_anchor
+       | "BD" [on]                         -> business_day         // + on
+       | "FD"                              -> fixing_day
+       | "HOLIDAY" [on]                    -> holiday              // + G5
+       | "NONHOLIDAY" [on]                 -> nonholiday           // + G5
+
+period: NUM UNIT
+
+// ================= conditions =================
+
+?condition: cond_and ("OR" cond_and)*                             // + AND, OR, NOT
+?cond_and: cond_not ("AND" cond_not)*
+?cond_not: "NOT" cond_atom                 -> not_
+         | cond_atom
+?cond_atom: weekday_set                    -> on_weekday           // the weekday of the date itself
+          | subject "IS" weekday_set       -> is_weekday           // + another date, G4
+          | "HOLIDAY" [on]                 -> is_holiday           // + G5
+          | subject "IS" "HOLIDAY" [on]    -> date_is_holiday
+          | "BETWEEN" "HOLIDAYS" [on]      -> between_holidays     // + JP art. 3(3)
+          | "EVERY" period "FROM" NUM      -> every                // + G14: EVERY 4Y FROM 1965
+          | "(" condition ")"
+subject: single_date (subject_shift)*                             // 18 SEP, EASTER + 1D
+subject_shift: "+" period                  -> plus
+             | "-" period                  -> minus
+weekday_set: WEEKDAY+
+           | "{" WEEKDAY ("," WEEKDAY)* "}"
+
+// ================= lexical =================
+
+NUM: /[0-9]+/
+// 1ST, 2ND, 3RD, 10TH: before NUM, which would take the digits
+ORDINAL.2: /[0-9]+(ST|ND|RD|TH)/
+UNIT: /[DWMQHYBF]/
+// keys, named calendars and authorities: lower case; declaration keywords take precedence (Lark turns a KEY that
+// equals a keyword into the keyword)
+KEY: /[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*/
+REF: /@[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)*/
+SCOPE.3: /[a-z][a-z_]*:[A-Z0-9][A-Z0-9_]*(-[A-Z0-9][A-Z0-9_]*)*/
+STRING: /"[^"]*"/
+ZONE: /UTC[+-][0-9]+/
+SEASON: "EQUINOX" | "SOLSTICE"
+WEEKDAY: "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN"
+// Gregorian, then Hijri (Umm al-Qura), Hebrew and Chinese months; ADARII before ADAR
+MONTH: "JAN" | "FEB" | "MAR" | "APR" | "MAY" | "JUN" | "JUL" | "AUG" | "SEP" | "OCT" | "NOV" | "DEC"
+     | "MUHARRAM" | "SAFAR" | "RABIALAWWAL" | "RABIALTHANI" | "JUMADAALULA" | "JUMADAALAKHIRA" | "RAJAB" | "SHABAN"
+     | "RAMADAN" | "SHAWWAL" | "DHULQADAH" | "DHULHIJJAH"
+     | "NISAN" | "IYAR" | "SIVAN" | "TAMMUZ" | "AV" | "ELUL" | "TISHRI" | "HESHVAN" | "KISLEV" | "TEVET" | "SHEVAT"
+     | "ADARII" | "ADAR"
+     | "ZHENGYUE" | "ERYUE" | "SANYUE" | "SIYUE" | "WUYUE" | "LIUYUE" | "QIYUE" | "BAYUE" | "JIUYUE" | "SHIYUE"
+     | "DONGYUE" | "LAYUE"
+ROLL: "FOLLOWING" | "PRECEDING" | "MODFOLLOWING" | "MODPRECEDING"
+    | "BOW" | "EOW" | "BOM" | "EOM" | "BOQ" | "EOQ" | "BOH" | "EOH" | "BOY" | "EOY"
+PERIOD: "WEEK" | "MONTH" | "QUARTER" | "HALFYEAR" | "YEAR"
+// a currency pair such as EURUSD, never a six-letter keyword
+PAIR: /(?!EASTER|SHABAN|TAMMUZ|TISHRI|KISLEV|SHEVAT|ADARII|SANYUE|LIUYUE|JIUYUE|SHIYUE|ENDEND|FOLLOW)[A-Z]{6}(?![A-Z])/
+// a currency, only inside "unless {…}"
+CCY: /[A-Z]{3}(?![A-Z])/
+
+COMMENT: /#[^\n]*/
+%ignore COMMENT
+%ignore /[ \t\r\n]+/

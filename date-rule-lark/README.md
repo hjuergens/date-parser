@@ -34,9 +34,9 @@ mise run test:lark        # or, inside this directory:
 uv run pytest             # uv installs Lark and pytest into .venv (versions in uv.lock)
 ```
 
-There are 12140 tests (pytest): the 537 cases of [examples/schedule.txt](../examples/schedule.txt), the 2186 of
+There are 12163 tests (pytest): the 537 cases of [examples/schedule.txt](../examples/schedule.txt), the 2186 of
 [examples/catalog.txt](../examples/catalog.txt) and the 3347 of [examples/date-holidays.txt](../examples/date-holidays.txt), each with
-`lalr` and `earley`.
+`lalr` and `earley`, and 23 for the grammar of rule files ([test_rule_grammar.py](tests/test_rule_grammar.py)).
 
 ## Shared example
 
@@ -56,6 +56,17 @@ There are 12140 tests (pytest): the 537 cases of [examples/schedule.txt](../exam
   ones (`TISHRI`, …) as well. `item: expr ("IF" WEEKDAY+)?` keeps a date only on these weekdays.
 - Ordinals and sets (`> NEXT 3RD FRI`, `> NEXT {MON, FRI}`): the terminal `ORDINAL.2: /[0-9]+(ST|ND|RD|TH)/` has a higher priority than `NUM`, as Lark's lexer doesn't take the longest match among regexes; `">" "NEXT" [ORDINAL] anchor` and `?anchor: target | "{" target ("," target)* "}"` run as LALR(1) without conflicts.
 - Named events: the terminal `EVENT: /@[A-Z][A-Z0-9_]*/` is one more alternative of `date` and `anchor`; shifts receive the whole context, as `> NEXT @FOMC` needs the events.
+
+## Rule files
+
+[rules.lark](src/lark_schedule/rules.lark) is a grammar only, without a transformer: the schedule language inside
+declarations (`rule KEY for KEY in SCOPE … = <schedule> with … cites …;`, `weekend`, `calendar`), drafted for the rule
+catalog of holidays-events (its `docs/rule-grammar.md`, O-73). It adds named calendars (`+ 2B ON country:BR`), several
+weekdays per observance entry (`{TUE WED > PREV MON}`), conditions on other dates and the holiday set
+(`IF 18 SEP IS TUE`, `IF BETWEEN HOLIDAYS AND NOT HOLIDAY`, `IF EVERY 4Y FROM 1965`), `ORTHODOX EASTER`,
+`ANNOUNCED BY … ELSE …` and `> POSTPONE … MAX 14D`. Lark builds it as LALR(1) without conflicts, and its start rule
+`exprs` accepts every case of the three example files that `schedule.lark` accepts and rejects the others, except
+references in lower case (`@za.freedom_day`), which rule files allow.
 
 ## Status
 

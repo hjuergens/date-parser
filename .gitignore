@@ -7,6 +7,13 @@ syntax: glob
 #*.off
 *.old
 node_modules
+# Node downloaded by the frontend-maven-plugin
+date-rule-*/node/
+npm-debug.log
+
+# Leiningen REPL state
+.lein-repl-history
+.lein-failures
 
 # Python
 .venv
@@ -20,6 +27,9 @@ date-rule-antlr-python/src/antlr_schedule/generated
 .project
 .manager
 .scala_dependencies
+
+# NetBeans: per-user settings
+nbproject/private/
 
 # idea
 .idea
@@ -50,3 +60,6 @@ build.log
 # Claude Code: personal settings and Stack Overflow watch state
 .claude/settings.local.json
 .claude/skills/stackoverflow-watch/state.json
+
+# local imports, not part of the repository
+/import/

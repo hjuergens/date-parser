@@ -3,24 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ten Parsers, One Language</title>
-<meta name="description" content="The same small date language implemented with ANTLR (Java and Python), Scala parser combinators, Coco/R, JavaCC, SableCC, JFlex + CUP, GNU Bison, Peggy and Lark, tested against one shared set of cases.">
+<title>Twelve Parsers, One Language</title>
+<meta name="description" content="The same small date language implemented with ANTLR (Java and Python), Scala parser combinators, Coco/R, JavaCC, SableCC, JFlex + CUP, GNU Bison (Java and C with Flex), Peggy, Lark and instaparse (Clojure), tested against one shared set of cases.">
 <link rel="canonical" href="https://hjuergens.github.io/date-parser/">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Ten Parsers, One Language">
-<meta property="og:description" content="ANTLR, JavaCC, Bison, JFlex + CUP, SableCC, Coco/R, Peggy, Lark and Scala parser combinators implement the same date language, side by side.">
+<meta property="og:title" content="Twelve Parsers, One Language">
+<meta property="og:description" content="ANTLR, JavaCC, Bison, Flex + Bison in C, JFlex + CUP, SableCC, Coco/R, Peggy, Lark, instaparse and Scala parser combinators implement the same date language, side by side.">
 <meta property="og:url" content="https://hjuergens.github.io/date-parser/">
 <meta name="twitter:card" content="summary">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "SoftwareSourceCode",
-  "name": "date-parser: ten parsers, one language",
-  "description": "One date-schedule language implemented with ANTLR (Java and Python), JavaCC, GNU Bison, JFlex + CUP, SableCC, Coco/R, Peggy, Lark and Scala parser combinators, tested against one shared set of cases.",
+  "name": "date-parser: twelve parsers, one language",
+  "description": "One date-schedule language implemented with ANTLR (Java and Python), JavaCC, GNU Bison (Java and C with Flex), JFlex + CUP, SableCC, Coco/R, Peggy, Lark, instaparse and Scala parser combinators, tested against one shared set of cases.",
   "url": "https://hjuergens.github.io/date-parser/",
   "codeRepository": "https://github.com/hjuergens/date-parser",
-  "programmingLanguage": ["Java", "Scala", "JavaScript", "Python"],
-  "keywords": "parser generator, ANTLR, JavaCC, Bison, JFlex, CUP, SableCC, Coco/R, PEG, Peggy, Lark, Earley, parser combinators, grammar, LL, LALR",
+  "programmingLanguage": ["Java", "Scala", "JavaScript", "Python", "Clojure"],
+  "keywords": "parser generator, ANTLR, JavaCC, Bison, Flex, C, JFlex, CUP, SableCC, Coco/R, PEG, Peggy, Lark, Earley, instaparse, GLL, Clojure, parser combinators, grammar, LL, LALR",
   "license": "https://www.apache.org/licenses/LICENSE-2.0"
 }
 </script>
@@ -178,6 +178,45 @@
   .ctx { color: var(--muted); }
   .market { margin: 0 0 8px; font-size: 0.86rem; color: var(--muted); }
 
+  /* playground */
+  .play { margin-top: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .play label { display: block; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 4px; }
+  .play-input {
+    width: 100%; min-height: 3.2em; resize: vertical;
+    font: 0.95rem/1.5 var(--mono); color: var(--text);
+    background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px;
+  }
+  .play-input:focus, .play-row input:focus, .play-row select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .play-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
+  .play-row > div { flex: 1 1 180px; }
+  .play-row input, .play-row select {
+    width: 100%; font: 0.92rem/1.4 var(--sans); color: var(--text);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 0; padding: 0; list-style: none; }
+  .chips button {
+    font: 0.82rem/1.3 var(--mono); color: var(--text); background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px; cursor: pointer;
+  }
+  .chips button:hover { border-color: var(--accent); color: var(--accent); }
+  .play-out { margin-top: 16px; min-height: 2.5em; }
+  .play-out .dates { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0; padding: 0; list-style: none; }
+  .play-out .dates li { font-family: var(--mono); font-size: 0.9rem; }
+  .play-out .dates small { color: var(--muted); font-family: var(--sans); margin-right: 4px; }
+  .play-out pre { margin-top: 8px; padding: 8px 12px; }
+  .play-out mark { background: color-mix(in srgb, var(--err) 25%, transparent); color: inherit; border-bottom: 2px solid var(--err); }
+  .play-status { color: var(--muted); font-size: 0.9rem; margin: 0 0 6px; }
+  .play-tree { margin-top: 16px; }
+  .play-tree summary { cursor: pointer; color: var(--muted); font-size: 0.9rem; }
+  .play-tree .tree { overflow-x: auto; margin-top: 8px; }
+  .play-tree svg { display: block; }
+  .play-tree .cat { fill: var(--accent); font: 600 12px var(--sans); }
+  .play-tree .word { fill: var(--text); font: 13px var(--mono); }
+  .play-tree line { stroke: var(--muted); stroke-width: 1; }
+  .play-tree pre { white-space: pre-wrap; word-break: break-all; }
+  .cases td:first-child code.try { cursor: pointer; }
+  .cases td:first-child code.try:hover, .cases td:first-child code.try:focus-visible { color: var(--accent); outline: none; }
+
   footer { max-width: 980px; margin: 0 auto; padding: 24px 16px 48px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.9rem; }
 
   @media (max-width: 720px) {
@@ -193,10 +232,10 @@
 <main>
   <header>
     <p class="eyebrow">date-parser · parser technology comparison</p>
-    <h1>Ten parsers, one date language</h1>
+    <h1>Twelve parsers, one date language</h1>
     <p class="lead">
-      The same small language for dates, periods and ranges, implemented with ten parser generators and
-      parser libraries, from LL(1) to LALR(1), Earley and PEG. Every implementation passes the same {{CASE_COUNT}} test cases.
+      The same small language for dates, periods and ranges, implemented with twelve parser generators and
+      parser libraries, from LL(1) to LALR(1), Earley, GLL and PEG. Every implementation passes the same {{CASE_COUNT}} test cases.
     </p>
     <ul class="stats">
       <li><strong>{{TOOL_COUNT}}</strong><span>implementations, {{LANG_COUNT}} languages</span></li>
@@ -216,40 +255,72 @@
           <tr><td>09.06.2015 + 3M</td><td>2015-09-09 (German notation)</td></tr>
           <tr><td>06/09/2015 + 1W - 2D</td><td>2015-06-14 (US notation, left to right)</td></tr>
           <tr><td>2015-06-09, 1.1.2000 + 1Y</td><td>2015-06-09, 2001-01-01</td></tr>
-          <tr><td>(2015-01-15 : 1Q : 2015-12-31)</td><td>2015-01-15, -04-15, -07-15, -10-15</td></tr>
+          <tr><td>[2015-01-15 : 1Q : 2015-12-31]</td><td>2015-01-15, -04-15, -07-15, -10-15</td></tr>
+          <tr><td>[2026-01-01 : 3M : 2026-12-31] &gt; EOQ &gt; 3RD WED IN MONTH</td><td>the IMM dates of 2026: shifts apply to each element</td></tr>
           <tr><td>2015-06-12 + 1B</td><td>2015-06-15 (business days)</td></tr>
           <tr><td>2015-06-09 + 3M &gt; IMM</td><td>2015-09-16 (next IMM date)</td></tr>
           <tr><td>2015-06-12 &gt; SPOT USDCAD</td><td>2015-06-15 (FX spot, T+1)</td></tr>
           <tr><td>T + 2B</td><td>two business days after the base date, in the market of the evaluation</td></tr>
           <tr><td>24 DEC IF MON TUE WED THU</td><td>Christmas Eve from Monday to Thursday, otherwise no date</td></tr>
           <tr><td>1 SHAWWAL, 1 ZHENGYUE</td><td>Eid al-Fitr and Chinese New Year in the year of <code>T</code></td></tr>
+          <tr><td>@FOMC + 1B</td><td>the business day after each FOMC decision of that year (a named event)</td></tr>
+          <tr><td>[T : T + 7D] \ {1 JAN, 6 JAN} &amp; 25 DEC</td><td>exclude and include: sorted, without duplicates</td></tr>
+          <tr><td>[T : 1Y : T + 2Y] &gt; {1 FEB, 1 MAY}</td><td>dates in year: 1 February and 1 May of three years</td></tr>
+          <tr><td>5TH [SPOT : 1Q : ] &gt; EOQ &gt; 3RD WED IN MONTH</td><td>pick: the 5th IMM date after <code>T</code>, from an open series</td></tr>
+          <tr><td>T &gt; 2ND LAST BD IN MONTH</td><td>the second-to-last business day in the month of <code>T</code></td></tr>
         </tbody>
       </table>
-      <pre><code>schedule = range | item { "," item } .
-item     = expr [ "IF" WEEKDAY { WEEKDAY } ] .
-range    = "(" expr ":" period ":" expr ")" .
-expr     = date { ("+" | "-") period
-               | "&gt;" ( "IMM" | "SPOT" [ PAIR ] | ROLL
-                       | ("NEXT" | "PREV") anchor )
-               | "{" shift { "," shift } "}" } .
+      <pre><code>schedule = item { "," item } .
+item     = expr { combine } [ condition ]
+         | pick ( series | EVENT ) { move } { combine } [ condition ] .
+pick     = ORDINAL [ "LAST" ] .            <span class="c">(* the n-th date after T *)</span>
+condition = "IF" ( WEEKDAY { WEEKDAY }
+                 | "{" WEEKDAY { "," WEEKDAY } "}" ) .
+combine  = ( "&amp;" | "\\" ) operand { move } .  <span class="c">(* include, exclude *)</span>
+operand  = date | "{" expr { "," expr } "}" .
+series   = ( "[" | "]" ) endpoint ":" ( period ":" [ endpoint ] | endpoint )
+           ( "]" | "[" ) .             <span class="c">(* ]a, b[: endpoint left out; no end: open *)</span>
+endpoint = single_date { move } .
+expr     = date { move } .
+move     = ("+" | "-") period
+         | "&gt;" ( "IMM" | "SPOT" [ PAIR ] | "FIX" [ PAIR ] | ROLL
+                 | ("NEXT" | "PREV") [ ORDINAL ] anchor
+                 | count select "IN" PERIOD
+                 | "{" annual { "," annual } "}" )  <span class="c">(* dates in year *)</span>
+         | "{" shift { "," shift } "}" .
 shift    = WEEKDAY ("+" | "-") period .
-anchor   = WEEKDAY | "BD" | "IMM" | annual .
-date     = "T" | "TOM" | "SPOT" [ PAIR ]
+anchor   = target                      <span class="c">(* NEXT 3RD FRI *)</span>
+         | "{" target { "," target } "}" .  <span class="c">(* NEXT {MON, FRI} *)</span>
+target   = chosen | "LAST" WEEKDAY MONTH .
+count    = ORDINAL [ "LAST" ] | "LAST" .  <span class="c">(* 2ND LAST *)</span>
+select   = chosen                      <span class="c">(* 3RD WED IN MONTH *)</span>
+         | "{" target { "," target } "}" .
+chosen   = WEEKDAY | "BD" | "FD" | "IMM" | fixed | EVENT .
+date     = single_date | series .
+single_date = "T" | "TOM" | "SPOT" [ PAIR ]
          | NUM ( "-" NUM "-" NUM       <span class="c">(* ISO    *)</span>
                | "." NUM "." NUM       <span class="c">(* German *)</span>
                | "/" NUM "/" NUM )     <span class="c">(* US     *)</span>
-         | annual .
-annual   = NUM MONTH                   <span class="c">(* 4 JUL     *)</span>
+         | annual | EVENT .
+annual   = fixed | "LAST" WEEKDAY MONTH .
+fixed    = NUM MONTH                   <span class="c">(* 4 JUL     *)</span>
          | NUM WEEKDAY MONTH           <span class="c">(* 3 MON JAN *)</span>
-         | "LAST" WEEKDAY MONTH | "EASTER" .
+         | "EASTER"
+         | ("EQUINOX" | "SOLSTICE") MONTH [ ZONE ]
+         | "SOLARTERM" NUM [ ZONE ] .  <span class="c">(* SOLARTERM 5 UTC+8 *)</span>
 period   = NUM ( "D" | "W" | "M"
-               | "Q" | "Y" | "B" ) .
+               | "Q" | "H" | "Y" | "B" | "F" ) .  <span class="c">(* F: fixing days *)</span>
 ROLL     = "FOLLOWING" | "PRECEDING" | "MODFOLLOWING"
-         | "BOM" | "EOM" | "BOY" | "EOY" .
+         | "BOW" | "EOW" | "BOM" | "EOM" | "BOQ" | "EOQ"
+         | "BOH" | "EOH" | "BOY" | "EOY" .
+PERIOD   = "WEEK" | "MONTH" | "QUARTER" | "HALFYEAR" | "YEAR" .
 MONTH    = "JAN" | … | "DEC"           <span class="c">(* Gregorian *)</span>
          | "MUHARRAM" | … | "DHULHIJJAH"  <span class="c">(* Hijri *)</span>
          | "NISAN" | … | "ADARII"     <span class="c">(* Hebrew  *)</span>
-         | "ZHENGYUE" | … | "LAYUE" . <span class="c">(* Chinese *)</span></code></pre>
+         | "ZHENGYUE" | … | "LAYUE" . <span class="c">(* Chinese *)</span>
+EVENT    = "@" UPPER { UPPER | DIGIT | "_" } .  <span class="c">(* @FOMC *)</span>
+ZONE     = "UTC" ("+" | "-") NUM .     <span class="c">(* UTC+9, one token *)</span>
+ORDINAL  = NUM ("ST" | "ND" | "RD" | "TH") .  <span class="c">(* 3RD, one token *)</span></code></pre>
     </div>
     <p class="note">
       In grammatical terms (after <a href="https://en.wikipedia.org/wiki/Grammatical_category">grammatical category</a>):
@@ -279,11 +350,46 @@ MONTH    = "JAN" | … | "DEC"           <span class="c">(* Gregorian *)</span>
       An observance <code>{SAT - 1D, SUN + 1D}</code> shifts a date by the first item for its weekday, so <code>4 JUL {SAT - 1D, SUN + 1D}</code>
       is Independence Day as the NYSE observes it. A market can be declared from such rules; the test markets in the case list below are.
       Rolling, seen from <code>T</code>: <code>TOM</code> and <code>SPOT</code> are dates; <code>&gt; NEXT FRI</code>, <code>&gt; PREV IMM</code> or
-      <code>&gt; NEXT 4 JUL</code> look strictly after or before the date; <code>&gt; EOM</code> and friends move to the edge of month or year,
+      <code>&gt; NEXT 4 JUL</code> look strictly after or before the date, an ordinal counts (<code>&gt; NEXT 3RD FRI</code>, <code>&gt; NEXT 2ND IMM</code>)
+      and a set is the nearest of its anchors (<code>&gt; NEXT {MON, FRI}</code>, <code>&gt; NEXT {1 FEB, 1 MAY}</code>); <code>&gt; EOM</code>, <code>&gt; EOQ</code> and friends move to the edge of
+      month, quarter, half year or year,
       and <code>&gt; FOLLOWING</code>, <code>&gt; PRECEDING</code> and <code>&gt; MODFOLLOWING</code> to a business day of the market.
       Hijri (Umm al-Qura), Hebrew and Chinese months are month names too: <code>1 SHAWWAL</code> is the day in the year of <code>T</code>,
       an error if it falls there twice or not at all. <code>24 DEC IF MON TUE WED THU</code> keeps a date only on these weekdays.
+      <code>EQUINOX MAR</code>, <code>SOLSTICE JUN</code>, <code>EQUINOX SEP</code> and <code>SOLSTICE DEC</code> are the days on which the sun
+      reaches 0, 90, 180 and 270 degrees, <code>SOLARTERM 5</code> is Qingming (the Chinese solar terms, counted from Lichun at 315 degrees),
+      in UTC or in the offset after it: <code>EQUINOX MAR UTC+9</code> is Japan's Vernal Equinox Day. Every tool computes them after Meeus.
     </p>
+  </section>
+
+  <section aria-labelledby="try">
+    <h2 id="try">Try it</h2>
+    <p class="lead">The Peggy parser of this project, running in your browser: type a schedule, pick the base date <code>T</code> and a market,
+      and the dates appear as you type, with the syntax tree the parser built: the categories are the rules of the grammar, the words
+      the input. Its bracket notation below the tree can be pasted into a syntax tree generator. The markets and events are the ones of the
+      test cases; a click on a test case below loads it here.</p>
+    <div class="play" id="play">
+      <label for="play-input">Schedule</label>
+      <textarea id="play-input" class="play-input" spellcheck="false" autocapitalize="characters" autocomplete="off">T + 3M &gt; IMM, T &gt; SPOT USDCAD</textarea>
+      <div class="play-row">
+        <div><label for="play-base">Base date T</label><input id="play-base" type="date"></div>
+        <div><label for="play-market">Market</label><select id="play-market"><option value="">Saturdays and Sundays only</option></select></div>
+      </div>
+      <ul class="chips" aria-label="Examples">
+        <li><button type="button" data-input="2015-06-09 + 3M, 09.06.2015, [2015-01-15 : 1Q : 2015-12-31]">notations and a range</button></li>
+        <li><button type="button" data-input="T + 2B, TOM, SPOT EURUSD, SPOT USDCAD" data-market="XNYS">business days and spot</button></li>
+        <li><button type="button" data-input="T &gt; IMM, TOM &gt; IMM, SPOT &gt; IMM, SPOT - 1D &gt; IMM">next IMM date</button></li>
+        <li><button type="button" data-input="4 JUL {SAT - 1D, SUN + 1D}, 4 THU NOV, 25 DEC {SAT - 1D, SUN + 1D}">US holidays</button></li>
+        <li><button type="button" data-input="EASTER - 2D, EASTER + 1D, 1 SHAWWAL, 10 TISHRI, 1 ZHENGYUE">Easter and lunar months</button></li>
+        <li><button type="button" data-input="EQUINOX MAR UTC+9, EQUINOX SEP UTC+9, SOLARTERM 5 UTC+8, SOLSTICE DEC">equinoxes and solar terms</button></li>
+        <li><button type="button" data-input="T &gt; NEXT 3RD FRI, T &gt; NEXT 7TH {MON, FRI}, SPOT &gt; NEXT 2ND IMM, SPOT &gt; EOQ &gt; IMM">ordinals, sets and quarters</button></li>
+        <li><button type="button" data-input="T &gt; 3RD WED IN MONTH, T &gt; 5TH BD IN MONTH, T &gt; 2ND LAST BD IN MONTH, T &gt; EOW" data-market="XNYS">selection in a period</button></li>
+        <li><button type="button" data-input="12 MAY - 1D &gt; NEXT SAT + 20D &gt; PRECEDING" data-market="XFED">US employment report</button></li>
+        <li><button type="button" data-input="@FOMC + 1B" data-base="2025-01-01" data-market="XNYS">after each FOMC decision</button></li>
+        <li><button type="button" data-input="2015-06-09 + 3X">a syntax error</button></li>
+      </ul>
+      <div class="play-out" id="play-out" aria-live="polite"><p class="play-status">Loading the parser …</p></div>
+    </div>
   </section>
 
   <section aria-labelledby="tools">
@@ -299,7 +405,7 @@ MONTH    = "JAN" | … | "DEC"           <span class="c">(* Gregorian *)</span>
 
   <section aria-labelledby="compare">
     <h2 id="compare">Side by side</h2>
-    <p class="lead">Size counts non-blank, non-comment lines of the grammar files. The JVM modules also share a 324-line helper (market, context, rule builders, periods, business days, IMM and spot dates, ranges, annual dates, lunar months, rolling); the Python modules a 198-line one.</p>
+    <p class="lead">Size counts non-blank, non-comment lines of the grammar files. The JVM modules also share a 385-line helper (market, context, rule builders, periods, business days, IMM and spot dates, ranges, annual dates, lunar months, rolling, named events); the Python modules a 231-line one.</p>
     <div class="scroll">
       <table class="compare">
         <thead>
@@ -316,9 +422,10 @@ MONTH    = "JAN" | … | "DEC"           <span class="c">(* Gregorian *)</span>
     <h2 id="lessons">What the comparison shows</h2>
     <ul class="lessons">
       <li><strong>Top-down needs right recursion, bottom-up likes left recursion.</strong>
-        <p>The LL tools and Peggy write <code>date { ("+" | "-") period }</code> as a loop. CUP and Bison write <code>expr '+' period</code>, which is natural for LALR(1).</p></li>
+        <p>The LL tools and Peggy write <code>date { ("+" | "-") period }</code> as a loop. CUP and both Bison modules write <code>expr '+' period</code>, which is natural for LALR(1).</p></li>
       <li><strong>Separating syntax from semantics is a choice.</strong>
-        <p>SableCC's grammar contains no code at all; a separate tree walker computes the dates. Every other tool interleaves actions with the rules.</p></li>
+        <p>SableCC's grammar contains no code at all; a separate tree walker computes the dates. Every other tool interleaves actions with the rules.
+          In C, without closures, the Bison actions build a syntax tree as well, and an evaluator walks it like SableCC's.</p></li>
       <li><strong>Compute while parsing, or build a rule first.</strong>
         <p>Because the market only arrives at evaluation, no tool can compute the dates while parsing. The action-based tools (ANTLR, Coco/R, JavaCC, CUP, Bison, Peggy)
           now build functions in their actions; in SableCC the syntax tree already is the rule, and the visitor, transformer and combinator versions only gained a parameter.
@@ -332,25 +439,35 @@ MONTH    = "JAN" | … | "DEC"           <span class="c">(* Gregorian *)</span>
           On the JVM, <code>Period</code> can't express business days, so <code>B</code> needs a <code>TemporalAmount</code> of its own. The end-of-month cases in the test file exist to catch differences.</p></li>
       <li><strong>One grammar, two algorithms.</strong>
         <p>Lark builds an Earley parser or an LALR(1) parser from the same grammar file; every shared case runs with both.
-          Earley accepts any context-free grammar, including ambiguous ones, but this language doesn't need that.</p></li>
+          Earley accepts any context-free grammar, including ambiguous ones, but this language doesn't need that.
+          instaparse (GLL) can return every parse of an input: each of the shared cases has exactly one, so the grammar is unambiguous
+          on all of them, which no other tool here could show by running it.</p></li>
       <li><strong>Actions tie a grammar to one language.</strong>
         <p>ANTLR's Java grammar computes the dates in Java actions, so it can't be generated into Python. The Python module
           uses the same rules without actions and a visitor, which would work for every ANTLR target.</p></li>
       <li><strong>A lexer may or may not know the parser's state.</strong>
         <p><code>&gt;SPOTUSDCAD</code> without a space: ANTLR, Coco/R, JavaCC, JFlex and SableCC read <code>SPOTUS</code> as a currency pair and fail.
-          Peggy and the Scala combinators have no lexer, and Lark's contextual lexer only tries the tokens the parser expects; all three accept it.</p></li>
+          Peggy, instaparse and the Scala combinators have no lexer, and Lark's contextual lexer only tries the tokens the parser expects; all four accept it.</p></li>
       <li><strong>Six capitals: keyword or currency pair?</strong>
         <p><code>EASTER</code> has six capital letters, like <code>EURUSD</code>. The tools with a lexer decide by order:
           ANTLR's implicit keywords come first, JFlex, JavaCC and SableCC take the rule declared first, Coco/R checks its keyword table,
-          and Bison's hand-written scanner tests the keywords before the length. Without a lexer, or with a contextual one,
-          the pattern itself must exclude the keyword (<code>!"EASTER"</code> in Peggy, <code>(?!EASTER)</code> in Scala and Lark),
-          otherwise <code>T &gt; SPOT EASTER</code> would read a pair. Lunar month names such as <code>TISHRI</code> joined the list.</p></li>
+          and both Bison scanners (hand-written in Java, Flex in C) test the keywords before the length. Without a lexer, or with a contextual one,
+          the pattern itself must exclude the keyword (<code>!"EASTER"</code> in Peggy, <code>!('EASTER' | …)</code> in instaparse, <code>(?!EASTER)</code> in Scala and Lark),
+          otherwise <code>T &gt; SPOT EASTER</code> would read a pair. Lunar month names such as <code>TISHRI</code> joined the list.
+          Event names avoid the race altogether: the sigil in <code>@EASTER</code> makes it a name in every tool.</p></li>
+      <li><strong>Several dates from one expression, without touching the expression rules.</strong>
+        <p><code>@FOMC + 1B</code> has a date per FOMC decision, while every grammar builds an expression as a function returning one date.
+          Instead of changing that in every implementation, the event's date throws until it is bound: the list catches it, looks up the event's dates
+          in the year of <code>T</code> and evaluates the item once per date. The grammars only gained the token and two alternatives.</p></li>
       <li><strong>A shared test file keeps everyone honest.</strong>
         <p>Every module reads <code>examples/schedule.txt</code>. Several tool-specific pitfalls, listed in the tabs above, surfaced only because the same cases had to pass everywhere.</p></li>
       <li><strong>Generated cases test the libraries too.</strong>
-        <p>908 more cases come from a holiday rule catalog, with the dates of that project's own engine. They showed that ICU's
+        <p>2186 more cases come from a holiday rule catalog and from finance-date research, with the dates of that project's own engine. They showed that ICU's
           astronomical Chinese calendar, in ICU4J and in Node's <code>Intl</code>, puts Chinese New Year 2027 and 2030 a day off: the new moon falls
-          within minutes of midnight in Beijing. The JVM modules and Peggy now take Chinese dates from 6tail's lunar library.</p></li>
+          within minutes of midnight in Beijing. The JVM modules and Peggy now take Chinese dates from 6tail's lunar library.
+          3347 further cases translate the rules of <a href="https://github.com/commenthol/date-holidays">date-holidays</a>
+          (data CC BY 3.0) for 207 countries and their regions, with that library's own dates; where its Hijri or Hebrew
+          calendar disagrees with Umm al-Qura or the Hebrew calendar, the year is left out and counted.</p></li>
     </ul>
   </section>
 
@@ -358,8 +475,9 @@ MONTH    = "JAN" | … | "DEC"           <span class="c">(* Gregorian *)</span>
     <h2 id="cases">The shared test cases</h2>
     <p class="lead">
       From <a href="{{REPO}}examples/schedule.txt">examples/schedule.txt</a>. Each module has a test that reads this file,
-      so adding a line here tests all ten implementations. They also read 908 cases in
-      <a href="{{REPO}}examples/catalog.txt">examples/catalog.txt</a>, generated from a holiday rule catalog (not listed here).
+      so adding a line here tests all twelve implementations. They also read 2186 cases in
+      <a href="{{REPO}}examples/catalog.txt">examples/catalog.txt</a>, generated from a holiday rule catalog, and 3347 in
+      <a href="{{REPO}}examples/date-holidays.txt">examples/date-holidays.txt</a>, generated from date-holidays (neither listed here).
     </p>
     <div class="case-groups">
 {{CASES}}
@@ -368,11 +486,14 @@ MONTH    = "JAN" | … | "DEC"           <span class="c">(* Gregorian *)</span>
 
   <section aria-labelledby="run">
     <h2 id="run">Run it yourself</h2>
-    <p class="lead">You need JDK 17 and Maven 3.9. Bison is optional: without it the Bison module builds empty. The Peggy module downloads its own Node.js.</p>
+    <p class="lead">You need JDK 17 and Maven 3.9. Bison is optional: without it the Bison module builds empty. The Peggy module downloads its own Node.js.
+      The C module needs a compiler, Flex and Bison, or Docker.</p>
     <pre><code>git clone https://github.com/hjuergens/date-parser.git
 cd date-parser
 mvn clean verify                      <span class="c"># all modules</span>
-mvn -pl date-rule-coco test           <span class="c"># one module</span></code></pre>
+mvn -pl date-rule-coco test           <span class="c"># one module</span>
+docker build -t date-rule-flex-bison date-rule-flex-bison
+docker run --rm -v "$PWD:/work" -w /work/date-rule-flex-bison date-rule-flex-bison make test   <span class="c"># C</span></code></pre>
   </section>
 </main>
 
@@ -407,6 +528,212 @@ mvn -pl date-rule-coco test           <span class="c"># one module</span></code>
     });
     var initial = document.getElementById('tab-' + location.hash.slice(1));
     if (initial) select(initial, false);
+  })();
+</script>
+<script type="text/plain" id="peg-grammar">{{PEG_GRAMMAR}}</script>
+<script type="application/json" id="peg-context">{{PEG_CONTEXT}}</script>
+<script src="https://cdn.jsdelivr.net/npm/peggy@5.1.1/browser/peggy.min.js" integrity="sha384-INVf3CCoK9rVkW2sqHHXbdcBexMaN9NJOtLlqpBxTMVfQyJNdqFHHiJOs1jdmdAY" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.7/lunar.js" integrity="sha384-CkiJVUh8zHLFNZYeiszeRw7KEWYDIf1yIZ+jVnZt+omUzQLv2ilCE94w1VItn8uH" crossorigin="anonymous"></script>
+<script>
+  // the playground: the parser is generated here from date-rule-peg/schedule.pegjs, evaluated as in its tests
+  (function () {
+    var input = document.getElementById('play-input');
+    var baseInput = document.getElementById('play-base');
+    var marketSelect = document.getElementById('play-market');
+    var out = document.getElementById('play-out');
+    var WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    function escape(text) {
+      return text.replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; });
+    }
+    function iso(d) {
+      return String(d.year).padStart(4, '0') + '-' + String(d.month).padStart(2, '0') + '-' + String(d.day).padStart(2, '0');
+    }
+    function weekday(d) { return WEEKDAYS[new Date(Date.UTC(d.year, d.month - 1, d.day)).getUTCDay()]; }
+    function status(text) { out.innerHTML = '<p class="play-status">' + escape(text) + '</p>'; }
+
+    if (!window.peggy || !window.Solar) {
+      status('The parser could not be loaded (Peggy and lunar-javascript come from cdn.jsdelivr.net).');
+      return;
+    }
+    var options = { Solar: window.Solar };
+    var grammar = document.getElementById('peg-grammar').textContent;
+    var parser = peggy.generate(grammar);
+    // the same grammar with a tracer: its rule events give the syntax tree, without a change to the grammar
+    var tracing = peggy.generate(grammar, { trace: true });
+    var declared = JSON.parse(document.getElementById('peg-context').textContent);
+
+    // events and markets as in the tests: a market is weekends plus the dates its rule yields in the year and around it
+    var events = {};
+    Object.keys(declared.events).forEach(function (name) { events[name] = parser.parse(declared.events[name], options); });
+    var markets = {};
+    function market(name) {
+      if (!name) return undefined;
+      if (!markets[name]) {
+        var rule = parser.parse(declared.markets[name], options);
+        var years = {};
+        var holidays = function (year) {
+          if (!years[year]) {
+            years[year] = {};
+            rule({ base: { year: year, month: 1, day: 1 }, events: events }).forEach(function (d) { years[year][iso(d)] = true; });
+          }
+          return years[year];
+        };
+        markets[name] = {
+          isBusinessDay: function (d) {
+            var key = iso(d);
+            return new Date(Date.UTC(d.year, d.month - 1, d.day)).getUTCDay() % 6 !== 0
+              && !holidays(d.year - 1)[key] && !holidays(d.year)[key] && !holidays(d.year + 1)[key];
+          }
+        };
+      }
+      return markets[name];
+    }
+    Object.keys(declared.markets).forEach(function (name) {
+      var option = document.createElement('option');
+      option.value = name;
+      option.textContent = name;
+      option.title = declared.markets[name];
+      marketSelect.appendChild(option);
+    });
+
+    // the syntax tree: a node per rule that matched, the input between its children as words
+    function syntaxTree(text) {
+      var stack = [{ children: [] }];
+      tracing.parse(text, { Solar: window.Solar, tracer: { trace: function (e) {
+        if (e.type === 'rule.enter') { stack.push({ rule: e.rule, children: [] }); return; }
+        var node = stack.pop();
+        if (e.type !== 'rule.match') return;
+        node.start = e.location.start.offset;
+        node.end = e.location.end.offset;
+        // siblings that overlap it come from an alternative that was tried and given up
+        var siblings = stack[stack.length - 1].children;
+        while (siblings.length && siblings[siblings.length - 1].end > node.start) siblings.pop();
+        siblings.push(node);
+      } } });
+      return shape(stack[0].children[0], text, true);
+    }
+    function shape(node, text, root) {
+      var parts = [], pos = node.start;
+      function words(from, to) {
+        text.slice(from, to).split(/\s+/).filter(Boolean).forEach(function (w) { parts.push({ word: w }); });
+      }
+      node.children.forEach(function (child) {
+        if (!text.slice(child.start, child.end).trim()) return;   // whitespace
+        if (child.start < pos || child.end > node.end) return;    // matched by an alternative given up
+        words(pos, child.start);
+        parts.push(shape(child, text, false));
+        pos = child.end;
+      });
+      words(pos, node.end);
+      // a rule that only passes another one on (Item → Expr) shows the inner one
+      if (!root && parts.length === 1 && parts[0].rule) return parts[0];
+      return { rule: node.rule, parts: parts };
+    }
+    function brackets(node) {
+      return node.word || '[' + node.rule + ' ' + node.parts.map(brackets).join(' ') + ']';
+    }
+    function svgTree(root) {
+      var LEVEL = 44, depth = 0, lines = '', labels = '';
+      function measure(n) {
+        if (n.word) return (n.w = n.word.length * 8 + 14);
+        var sum = n.parts.reduce(function (s, p) { return s + measure(p); }, 0);
+        return (n.w = Math.max(sum, n.rule.length * 7 + 14));
+      }
+      function place(n, x, level) {
+        depth = Math.max(depth, level);
+        n.y = level * LEVEL + 18;
+        if (n.word) { n.x = x + n.w / 2; return; }
+        var sum = n.parts.reduce(function (s, p) { return s + p.w; }, 0), cx = x + (n.w - sum) / 2;
+        n.parts.forEach(function (p) { place(p, cx, level + 1); cx += p.w; });
+        n.x = (n.parts[0].x + n.parts[n.parts.length - 1].x) / 2;
+      }
+      function draw(n) {
+        labels += '<text x="' + n.x + '" y="' + n.y + '" text-anchor="middle" class="' + (n.word ? 'word' : 'cat') + '">'
+          + escape(n.word || n.rule) + '</text>';
+        (n.parts || []).forEach(function (p) {
+          lines += '<line x1="' + n.x + '" y1="' + (n.y + 5) + '" x2="' + p.x + '" y2="' + (p.y - 14) + '"/>';
+          draw(p);
+        });
+      }
+      measure(root);
+      place(root, 0, 0);
+      draw(root);
+      return '<svg width="' + root.w + '" height="' + (depth * LEVEL + 28) + '" role="img" aria-label="syntax tree">'
+        + lines + labels + '</svg>';
+    }
+    var treeOpen = true;
+    function treeHtml(text) {
+      var tree;
+      try { tree = syntaxTree(text); } catch (e) { return ''; }
+      return '<details class="play-tree"' + (treeOpen ? ' open' : '') + '><summary>Syntax tree</summary><div class="tree">'
+        + svgTree(tree) + '</div><pre><code>' + escape(brackets(tree)) + '</code></pre></details>';
+    }
+    out.addEventListener('toggle', function (e) { if (e.target.classList.contains('play-tree')) treeOpen = e.target.open; }, true);
+
+    function run() {
+      var text = input.value;
+      var base = baseInput.value ? baseInput.value.split('-').map(Number) : null;
+      var context = { base: base && { year: base[0], month: base[1], day: base[2] }, market: market(marketSelect.value), events: events };
+      var rule;
+      try {
+        rule = parser.parse(text.trim(), options);
+      } catch (e) {
+        if (!e.location) { status(e.message); return; }
+        var lead = text.length - text.trimStart().length;
+        var from = lead + e.location.start.offset, to = lead + Math.max(e.location.end.offset, e.location.start.offset + 1);
+        out.innerHTML = '<p class="err">syntax error: ' + escape(e.message) + '</p><pre><code>' + escape(text.slice(0, from))
+          + '<mark>' + (escape(text.slice(from, to)) || ' ') + '</mark>' + escape(text.slice(to)) + '</code></pre>';
+        return;
+      }
+      try {
+        var dates = rule(context);
+        out.innerHTML = dates.length === 0 ? '<p class="none">no date</p>'
+          : '<p class="play-status">' + dates.length + (dates.length === 1 ? ' date' : ' dates') + '</p><ul class="dates">'
+            + dates.map(function (d) { return '<li><small>' + weekday(d) + '</small><span class="date">' + iso(d) + '</span></li>'; }).join('') + '</ul>';
+      } catch (e) {
+        out.innerHTML = '<p class="err">error: ' + escape(e.message || String(e)) + '</p>';
+      }
+      out.insertAdjacentHTML('beforeend', treeHtml(text.trim()));
+      if (history.replaceState) {
+        var query = new URLSearchParams({ s: text });
+        if (baseInput.value) query.set('t', baseInput.value);
+        if (marketSelect.value) query.set('m', marketSelect.value);
+        history.replaceState(null, '', '?' + query + location.hash);
+      }
+    }
+
+    function load(text, base, marketName) {
+      input.value = text;
+      if (base) baseInput.value = base;
+      marketSelect.value = marketName && declared.markets[marketName] ? marketName : '';
+      run();
+    }
+
+    var today = new Date();
+    baseInput.value = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+    var params = new URLSearchParams(location.search);
+    if (params.has('s')) load(params.get('s'), params.get('t'), params.get('m')); else run();
+
+    input.addEventListener('input', run);
+    baseInput.addEventListener('input', run);
+    marketSelect.addEventListener('change', run);
+    Array.prototype.forEach.call(document.querySelectorAll('.chips button'), function (button) {
+      button.addEventListener('click', function () { load(button.dataset.input, button.dataset.base, button.dataset.market); });
+    });
+    // a test case: [base market] input; the case's market and base date go into the fields
+    Array.prototype.forEach.call(document.querySelectorAll('.cases td:first-child code'), function (code) {
+      code.classList.add('try');
+      code.tabIndex = 0;
+      code.title = 'Try it';
+      var open = function () {
+        var match = code.textContent.match(/^\[(\S+)(?: (\S+))?\] (.*)$/);
+        if (match) load(match[3], match[1], match[2]); else load(code.textContent, null, null);
+        document.getElementById('try').scrollIntoView({ behavior: 'smooth' });
+      };
+      code.addEventListener('click', open);
+      code.addEventListener('keydown', function (e) { if (e.key === 'Enter') open(); });
+    });
   })();
 </script>
 </body>

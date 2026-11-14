@@ -1,0 +1,107 @@
+<!--
+  ~ Copyright 2015 Hartmut Jürgens
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>date-parser</artifactId>
+        <groupId>de.juergens</groupId>
+        <version>0.0.2-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>date-rule-coco</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>${project.artifactId}</name>
+    <description>Date parser based on Coco/R (https://ssw.jku.at/Research/Projects/Coco/)</description>
+    <url>https://ssw.jku.at/Research/Projects/Coco/</url>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <coco.target>${project.build.directory}/generated-sources/coco</coco.target>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Coco/R (bundled Coco.jar, frame files in the module root): src/main/coco/*.atg -> Scanner, Parser, Errors (one package per grammar) -->
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>coco</id>
+                        <phase>generate-sources</phase>
+                        <configuration>
+                            <target>
+                                <mkdir dir="${coco.target}/io/github/hjuergens/coco"/>
+                                <java jar="${project.basedir}/Coco.jar" fork="true" failonerror="true">
+                                    <arg value="${project.basedir}/src/main/coco/Dates.atg"/>
+                                    <arg value="-package"/>
+                                    <arg value="io.github.hjuergens.coco"/>
+                                    <arg value="-frames"/>
+                                    <arg value="${project.basedir}"/>
+                                    <arg value="-o"/>
+                                    <arg value="${coco.target}/io/github/hjuergens/coco"/>
+                                </java>
+                                <mkdir dir="${coco.target}/io/github/hjuergens/coco/schedule"/>
+                                <java jar="${project.basedir}/Coco.jar" fork="true" failonerror="true">
+                                    <arg value="${project.basedir}/src/main/coco/Schedule.atg"/>
+                                    <arg value="-package"/>
+                                    <arg value="io.github.hjuergens.coco.schedule"/>
+                                    <arg value="-frames"/>
+                                    <arg value="${project.basedir}"/>
+                                    <arg value="-o"/>
+                                    <arg value="${coco.target}/io/github/hjuergens/coco/schedule"/>
+                                </java>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>add-coco-source</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${coco.target}</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

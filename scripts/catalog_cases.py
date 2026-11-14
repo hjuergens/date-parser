@@ -6,14 +6,16 @@ implementation. Run it with the environment of holidays-events:
 
     uv run --project ../holidays-events python scripts/catalog_cases.py ../holidays-events
 """
+import json
 import sys
 from collections import defaultdict
 from datetime import date, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 
-from holidays_events.catalog.loader import read_rules_dir
+from holidays_events.catalog.loader import read_research_rules, read_rules_dir
 from holidays_events.rules import calendars as cal
-from holidays_events.rules.engine import DEFAULT_WEEKEND, RuleEngine
+from holidays_events.rules.engine import DEFAULT_WEEKEND, Occ, RuleEngine
 
 YEARS = range(2020, 2031)
 OUT = Path(__file__).resolve().parents[1] / "examples" / "catalog.txt"
@@ -30,13 +32,32 @@ class Skip(Exception):
     """the rule can't be written in the language (yet); the reason goes into the generated file"""
 
 
+OBSERVATIONS = None  # holidays-events' data/bucket/observations, set by main()
+
+
+def event_name(key):
+    return key.replace(".", "_").replace("-", "_").upper()
+
+
+def observed(rule):
+    """the observed dates of an announced rule (the day an event of several days ends, such as an FOMC decision),
+    from the crawled observations of its source"""
+    dates = {}
+    for file in (OBSERVATIONS / str(rule.source)).glob("*/*.jsonl"):
+        for line in file.read_text(encoding="utf-8").splitlines():
+            o = json.loads(line)
+            if o.get("event") == rule.event:
+                dates[o["event_key"]] = date.fromisoformat(o["local_end_date"])
+    return sorted(set(dates.values()))
+
+
 def days(n):
     return f" + {n}D" if n > 0 else f" - {-n}D" if n < 0 else ""
 
 
 def span(expr, n):
     """span_days: the first day and the n - 1 days after it"""
-    return expr if n == 1 else f"({expr} : 1D : {expr} + {n - 1}D)"
+    return expr if n == 1 else f"[{expr} : 1D : {expr} + {n - 1}D]"
 
 
 def translate(rule_type, p, engine, rule):
@@ -63,13 +84,13 @@ def translate(rule_type, p, engine, rule):
             return span(f"{p['hijri_day']} {HIJRI[p['hijri_month'] - 1]}", n), None
         case "hebrew":
             d = f"{p['hebrew_day']} {HEBREW[p['hebrew_month'] - 1]}"
-            return (f"({d} - 1D : 1D : {d})" if p.get("eve_closed") else span(d, n)), None
+            return (f"[{d} - 1D : 1D : {d}]" if p.get("eve_closed") else span(d, n)), None
         case "chinese_lunisolar":
             return span(f"{p['lunar_day']} {CHINESE[p['lunar_month'] - 1]}{days(p.get('offset_days', 0))}", n), None
         case "duration_span":
             start, _ = translate(p["start"]["rule_type"], p["start"]["params"], engine, rule)
             end, _ = translate(p["end"]["rule_type"], p["end"]["params"], engine, rule)
-            return f"({start} : 1D : {end})", None
+            return f"[{start} : 1D : {end}]", None
         case "conditional":
             probe = p["condition"]["weekday_of"]
             then, _ = translate(p["then"]["rule_type"], p["then"]["params"], engine, rule)
@@ -88,15 +109,21 @@ def translate(rule_type, p, engine, rule):
         case "relative_to_event":
             anchor = engine.rules[p["rule"]]
             versions = engine._current_versions(anchor)
-            if len(versions) != 1 or p.get("start") is not None:
-                raise Skip("anchored to a rule with several versions, or a span before the anchor")
+            if p.get("start") is not None:
+                raise Skip("a span that starts before the anchor")
+            if len(versions) != 1:
+                raise Skip("anchored to a rule with several versions")
             if versions[0].rule_type == "announcement_only":
-                raise Skip(f"anchored to {p['rule']}, whose dates are announced, not computed")
-            expr, scope = translate(versions[0].rule_type, versions[0].params, engine, anchor)
-            if "," in expr or "(" in expr:
+                # a named event, declared with the observed dates of the anchor
+                if not observed(anchor):
+                    raise Skip(f"anchored to {p['rule']}, whose dates are announced and not observed")
+                expr, scope = "@" + event_name(anchor.key), None
+            else:
+                expr, scope = translate(versions[0].rule_type, versions[0].params, engine, anchor)
+            if "," in expr or "[" in expr:
                 raise Skip("anchored to a rule with several dates")
-            if p.get("offset_business_days") is not None:
-                return f"{expr} + {p['offset_business_days']}B", rule.scope
+            if (n := p.get("offset_business_days")) is not None:
+                return f"{expr} {'-' if n < 0 else '+'} {abs(n)}B", rule.scope
             return f"{expr}{days(p.get('offset_days') or 0)}", scope
         case "announcement_only" | "hindu_lunisolar":
             raise Skip("announced by an authority, no rule")
@@ -109,7 +136,7 @@ def market_name(scope):
 
 def hijri_or_lunar_twice(expr, year):
     """a lunar date that occurs twice in the Gregorian year (Hijri months: about every 33 years) is an error"""
-    words = expr.replace("(", " ").replace(")", " ").split()
+    words = expr.replace("[", " ").replace("]", " ").split()
     for i, w in enumerate(words):
         if w in HIJRI:
             day, month = int(words[i - 1]), HIJRI.index(w) + 1
@@ -119,16 +146,42 @@ def hijri_or_lunar_twice(expr, year):
     return False
 
 
+def announced_anchor(engine, rule, version):
+    """the announced rule a relative_to_event version is anchored to, or None"""
+    if version.rule_type != "relative_to_event":
+        return None
+    anchor = engine.rules[version.params["rule"]]
+    return anchor if engine._current_versions(anchor)[0].rule_type == "announcement_only" else None
+
+
+def relative_to_observed(engine, rule, version, anchor):
+    """the dates of a rule anchored to an announced one: the engine's own relative_to_event, fed with the observed
+    dates (the engine itself projects nothing for announced rules); year is the year of the anchor, as the language
+    takes the event's dates in the year of the base date and then shifts them (a December meeting + 21D is in January)"""
+    anchor_version = engine._current_versions(anchor)[0]
+    occs = [(anchor_version, Occ(d, d, d.isoformat())) for d in observed(anchor)]
+    return [SimpleNamespace(local_start_date=o.start, local_end_date=o.end, scenario_prob=None,
+                            year=date.fromisoformat(o.payload["anchor_date"]).year)
+            for o in engine._relative(version, rule, occs)]
+
+
 def main(project):
-    engine = RuleEngine(read_rules_dir(Path(project) / "rules" / "catalog"))
+    global OBSERVATIONS
+    OBSERVATIONS = Path(project) / "data" / "bucket" / "observations"
+    rules = read_rules_dir(Path(project) / "rules" / "catalog")
+    # rules for the gaps of its finance-dates research (D-160), not part of its catalog yet
+    rules, research_skipped = read_research_rules(Path(project) / "research" / "finance-dates" / "rules.yaml", rules)
+    engine = RuleEngine(rules)
     drafts, _ = engine.project(YEARS.start - 1, YEARS.stop)
     by_rule = defaultdict(list)
     for d in drafts:
         if d.scenario_prob is None or d.scenario_prob >= 0.5:  # the most likely scenario
             by_rule[(d.rule_key, d.local_start_date.year)].append(d)
 
-    lines, skipped, markets = [], [], {}
+    lines, skipped, markets, events = [], [], {}, {}
     for rule in engine.catalog.rules:
+        if rule.key.endswith(".anchor"):
+            continue  # helper of a research rule: its date is no event (the rule anchored to it is)
         versions = engine._current_versions(rule)
         translated = {}
         try:
@@ -137,6 +190,11 @@ def main(project):
         except Skip as reason:
             skipped.append(f"# {rule.key}: {reason}")
             continue
+        for v in versions:
+            if anchor := announced_anchor(engine, rule, v):
+                events[event_name(anchor.key)] = observed(anchor)
+                for d in relative_to_observed(engine, rule, v, anchor):
+                    by_rule[(rule.key, d.year)].append(d)
         cases = []
         for year in YEARS:
             found = by_rule.get((rule.key, year), [])
@@ -170,13 +228,18 @@ def main(project):
         "# Generated by scripts/catalog_cases.py from the rule catalog of holidays-events; don't edit.",
         "# Expected dates come from the catalog's rule engine; a schedule is evaluated with the first of January",
         f"# of each year from {YEARS.start} to {YEARS.stop - 1} as base date. Lunar dates take the most likely scenario",
-        "# (Umm al-Qura for a sighted Hijri month).",
+        "# (Umm al-Qura for a sighted Hijri month). Rules named fd.* come from the finance-dates research of",
+        "# holidays-events (research/finance-dates/rules.yaml), not from its catalog. Rules anchored to announced dates",
+        "# refer to a named event, declared with the dates holidays-events has observed (the last day of the event).",
         "",
     ]
     market_lines = [f"market {name} = {', '.join(str(d) for d in sorted(c) if YEARS.start - 1 <= d.year <= YEARS.stop)}"
                     for name, c in sorted(markets.items())]
-    text = "\n".join(header + market_lines + [""] + lines
-                     + ["# rules that the language can't express (yet):", *skipped]) + "\n"
+    event_lines = [f"event {name} = {', '.join(map(str, dates))}" for name, dates in sorted(events.items())]
+    text = "\n".join(header + market_lines + event_lines + [""] + lines
+                     + ["# rules that the language can't express (yet):", *skipped, "",
+                        "# research gaps that the catalog's rule types can't express (yet):",
+                        *(f"# {key}: {reason}" for key, reason in research_skipped.items())]) + "\n"
     OUT.write_text(text, encoding="utf-8")
     print(f"{sum(1 for l in lines if l.startswith('['))} cases from {sum(1 for l in lines if l.startswith('# '))} rules, "
           f"{len(skipped)} rules skipped -> {OUT}")

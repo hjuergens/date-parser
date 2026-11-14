@@ -20,23 +20,30 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
 /**
- * Runs the shared cases of {@code examples/schedule.txt} and {@code examples/catalog.txt} (project root).
+ * Runs the shared cases of {@code examples/schedule.txt}, {@code examples/catalog.txt} and {@code examples/date-holidays.txt}
+ * (project root).
  */
 @RunWith(Parameterized.class)
 public class ScheduleTest {
 
-    private static final Pattern CONTEXT = Pattern.compile("\\[(\\S+)(?: (\\S+))?] (.*)");
+    private static final Pattern CONTEXT = Pattern.compile("\\[(\\d{4}-\\d{2}-\\d{2})(?: ([A-Z0-9_]+))?(?: ([A-Z0-9_]+))?] (.*)");
 
     @Parameterized.Parameters(name = "{index}: {0} => {2}")
     public static List<Object[]> examples() throws Exception {
         List<Object[]> cases = new ArrayList<>();
         Map<String, ScheduleSemantics.Market> markets = new HashMap<>();
-        for (String file : new String[]{"schedule.txt", "catalog.txt"})
+        Map<String, ScheduleSemantics.Rule> events = new HashMap<>();
+        for (String file : new String[]{"schedule.txt", "catalog.txt", "date-holidays.txt"})
         for (String line : Files.readAllLines(Paths.get("..", "examples", file), StandardCharsets.UTF_8)) {
             if (line.trim().isEmpty() || line.trim().startsWith("#")) continue;
             if (line.startsWith("market ")) {   // market NAME = schedule of the holidays
                 String[] market = line.substring("market ".length()).split("=", 2);
                 markets.put(market[0].trim(), ScheduleSemantics.withHolidayRules(Schedule.parse(market[1].trim())));
+                continue;
+            }
+            if (line.startsWith("event ")) {   // event NAME = schedule of its dates
+                String[] event = line.substring("event ".length()).split("=", 2);
+                events.put(event[0].trim(), Schedule.parse(event[1].trim()));
                 continue;
             }
             int arrow = line.lastIndexOf("=>");
@@ -45,13 +52,15 @@ public class ScheduleTest {
             if (expected.equals("error")) dates = null;
             else if (!expected.equals("none")) for (String date : expected.split(",")) dates.add(LocalDate.parse(date.trim()));
             String input = line.substring(0, arrow).trim();
-            ScheduleSemantics.Context context = new ScheduleSemantics.Context(null, null);
+            ScheduleSemantics.Context context = new ScheduleSemantics.Context(null, null, events);
             Matcher prefix = CONTEXT.matcher(input);   // [base] or [base market]
             if (prefix.matches()) {
                 ScheduleSemantics.Market market = prefix.group(2) == null ? null
                         : Objects.requireNonNull(markets.get(prefix.group(2)), "unknown market " + prefix.group(2));
-                context = new ScheduleSemantics.Context(LocalDate.parse(prefix.group(1)), market);
-                input = prefix.group(3);
+                ScheduleSemantics.Market fixing = prefix.group(3) == null ? null
+                        : Objects.requireNonNull(markets.get(prefix.group(3)), "unknown market " + prefix.group(3));
+                context = new ScheduleSemantics.Context(LocalDate.parse(prefix.group(1)), market, events, fixing);
+                input = prefix.group(4);
             }
             cases.add(new Object[]{input, context, dates});
         }

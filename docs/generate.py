@@ -3,6 +3,7 @@
 Run from anywhere after changing a grammar or the shared test cases:  python3 docs/generate.py
 """
 import html
+import json
 import re
 from pathlib import Path
 
@@ -33,8 +34,8 @@ def code(text):
 
 
 TOOLS = [
-    dict(id="antlr", name="ANTLR 4", kind="ALL(*) · adaptive LL", lang="Java",
-         file="date-rule-antlr/src/main/antlr4/io/github/hjuergens/time/DateSchedule.g4",
+    dict(id="antlr-java", name="ANTLR 4 · Java", kind="ALL(*) · adaptive LL", lang="Java",
+         file="date-rule-antlr-java/src/main/antlr4/io/github/hjuergens/time/DateSchedule.g4",
          snippet=lambda f: between(f, r"^// periods are applied", r"^// \{SAT"),
          values="Actions with <code>returns […]</code> attributes",
          errors="Throwing error listener plus <code>BailErrorStrategy</code>",
@@ -44,7 +45,7 @@ TOOLS = [
          snippet=lambda f: between(f, r"# shifts are applied", r"def visitNext"),
          values="Visitor over the parse tree; the grammar has no actions",
          errors="Error listener on lexer and parser that raises",
-         pitfall="Java actions can't be generated into Python, so the grammar is copied without them. The Python target also renames the rule <code>range</code> to <code>range_()</code>."),
+         pitfall="Java actions can't be generated into Python, so the grammar is copied without them. An alternative label may not repeat a rule's name, so <code>&gt; 3RD WED IN MONTH</code> is <code># selectIn</code>, not <code># select</code>."),
     dict(id="combinators", name="Scala combinators", kind="Recursive descent with backtracking", lang="Scala 2.13",
          file="date-rule-combinators/src/main/scala/de/juergens/text/ScheduleParsers.scala",
          snippet=lambda f: between(f, r"def date:", r"def period:") + "\n\n" + between(f, r"def expr:", r"^  }$", True),
@@ -81,6 +82,12 @@ TOOLS = [
          values="<code>{ … }</code> actions, left-recursive rules",
          errors="<code>parse()</code> returns <code>false</code>",
          pitfall="In Bison's Java skeleton <code>$$</code> is a plain <code>Object</code>; only <code>$1</code>…<code>$n</code> are typed."),
+    dict(id="flex-bison", name="Flex + Bison · C", kind="LALR(1)", lang="C",
+         file="date-rule-flex-bison/src/parser.y",
+         snippet=lambda f: between(f, r"^/\* shifts are applied", r"^/\* \{SAT"),
+         values="<code>{ … }</code> actions build a syntax tree, which a C evaluator walks with the context",
+         errors="<code>yyparse()</code> returns non-zero; the scanner returns <code>YYerror</code> with its own message",
+         pitfall="Token names become C enumerators in <code>parser.h</code>: a token <code>SEASON</code> and an enumerator <code>SEASON</code> of the tree can't both exist."),
     dict(id="peg", name="Peggy", kind="PEG · ordered choice", lang="JavaScript",
          file="date-rule-peg/schedule.pegjs",
          snippet=lambda f: between(f, r"^// periods are applied", r"^Observe$"),
@@ -93,21 +100,33 @@ TOOLS = [
          values="<code>Transformer</code>, one method per rule alias",
          errors="<code>UnexpectedInput</code>; <code>VisitError</code> wraps exceptions of the transformer",
          pitfall="In LALR mode the contextual lexer only tries tokens the parser can accept next, so <code>&gt;SPOTUSDCAD</code> parses; ANTLR's lexer reads <code>SPOTUS</code> as a pair and rejects it."),
+    dict(id="instaparse", name="instaparse", kind="GLL · any context-free grammar", lang="Clojure",
+         file="date-rule-instaparse/src/main/clojure/io/github/hjuergens/instaparse/schedule.ebnf",
+         snippet=lambda f: between(f, r"^\(\* shifts are applied", r"^<anchor>"),
+         values="<code>insta/transform</code>, one function per tag, calling the shared Java helper",
+         errors="<code>insta/failure?</code> on the result, turned into an exception",
+         pitfall="Scannerless with <code>:auto-whitespace</code>: whitespace may come between any two tokens, so a name like <code>@FOMC</code> must be a single regex to keep <code>@ FOMC</code> out."),
 ]
 
-LINES = {"antlr": "96", "combinators": "191", "coco": "129", "javacc": "140", "sablecc": "85 + 127",
-         "cup": "73 + 57", "bison": "186", "peg": "233", "lark": "44 + 84", "antlr-python": "64 + 99"}
-LINE_NOTES = {"sablecc": "grammar + evaluator", "cup": "parser + lexer", "bison": "incl. hand-written scanner",
-              "peg": "incl. date arithmetic", "lark": "grammar + transformer", "antlr-python": "grammar + visitor"}
+LINES = {"antlr-java": "99", "combinators": "215", "coco": "132", "javacc": "143", "sablecc": "88 + 131",
+         "cup": "75 + 59", "bison": "198", "flex-bison": "160 + 94", "peg": "275", "lark": "47 + 89", "antlr-python": "67 + 104",
+         "instaparse": "44 + 48"}
+LINE_NOTES = {"sablecc": "grammar + evaluator", "cup": "parser + lexer", "bison": "incl. hand-written scanner", "flex-bison": "parser + scanner",
+              "peg": "incl. date arithmetic", "lark": "grammar + transformer", "antlr-python": "grammar + visitor",
+              "instaparse": "grammar + transform"}
 
-# shared test cases, grouped by the comment headers of schedule.txt
+# shared test cases, grouped by the comment headers of schedule.txt: a header is a comment block after a blank line,
+# its title the block's first line; comments between cases stay in the group
 groups = []   # (title, market declarations, cases)
-previous = ""
+previous, header = "", None
 for line in (ROOT / "examples/schedule.txt").read_text(encoding="utf-8").splitlines():
+    if line.startswith("#") and not previous.strip():
+        header = line[1:].strip()
     if line.strip() and not line.startswith("#"):
-        if previous.startswith("#"):
-            groups.append((previous[1:].strip(), [], []))
-        if line.startswith("market "):
+        if header is not None:
+            groups.append((header, [], []))
+            header = None
+        if line.startswith(("market ", "event ")):
             groups[-1][1].append(line)
         else:
             arrow = line.rindex("=>")
@@ -164,10 +183,22 @@ cases = "\n".join(
         for i, e in items) + "\n        </tbody>\n      </table>\n      </section>"
     for title, markets, items in groups)
 
+# the playground: the Peggy grammar and the markets and events of schedule.txt, embedded in the page
+peg_grammar = (ROOT / "date-rule-peg/schedule.pegjs").read_text(encoding="utf-8")
+assert "</script" not in peg_grammar.lower()
+declarations = {"markets": {}, "events": {}}
+for line in (ROOT / "examples/schedule.txt").read_text(encoding="utf-8").splitlines():
+    if line.startswith(("market ", "event ")):
+        kind, rest = line.split(" ", 1)
+        name, rule = rest.split("=", 1)
+        declarations[kind + "s"][name.strip()] = rule.strip()
+peg_context = json.dumps(declarations, indent=1).replace("</", "<\\/")
+
 page = (Path(__file__).parent / "page_template.html").read_text(encoding="utf-8")
 page = (page.replace("{{TABS}}", tabs).replace("{{PANELS}}", panels).replace("{{ROWS}}", rows)
         .replace("{{CASES}}", cases).replace("{{CASE_COUNT}}", str(case_count))
-        .replace("{{TOOL_COUNT}}", str(len(TOOLS))).replace("{{LANG_COUNT}}", str(len({t["lang"].split()[0] for t in TOOLS}))).replace("{{REPO}}", REPO))
+        .replace("{{TOOL_COUNT}}", str(len(TOOLS))).replace("{{LANG_COUNT}}", str(len({t["lang"].split()[0] for t in TOOLS}))).replace("{{REPO}}", REPO)
+        .replace("{{PEG_GRAMMAR}}", peg_grammar).replace("{{PEG_CONTEXT}}", peg_context))
 (ROOT / "docs").mkdir(exist_ok=True)
 (ROOT / "docs/index.html").write_text(page, encoding="utf-8")
 print("cases:", case_count, "groups:", [t for t, _, _ in groups])

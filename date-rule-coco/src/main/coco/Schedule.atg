@@ -3,7 +3,7 @@
  *   2015-06-09 + 3M, 09.06.2015, (2015-01-15 : 1Q : 2015-12-31)
  * The grammar is LL(1): after the first number the separator selects the date notation,
  * after a complete date '+' or '-' starts a period.
- * The actions build a ScheduleSemantics.Rule, a function of base date and market that is evaluated later.
+ * The actions build a ScheduleSemantics.Rule, a function of base date, market and events that is evaluated later.
  */
 import java.time.LocalDate;
 import java.time.Period;
@@ -18,6 +18,14 @@ COMPILER Schedule
 
   private final List<ScheduleSemantics.Expr> exprs = new ArrayList<>();
 
+  // [a : 1D : b] or [a : b]: after the first ":" a number starts the step (1D) or the end (3 MAR, 2026-03-31); LL(1)
+  // can't tell, so this resolver looks at the token after the number
+  private boolean isStep() {
+    scanner.ResetPeek();
+    Token next = scanner.Peek();
+    return la.kind == _number && next.val.length() == 1 && "DWMQHYBF".contains(next.val);
+  }
+
   // error recovery may still run semantic actions, so they must not fail on garbage
   private ScheduleSemantics.Expr date(int year, int month, int day) {
     try {
@@ -31,62 +39,141 @@ COMPILER Schedule
 CHARACTERS
   digit = "0123456789".
   upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".
+  sign = "+-".
 
 TOKENS
   number = digit {digit}.
+  ordinal = digit {digit} ( "ST" | "ND" | "RD" | "TH" ).   /* 1ST, 2ND, 3RD, 4TH */
   pair = upper upper upper upper upper upper.   /* currency pair such as EURUSD */
+  event = '@' upper { upper | digit | '_' }.   /* a named event such as @FOMC; the sigil keeps it apart from keywords */
+  zone = "UTC" sign digit { digit }.          /* the time zone of an equinox, solstice or solar term */
 
 IGNORE '\t' + '\r' + '\n'
 
 PRODUCTIONS
 
   Schedule                                (. ScheduleSemantics.Expr d; .)
-  = Range
-  | Item<out d>                           (. exprs.add(d); .)
+  = Item<out d>                           (. exprs.add(d); .)
     { "," Item<out d>                     (. exprs.add(d); .)
     }                                     (. rule = ScheduleSemantics.list(exprs); .)
   .
 
-  /* 24 DEC IF MON TUE WED THU: the date only on these weekdays */
-  Item<out ScheduleSemantics.Expr d>      (. String w; List<String> weekdays = new ArrayList<>(); .)
-  = Expr<out d>
-    [ "IF" Weekday<out w>                 (. weekdays.add(w); .)
-      { Weekday<out w>                    (. weekdays.add(w); .)
-      }                                   (. d = ScheduleSemantics.onlyOn(d, weekdays); .)
-    ]
-  .
-
-  Range                                   (. ScheduleSemantics.Expr first, last; TemporalAmount step; .)
-  = "(" Expr<out first> ":" Period<out step> ":" Expr<out last> ")"
-                                          (. if (errors.count > 0) return;
-                                             if (!ScheduleSemantics.isPositive(step)) SemErr("step must be positive: " + step);
-                                             else rule = ScheduleSemantics.range(first, step, last); .)
-  .
-
-  Expr<out ScheduleSemantics.Expr d>      (. TemporalAmount p; String code; ScheduleSemantics.Anchor a;
-                                             List<ScheduleSemantics.Shift> shifts = new ArrayList<>(); .)
-  = Date<out d>
-    { "+" Period<out p>                   (. d = ScheduleSemantics.plus(d, p); .)
-    | "-" Period<out p>                   (. d = ScheduleSemantics.minus(d, p); .)
-    | ">"
-      ( "IMM"                             (. d = ScheduleSemantics.nextImm(d); .)
-      | Spot<out code>                    (. d = ScheduleSemantics.spot(d, code); .)
-      | Roll<out code>                    (. d = ScheduleSemantics.roll(d, code); .)
-      | "NEXT" Anchor<out a>              (. d = ScheduleSemantics.next(d, a); .)
-      | "PREV" Anchor<out a>              (. d = ScheduleSemantics.previous(d, a); .)
+  /* 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays */
+  /* 5TH [SPOT : 1Q : ] > EOQ > 3RD WED IN MONTH: the 5th date after T of the item, 2ND LAST from the last one */
+  Item<out ScheduleSemantics.Expr d>      (. String w; List<String> weekdays = new ArrayList<>(); boolean include;
+                                             List<ScheduleSemantics.Expr> operand; int pick = 0; boolean fromEnd = false;
+                                             d = ScheduleSemantics.BASE; .)
+  = ( ordinal                             (. try { pick = ScheduleSemantics.ordinal(t.val); } catch (RuntimeException e) { SemErr(e.getMessage()); } .)
+      [ "LAST"                            (. fromEnd = true; .)
+      ]                                   (. if (pick == 0) SemErr("count must be positive: 0"); .)
+      ( Series<out d>                     /* the item starts with a series or an event, where several dates come from */
+      | event                             (. d = ScheduleSemantics.event(t.val.substring(1)); .)
       )
-    | "{" Shift<shifts>                   /* {SAT - 1D, SUN + 1D} */
-      { "," Shift<shifts> }
-      "}"                                 (. d = ScheduleSemantics.observe(d, shifts); shifts = new ArrayList<>(); .)
-    }.
+      { Move<out d, d> }
+    | Expr<out d>
+    )
+    /* A & B includes the dates of B, A \\ B excludes them; the moves after it apply to the result */
+    { ( "&"                               (. include = true; .)
+      | "\\"                              (. include = false; .)
+      ) Operand<out operand>              (. d = ScheduleSemantics.combined(d, include, operand); .)
+      { Move<out d, d> }
+    }
+    [ "IF"
+      ( Weekday<out w>                    (. weekdays.add(w); .)
+        { Weekday<out w>                  (. weekdays.add(w); .)
+        }
+      | "{" Weekday<out w>                (. weekdays.add(w); .)
+        { "," Weekday<out w>              (. weekdays.add(w); .)
+        } "}"
+      )                                   (. d = ScheduleSemantics.onlyOn(d, weekdays); .)
+    ]                                     (. if (pick > 0) d = ScheduleSemantics.pick(pick, fromEnd, d); .)
+  .
+
+  /* [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out. A series is
+     a date with several values, like an event: the shifts after it apply to each element */
+  Series<out ScheduleSemantics.Expr d>    (. ScheduleSemantics.Expr first, last = null; TemporalAmount step = null;
+                                             boolean startOut = false, endOut = false; d = ScheduleSemantics.BASE; .)
+  = ( "[" | "]"                           (. startOut = true; .)
+    ) Endpoint<out first> ":"
+    ( IF(isStep()) Period<out step> ":"
+      [ Endpoint<out last> ]              /* none: an open series [SPOT : 1Q : ] */
+    | Endpoint<out last>
+    )
+    ( "]" | "["                           (. endOut = true; .)
+    )                                     (. try { d = ScheduleSemantics.series(first, step, last, startOut, endOut); }
+                                             catch (IllegalArgumentException e) { SemErr(e.getMessage()); } .)
+  .
+
+  Expr<out ScheduleSemantics.Expr d>
+  = Date<out d>
+    { Move<out d, d> }.
+
+  /* one step, applied to everything on its left */
+  Move<out ScheduleSemantics.Expr d, ScheduleSemantics.Expr before>
+                                          (. TemporalAmount p; String code; ScheduleSemantics.Anchor a; int n;
+                                             ScheduleSemantics.Annual an = ScheduleSemantics.EASTER; d = before;
+                                             List<ScheduleSemantics.Annual> annuals = new ArrayList<>();
+                                             List<ScheduleSemantics.Shift> shifts = new ArrayList<>(); .)
+  = "+" Period<out p>                     (. d = ScheduleSemantics.plus(before, p); .)
+  | "-" Period<out p>                     (. d = ScheduleSemantics.minus(before, p); .)
+  | ">"
+    ( "IMM"                               (. d = ScheduleSemantics.nextImm(before); .)
+    | Spot<out code>                      (. d = ScheduleSemantics.spot(before, code); .)
+    | "FIX"                               (. code = null; .)   /* the fixing date of a value date */
+      [ pair                              (. code = t.val; .)
+      ]                                   (. d = ScheduleSemantics.fix(before, code); .)
+    | Roll<out code>                      (. d = ScheduleSemantics.roll(before, code); .)
+    | "NEXT" Counted<out a>               (. d = ScheduleSemantics.next(before, a); .)
+    | "PREV" Counted<out a>               (. d = ScheduleSemantics.previous(before, a); .)
+    | Count<out n> Select<out a>
+      "IN" PeriodWord<out code>           (. d = ScheduleSemantics.select(before, Math.abs(n), n < 0, a, code); .)
+    | "{"                                 /* > {1 FEB, 1 MAY}: the dates of the set in the year of the date */
+      ( Number<out n> AnnualTail<out an, n> | AnnualWord<out an> ) (. annuals.add(an); .)
+      { "," ( Number<out n> AnnualTail<out an, n> | AnnualWord<out an> ) (. annuals.add(an); .)
+      } "}"                               (. d = ScheduleSemantics.datesInYear(before, annuals); .)
+    )
+  | "{" Shift<shifts>                     /* {SAT - 1D, SUN + 1D} */
+    { "," Shift<shifts> }
+    "}"                                   (. d = ScheduleSemantics.observe(before, shifts); .)
+  .
+
+  /* a date, a series or a set of dates */
+  Operand<out List<ScheduleSemantics.Expr> exprs> (. ScheduleSemantics.Expr d; exprs = new ArrayList<>(); .)
+  = Date<out d>                           (. exprs.add(d); .)
+  | "{" Expr<out d>                       (. exprs.add(d); .)
+    { "," Expr<out d>                     (. exprs.add(d); .)
+    } "}"
+  .
 
   Spot<out String code>                   (. code = null; .)
   = "SPOT" [ pair                         (. code = t.val; .)
     ].
 
   Roll<out String code>
-  = ( "FOLLOWING" | "PRECEDING" | "MODFOLLOWING" | "BOM" | "EOM" | "BOY" | "EOY" )
-                                          (. code = t.val; .)
+  = ( "FOLLOWING" | "PRECEDING" | "MODFOLLOWING" | "BOW" | "EOW" | "BOM" | "EOM" | "BOQ" | "EOQ" | "BOH" | "EOH" | "BOY"
+    | "EOY" )                             (. code = t.val; .)
+  .
+
+  /* > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH: the n-th match in the period of the date, from its start or its end.
+     A production has only one out attribute, so counting from the end is a negative count (0 is an error anyway). */
+  Count<out int n>                        (. n = 1; .)
+  = ordinal                               (. try { n = ScheduleSemantics.ordinal(t.val); } catch (RuntimeException e) { SemErr(e.getMessage()); } .)
+    [ "LAST"                              (. n = -n; .)
+    ]
+  | "LAST"                                (. n = -1; .)
+  .
+
+  /* the targets of NEXT; an annual date starting with LAST only in braces, as LAST also starts the count */
+  Select<out ScheduleSemantics.Anchor a>  (. List<ScheduleSemantics.Anchor> anchors = new ArrayList<>(); a = ScheduleSemantics.IMM; .)
+  = Chosen<out a>
+  | "{" Target<out a>                     (. anchors.add(a); .)
+    { "," Target<out a>                   (. anchors.add(a); .)
+    } "}"                                 (. a = ScheduleSemantics.anyOf(anchors); .)
+  .
+
+  /* WEEK is Monday to Sunday */
+  PeriodWord<out String code>
+  = ( "WEEK" | "MONTH" | "QUARTER" | "HALFYEAR" | "YEAR" ) (. code = t.val; .)
   .
 
   Shift<. List<ScheduleSemantics.Shift> shifts .>   /* <. .> because the type contains ">" */
@@ -97,14 +184,48 @@ PRODUCTIONS
     ) Period<out p>                       (. shifts.add(ScheduleSemantics.shift(w, p, sign)); .)
   .
 
-  Anchor<out ScheduleSemantics.Anchor a>  (. String w; ScheduleSemantics.Annual an; a = ScheduleSemantics.IMM; .)
-  = Weekday<out w>                        (. a = ScheduleSemantics.weekday(w); .)
-  | "BD"                                  (. a = ScheduleSemantics.BUSINESS_DAY; .)
-  | "IMM"
-  | Annual<out an>                        (. a = ScheduleSemantics.annual(an); .)
+  /* NEXT 3RD FRI: the third Friday; an ordinal is a token of its own, so it doesn't clash with 3 FRI JAN */
+  Counted<out ScheduleSemantics.Anchor a> (. int n = 1; .)
+  = [ ordinal                             (. try { n = ScheduleSemantics.ordinal(t.val); } catch (RuntimeException e) { SemErr(e.getMessage()); } .)
+    ] Anchor<out a>                       (. a = ScheduleSemantics.times(n, a); .)
   .
 
-  Date<out ScheduleSemantics.Expr d>      (. int a, b, c; String code; ScheduleSemantics.Annual an; d = ScheduleSemantics.BASE; .)
+  /* NEXT {MON, FRI}: the nearest of a set */
+  Anchor<out ScheduleSemantics.Anchor a>  (. List<ScheduleSemantics.Anchor> anchors = new ArrayList<>(); a = ScheduleSemantics.IMM; .)
+  = Target<out a>
+  | "{" Target<out a>                     (. anchors.add(a); .)
+    { "," Target<out a>                   (. anchors.add(a); .)
+    } "}"                                 (. a = ScheduleSemantics.anyOf(anchors); .)
+  .
+
+  Target<out ScheduleSemantics.Anchor a>  (. String w, m; a = ScheduleSemantics.IMM; .)
+  = Chosen<out a>
+  | "LAST" Weekday<out w> Month<out m>    (. a = ScheduleSemantics.annual(ScheduleSemantics.lastWeekday(w, m)); .)
+  .
+
+  Chosen<out ScheduleSemantics.Anchor a>  (. String w; int n; ScheduleSemantics.Annual an; a = ScheduleSemantics.IMM; .)
+  = Weekday<out w>                        (. a = ScheduleSemantics.weekday(w); .)
+  | "BD"                                  (. a = ScheduleSemantics.BUSINESS_DAY; .)
+  | "FD"                                  (. a = ScheduleSemantics.FIXING_DAY; .)
+  | "IMM"
+  | Number<out n> AnnualTail<out an, n>   (. a = ScheduleSemantics.annual(an); .)
+  | FixedWord<out an>                     (. a = ScheduleSemantics.annual(an); .)
+  | event                                 (. a = ScheduleSemantics.eventAnchor(t.val.substring(1)); .)
+  .
+
+  /* an endpoint is one date, so it can't be a series: after the last ":" a "]" closes an open series */
+  Endpoint<out ScheduleSemantics.Expr d>
+  = SingleDate<out d>
+    { Move<out d, d> }
+  .
+
+  Date<out ScheduleSemantics.Expr d>      (. d = ScheduleSemantics.BASE; .)
+  = SingleDate<out d>
+  | Series<out d>
+  .
+
+  /* a date that is not a series */
+  SingleDate<out ScheduleSemantics.Expr d> (. int a, b, c; String code; ScheduleSemantics.Annual an; d = ScheduleSemantics.BASE; .)
   = "T"                                   /* the base date */
   | "TOM"                                 (. d = ScheduleSemantics.plus(d, ScheduleSemantics.period(1, "B")); .)
   | Spot<out code>                        (. d = ScheduleSemantics.spot(d, code); .)
@@ -115,12 +236,7 @@ PRODUCTIONS
     | AnnualTail<out an, a>               (. d = ScheduleSemantics.inYear(an); .)
     )
   | AnnualWord<out an>                    (. d = ScheduleSemantics.inYear(an); .)
-  .
-
-  /* dates that recur every year; the number is read before, as it also starts a date such as 2015-06-09 */
-  Annual<out ScheduleSemantics.Annual an> (. int n; an = ScheduleSemantics.EASTER; .)
-  = Number<out n> AnnualTail<out an, n>
-  | AnnualWord<out an>
+  | event                                 (. d = ScheduleSemantics.event(t.val.substring(1)); .)
   .
 
   AnnualTail<out ScheduleSemantics.Annual an, int n> (. String w, m; an = ScheduleSemantics.EASTER; .)
@@ -128,9 +244,23 @@ PRODUCTIONS
   | Weekday<out w> Month<out m>           (. an = ScheduleSemantics.nthWeekday(n, w, m); .)
   .
 
+  /* dates that recur every year; Date and Chosen read the number themselves, as it also starts a date such as 2015-06-09 */
   AnnualWord<out ScheduleSemantics.Annual an> (. String w, m; an = ScheduleSemantics.EASTER; .)
   = "LAST" Weekday<out w> Month<out m>    (. an = ScheduleSemantics.lastWeekday(w, m); .)
-  | "EASTER"
+  | FixedWord<out an>
+  .
+
+  FixedWord<out ScheduleSemantics.Annual an> (. String m, k; int n, z; an = ScheduleSemantics.EASTER; .)
+  = "EASTER"
+  | ( "EQUINOX" | "SOLSTICE" )            (. k = t.val; .)
+    Month<out m> Zone<out z>              (. an = ScheduleSemantics.season(k, m, z); .)
+  | "SOLARTERM" Number<out n> Zone<out z> (. an = ScheduleSemantics.solarTerm(n, z); .)
+  .
+
+  /* UTC unless an offset follows */
+  Zone<out int z>                         (. z = 0; .)
+  = [ zone                                (. z = ScheduleSemantics.zone(t.val); .)
+    ]
   .
 
   /* Gregorian, then Hijri (Umm al-Qura), Hebrew and Chinese months */
@@ -155,8 +285,10 @@ PRODUCTIONS
     | "W"                                 (. p = Period.ofWeeks(n); .)
     | "M"                                 (. p = Period.ofMonths(n); .)
     | "Q"                                 (. p = Period.ofMonths(3 * n); .)
+    | "H"                                 (. p = Period.ofMonths(6 * n); .)
     | "Y"                                 (. p = Period.ofYears(n); .)
     | "B"                                 (. p = new ScheduleSemantics.BusinessDays(n); .)
+    | "F"                                 (. p = new ScheduleSemantics.FixingDays(n); .)
     ).
 
   Number<out int n>                       (. n = 0; .)

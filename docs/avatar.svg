@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="32" fill="#1f2a44"/>
+  <rect x="36" y="44" width="120" height="112" rx="14" fill="#f4f1ea"/>
+  <path d="M36 58a14 14 0 0 1 14-14h92a14 14 0 0 1 14 14v18H36z" fill="#e2574c"/>
+  <rect x="62" y="32" width="10" height="24" rx="5" fill="#f4f1ea"/>
+  <rect x="120" y="32" width="10" height="24" rx="5" fill="#f4f1ea"/>
+  <g fill="none" stroke="#1f2a44" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M66 92h-12v50h12"/>
+    <path d="M126 92h12v50h-12"/>
+  </g>
+  <text x="96" y="134" text-anchor="middle" font-family="DejaVu Sans, sans-serif" font-weight="bold" font-size="46" fill="#1f2a44">T</text>
+</svg>

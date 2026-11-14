@@ -1,0 +1,33 @@
+# Example rules file: holidays, an event, rules and their assertions. A reload is only accepted if every assertion holds.
+
+market @XNYS = 1 JAN {SUN + 1D}, 3 MON JAN, 3 MON FEB, EASTER - 2D, LAST MON MAY, 19 JUN {SAT - 1D, SUN + 1D}, 4 JUL {SAT - 1D, SUN + 1D}, 1 MON SEP, 4 THU NOV, 25 DEC {SAT - 1D, SUN + 1D}
+event @FOMC = 2026-01-28, 2026-03-18, 2026-04-29, 2026-06-17, 2026-07-29, 2026-09-16, 2026-10-28, 2026-12-09
+
+# the next IMM date of each month code (MaturityRule: next(wednesday(3) of every(march)) of today, ...)
+rule @IMMH = T > NEXT 3 WED MAR
+rule @IMMM = T > NEXT 3 WED JUN
+rule @IMMU = T > NEXT 3 WED SEP
+rule @IMMZ = T > NEXT 3 WED DEC
+rule @IMMH1 = T > NEXT 2ND 3 WED MAR
+# quarter boundaries (next(firstday of every(jan)) of today, next(lastday of every(mar)) of today)
+rule @BOM_JAN = T > NEXT 1 JAN
+rule @EOM_MAR = T > NEXT 31 MAR
+rule @SECOND_LAST_BD = T > 2ND LAST BD IN MONTH
+rule @IMM_DATES = [T > BOY : 3M : T > EOY] > EOQ > 3RD WED IN MONTH
+rule @AFTER_FOMC = @FOMC + 1B
+rule @SPOT_1W = SPOT + 1W
+
+assert @IMMH [2026-11-02 @XNYS] => 2027-03-17
+assert @IMMM [2026-11-02] => 2027-06-16
+assert @IMMU [2026-11-02] => 2027-09-15
+assert @IMMZ [2026-11-02] => 2026-12-16
+assert @IMMZ [2026-12-20] => 2027-12-15
+assert @IMMH1 [2026-11-02] => 2028-03-15
+assert @BOM_JAN [2026-11-02] => 2027-01-01
+assert @EOM_MAR [2026-11-02] => 2027-03-31
+assert @SECOND_LAST_BD [2026-11-02 @XNYS] => 2026-11-27
+assert @SECOND_LAST_BD [2026-12-20] => 2026-12-30
+assert @IMM_DATES [2026-11-02] => 2026-03-18, 2026-06-17, 2026-09-16, 2026-12-16
+assert @AFTER_FOMC [2026-11-02 @XNYS] => 2026-01-29, 2026-03-19, 2026-04-30, 2026-06-18, 2026-07-30, 2026-09-17, 2026-10-29, 2026-12-10
+assert @SPOT_1W [2026-11-02 @XNYS] => 2026-11-11
+assert @SPOT_1W [2026-12-20] => 2026-12-29

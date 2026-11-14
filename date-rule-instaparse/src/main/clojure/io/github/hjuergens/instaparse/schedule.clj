@@ -1,0 +1,94 @@
+(ns io.github.hjuergens.instaparse.schedule
+  "The shared \"schedule\" example parsed with instaparse. parse returns the rule (a ScheduleSemantics$Rule): a function
+  of the context (base date, market and events) that is evaluated later. The parse tree is transformed bottom-up into
+  the objects of ScheduleSemantics, the helper all JVM modules share."
+  (:require [clojure.java.io :as io]
+            [instaparse.core :as insta])
+  (:import (io.github.hjuergens.instaparse ScheduleSemantics)
+           (java.time LocalDate)))
+
+(def parser
+  (insta/parser (io/resource "io/github/hjuergens/instaparse/schedule.ebnf") :auto-whitespace :standard))
+
+(defn- int-of [s] (Integer/parseInt s))
+
+(defn- date-of [y m d] (ScheduleSemantics/literal (LocalDate/of (int-of y) (int-of m) (int-of d))))
+
+(defn- zone-of [zone] (if zone (ScheduleSemantics/zone zone) 0))
+
+;; one function per tag; a shift becomes a function from expression to expression
+(def ^:private transforms
+  {:schedule       identity
+   :items          (fn [& exprs] (ScheduleSemantics/list (vec exprs)))
+   :picked-item    (fn [[n from-end] start & rest]
+                     (let [moved (reduce (fn [e f] (f e)) start (filter fn? rest))
+                           weekdays (seq (filter string? rest))]
+                       (ScheduleSemantics/pick n from-end (if weekdays (ScheduleSemantics/onlyOn moved (vec weekdays)) moved))))
+   :pick           identity   ; [count from-end], as for a selection
+   :endpoint       (fn [start & shifts] (reduce (fn [e shift] (shift e)) start shifts))
+   :series         (fn ([start-out first last end-out]   ; [a : b], or an open series [a : step : ]
+                      (if (instance? java.time.temporal.TemporalAmount last)
+                        (ScheduleSemantics/series first last nil start-out end-out)
+                        (ScheduleSemantics/series first nil last start-out end-out)))
+                     ([start-out first step last end-out] (ScheduleSemantics/series first step last start-out end-out)))
+   :closed-start   (fn [] false)
+   :open-start     (fn [] true)
+   :closed-end     (fn [] false)
+   :open-end       (fn [] true)
+   :plain-item     (fn [expr & rest]
+                     (let [combined (reduce (fn [left step] (if (fn? step) (step left) left)) expr rest)
+                           weekdays (seq (filter string? rest))]
+                       (if weekdays (ScheduleSemantics/onlyOn combined (vec weekdays)) combined)))
+   :include        (fn [operand & shifts] (fn [left] (reduce (fn [e shift] (shift e)) (ScheduleSemantics/combined left true operand) shifts)))
+   :exclude        (fn [operand & shifts] (fn [left] (reduce (fn [e shift] (shift e)) (ScheduleSemantics/combined left false operand) shifts)))
+   :operand        (fn [& exprs] (vec exprs))
+   :dates-in-year  (fn [& annuals] #(ScheduleSemantics/datesInYear % (vec annuals)))
+   :expr           (fn [date & shifts] (reduce (fn [expr shift] (shift expr)) date shifts))
+   :plus           (fn [period] #(ScheduleSemantics/plus % period))
+   :minus          (fn [period] #(ScheduleSemantics/minus % period))
+   :imm            (fn [] #(ScheduleSemantics/nextImm %))
+   :spot           (fn [& [pair]] #(ScheduleSemantics/spot % pair))
+   :fix            (fn [& [pair]] #(ScheduleSemantics/fix % pair))
+   :roll           (fn [convention] #(ScheduleSemantics/roll % convention))
+   :next           (fn ([anchor] #(ScheduleSemantics/next % anchor))
+                     ([n anchor] #(ScheduleSemantics/next % (ScheduleSemantics/ordinal n) anchor)))
+   :prev           (fn ([anchor] #(ScheduleSemantics/previous % anchor))
+                     ([n anchor] #(ScheduleSemantics/previous % (ScheduleSemantics/ordinal n) anchor)))
+   :select         (fn [[n from-end] anchor period] #(ScheduleSemantics/select % n from-end anchor period))
+   :from-start     (fn [ordinal] [(ScheduleSemantics/ordinal ordinal) false])
+   :from-end       (fn [ordinal] [(ScheduleSemantics/ordinal ordinal) true])
+   :last           (fn [] [1 true])
+   :any-of         (fn [& anchors] (ScheduleSemantics/anyOf (vec anchors)))
+   :observance     (fn [& shifts] #(ScheduleSemantics/observe % (vec shifts)))
+   :observe        (fn [weekday sign period] (ScheduleSemantics/shift weekday period (if (= sign "+") 1 -1)))
+   :weekday-anchor (fn [weekday] (ScheduleSemantics/weekday weekday))
+   :bd-anchor      (fn [] ScheduleSemantics/BUSINESS_DAY)
+   :fd-anchor      (fn [] ScheduleSemantics/FIXING_DAY)
+   :imm-anchor     (fn [] ScheduleSemantics/IMM)
+   :annual-anchor  (fn [annual] (ScheduleSemantics/annual annual))
+   :fixed-anchor   (fn [annual] (ScheduleSemantics/annual annual))
+   :event-anchor   (fn [event] (ScheduleSemantics/eventAnchor (subs event 1)))
+   :base           (fn [] ScheduleSemantics/BASE)
+   :tom            (fn [] (ScheduleSemantics/plus ScheduleSemantics/BASE (ScheduleSemantics/period 1 "B")))
+   :spot-date      (fn [& [pair]] (ScheduleSemantics/spot ScheduleSemantics/BASE pair))
+   :iso            (fn [y m d] (date-of y m d))
+   :german         (fn [d m y] (date-of y m d))
+   :us             (fn [m d y] (date-of y m d))
+   :in-year        (fn [annual] (ScheduleSemantics/inYear annual))
+   :event          (fn [event] (ScheduleSemantics/event (subs event 1)))
+   :month-day      (fn [day month] (ScheduleSemantics/monthDay (int-of day) month))
+   :nth-weekday    (fn [n weekday month] (ScheduleSemantics/nthWeekday (int-of n) weekday month))
+   :last-weekday   (fn [weekday month] (ScheduleSemantics/lastWeekday weekday month))
+   :easter         (fn [] ScheduleSemantics/EASTER)
+   :season         (fn [kind month & [zone]] (ScheduleSemantics/season kind month (zone-of zone)))
+   :solar-term     (fn [n & [zone]] (ScheduleSemantics/solarTerm (int-of n) (zone-of zone)))
+   :period         (fn [n unit] (ScheduleSemantics/period (int-of n) unit))})
+
+(defn parse
+  "the rule of a schedule; evaluate it with (.evaluate rule (ScheduleSemantics$Context. base market events)).
+  Throws IllegalArgumentException on a syntax error, DateTimeException on an invalid date."
+  [text]
+  (let [tree (insta/parse parser text)]
+    (when (insta/failure? tree)
+      (throw (IllegalArgumentException. (pr-str tree))))
+    (insta/transform transforms tree)))

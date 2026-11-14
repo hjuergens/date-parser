@@ -11,7 +11,7 @@ or an **LALR(1)** parser from it. This module runs every shared test case with b
 | Input | Result |
 |---|---|
 | `2015-06-09 + 3M, 09.06.2015` | `[2015-09-09, 2015-06-09]` |
-| `(2015-01-15 : 1Q : 2015-12-31)` | `[2015-01-15, 2015-04-15, 2015-07-15, 2015-10-15]` |
+| `[2015-01-15 : 1Q : 2015-12-31]` | `[2015-01-15, 2015-04-15, 2015-07-15, 2015-10-15]` |
 | `2015-06-12 > SPOT USDCAD + 2B` | `[2015-06-17]` |
 | `2015-06-09 + 3X` | `lark.exceptions.UnexpectedCharacters` |
 
@@ -34,8 +34,9 @@ mise run test:lark        # or, inside this directory:
 uv run pytest             # uv installs Lark and pytest into .venv (versions in uv.lock)
 ```
 
-There are 2234 tests (pytest): the 209 cases of [examples/schedule.txt](../examples/schedule.txt) and the 908 of
-[examples/catalog.txt](../examples/catalog.txt), each with `lalr` and `earley`.
+There are 12140 tests (pytest): the 537 cases of [examples/schedule.txt](../examples/schedule.txt), the 2186 of
+[examples/catalog.txt](../examples/catalog.txt) and the 3347 of [examples/date-holidays.txt](../examples/date-holidays.txt), each with
+`lalr` and `earley`.
 
 ## Shared example
 
@@ -53,6 +54,8 @@ There are 2234 tests (pytest): the 209 cases of [examples/schedule.txt](../examp
   a currency pair, because only a pair can follow there, so the pair pattern is `/(?!EASTER)[A-Z]{6}/`.
 - Lunar months and conditional dates: Lunar month names (`1 SHAWWAL`, `10 TISHRI`, `1 ZHENGYUE`) are more alternatives of `MONTH`, and the pair pattern excludes the six-letter
   ones (`TISHRI`, …) as well. `item: expr ("IF" WEEKDAY+)?` keeps a date only on these weekdays.
+- Ordinals and sets (`> NEXT 3RD FRI`, `> NEXT {MON, FRI}`): the terminal `ORDINAL.2: /[0-9]+(ST|ND|RD|TH)/` has a higher priority than `NUM`, as Lark's lexer doesn't take the longest match among regexes; `">" "NEXT" [ORDINAL] anchor` and `?anchor: target | "{" target ("," target)* "}"` run as LALR(1) without conflicts.
+- Named events: the terminal `EVENT: /@[A-Z][A-Z0-9_]*/` is one more alternative of `date` and `anchor`; shifts receive the whole context, as `> NEXT @FOMC` needs the events.
 
 ## Status
 

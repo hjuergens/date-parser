@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import peggy from 'peggy';
 import lunar from 'lunar-javascript';
 
-// runs the shared cases of examples/schedule.txt and examples/catalog.txt (project root)
+// runs the shared cases of examples/schedule.txt, examples/catalog.txt and examples/date-holidays.txt (project root)
 const { Solar } = lunar;   // Chinese calendar, passed to parse()
 const parser = peggy.generate(readFileSync(new URL('../schedule.pegjs', import.meta.url), 'utf8'));
 
@@ -27,8 +27,9 @@ function holidayMarket(rule) {
 }
 
 const markets = new Map();
+const events = {};
 const cases = [];
-const files = ['schedule.txt', 'catalog.txt'];
+const files = ['schedule.txt', 'catalog.txt', 'date-holidays.txt'];
 for (const line of files.flatMap((file) => readFileSync(new URL(`../../examples/${file}`, import.meta.url), 'utf8').split('\n'))) {
   if (line.trim() === '' || line.trim().startsWith('#')) continue;
   if (line.startsWith('market ')) { // market NAME = schedule of the holidays
@@ -36,14 +37,19 @@ for (const line of files.flatMap((file) => readFileSync(new URL(`../../examples/
     markets.set(name.trim(), holidayMarket(parser.parse(holidays.trim(), { Solar })));
     continue;
   }
+  if (line.startsWith('event ')) { // event NAME = schedule of its dates
+    const [name, dates] = line.slice('event '.length).split('=');
+    events[name.trim()] = parser.parse(dates.trim(), { Solar });
+    continue;
+  }
   const arrow = line.lastIndexOf('=>');
   const expected = line.slice(arrow + 2).trim();
   let input = line.slice(0, arrow).trim();
-  let context = {};
-  const prefix = input.match(/^\[(\S+)(?: (\S+))?\] (.*)$/); // [base] or [base market]
+  let context = { events };
+  const prefix = input.match(/^\[(\d{4}-\d{2}-\d{2})(?: ([A-Z0-9_]+))?(?: ([A-Z0-9_]+))?\] (.*)$/); // [base], [base market], [base market fixing]
   if (prefix) {
-    context = { base: date(prefix[1]), market: prefix[2] && markets.get(prefix[2]) };
-    input = prefix[3];
+    context = { base: date(prefix[1]), market: prefix[2] && markets.get(prefix[2]), events, fixing: prefix[3] && markets.get(prefix[3]) };
+    input = prefix[4];
   }
   cases.push({
     input,

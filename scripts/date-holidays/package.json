@@ -1,0 +1,13 @@
+{
+  "name": "date-holidays-cases",
+  "private": true,
+  "license": "Apache-2.0",
+  "description": "Generates examples/date-holidays.txt: test cases from the holiday rules of date-holidays",
+  "type": "module",
+  "scripts": {
+    "generate": "node generate.mjs"
+  },
+  "dependencies": {
+    "date-holidays": "3.38.0"
+  }
+}

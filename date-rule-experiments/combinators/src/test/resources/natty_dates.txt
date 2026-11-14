@@ -1,0 +1,45 @@
+# Test cases from natty.txt - expected to work but many will fail
+
+# Formal dates - currently the date parser only handles dd.MM.yyyy format
+# Expected: Should parse various separator formats
+1978-01-28
+1984/04/02
+1/02/1980
+2/28/79
+23.07.2015
+
+# Relaxed dates - currently not supported
+# Expected: Should parse natural language date formats
+The 31st of April in the year 2008
+Fri, 21 Nov 1997
+Jan 21, '97
+Sun, Nov 21
+jan 1st
+february twenty-eighth
+
+# Relative dates - partially supported
+# Expected: All should work
+next thursday
+last wednesday
+today
+tomorrow
+yesterday
+next week
+next month
+next year
+3 days from now
+three weeks ago
+
+# Date alternatives - currently not supported for dates
+# Expected: Should parse alternatives with "or"
+next wed or thurs
+oct 3rd or 4th
+
+# Prefixes - partially supported
+# Expected: All should work
+day after
+the day before
+the monday after
+the monday before
+2 fridays before
+4 tuesdays after

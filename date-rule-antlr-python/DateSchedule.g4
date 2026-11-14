@@ -1,23 +1,41 @@
 /*
  * Shared "schedule" example (see examples/schedule.txt in the project root):
  *   2015-06-09 + 3M, 09.06.2015, (2015-01-15 : 1Q : 2015-12-31)
- * The rules of date-rule-antlr/.../DateSchedule.g4, but without actions: Java actions can't be
+ * The rules of date-rule-antlr-java/.../DateSchedule.g4, but without actions: Java actions can't be
  * generated into Python, so a visitor (src/antlr_schedule/__init__.py) builds the rule.
  */
 grammar DateSchedule;
 
 schedule
-    : range EOF
-    | item (',' item)* EOF
+    : item (',' item)* EOF
     ;
 
-// 24 DEC IF MON TUE WED THU: the date only on these weekdays
+// 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays
+// 5TH [SPOT : 1Q : ] > EOQ > 3RD WED IN MONTH: the 5th date after T of the item, 2ND LAST from the last one
 item
-    : expr ('IF' WEEKDAY+)?
+    : (ORDINAL fromEnd='LAST'? (series | EVENT) shift* | expr) combine* ('IF' (WEEKDAY+ | '{' WEEKDAY (',' WEEKDAY)* '}'))?
     ;
 
-range
-    : '(' first=expr ':' step=period ':' last=expr ')'
+// A & B includes the dates of B, A \ B excludes them; the shifts after it apply to the result
+combine
+    : op=('&' | '\\') operand shift*
+    ;
+
+// a date, a series or a set of dates
+operand
+    : date                          # singleOperand
+    | '{' expr (',' expr)* '}'      # setOperand
+    ;
+
+// [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out (ISO 80000-2).
+// A series is a date with several values, like an event: the shifts after it apply to each element
+series
+    : left=('[' | ']') first=endpoint ':' (step=period ':' last=endpoint? | last=endpoint) right=(']' | '[')
+    ;
+
+// an endpoint is one date, so it can't be a series: after the last ':' a ']' closes an open series [SPOT : 1Q : ]
+endpoint
+    : singleDate shift*
     ;
 
 // shifts are applied from left to right
@@ -30,9 +48,12 @@ shift
     | '-' period                    # minus
     | '>' 'IMM'                     # imm
     | '>' 'SPOT' PAIR?              # spot
+    | '>' 'FIX' PAIR?               # fix
     | '>' ROLL                      # roll
-    | '>' 'NEXT' anchor             # next
-    | '>' 'PREV' anchor             # prev
+    | '>' 'NEXT' ORDINAL? anchor    # next
+    | '>' 'PREV' ORDINAL? anchor    # prev
+    | '>' count select 'IN' PERIOD  # selectIn
+    | '>' '{' annual (',' annual)* '}' # datesInYear
     | '{' observe (',' observe)* '}' # observance
     ;
 
@@ -40,14 +61,45 @@ observe
     : WEEKDAY sign=('+' | '-') period
     ;
 
+// > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH: the n-th match in the period of the date, from its start or its end
+count
+    : ORDINAL last='LAST'?
+    | last='LAST'
+    ;
+
+// the targets of NEXT; an annual date starting with LAST only in braces, as LAST also starts the count
+select
+    : chosen                        # singleSelect
+    | '{' target (',' target)* '}'  # anySelect
+    ;
+
+// NEXT {MON, FRI}: the nearest of a set
 anchor
+    : target                        # singleAnchor
+    | '{' target (',' target)* '}'  # anyOf
+    ;
+
+target
+    : chosen                        # chosenTarget
+    | 'LAST' WEEKDAY MONTH          # lastWeekdayAnchor
+    ;
+
+chosen
     : WEEKDAY                       # weekdayAnchor
     | 'BD'                          # businessDayAnchor
+    | 'FD'                          # fixingDayAnchor
     | 'IMM'                         # immAnchor
-    | annual                        # annualAnchor
+    | fixedAnnual                   # annualAnchor
+    | EVENT                         # eventAnchor
     ;
 
 date
+    : singleDate                    # single
+    | series                        # seriesDate
+    ;
+
+// a date that is not a series
+singleDate
     : 'T'                           # base
     | 'TOM'                         # tom
     | 'SPOT' PAIR?                  # spotDate
@@ -55,14 +107,21 @@ date
     | d=NUM '.' m=NUM '.' y=NUM     # german
     | m=NUM '/' d=NUM '/' y=NUM     # us
     | annual                        # inYear
+    | EVENT                         # event
     ;
 
 // dates that recur every year, evaluated in the year of the base date
 annual
+    : fixedAnnual                   # fixed
+    | 'LAST' WEEKDAY MONTH          # lastWeekday
+    ;
+
+fixedAnnual
     : NUM MONTH                     # monthDay
     | NUM WEEKDAY MONTH             # nthWeekday
-    | 'LAST' WEEKDAY MONTH          # lastWeekday
     | 'EASTER'                      # easter
+    | k=('EQUINOX' | 'SOLSTICE') MONTH ZONE?   # season
+    | 'SOLARTERM' NUM ZONE?         # solarTerm
     ;
 
 period
@@ -70,7 +129,11 @@ period
     ;
 
 NUM  : [0-9]+ ;
-UNIT : [DWMQYB] ;
+// 1ST, 2ND, 3RD, 4TH: the longer match wins over NUM
+ORDINAL : [0-9]+ ('ST' | 'ND' | 'RD' | 'TH') ;
+// the time zone of an equinox, solstice or solar term: UTC unless an offset follows
+ZONE : 'UTC' [+-] [0-9]+ ;
+UNIT : [DWMQHYBF] ;
 // Gregorian, then Hijri (Umm al-Qura), Hebrew and Chinese months
 MONTH   : 'JAN' | 'FEB' | 'MAR' | 'APR' | 'MAY' | 'JUN' | 'JUL' | 'AUG' | 'SEP' | 'OCT' | 'NOV' | 'DEC'
         | 'MUHARRAM' | 'SAFAR' | 'RABIALAWWAL' | 'RABIALTHANI' | 'JUMADAALULA' | 'JUMADAALAKHIRA' | 'RAJAB' | 'SHABAN'
@@ -79,8 +142,12 @@ MONTH   : 'JAN' | 'FEB' | 'MAR' | 'APR' | 'MAY' | 'JUN' | 'JUL' | 'AUG' | 'SEP' 
         | 'ADAR' | 'ADARII'
         | 'ZHENGYUE' | 'ERYUE' | 'SANYUE' | 'SIYUE' | 'WUYUE' | 'LIUYUE' | 'QIYUE' | 'BAYUE' | 'JIUYUE' | 'SHIYUE'
         | 'DONGYUE' | 'LAYUE' ;
+// a named event such as @FOMC; the sigil keeps names apart from keywords and pairs
+EVENT   : '@' [A-Z] [A-Z0-9_]* ;
 WEEKDAY : 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN' ;
-ROLL    : 'FOLLOWING' | 'PRECEDING' | 'MODFOLLOWING' | 'BOM' | 'EOM' | 'BOY' | 'EOY' ;
+ROLL    : 'FOLLOWING' | 'PRECEDING' | 'MODFOLLOWING' | 'BOW' | 'EOW' | 'BOM' | 'EOM' | 'BOQ' | 'EOQ' | 'BOH' | 'EOH' | 'BOY' | 'EOY' ;
+// the periods of a selection; WEEK is Monday to Sunday
+PERIOD  : 'WEEK' | 'MONTH' | 'QUARTER' | 'HALFYEAR' | 'YEAR' ;
 // currency pair such as EURUSD; six-letter keywords ('EASTER', 'TISHRI', ...) have the same length and win, as they are defined first
 PAIR : [A-Z] [A-Z] [A-Z] [A-Z] [A-Z] [A-Z] ;
 WS   : [ \t\r\n]+ -> skip ;

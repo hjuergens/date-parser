@@ -11,20 +11,25 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 
 /**
- * Runs the shared cases of examples/schedule.txt and examples/catalog.txt (project root).
+ * Runs the shared cases of examples/schedule.txt, examples/catalog.txt and examples/date-holidays.txt (project root).
  */
 class ScheduleParsersSuite extends AnyFunSuite {
 
-  private val Prefix = """\[(\S+)(?: (\S+))?] (.*)""".r   // [base] or [base market]
+  private val Prefix = """\[(\d{4}-\d{2}-\d{2})(?: ([A-Z0-9_]+))?(?: ([A-Z0-9_]+))?] (.*)""".r   // [base] or [base market]
 
   private val cases: Seq[(String, Context, Option[List[LocalDate]])] = {
     val markets = mutable.Map.empty[String, Market]
-    Seq("schedule.txt", "catalog.txt").flatMap(file => Files.readAllLines(Paths.get("..", "examples", file), StandardCharsets.UTF_8).asScala)
+    val events = mutable.Map.empty[String, Context => List[LocalDate]]
+    Seq("schedule.txt", "catalog.txt", "date-holidays.txt").flatMap(file => Files.readAllLines(Paths.get("..", "examples", file), StandardCharsets.UTF_8).asScala)
       .filterNot(line => line.trim.isEmpty || line.trim.startsWith("#"))
       .flatMap { line =>
         if (line.startsWith("market ")) {   // market NAME = schedule of the holidays
           val Array(name, holidays) = line.stripPrefix("market ").split("=", 2)
           markets(name.trim) = Market.withHolidayRules(ScheduleParsers.parse(holidays.trim))
+          None
+        } else if (line.startsWith("event ")) {   // event NAME = schedule of its dates
+          val Array(name, dates) = line.stripPrefix("event ").split("=", 2)
+          events(name.trim) = ScheduleParsers.parse(dates.trim)
           None
         } else {
           val arrow = line.lastIndexOf("=>")
@@ -34,9 +39,10 @@ class ScheduleParsersSuite extends AnyFunSuite {
             case dates => Some(dates.split(",").map(d => LocalDate.parse(d.trim)).toList)
           }
           line.substring(0, arrow).trim match {
-            case Prefix(base, market, input) =>
-              Some((input, Context(Some(LocalDate.parse(base)), Option(market).map(markets).getOrElse(Market.Weekends)), expected))
-            case input => Some((input, Context(), expected))
+            case Prefix(base, market, fixing, input) =>
+              Some((input, Context(Some(LocalDate.parse(base)), Option(market).map(markets).getOrElse(Market.Weekends),
+                events.toMap, fixing = Option(fixing).map(markets).getOrElse(Market.Weekends)), expected))
+            case input => Some((input, Context(events = events.toMap), expected))
           }
         }
       }

@@ -1,10 +1,10 @@
 """The shared "schedule" example parsed with Lark; the same grammar runs as Earley and as LALR(1) parser.
 
-parse() returns the rule: a function of semantics.Context (base date and market) that is evaluated later.
+parse() returns the rule: a function of semantics.Context (base date, market and events) that is evaluated later.
 """
 from datetime import date
 
-from lark import Lark, Transformer, v_args
+from lark import Lark, Token, Transformer, v_args
 from lark.exceptions import VisitError
 
 from . import semantics
@@ -17,56 +17,136 @@ class Rules(Transformer):
     """builds the rule bottom-up from the parse tree: every node becomes a function of the context"""
 
     def exprs(self, *items):
-        return lambda context: [d for item in items if (d := item(context)) is not None]
+        return lambda context: [d for item in items for d in semantics.values(item, context) if d is not None]
 
-    def item(self, expr, *weekdays):
+
+    def item(self, expr, *rest):
+        return self._item(expr, *rest)
+
+    def picked_item(self, pick, start, *rest):
+        if isinstance(start, Token):
+            start = semantics.event(str(start)[1:])
+        shifts = [r for r in rest if callable(r)]
+        others = [r for r in rest if not callable(r)]
+        return semantics.pick(*pick, self._item(self.expr(start, *shifts), *others))
+
+    def pick(self, ordinal, last):
+        return semantics.ordinal(str(ordinal)), last is not None
+
+    def series_every_day(self, start_out, first, last, end_out):
+        return self.series(start_out, first, None, last, end_out)
+
+    def _item(self, expr, *rest):
+        for step in rest:
+            if not isinstance(step, Token):
+                include, operand, shifts = step
+                expr = self.expr(semantics.combined(expr, include, operand), *shifts)
+        weekdays = {str(w) for w in rest if isinstance(w, Token)}
         if not weekdays:
             return expr
-        keep = semantics.only_on({str(w) for w in weekdays})
+        keep = semantics.only_on(weekdays)
         return lambda context: keep(expr(context))
 
-    def range(self, first, step, last):
+    def include(self, operand, *shifts):
+        return True, operand, shifts
+
+    def exclude(self, operand, *shifts):
+        return False, operand, shifts
+
+    def single_operand(self, date):
+        return [date]
+
+    def set_operand(self, *exprs):
+        return list(exprs)
+
+    def dates_in_year(self, *annuals):
+        return semantics.dates_in_year(annuals)
+
+    def series(self, start_out, first, step, last, end_out):
+        step = step or semantics.period(1, "D")
+        if last is None and end_out:
+            raise ValueError("an open series ends with ]")
         if not step.is_positive():
             raise ValueError(f"step must be positive: {step}")
-        return lambda context: semantics.expand(first(context), step, last(context), context.market)
+        return semantics.series_date(first, step, last, start_out, end_out)
+
+    def element(self, series):
+        return series
+
+    def start_in(self):
+        return False
+
+    def start_out(self):
+        return True
+
+    def end_in(self):
+        return False
+
+    def end_out(self):
+        return True
+
+    def endpoint(self, start, *shifts):
+        return self.expr(start, *shifts)
 
     def expr(self, start, *shifts):
         def at(context):
             d = start(context)
             for shift in shifts:
-                d = shift(d, context.market)
+                d = shift(d, context)
             return d
         return at
 
     def plus(self, period):
-        return lambda d, market: semantics.plus(d, period, 1, market)
+        return lambda d, context: semantics.plus(d, period, 1, context.market, context.fixing)
 
     def minus(self, period):
-        return lambda d, market: semantics.plus(d, period, -1, market)
+        return lambda d, context: semantics.plus(d, period, -1, context.market, context.fixing)
 
     def imm(self):
-        return lambda d, market: semantics.next_imm(d)
+        return lambda d, context: semantics.next_imm(d)
 
     def spot(self, pair):
-        return lambda d, market: market.spot(d, pair and str(pair))
+        return lambda d, context: context.market.spot(d, pair and str(pair))
+
+    def fix(self, pair):
+        return lambda d, context: semantics.fix(d, pair and str(pair), context.fixing)
+
+    def fixing_day(self):
+        return semantics.fixing_day_anchor
 
     def roll(self, convention):
-        return lambda d, market: semantics.roll(d, str(convention), market)
+        return lambda d, context: semantics.roll(d, str(convention), context.market)
 
-    def next(self, anchor):
-        return lambda d, market: anchor(d, 1, market)
+    def next(self, ordinal, anchor):
+        return semantics.repeat(anchor, 1, semantics.ordinal(ordinal and str(ordinal)))
 
-    def prev(self, anchor):
-        return lambda d, market: anchor(d, -1, market)
+    def prev(self, ordinal, anchor):
+        return semantics.repeat(anchor, -1, semantics.ordinal(ordinal and str(ordinal)))
+
+    def select(self, count, anchor, period):
+        n, from_end = count
+        return semantics.select(anchor, n, from_end, str(period))
+
+    def from_start(self, ordinal):
+        return semantics.ordinal(str(ordinal)), False
+
+    def last(self):
+        return 1, True
+
+    def from_end(self, ordinal):
+        return semantics.ordinal(str(ordinal)), True
 
     def observance(self, *shifts):
-        return lambda d, market: semantics.observe(d, shifts, market)
+        return lambda d, context: semantics.observe(d, shifts, context.market, context.fixing)
 
     def observe_plus(self, weekday, period):
         return str(weekday), period, 1
 
     def observe_minus(self, weekday, period):
         return str(weekday), period, -1
+
+    def any_of(self, *anchors):
+        return semantics.any_of(anchors)
 
     def weekday(self, weekday):
         return semantics.weekday_anchor(str(weekday))
@@ -80,6 +160,9 @@ class Rules(Transformer):
     def annual_anchor(self, annual):
         return semantics.annual_anchor(annual)
 
+    def event_anchor(self, name):
+        return semantics.event_anchor(str(name)[1:])
+
     def base(self):
         return semantics.base
 
@@ -92,6 +175,9 @@ class Rules(Transformer):
     def in_year(self, annual):
         return semantics.in_year(annual)
 
+    def event(self, name):
+        return semantics.event(str(name)[1:])
+
     def month_day(self, day, month):
         return semantics.month_day(int(day), str(month))
 
@@ -103,6 +189,12 @@ class Rules(Transformer):
 
     def easter(self):
         return semantics.easter
+
+    def season(self, kind, month, zone):
+        return semantics.season(str(kind), str(month), semantics.zone(zone and str(zone)))
+
+    def solar_term(self, term, zone):
+        return semantics.solar_term(int(term), semantics.zone(zone and str(zone)))
 
     def iso(self, y, m, d):
         value = date(int(y), int(m), int(d))
@@ -119,7 +211,7 @@ class Rules(Transformer):
 
 
 def parse(text, parser="lalr"):
-    """the rule of a schedule; evaluate it with rule(semantics.Context(base, market))
+    """the rule of a schedule; evaluate it with rule(semantics.Context(base, market, events))
 
     :raises lark.exceptions.UnexpectedInput: on a syntax error
     :raises ValueError: on an invalid date or a range without positive step

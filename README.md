@@ -192,9 +192,9 @@ published instants, so a date can only differ when the event is that close to mi
 | `last_business_day` February | `1 MAR - 1B` |
 | `conditional` 24 Dec if Mon–Thu | `24 DEC IF MON TUE WED THU` |
 | `hijri_fixed` Shawwal 1 | `1 SHAWWAL` (the Umm al-Qura date; moon sighting can move it by a day) |
-| `hebrew` Tishrei 10, eve closed | `(10 TISHRI - 1D : 1D : 10 TISHRI)` |
+| `hebrew` Tishrei 10, eve closed | `[10 TISHRI - 1D : 1D : 10 TISHRI]` |
 | `chinese_lunisolar` month 1, day 1, offset −1 | `1 ZHENGYUE - 1D` |
-| `span_days` 2, `duration_span` | ranges: `(2 DEC : 1D : 2 DEC + 1D)`, `(9 DHULHIJJAH : 1D : 12 DHULHIJJAH)` |
+| `span_days` 2, `duration_span` | ranges: `[2 DEC : 1D : 2 DEC + 1D]`, `[9 DHULHIJJAH : 1D : 12 DHULHIJJAH]` |
 
 **Rolling**, seen from the base date: `TOM` is `T + 1B` and `SPOT [PAIR]` is `T > SPOT [PAIR]`. `> NEXT x` and `> PREV x` move to the
 first `x` strictly after or before the date, where `x` is a weekday, `BD` (business day), `IMM` or an annual date, so

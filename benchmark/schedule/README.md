@@ -1,4 +1,4 @@
-# Benchmark: the schedule language in C, from Go via SWIG, and with ANTLR's Python and Java targets
+# Benchmark: the schedule language in C, from Go and Java via SWIG, and with ANTLR's Python and Java targets
 
 Results: [REPORT.md](REPORT.md). The site (`docs/`) doesn't use anything from this folder.
 
@@ -18,6 +18,7 @@ The implementations:
 |---|---|---|
 | C, native | [bench_c.c](bench_c.c) | `date-rule-flex-bison`: Flex scanner, Bison parser, C evaluator |
 | Go → SWIG → C | [date-rule-flex-bison/go/cmd/bench](../../date-rule-flex-bison/go/cmd/bench/main.go) | the same C library, called through the SWIG binding |
+| Java → SWIG → C | [BenchJavaSwig.java](BenchJavaSwig.java) | the same C library, called through JNI; `run.sh` generates the binding from the Go binding's SWIG interface |
 | ANTLR 4, Python target | [bench_antlr.py](bench_antlr.py) | `date-rule-antlr-python`: ANTLR's Python runtime and `semantics.py` |
 | ANTLR 4, Java target | [BenchJava.java](BenchJava.java) | `date-rule-antlr-java`: the rules as closures of `ScheduleSemantics` |
 | ANTLR 4, Java, compiled to bytecode | `BenchJava compiled` | `date-rule-compiled`: the same parse, each rule a class of its own |

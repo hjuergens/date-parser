@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# One benchmark run of the schedule language: the C library natively, from Go through SWIG, ANTLR's Python target
-# and ANTLR's Java target, with closures and compiled to bytecode. Run from the project root inside the dev container (mise install done); writes one JSON
+# One benchmark run of the schedule language: the C library natively, from Go and from Java through SWIG, ANTLR's
+# Python target and ANTLR's Java target, with closures and compiled to bytecode. Run from the project root inside the dev container (mise install done); writes one JSON
 # object to $1.
 #
 #   benchmark/schedule/run.sh results/<cpu>/run-1.json
@@ -25,6 +25,19 @@ mvn -q -pl date-rule-compiled -am install -DskipTests
 mvn -q -pl date-rule-compiled dependency:build-classpath -Dmdep.outputFile="$work/classpath"
 java_cp="date-rule-compiled/target/classes:$(cat "$work/classpath"):$work/java"
 javac -d "$work/java" -cp "$java_cp" benchmark/schedule/BenchJava.java
+# the Java binding of the C library: SWIG runs on the Go binding's interface, then the wrapper and the library's
+# sources (with the scanner and parser make generated) are compiled into libcschedule_jni.so; libschedule.a isn't
+# position-independent
+java_home=$(java -XshowSettings:properties -version 2>&1 | sed -n 's/^ *java.home = //p')
+mkdir -p "$work/swig/io/github/hjuergens/cschedule"
+(cd date-rule-flex-bison/go/internal/cschedule && swig -java -package io.github.hjuergens.cschedule \
+   -outdir "$work/swig/io/github/hjuergens/cschedule" -o "$work/swig/cschedule_wrap.c" cschedule.swig)
+cc -O2 -std=c11 -D_DEFAULT_SOURCE -shared -fPIC -Idate-rule-flex-bison/src -Idate-rule-flex-bison/build \
+   -I"$java_home/include" -I"$java_home/include/linux" -o "$work/libcschedule_jni.so" "$work/swig/cschedule_wrap.c" \
+   date-rule-flex-bison/build/parser.c date-rule-flex-bison/build/scanner.c date-rule-flex-bison/src/parse.c \
+   date-rule-flex-bison/src/semantics.c -lm
+javac -d "$work/swig-classes" "$work"/swig/io/github/hjuergens/cschedule/*.java benchmark/schedule/BenchJavaSwig.java
+swig_java=(java -cp "$work/swig-classes" -Djava.library.path="$work" BenchJavaSwig)
 
 # the median wall time in milliseconds of five starts: process start to the first result
 startup() {
@@ -38,11 +51,13 @@ go=$("$work/bench_go" "$rounds" $files)
 py=$("$python" benchmark/schedule/bench_antlr.py "$rounds" $files)
 java=$(java -cp "$java_cp" BenchJava "$rounds" $files)
 compiled=$(java -cp "$java_cp" BenchJava compiled "$rounds" $files)
+java_swig=$("${swig_java[@]}" "$rounds" $files)
 startup_c=$(startup "$work/bench_c" 0)
 startup_go=$(startup "$work/bench_go" 0)
 startup_py=$(startup "$python" benchmark/schedule/bench_antlr.py 0)
 startup_java=$(startup java -cp "$java_cp" BenchJava 0)
 startup_compiled=$(startup java -cp "$java_cp" BenchJava compiled 0)
+startup_java_swig=$(startup "${swig_java[@]}" 0)
 
 mkdir -p "$(dirname "$out")"
 "$python" - "$out" <<EOF
@@ -52,9 +67,9 @@ def first(command):
 cpu = re.search(r"model name\s*: (.*)", open("/proc/cpuinfo").read())   # missing on arm64: lscpu
 cpu = cpu.group(1) if cpu else first("lscpu | sed -n 's/^Model name: *//p'")
 memory = int(re.search(r"MemTotal:\s*(\d+)", open("/proc/meminfo").read()).group(1)) // 1024 ** 2
-results = [json.loads(r) for r in [r'''$c''', r'''$go''', r'''$py''', r'''$java''', r'''$compiled''']]
+results = [json.loads(r) for r in [r'''$c''', r'''$go''', r'''$py''', r'''$java''', r'''$compiled''', r'''$java_swig''']]
 startup = {"c": $startup_c, "go-swig": $startup_go, "antlr-python": $startup_py, "antlr-java": $startup_java,
-           "compiled": $startup_compiled}
+           "compiled": $startup_compiled, "java-swig": $startup_java_swig}
 for r in results:
     r["startup_ms"] = startup[r["implementation"]]
 json.dump({

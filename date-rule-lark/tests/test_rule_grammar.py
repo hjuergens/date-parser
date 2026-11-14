@@ -38,7 +38,7 @@ DECLARATIONS = [
     'rule nz.matariki for matariki in country:NZ = 2026-07-10, 2027-06-25'
     ' cites "Te Kahui o Matariki Public Holiday Act 2022" art "schedule" label official;',
     "rule ae.eid for eid_al_fitr in country:AE"
-    " = ANNOUNCED BY uae_cabinet ELSE [1 SHAWWAL BY SIGHTING : 3 SHAWWAL BY FOLLOW country:SA];",
+    " = [1 SHAWWAL BY SIGHTING : 3 SHAWWAL BY FOLLOW country:SA];",
     'rule il.zahav for short_day in country:IL = T IF FRI'
     ' with kind = short_day, session 09:00 - 14:00 tz "Asia/Jerusalem";',
     'rule jp.equinox for vernal_equinox in country:JP = EQUINOX MAR "Asia/Tokyo", EQUINOX SEP UTC+9;',

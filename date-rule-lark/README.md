@@ -34,9 +34,9 @@ mise run test:lark        # or, inside this directory:
 uv run pytest             # uv installs Lark and pytest into .venv (versions in uv.lock)
 ```
 
-There are 12163 tests (pytest): the 537 cases of [examples/schedule.txt](../examples/schedule.txt), the 2186 of
+There are 12208 tests (pytest): the 537 cases of [examples/schedule.txt](../examples/schedule.txt), the 2186 of
 [examples/catalog.txt](../examples/catalog.txt) and the 3347 of [examples/date-holidays.txt](../examples/date-holidays.txt), each with
-`lalr` and `earley`, and 23 for the grammar of rule files ([test_rule_grammar.py](tests/test_rule_grammar.py)).
+`lalr` and `earley`, 23 for the grammar of rule files and 45 for their evaluation.
 
 ## Shared example
 
@@ -59,14 +59,40 @@ There are 12163 tests (pytest): the 537 cases of [examples/schedule.txt](../exam
 
 ## Rule files
 
-[rules.lark](src/lark_schedule/rules.lark) is a grammar only, without a transformer: the schedule language inside
-declarations (`rule KEY for KEY in SCOPE … = <schedule> with … cites …;`, `weekend`, `calendar`), drafted for the rule
-catalog of holidays-events (its `docs/rule-grammar.md`, O-73). It adds named calendars (`+ 2B ON country:BR`), several
-weekdays per observance entry (`{TUE WED > PREV MON}`), conditions on other dates and the holiday set
-(`IF 18 SEP IS TUE`, `IF BETWEEN HOLIDAYS AND NOT HOLIDAY`, `IF EVERY 4Y FROM 1965`), `ORTHODOX EASTER`,
-`ANNOUNCED BY … ELSE …` and `> POSTPONE … MAX 14D`. Lark builds it as LALR(1) without conflicts, and its start rule
-`exprs` accepts every case of the three example files that `schedule.lark` accepts and rejects the others, except
-references in lower case (`@za.freedom_day`), which rule files allow.
+[rules.lark](src/lark_schedule/rules.lark) puts the schedule language inside declarations
+(`rule KEY for CLASS in SCOPES [except SCOPES] [valid from/to] = <schedule> [with …] [cites …];`, `weekend`, `calendar`),
+as drafted for the rule catalog of holidays-events (its `docs/rule-grammar.md`, O-74), and
+[rules.py](src/lark_schedule/rules.py) evaluates them:
+
+```python
+from lark_schedule.rules import parse_rules
+
+book = parse_rules(open("country.rules").read(), announcements={"ae.eid": [...]})
+book.holidays("country:JP", 2026)        # Occurrence(date, rule, event_class, kind, precision, session, citations, projected)
+book.evaluate("fx.spot", date(2026, 7, 2))                     # a trade-date rule
+book.schedule("T > SPOT EURUSD ON usd_eur")(book.context(date(2026, 7, 2)))
+```
+
+- **Calendars:** a scope (`country:GB`, `region:AU-NSW`) has its weekend regime (`weekend country:AE = {SAT, SUN} from
+  2022-01-01`) and the dates of its rules; `region:AU-NSW` also gets the rules of `country:AU` unless excluded. A
+  business day or roll without `ON` uses the scope of the rule; `ON (a & b)` and declared calendars combine scopes,
+  `ignore at T + 1 unless {MXN}` leaves a term out on the first business day after `T`. Kinds `closed` (default) and
+  `non_working` close a day, `working_day` opens one, the others (`short_day`, …) don't change it.
+- **Set-level passes:** rules that read the holidays of their own scope (`25 DEC {SAT SUN > FOLLOWING}`,
+  `@national_holiday IF SUN > NEXT NONHOLIDAY`, `IF BETWEEN HOLIDAYS`) are evaluated in passes, in the order of their
+  nominal dates (every day open), each seeing the current dates of the others, until nothing changes (at most 8 passes,
+  else an error). This gives Christmas and Boxing Day in Britain and Japan's substitute holidays and days between
+  holidays.
+- **Load errors:** a cyclic or unknown reference, versions of a rule that overlap in time.
+- **Not computed:** `HINDU` is an error at evaluation; `BY SIGHTING`, `DIYANET` and `FOLLOW` project with Umm al-Qura
+  and mark the dates as projections.
+- **Announcements** are data, not grammar: the dates published for a rule and year always replace the rule's dates for
+  that year; in the other years the dates of an announced rule are projections.
+
+[test_rules.py](tests/test_rules.py) checks these with real dates where they are known (Japan 2026, Britain 2021 and
+2022, Chile, South Africa, Colombia, Argentina, Mexico, US Inauguration Day, Orthodox Easter), [test_rule_grammar.py](tests/test_rule_grammar.py)
+the grammar: LALR(1) without conflicts, and its start rule `exprs` accepts every case of the three example files that
+`schedule.lark` accepts, except references in lower case (`@za.freedom_day`).
 
 ## Status
 

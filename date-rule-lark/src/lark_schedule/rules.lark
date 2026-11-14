@@ -2,6 +2,7 @@
 // From the O-73 draft of holidays-events (docs/rule-grammar.md, section 2); LALR(1), no conflicts.
 // Two start rules: rule_file (declarations) and exprs (one expression, a superset of schedule.lark).
 // The extensions of the schedule language are marked with "+".
+// Announcements are not part of a rule: an authority's published dates replace the rule's dates for that year (G11).
 
 // ================= declarations =================
 
@@ -11,16 +12,17 @@ rule_file: declaration*
             | weekend_decl
             | calendar_decl
 
-rule: "rule" KEY "for" KEY "in" scope_sel validity? "=" exprs attributes? provenance? ";"
-scope_sel: SCOPE ("," SCOPE)* ("except" SCOPE ("," SCOPE)*)?
-validity: "valid" ("from" iso_date)? ("to" iso_date)?
+rule: "rule" KEY "for" KEY "in" scope_sel [validity] "=" exprs [attributes] [provenance] ";"
+scope_sel: scopes ["except" scopes]
+scopes: SCOPE ("," SCOPE)*
+validity: "valid" ["from" iso_date] ["to" iso_date]
 
-weekend_decl: "weekend" SCOPE "=" weekday_set ("from" iso_date)? ";"
+weekend_decl: "weekend" SCOPE "=" weekday_set ["from" iso_date] ";"
 calendar_decl: "calendar" KEY "=" calendar ";"
 
 attributes: "with" attribute ("," attribute)*
 attribute: "kind" "=" kind                          -> kind_attribute
-         | "session" time "-" time ("tz" STRING)?   -> session
+         | "session" time "-" time ["tz" STRING]   -> session
          | "precision" "=" precision                -> precision_attribute
          | "note" STRING                            -> note
 !kind: "closed" | "non_working" | "short_day" | "working_day" | "paid_no_rest" | "tourist"
@@ -28,14 +30,14 @@ attribute: "kind" "=" kind                          -> kind_attribute
 time: NUM ":" NUM
 
 provenance: "cites" citation ("," citation)*
-citation: STRING ("art" STRING)? ("url" STRING)? "label" label
+citation: STRING ["art" STRING] ["url" STRING] "label" label
 !label: "official" | "benchmark" | "practice" | "secondary"
 
 // ================= calendars =================
 
 // a calendar says which days are business days; "&" requires all of its terms
 calendar: cal_term ("&" cal_term)*
-cal_term: SCOPE ignore?                             -> scope_calendar
+cal_term: SCOPE [ignore]                             -> scope_calendar
         | KEY                                       -> named_calendar
         | "(" calendar ")"
 // USD on T+1 does not count, unless for ARS, BRL, CLP, MXN
@@ -87,7 +89,6 @@ end_bracket: "]"   -> end_in
             | NUM "/" NUM "/" NUM          -> us
             | annual                       -> in_year
             | REF                          -> ref
-            | "ANNOUNCED" "BY" KEY ["ELSE" operand] -> announced   // + G11
 
 iso_date: NUM "-" NUM "-" NUM
 
@@ -145,7 +146,7 @@ count: ORDINAL                             -> from_start
        | "{" target ("," target)* "}"      -> any_of
 
 ?target: chosen
-       | "LAST" WEEKDAY MONTH              -> last_weekday
+       | "LAST" WEEKDAY MONTH              -> last_weekday_anchor
 
 ?chosen: WEEKDAY                           -> weekday
        | "IMM"                             -> imm_anchor

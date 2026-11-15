@@ -12,7 +12,9 @@ rule_file: declaration*
             | weekend_decl
             | calendar_decl
 
-rule: "rule" KEY "for" KEY "in" scope_sel [validity] "=" exprs [attributes] [provenance] ";"
+rule: "rule" KEY "for" KEY "in" scope_sel [validity] "=" (exprs | announced) [attributes] [provenance] ";"
+// the authority publishes the dates; until it does, the ELSE expression gives projected dates (none without ELSE)
+announced: "ANNOUNCED" "BY" KEY ["ELSE" exprs]
 scope_sel: scopes ["except" scopes]
 scopes: SCOPE ("," SCOPE)*
 validity: "valid" ["from" iso_date] ["to" iso_date]
@@ -25,7 +27,8 @@ attribute: "kind" "=" kind                          -> kind_attribute
          | "session" time "-" time ["tz" STRING]   -> session
          | "precision" "=" precision                -> precision_attribute
          | "note" STRING                            -> note
-!kind: "closed" | "non_working" | "short_day" | "working_day" | "paid_no_rest" | "tourist"
+// event: a dated event (a decision, a release) that leaves the day as it is
+!kind: "closed" | "non_working" | "short_day" | "working_day" | "paid_no_rest" | "tourist" | "event"
 !precision: "day" | "month"
 time: NUM ":" NUM
 

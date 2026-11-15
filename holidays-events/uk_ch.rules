@@ -1,0 +1,323 @@
+# United Kingdom and Switzerland: bank holidays of England and Wales, the Bank of England's rate decisions, the UK
+# consumer price index release, the holidays of the SIX Swiss Exchange and of the Swiss payment systems SIC and
+# euroSIC, and the Swiss National Bank's December rate decision.
+#
+# Translated from holidays-events rules/catalog/uk_ch.yaml.
+#
+# How to read a rule: "rule <key> for <event> in <scope> = <dates> with kind = ... cites ...;" says on which days the
+# event <event> happens for the market, country or institution <scope>. The part after "=" is a date expression that
+# is evaluated once per year: "25 DEC" is 25 December, "EASTER + 1D" the day after Easter Sunday, "1 MON MAY" the
+# first Monday of May, "LAST MON AUG" the last Monday of August, "{SAT + 2D, SUN + 1D}" moves a date that falls on a
+# Saturday by two days and one on a Sunday by one day, "> NEXT WED" moves to the next Wednesday strictly after the
+# date (so "16 JAN - 1D > NEXT WED" is the Wednesday on or after 16 January), "> PRECEDING ON country:GB" moves a
+# date that is not a business day in the UK calendar to the business day before. "ANNOUNCED BY <source> ELSE <dates>"
+# means the authority publishes the dates itself; the expression after ELSE only gives projected dates for the years
+# it has not published yet (without ELSE there are no dates until it publishes). "kind = closed" marks a day on which
+# the market or institution is shut; "kind = event" marks a dated event (a decision, a release) that does not change
+# whether the day is a business day. "cites" names the source the rule is taken from; "label official" means that
+# source is the authority itself. The full syntax is in README.md in this directory. Weekends are declared in
+# weekends.rules (all scopes here have the Saturday-Sunday weekend).
+#
+# Scopes used in this file:
+#   statistics_office:ONS       Office for National Statistics, the UK's national statistics office (Europe/London).
+#   country:GB                  United Kingdom, country; the rules here are the bank holidays of England and Wales,
+#                               which are also the holidays of the London markets (Europe/London).
+#   central_bank:BOE            Bank of England, the UK's central bank; its Monetary Policy Committee sets Bank Rate.
+#   exchange:XSWX               SIX Swiss Exchange, Zurich, stock exchange (market identifier code XSWX).
+#   settlement_system:SIC       SIC (Swiss Interbank Clearing), the real-time gross settlement system for Swiss
+#                               francs, run by SIX Interbank Clearing Ltd for the Swiss National Bank.
+#   settlement_system:EUROSIC   euroSIC, the Swiss settlement system for euro payments, also run by SIX Interbank
+#                               Clearing Ltd; it follows the closing days of the euro area's TARGET system.
+#   central_bank:SNB            Swiss National Bank, Switzerland's central bank.
+
+
+# ===================================================================================================================
+# Office for National Statistics (statistics_office:ONS)
+# ===================================================================================================================
+
+# UK consumer price inflation: the monthly release of the consumer price index (CPI) by the Office for National
+# Statistics, published at 07:00 UK time. The ONS announces each release date in its release calendar (an iCal feed;
+# a date counts once its status is "confirmed"); those announced dates always win. For months it has not announced
+# yet, the date is projected: the Wednesday on or after the 16th of the month. This is an observed pattern, not an
+# ONS statement: the release is always on a Wednesday, usually the first Wednesday on or after the 16th; 43 of 53
+# releases from September 2022 to January 2027 hit that day exactly, and all were within a week of it. The release
+# does not close any market, so the day stays a business day.
+rule ons.cpi for uk_cpi in statistics_office:ONS
+  = ANNOUNCED BY ons_release_calendar
+    ELSE 16 JAN - 1D > NEXT WED, 16 FEB - 1D > NEXT WED, 16 MAR - 1D > NEXT WED, 16 APR - 1D > NEXT WED,
+         16 MAY - 1D > NEXT WED, 16 JUN - 1D > NEXT WED, 16 JUL - 1D > NEXT WED, 16 AUG - 1D > NEXT WED,
+         16 SEP - 1D > NEXT WED, 16 OCT - 1D > NEXT WED, 16 NOV - 1D > NEXT WED, 16 DEC - 1D > NEXT WED
+  with kind = event, note "Released at 07:00 UK time (Europe/London); dates from the ONS release calendar, projected beyond it"
+  cites "ONS release calendar (iCal), Office for National Statistics" url "https://www.ons.gov.uk/calendar/releasecalendar" label official;
+
+
+# ===================================================================================================================
+# United Kingdom: bank holidays of England and Wales (country:GB)
+# The UK government publishes them on GOV.UK (source govuk_bank_holidays, a JSON feed); bank holidays are set by the
+# Banking and Financial Dealings Act 1971 and by royal proclamation. On these days UK banks and the London markets
+# are closed.
+# ===================================================================================================================
+
+# New Year's Day, 1 January. If it falls on a Saturday the bank holiday is the following Monday (3 January); if it
+# falls on a Sunday, the following Monday (2 January).
+rule gb.new_years_day for new_years_day in country:GB = 1 JAN {SAT + 2D, SUN + 1D}
+  with kind = closed
+  cites "GOV.UK bank holidays JSON, UK Government" url "https://www.gov.uk/bank-holidays.json" label official;
+
+# Good Friday, the Friday two days before Easter Sunday (Western, Gregorian Easter).
+rule gb.good_friday for good_friday in country:GB = EASTER - 2D
+  with kind = closed
+  cites "GOV.UK bank holidays JSON, UK Government" url "https://www.gov.uk/bank-holidays.json" label official;
+
+# Easter Monday, the day after Easter Sunday (a bank holiday in England, Wales and Northern Ireland, not in Scotland).
+rule gb.easter_monday for easter_monday in country:GB = EASTER + 1D
+  with kind = closed
+  cites "GOV.UK bank holidays JSON, UK Government" url "https://www.gov.uk/bank-holidays.json" label official;
+
+# Early May bank holiday: the first Monday of May. (In 2020 it was moved by proclamation to Friday 8 May for the
+# 75th anniversary of VE Day, and in 2023 an extra holiday was added for the coronation; such one-off changes come
+# from the announcements, see gb.one_off below, and are not part of this rule.)
+rule gb.early_may_bank_holiday for early_may_bank_holiday in country:GB = 1 MON MAY
+  with kind = closed
+  cites "GOV.UK bank holidays JSON, UK Government" url "https://www.gov.uk/bank-holidays.json" label official;
+
+# Spring bank holiday: the last Monday of May. (In 2022 it was moved by proclamation to Thursday 2 June for the
+# Queen's Platinum Jubilee; such one-off moves come from the announcements and are not part of this rule.)
+rule gb.spring_bank_holiday for spring_bank_holiday in country:GB = LAST MON MAY
+  with kind = closed
+  cites "GOV.UK bank holidays JSON, UK Government" url "https://www.gov.uk/bank-holidays.json" label official;
+
+# Summer bank holiday: the last Monday of August (England, Wales and Northern Ireland; Scotland has its own on the
+# first Monday of August, not covered here).
+rule gb.summer_bank_holiday for summer_bank_holiday in country:GB = LAST MON AUG
+  with kind = closed
+  cites "GOV.UK bank holidays JSON, UK Government" url "https://www.gov.uk/bank-holidays.json" label official;
+
+# Christmas Day, 25 December. If it falls on Saturday or Sunday the bank holiday moves to the next free weekday:
+# Saturday -> Monday 27, Sunday -> Tuesday 27, because Boxing Day takes Monday 26. Both cases are two days later.
+rule gb.christmas_day for christmas_day in country:GB = 25 DEC {SAT + 2D, SUN + 2D}
+  with kind = closed
+  cites "GOV.UK bank holidays JSON, UK Government" url "https://www.gov.uk/bank-holidays.json" label official;
+
+# Boxing Day, 26 December. If it falls on a Saturday the bank holiday is Monday 28 (Christmas Day takes Monday 27);
+# if it falls on a Sunday, Tuesday 28 (Christmas Day is on Saturday 25 and its bank holiday takes Monday 27). Both
+# cases are two days later.
+rule gb.boxing_day for boxing_day in country:GB = 26 DEC {SAT + 2D, SUN + 2D}
+  with kind = closed
+  cites "GOV.UK bank holidays JSON, UK Government" url "https://www.gov.uk/bank-holidays.json" label official;
+
+# One-off bank holidays, such as a coronation or a state funeral (for example 19 September 2022, the state funeral
+# of Queen Elizabeth II, and 8 May 2023, the coronation of King Charles III). They are declared by royal
+# proclamation, usually months ahead, and then appear in the GOV.UK bank holiday list. They cannot be predicted, so
+# there are no dates until they are announced. The catalog files them under the event "unscheduled market
+# disruption", which is a dated event rather than a closure class, hence kind = event here; in reality an announced
+# one-off bank holiday closes UK banks and the London markets for the whole day.
+rule gb.one_off for market_disruption in country:GB = ANNOUNCED BY govuk_bank_holidays
+  with kind = event, note "One-off bank holidays (e.g. coronation, state funeral), declared by royal proclamation months ahead"
+  cites "GOV.UK bank holidays JSON, UK Government" url "https://www.gov.uk/bank-holidays.json" label official;
+
+
+# ===================================================================================================================
+# Bank of England (central_bank:BOE)
+# ===================================================================================================================
+
+# Bank of England Monetary Policy Committee (MPC) decision on Bank Rate. The MPC meets eight times a year; the Bank
+# publishes provisional dates about a year ahead on its "upcoming MPC dates" page, and those announced dates always
+# win. Beyond the published schedule four of the eight dates are projected from an observed pattern: the first
+# Thursday of February and of November (right in all 14 cases from 2021 to 2027) and the third Thursday of March and
+# of December (6 of 7 each). If such a Thursday is not a UK business day, the business day before it is taken. The
+# other four meetings (May, June, August, September) moved between years in 2021-2023 and 2026, so they are not
+# projected at all; they appear only once the Bank announces them. A decision does not close any market.
+rule boe.mpc_decision for boe_decision in central_bank:BOE
+  = ANNOUNCED BY boe_mpc_dates
+    ELSE 1 THU FEB > PRECEDING ON country:GB, 1 THU NOV > PRECEDING ON country:GB,
+         3 THU MAR > PRECEDING ON country:GB, 3 THU DEC > PRECEDING ON country:GB
+  with kind = event, note "Provisional dates published about a year ahead; only the February, March, November and December slots are projected"
+  cites "Bank of England MPC dates, Bank of England" url "https://www.bankofengland.co.uk/monetary-policy/upcoming-mpc-dates" label official;
+
+
+# ===================================================================================================================
+# SIX Swiss Exchange (exchange:XSWX)
+# Exchange holidays as published by SIX Group in its yearly trading calendar (source six_holidays, a PDF; the 2026
+# calendar lists 1-2 Jan, 3 and 6 Apr, 1, 14 and 25 May, 24, 25 and 31 Dec). No trading on these days. The dates are
+# fixed and are not moved when they fall on a weekend (the exchange is closed then anyway).
+# ===================================================================================================================
+
+# New Year's Day, 1 January.
+rule xswx.new_years_day for new_years_day in exchange:XSWX = 1 JAN
+  with kind = closed
+  cites "SIX trading / currency holiday calendar, SIX Group" url "https://www.six-group.com/en/market-data/news-tools/trading-currency-holiday-calendar.html" label official;
+
+# Berchtold's Day (Berchtoldstag), 2 January, a traditional Swiss holiday observed in many cantons.
+rule xswx.berchtolds_day for berchtolds_day in exchange:XSWX = 2 JAN
+  with kind = closed
+  cites "SIX trading / currency holiday calendar, SIX Group" url "https://www.six-group.com/en/market-data/news-tools/trading-currency-holiday-calendar.html" label official;
+
+# Good Friday, two days before Easter Sunday.
+rule xswx.good_friday for good_friday in exchange:XSWX = EASTER - 2D
+  with kind = closed
+  cites "SIX trading / currency holiday calendar, SIX Group" url "https://www.six-group.com/en/market-data/news-tools/trading-currency-holiday-calendar.html" label official;
+
+# Easter Monday, the day after Easter Sunday.
+rule xswx.easter_monday for easter_monday in exchange:XSWX = EASTER + 1D
+  with kind = closed
+  cites "SIX trading / currency holiday calendar, SIX Group" url "https://www.six-group.com/en/market-data/news-tools/trading-currency-holiday-calendar.html" label official;
+
+# Labour Day, 1 May (a holiday in Zurich and several other cantons).
+rule xswx.labour_day for labour_day in exchange:XSWX = 1 MAY
+  with kind = closed
+  cites "SIX trading / currency holiday calendar, SIX Group" url "https://www.six-group.com/en/market-data/news-tools/trading-currency-holiday-calendar.html" label official;
+
+# Ascension Day, the Thursday 39 days after Easter Sunday.
+rule xswx.ascension_day for ascension_day in exchange:XSWX = EASTER + 39D
+  with kind = closed
+  cites "SIX trading / currency holiday calendar, SIX Group" url "https://www.six-group.com/en/market-data/news-tools/trading-currency-holiday-calendar.html" label official;
+
+# Whit Monday, the Monday 50 days after Easter Sunday (the day after Pentecost).
+rule xswx.whit_monday for whit_monday in exchange:XSWX = EASTER + 50D
+  with kind = closed
+  cites "SIX trading / currency holiday calendar, SIX Group" url "https://www.six-group.com/en/market-data/news-tools/trading-currency-holiday-calendar.html" label official;
+
+# Swiss National Day, 1 August, the federal holiday.
+rule xswx.swiss_national_day for swiss_national_day in exchange:XSWX = 1 AUG
+  with kind = closed
+  cites "SIX trading / currency holiday calendar, SIX Group" url "https://www.six-group.com/en/market-data/news-tools/trading-currency-holiday-calendar.html" label official;
+
+# Christmas Eve, 24 December: the exchange is closed (an exchange holiday, not a public holiday; the SIC payment
+# system stays open).
+rule xswx.christmas_eve for christmas_eve in exchange:XSWX = 24 DEC
+  with kind = closed
+  cites "SIX trading / currency holiday calendar, SIX Group" url "https://www.six-group.com/en/market-data/news-tools/trading-currency-holiday-calendar.html" label official;
+
+# Christmas Day, 25 December.
+rule xswx.christmas_day for christmas_day in exchange:XSWX = 25 DEC
+  with kind = closed
+  cites "SIX trading / currency holiday calendar, SIX Group" url "https://www.six-group.com/en/market-data/news-tools/trading-currency-holiday-calendar.html" label official;
+
+# St Stephen's Day (Boxing Day), 26 December.
+rule xswx.boxing_day for boxing_day in exchange:XSWX = 26 DEC
+  with kind = closed
+  cites "SIX trading / currency holiday calendar, SIX Group" url "https://www.six-group.com/en/market-data/news-tools/trading-currency-holiday-calendar.html" label official;
+
+# New Year's Eve, 31 December: the exchange is closed (an exchange holiday, not a public holiday; the SIC payment
+# system stays open).
+rule xswx.new_years_eve for new_years_eve in exchange:XSWX = 31 DEC
+  with kind = closed
+  cites "SIX trading / currency holiday calendar, SIX Group" url "https://www.six-group.com/en/market-data/news-tools/trading-currency-holiday-calendar.html" label official;
+
+
+# ===================================================================================================================
+# SIC, the Swiss franc payment system (settlement_system:SIC)
+# Days without Swiss franc settlement: the Swiss bank holidays. The operator, SIX Interbank Clearing Ltd, publishes a
+# clearing day calendar (source six_clearing_days, a CSV file refreshed daily) that holds only the forthcoming days,
+# about a year ahead. These rules cover the past and the years beyond that file; where the file has data, its days
+# replace these rules. Cross-check: ICE Clear Europe's Swiss franc holidays for 2026 are 1-2 Jan, 3 and 6 Apr, 1, 14
+# and 25 May and 25 Dec. Unlike the exchange, SIC is open on 24 and 31 December. The dates are fixed and not moved
+# when they fall on a weekend.
+# ===================================================================================================================
+
+# New Year's Day, 1 January.
+rule sic.new_years_day for new_years_day in settlement_system:SIC = 1 JAN
+  with kind = closed
+  cites "SIX Interbank Clearing clearing day calendar (SIC, SIC IP, euroSIC), SIX Interbank Clearing Ltd" url "https://www.six-group.com/en/products-services/banking-services/interbank-clearing/online-services/clearing-day-calendar.html" label official;
+
+# Berchtold's Day, 2 January.
+rule sic.berchtolds_day for berchtolds_day in settlement_system:SIC = 2 JAN
+  with kind = closed
+  cites "SIX Interbank Clearing clearing day calendar (SIC, SIC IP, euroSIC), SIX Interbank Clearing Ltd" url "https://www.six-group.com/en/products-services/banking-services/interbank-clearing/online-services/clearing-day-calendar.html" label official;
+
+# Good Friday, two days before Easter Sunday.
+rule sic.good_friday for good_friday in settlement_system:SIC = EASTER - 2D
+  with kind = closed
+  cites "SIX Interbank Clearing clearing day calendar (SIC, SIC IP, euroSIC), SIX Interbank Clearing Ltd" url "https://www.six-group.com/en/products-services/banking-services/interbank-clearing/online-services/clearing-day-calendar.html" label official;
+
+# Easter Monday, the day after Easter Sunday.
+rule sic.easter_monday for easter_monday in settlement_system:SIC = EASTER + 1D
+  with kind = closed
+  cites "SIX Interbank Clearing clearing day calendar (SIC, SIC IP, euroSIC), SIX Interbank Clearing Ltd" url "https://www.six-group.com/en/products-services/banking-services/interbank-clearing/online-services/clearing-day-calendar.html" label official;
+
+# Labour Day, 1 May.
+rule sic.labour_day for labour_day in settlement_system:SIC = 1 MAY
+  with kind = closed
+  cites "SIX Interbank Clearing clearing day calendar (SIC, SIC IP, euroSIC), SIX Interbank Clearing Ltd" url "https://www.six-group.com/en/products-services/banking-services/interbank-clearing/online-services/clearing-day-calendar.html" label official;
+
+# Ascension Day, the Thursday 39 days after Easter Sunday.
+rule sic.ascension_day for ascension_day in settlement_system:SIC = EASTER + 39D
+  with kind = closed
+  cites "SIX Interbank Clearing clearing day calendar (SIC, SIC IP, euroSIC), SIX Interbank Clearing Ltd" url "https://www.six-group.com/en/products-services/banking-services/interbank-clearing/online-services/clearing-day-calendar.html" label official;
+
+# Whit Monday, the Monday 50 days after Easter Sunday.
+rule sic.whit_monday for whit_monday in settlement_system:SIC = EASTER + 50D
+  with kind = closed
+  cites "SIX Interbank Clearing clearing day calendar (SIC, SIC IP, euroSIC), SIX Interbank Clearing Ltd" url "https://www.six-group.com/en/products-services/banking-services/interbank-clearing/online-services/clearing-day-calendar.html" label official;
+
+# Swiss National Day, 1 August.
+rule sic.swiss_national_day for swiss_national_day in settlement_system:SIC = 1 AUG
+  with kind = closed
+  cites "SIX Interbank Clearing clearing day calendar (SIC, SIC IP, euroSIC), SIX Interbank Clearing Ltd" url "https://www.six-group.com/en/products-services/banking-services/interbank-clearing/online-services/clearing-day-calendar.html" label official;
+
+# Christmas Day, 25 December.
+rule sic.christmas_day for christmas_day in settlement_system:SIC = 25 DEC
+  with kind = closed
+  cites "SIX Interbank Clearing clearing day calendar (SIC, SIC IP, euroSIC), SIX Interbank Clearing Ltd" url "https://www.six-group.com/en/products-services/banking-services/interbank-clearing/online-services/clearing-day-calendar.html" label official;
+
+# St Stephen's Day (Boxing Day), 26 December.
+rule sic.boxing_day for boxing_day in settlement_system:SIC = 26 DEC
+  with kind = closed
+  cites "SIX Interbank Clearing clearing day calendar (SIC, SIC IP, euroSIC), SIX Interbank Clearing Ltd" url "https://www.six-group.com/en/products-services/banking-services/interbank-clearing/online-services/clearing-day-calendar.html" label official;
+
+
+# ===================================================================================================================
+# euroSIC, the Swiss euro payment system (settlement_system:EUROSIC)
+# euroSIC follows the closing days of TARGET, the euro area's payment system run by the Eurosystem: New Year's Day,
+# Good Friday, Easter Monday, 1 May, Christmas Day and 26 December. Swiss-only holidays (2 January, Ascension, Whit
+# Monday, 1 August) are euroSIC business days. As for SIC, the operator's clearing day calendar (six_clearing_days)
+# replaces these rules where it has data. The dates are fixed and not moved when they fall on a weekend.
+# ===================================================================================================================
+
+# New Year's Day, 1 January.
+rule eurosic.new_years_day for new_years_day in settlement_system:EUROSIC = 1 JAN
+  with kind = closed
+  cites "SIX Interbank Clearing clearing day calendar (SIC, SIC IP, euroSIC), SIX Interbank Clearing Ltd" url "https://www.six-group.com/en/products-services/banking-services/interbank-clearing/online-services/clearing-day-calendar.html" label official;
+
+# Good Friday, two days before Easter Sunday.
+rule eurosic.good_friday for good_friday in settlement_system:EUROSIC = EASTER - 2D
+  with kind = closed
+  cites "SIX Interbank Clearing clearing day calendar (SIC, SIC IP, euroSIC), SIX Interbank Clearing Ltd" url "https://www.six-group.com/en/products-services/banking-services/interbank-clearing/online-services/clearing-day-calendar.html" label official;
+
+# Easter Monday, the day after Easter Sunday.
+rule eurosic.easter_monday for easter_monday in settlement_system:EUROSIC = EASTER + 1D
+  with kind = closed
+  cites "SIX Interbank Clearing clearing day calendar (SIC, SIC IP, euroSIC), SIX Interbank Clearing Ltd" url "https://www.six-group.com/en/products-services/banking-services/interbank-clearing/online-services/clearing-day-calendar.html" label official;
+
+# Labour Day, 1 May.
+rule eurosic.labour_day for labour_day in settlement_system:EUROSIC = 1 MAY
+  with kind = closed
+  cites "SIX Interbank Clearing clearing day calendar (SIC, SIC IP, euroSIC), SIX Interbank Clearing Ltd" url "https://www.six-group.com/en/products-services/banking-services/interbank-clearing/online-services/clearing-day-calendar.html" label official;
+
+# Christmas Day, 25 December.
+rule eurosic.christmas_day for christmas_day in settlement_system:EUROSIC = 25 DEC
+  with kind = closed
+  cites "SIX Interbank Clearing clearing day calendar (SIC, SIC IP, euroSIC), SIX Interbank Clearing Ltd" url "https://www.six-group.com/en/products-services/banking-services/interbank-clearing/online-services/clearing-day-calendar.html" label official;
+
+# St Stephen's Day (Boxing Day), 26 December.
+rule eurosic.boxing_day for boxing_day in settlement_system:EUROSIC = 26 DEC
+  with kind = closed
+  cites "SIX Interbank Clearing clearing day calendar (SIC, SIC IP, euroSIC), SIX Interbank Clearing Ltd" url "https://www.six-group.com/en/products-services/banking-services/interbank-clearing/online-services/clearing-day-calendar.html" label official;
+
+
+# ===================================================================================================================
+# Swiss National Bank (central_bank:SNB)
+# ===================================================================================================================
+
+# Swiss National Bank quarterly monetary policy assessment (its rate decision), announced at 09:30 Swiss time. The
+# SNB publishes the dates itself, yearly; those announced dates always win. It holds assessments in March, June,
+# September and December. Only the December one follows a stable pattern and is projected beyond the published
+# schedule: the Thursday on or after 10 December (right in 18 of 19 years from 2009 to 2027; 2020 was the exception).
+# The March, June and September dates move between years and appear only once the SNB announces them. A decision does
+# not close any market.
+rule snb.assessment for snb_decision in central_bank:SNB
+  = ANNOUNCED BY snb_calendar
+    ELSE 10 DEC - 1D > NEXT THU
+  with kind = event, note "Announced at 09:30 Swiss time (Europe/Zurich); only the December assessment is projected"
+  cites "SNB monetary policy assessment dates, Swiss National Bank" url "https://www.snb.ch/" label official;

@@ -1,0 +1,142 @@
+# Russia: the non-working public holidays of the Russian Federation, the days off and working Saturdays the
+# government moves around them every year, and the key-rate meetings of the Bank of Russia.
+#
+# Translated from holidays-events rules/catalog/ru_cis.yaml.
+#
+# Background (from the catalog file): Russia's non-working holidays are listed in article 112 of the Labour Code. When
+# a holiday falls on a Saturday or Sunday, the law moves the day off to the next working day, but the government
+# regularly redirects such days off by decree to other dates, often to build longer breaks (for 2025 the days off
+# owed for 23 February and 8 March, both on a weekend, were moved to 8 May and 13 June; 24 February and 10 March stayed
+# working days). The rules below therefore give only the holiday itself, on its calendar date. The transferred days
+# off and the make-up working Saturdays are not projected: they are taken from the government decree, which the Bank
+# of Russia lists on its holidays page, usually published in the autumn of the year before.
+#
+# How to read a rule: "rule <key> for <event> in <scope> = <dates> with kind = ..., cites ...;" says on which days the
+# event <event> happens for the country or institution <scope>. "7 JAN" is 7 January of every year; "[1 JAN : 8 JAN]"
+# is every day from 1 to 8 January inclusive; "3 FRI DEC" is the third Friday of December; "16 MAR > NEXT FRI" is the
+# first Friday strictly after 16 March, i.e. the Friday on or after 17 March; "> PRECEDING ON country:RU" moves a date
+# that is not a Russian business day to the business day before. "ANNOUNCED BY <source> [ELSE <dates>]" means the
+# authority publishes the dates itself and those published dates always win; the expression after ELSE only gives
+# projected dates for the years not yet published (without ELSE there are no dates until the announcement). The kind
+# says what the day does: "closed" (a non-working day), "working_day" (a weekend day that is worked), "event" (a dated
+# event such as a rate decision; the day stays a normal business day). "cites" names the source; "label official"
+# means that source is the authority itself. The full syntax is in README.md in this directory. Weekends are declared
+# in weekends.rules (both scopes here have the Saturday-Sunday weekend).
+#
+# Scopes used in this file:
+#   country:RU         Russia (Russian Federation), a country; time zone Europe/Moscow.
+#   central_bank:CBR   Bank of Russia (Central Bank of the Russian Federation), the central bank of Russia; its Board
+#                      of Directors sets the key rate. Time zone Europe/Moscow; it follows Russia's business days.
+
+
+# ===================================================================================================================
+# Russia (country:RU)
+# ===================================================================================================================
+
+# New Year holidays: 1 to 8 January, all eight days are non-working days. Labour Code article 112 (as amended in
+# 2012, in force since 2013) makes 1, 2, 3, 4, 5, 6 and 8 January the New Year holidays; 7 January in between is
+# Orthodox Christmas (its own rule below), so the whole block 1-8 January is off. Set by federal law (the Labour Code);
+# the Bank of Russia lists the days each year. The rule applies from 1 January 2013. If some of these days fall on a
+# weekend, the government usually moves the owed days off elsewhere by decree; those moved days are the separate
+# rule ru.transferred_day_off.
+rule ru.new_year_holidays for ru_new_year_holidays in country:RU valid from 2013-01-01
+  = [1 JAN : 8 JAN]
+  with kind = closed, note "1-6 and 8 January; 7 January is Orthodox Christmas"
+  cites "Bank of Russia list of non-working holidays and transferred days off" url "https://www.cbr.ru/other/holidays/" label official;
+
+# Orthodox Christmas, 7 January (Christmas by the Julian calendar of the Russian Orthodox Church, which falls on
+# 7 January of the Gregorian calendar). A non-working holiday under Labour Code article 112. Always on its date; a
+# day off owed for a weekend occurrence is a government transfer (ru.transferred_day_off).
+rule ru.orthodox_christmas for orthodox_christmas in country:RU
+  = 7 JAN
+  with kind = closed
+  cites "Bank of Russia list of non-working holidays and transferred days off" url "https://www.cbr.ru/other/holidays/" label official;
+
+# Defender of the Fatherland Day, 23 February. Non-working holiday under Labour Code article 112. Only the date
+# itself is given; if it falls on a weekend the substitute day off is set by government decree (see
+# ru.transferred_day_off), and it is not always the next Monday (in 2025 it was moved to 8 May).
+rule ru.defender_day for defender_of_the_fatherland_day in country:RU
+  = 23 FEB
+  with kind = closed
+  cites "Bank of Russia list of non-working holidays and transferred days off" url "https://www.cbr.ru/other/holidays/" label official;
+
+# International Women's Day, 8 March. Non-working holiday under Labour Code article 112. Only the date itself; a
+# substitute day off for a weekend occurrence is set by government decree (in 2025 it was moved to 13 June).
+rule ru.womens_day for international_womens_day in country:RU
+  = 8 MAR
+  with kind = closed
+  cites "Bank of Russia list of non-working holidays and transferred days off" url "https://www.cbr.ru/other/holidays/" label official;
+
+# Spring and Labour Day, 1 May. Non-working holiday under Labour Code article 112. Only the date itself; substitute
+# days off are set by government decree.
+rule ru.spring_labour_day for labour_day in country:RU
+  = 1 MAY
+  with kind = closed
+  cites "Bank of Russia list of non-working holidays and transferred days off" url "https://www.cbr.ru/other/holidays/" label official;
+
+# Victory Day, 9 May (end of the Second World War in Europe, by Moscow time). Non-working holiday under Labour Code
+# article 112. Only the date itself; substitute days off are set by government decree.
+rule ru.victory_day for victory_day in country:RU
+  = 9 MAY
+  with kind = closed
+  cites "Bank of Russia list of non-working holidays and transferred days off" url "https://www.cbr.ru/other/holidays/" label official;
+
+# Russia Day, 12 June (the national day). Non-working holiday under Labour Code article 112. Only the date itself;
+# substitute days off are set by government decree.
+rule ru.russia_day for russia_day in country:RU
+  = 12 JUN
+  with kind = closed
+  cites "Bank of Russia list of non-working holidays and transferred days off" url "https://www.cbr.ru/other/holidays/" label official;
+
+# Unity Day (National Unity Day), 4 November. Non-working holiday under Labour Code article 112, introduced in 2005
+# (the rule applies from 1 January 2005). Only the date itself; substitute days off are set by government decree.
+rule ru.unity_day for unity_day in country:RU valid from 2005-01-01
+  = 4 NOV
+  with kind = closed
+  cites "Bank of Russia list of non-working holidays and transferred days off" url "https://www.cbr.ru/other/holidays/" label official;
+
+# Transferred day off (a "bridge"): a working day that the Russian government turns into a day off, either because a
+# holiday fell on a weekend or to join a holiday to a weekend. The days are fixed each year by a government decree,
+# usually published in September or October of the previous year, and listed by the Bank of Russia on its holidays
+# page. They follow no rule (the government picks them freely), so no dates are projected: the rule has dates only
+# once the decree is announced.
+rule ru.transferred_day_off for transferred_day_off in country:RU
+  = ANNOUNCED BY cbr_holidays
+  with kind = closed, note "Government decree, usually September-October of the previous year"
+  cites "Bank of Russia list of non-working holidays and transferred days off" url "https://www.cbr.ru/other/holidays/" label official;
+
+# Make-up working day: a Saturday (or other weekend day) that the government declares a working day, usually in
+# exchange for a transferred day off elsewhere. Fixed by the same yearly government decree (usually published in
+# September or October of the previous year) and listed by the Bank of Russia. Not projected; dates only once
+# announced. Kind working_day: the weekend day becomes a business day.
+rule ru.makeup_workday for makeup_workday in country:RU
+  = ANNOUNCED BY cbr_holidays
+  with kind = working_day, note "Government decree, usually September-October of the previous year"
+  cites "Bank of Russia list of non-working holidays and transferred days off" url "https://www.cbr.ru/other/holidays/" label official;
+
+
+# ===================================================================================================================
+# Bank of Russia (central_bank:CBR)
+# ===================================================================================================================
+
+# Bank of Russia key rate decision: the Board of Directors' meeting on the key rate (the policy interest rate). The
+# Bank of Russia publishes its meeting calendar for the coming year (source cbr_key_rate_calendar; it holds eight
+# regular meetings a year, always on Fridays, plus occasional extraordinary ones); the press release comes at 13:30
+# and the press conference at 15:00 Moscow time. The published dates always win (for example 2027: 12 February,
+# 19 March, 30 April, 11 June, 30 July, 10 September, 22 October, 17 December).
+# For years not yet published, four of the eight meetings are projected from an observed pattern (not a Bank of Russia
+# statement), checked against its own dates 2016-2027:
+#   - the Friday on or after 17 March (11 of 12 years),
+#   - the Friday on or after 24 April (11 of 12 years),
+#   - the fourth Friday of October (12 of 12),
+#   - the third Friday of December (12 of 12);
+# for the October and December meetings, if that Friday is not a Russian business day, the business day before is
+# taken. The other four meetings (February, June, July, September) move too much and are not projected. A meeting does
+# not close any market; the session gives the window from the press release to the press conference.
+rule cbr.key_rate_decision for cbr_key_rate_decision in central_bank:CBR
+  = ANNOUNCED BY cbr_key_rate_calendar
+    ELSE 16 MAR > NEXT FRI, 23 APR > NEXT FRI,
+         4 FRI OCT > PRECEDING ON country:RU, 3 FRI DEC > PRECEDING ON country:RU
+  with kind = event, session 13:30 - 15:00 tz "Europe/Moscow",
+       note "Eight regular meetings a year; only March, April, October and December are projected"
+  cites "Bank of Russia key rate meeting calendar" url "https://www.cbr.ru/eng/dkp/cal_mp/" label official;

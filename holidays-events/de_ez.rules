@@ -1,0 +1,279 @@
+# Germany and the euro area: the closing days of the euro area's payment system T2 (TARGET), the extra closing days
+# of the Deutsche Bundesbank, the holidays of the Xetra stock exchange, Germany's nationwide public holidays, the
+# quarterly expiry day of the Eurex derivatives exchange, and the release dates of euro-area and German inflation
+# figures and of the ECB's Consumer Expectations Survey.
+#
+# Translated from holidays-events rules/catalog/de_ez.yaml.
+#
+# How to read a rule: "rule <key> for <event> in <scope> [valid from A] = <dates> with kind = ..., cites ...;" says on
+# which days the event <event> happens for the market, country or institution <scope>. The part after "=" is a date
+# expression evaluated once per year: "25 DEC" is 25 December, "EASTER - 2D" two days before Easter Sunday (Western,
+# Gregorian Easter), "3 FRI MAR" the third Friday of March, "> PRECEDING" moves a date that is not a business day of
+# the rule's own scope to the business day before. "ANNOUNCED BY <source>" means the authority publishes the dates
+# itself and the rule has no dates until it does; with "ELSE <dates>" those dates would be projected meanwhile.
+# "kind = closed" marks a day on which the market or institution is shut; "kind = event" marks a dated event (a
+# release, an expiry) that does not change whether the day is a business day. "cites" names the source the rule is
+# taken from; "label official" means that source is the authority itself. The full syntax is in README.md in this
+# directory. Weekends are declared in weekends.rules (every scope here has the Saturday-Sunday weekend).
+#
+# Scopes used in this file:
+#   settlement_system:TARGET2    T2 / TARGET, the euro area's real-time gross settlement system for euro payments,
+#                                run by the Eurosystem; the European Central Bank sets its closing days
+#                                (Europe/Berlin; ISDA business-day code EUTA).
+#   central_bank:BUBA            Deutsche Bundesbank, Germany's central bank (Europe/Berlin).
+#   exchange:XETR                Xetra, the electronic stock trading venue of Deutsche Börse in Frankfurt (market
+#                                identifier code XETR).
+#   country:DE                   Germany, country (Europe/Berlin; ISDA code DEFR). Only nationwide holidays; Frankfurt
+#                                also closes on Hesse's holidays (Corpus Christi), which this national scope lacks.
+#   exchange:XEUR                Eurex, the derivatives exchange of Deutsche Börse in Frankfurt (market identifier
+#                                code XEUR).
+#   statistics_office:EUROSTAT   Eurostat, the statistical office of the European Union, Luxembourg.
+#   statistics_office:DESTATIS   Statistisches Bundesamt (Destatis), Germany's federal statistical office.
+#   central_bank:ECB             European Central Bank, the central bank of the euro area, Frankfurt.
+
+
+# ===================================================================================================================
+# T2 / TARGET, the euro payment system (settlement_system:TARGET2)
+# The European Central Bank publishes the closing days on its TARGET page (source ecb_target_holidays). On these six
+# days no euro payments are settled through T2, so euro value dates cannot fall on them. Other days on which the ECB's
+# own offices are closed (Ascension Day, Whit Monday, Corpus Christi, the Day of German Unity) are NOT TARGET closing
+# days: the ECB's office calendar is not the euro settlement calendar. A closing day that falls on a weekend is not
+# moved.
+# ===================================================================================================================
+
+# New Year's Day, 1 January. TARGET is closed.
+rule target2.new_years_day for new_years_day in settlement_system:TARGET2 = 1 JAN
+  with kind = closed
+  cites "ECB T2 / TARGET closing days, European Central Bank" url "https://www.ecb.europa.eu/paym/target/html/index.en.html" label official;
+
+# Good Friday, the Friday two days before Easter Sunday. TARGET is closed.
+rule target2.good_friday for good_friday in settlement_system:TARGET2 = EASTER - 2D
+  with kind = closed
+  cites "ECB T2 / TARGET closing days, European Central Bank" url "https://www.ecb.europa.eu/paym/target/html/index.en.html" label official;
+
+# Easter Monday, the day after Easter Sunday. TARGET is closed.
+rule target2.easter_monday for easter_monday in settlement_system:TARGET2 = EASTER + 1D
+  with kind = closed
+  cites "ECB T2 / TARGET closing days, European Central Bank" url "https://www.ecb.europa.eu/paym/target/html/index.en.html" label official;
+
+# Labour Day, 1 May. TARGET is closed. (The securities settlement platform T2S stays open on this day; that is a
+# different scope, not covered in this file.)
+rule target2.labour_day for labour_day in settlement_system:TARGET2 = 1 MAY
+  with kind = closed
+  cites "ECB T2 / TARGET closing days, European Central Bank" url "https://www.ecb.europa.eu/paym/target/html/index.en.html" label official;
+
+# Christmas Day, 25 December. TARGET is closed.
+rule target2.christmas_day for christmas_day in settlement_system:TARGET2 = 25 DEC
+  with kind = closed
+  cites "ECB T2 / TARGET closing days, European Central Bank" url "https://www.ecb.europa.eu/paym/target/html/index.en.html" label official;
+
+# Boxing Day (St Stephen's Day), 26 December. TARGET is closed.
+rule target2.boxing_day for boxing_day in settlement_system:TARGET2 = 26 DEC
+  with kind = closed
+  cites "ECB T2 / TARGET closing days, European Central Bank" url "https://www.ecb.europa.eu/paym/target/html/index.en.html" label official;
+
+
+# ===================================================================================================================
+# Deutsche Bundesbank (central_bank:BUBA)
+# The Bundesbank publishes a yearly sheet "Feiertage in Deutschland" (source bundesbank_holidays, a PDF) with five
+# lists: TARGET holidays, T2S holidays, nationwide public holidays, regional holidays, and the Bundesbank's own extra
+# closing days. The two rules below are those extra closing days, on top of the TARGET and public holidays. A day
+# that falls on a weekend is not moved.
+# ===================================================================================================================
+
+# Christmas Eve, 24 December: the Bundesbank is closed (not a public holiday in Germany, and TARGET is open).
+rule buba.christmas_eve for christmas_eve in central_bank:BUBA = 24 DEC
+  with kind = closed
+  cites "Bundesbank holiday calendar (Feiertage in Deutschland), Deutsche Bundesbank" url "https://www.bundesbank.de/de/aufgaben/unbarer-zahlungsverkehr/target/feiertagskalender-2027-749314" label official;
+
+# New Year's Eve, 31 December: the Bundesbank is closed (not a public holiday in Germany, and TARGET is open).
+rule buba.new_years_eve for new_years_eve in central_bank:BUBA = 31 DEC
+  with kind = closed
+  cites "Bundesbank holiday calendar (Feiertage in Deutschland), Deutsche Bundesbank" url "https://www.bundesbank.de/de/aufgaben/unbarer-zahlungsverkehr/target/feiertagskalender-2027-749314" label official;
+
+
+# ===================================================================================================================
+# Xetra (exchange:XETR)
+# Trading holidays of Xetra, set by the operator Deutsche Börse in its yearly trading calendar. The holidays-events
+# catalog names no source for these rules; the citation below is Deutsche Börse's cash-market trading calendar page,
+# which the source register lists as the authority. Xetra trades on most German public holidays (Ascension Day, Whit
+# Monday, the Day of German Unity); it closes only on the eight days below. A day that falls on a weekend is not
+# moved.
+# ===================================================================================================================
+
+# New Year's Day, 1 January. Xetra is closed.
+rule xetr.new_years_day for new_years_day in exchange:XETR = 1 JAN
+  with kind = closed
+  cites "Xetra trading calendar, Deutsche Börse" url "https://www.cashmarket.deutsche-boerse.com/cash-en/trading/trading-calendar-and-trading-hours/trading-calendar" label official;
+
+# Good Friday, two days before Easter Sunday. Xetra is closed.
+rule xetr.good_friday for good_friday in exchange:XETR = EASTER - 2D
+  with kind = closed
+  cites "Xetra trading calendar, Deutsche Börse" url "https://www.cashmarket.deutsche-boerse.com/cash-en/trading/trading-calendar-and-trading-hours/trading-calendar" label official;
+
+# Easter Monday, the day after Easter Sunday. Xetra is closed.
+rule xetr.easter_monday for easter_monday in exchange:XETR = EASTER + 1D
+  with kind = closed
+  cites "Xetra trading calendar, Deutsche Börse" url "https://www.cashmarket.deutsche-boerse.com/cash-en/trading/trading-calendar-and-trading-hours/trading-calendar" label official;
+
+# Labour Day, 1 May. Xetra is closed.
+rule xetr.labour_day for labour_day in exchange:XETR = 1 MAY
+  with kind = closed
+  cites "Xetra trading calendar, Deutsche Börse" url "https://www.cashmarket.deutsche-boerse.com/cash-en/trading/trading-calendar-and-trading-hours/trading-calendar" label official;
+
+# Christmas Eve, 24 December. Xetra is closed for the whole day (it is not a public holiday in Germany).
+rule xetr.christmas_eve for christmas_eve in exchange:XETR = 24 DEC
+  with kind = closed
+  cites "Xetra trading calendar, Deutsche Börse" url "https://www.cashmarket.deutsche-boerse.com/cash-en/trading/trading-calendar-and-trading-hours/trading-calendar" label official;
+
+# Christmas Day, 25 December. Xetra is closed.
+rule xetr.christmas_day for christmas_day in exchange:XETR = 25 DEC
+  with kind = closed
+  cites "Xetra trading calendar, Deutsche Börse" url "https://www.cashmarket.deutsche-boerse.com/cash-en/trading/trading-calendar-and-trading-hours/trading-calendar" label official;
+
+# Boxing Day (St Stephen's Day), 26 December. Xetra is closed.
+rule xetr.boxing_day for boxing_day in exchange:XETR = 26 DEC
+  with kind = closed
+  cites "Xetra trading calendar, Deutsche Börse" url "https://www.cashmarket.deutsche-boerse.com/cash-en/trading/trading-calendar-and-trading-hours/trading-calendar" label official;
+
+# New Year's Eve, 31 December. Xetra is closed for the whole day (it is not a public holiday in Germany).
+rule xetr.new_years_eve for new_years_eve in exchange:XETR = 31 DEC
+  with kind = closed
+  cites "Xetra trading calendar, Deutsche Börse" url "https://www.cashmarket.deutsche-boerse.com/cash-en/trading/trading-calendar-and-trading-hours/trading-calendar" label official;
+
+
+# ===================================================================================================================
+# Germany: nationwide public holidays (country:DE)
+# In Germany public holidays are a matter of the 16 federal states (Länder); each has its own holiday law. The days
+# below are those found in all 16 state laws, plus the Day of German Unity, the only holiday set by federal law.
+# Regional holidays (Epiphany, Corpus Christi, Reformation Day, All Saints' Day, ...) are not part of this scope.
+# Note that German exchanges trade on several of these days; the exchanges have their own scopes above. The state
+# laws are, in order: Baden-Württemberg Feiertagsgesetz (FTG); Bavaria Feiertagsgesetz (FTG); Berlin Gesetz über die
+# Sonn- und Feiertage; Brandenburg Feiertagsgesetz (FTG); Bremen Gesetz über die Sonn-, Gedenk- und Feiertage; Hamburg
+# Feiertagsgesetz; Hesse Hessisches Feiertagsgesetz (HFeiertagsG); Mecklenburg-Western Pomerania Feiertagsgesetz
+# (FTG M-V); Lower Saxony Niedersächsisches Gesetz über die Feiertage (NFeiertagsG); North Rhine-Westphalia
+# Feiertagsgesetz NW; Rhineland-Palatinate Feiertagsgesetz (LFtG); Saarland Feiertagsgesetz (SFG); Saxony Gesetz über
+# Sonn- und Feiertage (SächsSFG); Saxony-Anhalt Gesetz über die Sonn- und Feiertage (FeiertG LSA); Schleswig-Holstein
+# Gesetz über Sonn- und Feiertage (SFTG); Thuringia Thüringer Feier- und Gedenktagsgesetz (ThürFGtG). The catalog
+# grades these rules higher only once every one of these laws has been read. German holidays that fall on a weekend
+# are not moved (Germany has no substitute days).
+# ===================================================================================================================
+
+# Day of German Unity (Tag der Deutschen Einheit), 3 October, since the reunification on 3 October 1990. It is the
+# only public holiday set by federal law: Article 2 of the Unification Treaty (Einigungsvertrag) makes it a statutory
+# holiday.
+rule de.german_unity_day for german_unity_day in country:DE valid from 1990-10-03 = 3 OCT
+  with kind = closed
+  cites "Einigungsvertrag (Unification Treaty), Germany" art "2" label official;
+
+# New Year's Day, 1 January. In the holiday laws of all 16 states.
+rule de.new_years_day for new_years_day in country:DE = 1 JAN
+  with kind = closed
+  cites "Holiday laws of the 16 German states (Feiertagsgesetze der Länder)" label official;
+
+# Good Friday, two days before Easter Sunday. In the holiday laws of all 16 states.
+rule de.good_friday for good_friday in country:DE = EASTER - 2D
+  with kind = closed
+  cites "Holiday laws of the 16 German states (Feiertagsgesetze der Länder)" label official;
+
+# Easter Monday, the day after Easter Sunday. In the holiday laws of all 16 states.
+rule de.easter_monday for easter_monday in country:DE = EASTER + 1D
+  with kind = closed
+  cites "Holiday laws of the 16 German states (Feiertagsgesetze der Länder)" label official;
+
+# Labour Day (Tag der Arbeit), 1 May. In the holiday laws of all 16 states.
+rule de.labour_day for labour_day in country:DE = 1 MAY
+  with kind = closed
+  cites "Holiday laws of the 16 German states (Feiertagsgesetze der Länder)" label official;
+
+# Ascension Day (Christi Himmelfahrt), the Thursday 39 days after Easter Sunday. In the holiday laws of all 16 states.
+rule de.ascension_day for ascension_day in country:DE = EASTER + 39D
+  with kind = closed
+  cites "Holiday laws of the 16 German states (Feiertagsgesetze der Länder)" label official;
+
+# Whit Monday (Pfingstmontag), the Monday 50 days after Easter Sunday (the day after Pentecost). In the holiday laws of
+# all 16 states.
+rule de.whit_monday for whit_monday in country:DE = EASTER + 50D
+  with kind = closed
+  cites "Holiday laws of the 16 German states (Feiertagsgesetze der Länder)" label official;
+
+# Christmas Day (1. Weihnachtstag), 25 December. In the holiday laws of all 16 states.
+rule de.christmas_day for christmas_day in country:DE = 25 DEC
+  with kind = closed
+  cites "Holiday laws of the 16 German states (Feiertagsgesetze der Länder)" label official;
+
+# Second Christmas Day (2. Weihnachtstag, Boxing Day), 26 December. In the holiday laws of all 16 states.
+rule de.boxing_day for boxing_day in country:DE = 26 DEC
+  with kind = closed
+  cites "Holiday laws of the 16 German states (Feiertagsgesetze der Länder)" label official;
+
+
+# ===================================================================================================================
+# Eurex (exchange:XEUR)
+# ===================================================================================================================
+
+# Eurex quarterly expiry: the last trading day of the quarterly index futures and options (e.g. on the EURO STOXX 50),
+# the third Friday of March, June, September and December; if that Friday is not a Eurex business day, the business
+# day before it. The expiry is a dated event and does not close the exchange. Caveat: no Eurex trading holidays are
+# declared for this scope, so "business day" here only skips weekends, and a third Friday is never a weekend; in
+# practice the rule always gives the third Friday. (Good Friday, a Eurex holiday, could coincide with the third
+# Friday of March, but not between 2021 and 2031.) The catalog names no source for this rule; the citation is Eurex's
+# trading calendar, which the source register lists as the authority for expiry days.
+rule xeur.quarterly_expiry for eurex_quarterly_expiry in exchange:XEUR
+  = 3 FRI MAR > PRECEDING, 3 FRI JUN > PRECEDING, 3 FRI SEP > PRECEDING, 3 FRI DEC > PRECEDING
+  with kind = event
+  cites "Eurex trading calendar, Eurex Frankfurt AG" url "https://www.eurex.com/ex-en/trade/trading-calendar" label official;
+
+
+# ===================================================================================================================
+# Eurostat (statistics_office:EUROSTAT)
+# Eurostat publishes its release dates in the "euro indicators" calendar, an iCal feed with dates only (no times; the
+# calendar uses Luxembourg time; the release time of 11:00 CET is stated only in a 2014 Eurostat protocol and not yet
+# confirmed). Nothing is projected: the dates come only from the calendar.
+# ===================================================================================================================
+
+# Euro area inflation, flash estimate: Eurostat's first estimate of the Harmonised Index of Consumer Prices (HICP) for
+# the euro area, usually at the very end of the month or the first working days of the next. No dates until Eurostat
+# announces them.
+rule eurostat.hicp_flash for ea_hicp_flash in statistics_office:EUROSTAT = ANNOUNCED BY eurostat_release_calendar
+  with kind = event, note "Dates only, from the euro indicators iCal feed (Europe/Luxembourg); not projected"
+  cites "Eurostat release calendar (iCal), Eurostat" url "https://ec.europa.eu/eurostat/news/release-calendar" label official;
+
+# Euro area inflation (HICP), full release: Eurostat's complete HICP figures for the euro area, about two to three
+# weeks after the flash estimate. No dates until Eurostat announces them.
+rule eurostat.hicp for ea_hicp in statistics_office:EUROSTAT = ANNOUNCED BY eurostat_release_calendar
+  with kind = event, note "Dates only, from the euro indicators iCal feed (Europe/Luxembourg); not projected"
+  cites "Eurostat release calendar (iCal), Eurostat" url "https://ec.europa.eu/eurostat/news/release-calendar" label official;
+
+
+# ===================================================================================================================
+# Statistisches Bundesamt, Destatis (statistics_office:DESTATIS)
+# Destatis lists each release in its release calendar (Veröffentlichungskalender) with one .ics file per release.
+# Press releases come out generally at 08:00 German time (Europe/Berlin), as Destatis states on the page. Nothing is
+# projected: the dates come only from the calendar.
+# ===================================================================================================================
+
+# Germany's consumer price index (Verbraucherpreisindex), provisional results for the month, usually published at the
+# end of that month. No dates until Destatis announces them.
+rule destatis.cpi_provisional for de_cpi_provisional in statistics_office:DESTATIS = ANNOUNCED BY destatis_calendar
+  with kind = event, note "Released at 08:00 German time (Europe/Berlin); one .ics per release; not projected"
+  cites "Destatis release calendar, Statistisches Bundesamt" url "https://www.destatis.de/DE/Presse/Termine/_inhalt.html" label official;
+
+# Germany's consumer price index, final results for the month, usually published around the middle of the following
+# month. No dates until Destatis announces them.
+rule destatis.cpi_final for de_cpi_final in statistics_office:DESTATIS = ANNOUNCED BY destatis_calendar
+  with kind = event, note "Released at 08:00 German time (Europe/Berlin); one .ics per release; not projected"
+  cites "Destatis release calendar, Statistisches Bundesamt" url "https://www.destatis.de/DE/Presse/Termine/_inhalt.html" label official;
+
+
+# ===================================================================================================================
+# European Central Bank (central_bank:ECB)
+# ===================================================================================================================
+
+# ECB Consumer Expectations Survey: the monthly publication of the survey results and press release. The ECB names
+# only the next publication date, on the survey page (for example "Next publication of CES results and press release:
+# 27 November 2026"), with no time, no iCal feed and no entry in the ECB's statistical calendar. So there is only one
+# date ahead at a time, and nothing is projected.
+rule ecb.consumer_expectations for ecb_consumer_expectations in central_bank:ECB = ANNOUNCED BY ecb_consumer_expectations
+  with kind = event, note "Only the next publication date is published, on the survey page; not projected"
+  cites "ECB Consumer Expectations Survey publication dates, European Central Bank" url "https://www.ecb.europa.eu/stats/ecb_surveys/consumer_exp_survey/html/index.en.html" label official;

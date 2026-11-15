@@ -458,8 +458,15 @@ class RuleTransformer(Rules):
     def rule(self, key, event_class, scopes, validity, exprs, attributes, provenance):
         include, exclude = scopes
         valid_from, valid_to = validity or (None, None)
+        attributes = dict(attributes or ())
+        if isinstance(exprs, Announced):
+            attributes["announced_by"] = exprs.authority
+            exprs = exprs.projection or (lambda context: [])
         return RuleDecl(str(key), str(event_class), tuple(include), tuple(exclude), valid_from, valid_to, exprs,
-                        dict(attributes or ()), tuple(provenance or ()))
+                        attributes, tuple(provenance or ()))
+
+    def announced(self, authority, projection):
+        return Announced(str(authority), projection)
 
     def scope_sel(self, include, exclude):
         return include, exclude or []
@@ -547,6 +554,14 @@ class Citation:
     label: str
 
 
+@dataclass(frozen=True)
+class Announced:
+    """ANNOUNCED BY authority [ELSE projection]: the dates come from the authority; the projection fills the years
+    it has not published yet"""
+    authority: str
+    projection: object = None
+
+
 @dataclass(frozen=True, eq=False)
 class RuleDecl:
     key: str
@@ -564,6 +579,10 @@ class RuleDecl:
     @property
     def kind(self):
         return self.attributes.get("kind", "closed")
+
+    @property
+    def announced_by(self):
+        return self.attributes.get("announced_by")
 
     def valid(self, d):
         return (self.valid_from is None or d >= self.valid_from) and (self.valid_to is None or d <= self.valid_to)
@@ -706,7 +725,7 @@ class RuleBook:
         except VisitError as e:
             raise e.orig_exc from None
         dates = sorted({d for d in dates if rule.valid(d)})
-        return dates, rule.estimated or rule.key in self.announcements
+        return dates, rule.estimated or rule.key in self.announcements or rule.announced_by is not None
 
     def _state(self, scope, year, shallow=False):
         """rule -> (dates, projected) of the rules of the scope evaluated with the first of January of the year"""
@@ -719,7 +738,7 @@ class RuleBook:
         if key in self._running:
             return self._running[key]
         rules = [r for r in self.rules if self.applies(r, scope) and r.in_year(year)]
-        state = {r: ([], r.estimated or r.key in self.announcements) for r in rules}
+        state = {r: ([], r.estimated or r.key in self.announcements or r.announced_by is not None) for r in rules}
         self._running[key] = state
         try:
             order = sorted(range(len(rules)), key=lambda i: (self._nominal(rules[i], scope, year), i))

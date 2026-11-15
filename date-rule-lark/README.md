@@ -34,9 +34,9 @@ mise run test:lark        # or, inside this directory:
 uv run pytest             # uv installs Lark and pytest into .venv (versions in uv.lock)
 ```
 
-There are 12208 tests (pytest): the 537 cases of [examples/schedule.txt](../examples/schedule.txt), the 2186 of
+There are 12209 tests (pytest): the 537 cases of [examples/schedule.txt](../examples/schedule.txt), the 2186 of
 [examples/catalog.txt](../examples/catalog.txt) and the 3347 of [examples/date-holidays.txt](../examples/date-holidays.txt), each with
-`lalr` and `earley`, 23 for the grammar of rule files and 45 for their evaluation.
+`lalr` and `earley`, 23 for the grammar of rule files and 46 for their evaluation.
 
 ## Shared example
 
@@ -88,6 +88,13 @@ book.schedule("T > SPOT EURUSD ON usd_eur")(book.context(date(2026, 7, 2)))
   and mark the dates as projections.
 - **Announcements** are data, not grammar: the dates published for a rule and year always replace the rule's dates for
   that year; in the other years the dates of an announced rule are projections.
+- **`ANNOUNCED BY source [ELSE exprs]`** names the authority whose published dates a rule follows. Without `ELSE` the
+  rule has no dates until an announcement arrives; with it, the `ELSE` dates fill the years not announced yet, marked as
+  projections (central-bank meetings, moon-sighted holidays, one-off closures).
+- **`with kind = event`** marks a dated event (a decision, a release, an auction) that leaves the day as it is, unlike
+  `closed`, `non_working` and `working_day`.
+- **[../holidays-events/](../holidays-events/)** holds the projection rules of holidays-events written in this language,
+  with comments for readers without context, checked day by day against its rule engine.
 
 [test_rules.py](tests/test_rules.py) checks these with real dates where they are known (Japan 2026, Britain 2021 and
 2022, Chile, South Africa, Colombia, Argentina, Mexico, US Inauguration Day, Orthodox Easter), [test_rule_grammar.py](tests/test_rule_grammar.py)

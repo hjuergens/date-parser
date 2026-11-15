@@ -1,0 +1,414 @@
+# United States: the holidays of the New York Stock Exchange, of the Federal Reserve and of the US bond market,
+# the NYSE's early closes, and the dated events of US monetary policy and statistics (FOMC rate decisions, minutes,
+# the Fed's communications blackout, CPI, GDP, personal income and outlays, the monthly jobs report, the New York Fed's
+# Survey of Consumer Expectations, Treasury auctions).
+#
+# Translated from holidays-events rules/catalog/us.yaml.
+#
+# How to read a rule: "rule <key> for <event> in <scope> [valid from A to B] = <dates> with kind = ..., cites ...;".
+# The part after "=" is a date expression evaluated for every year: "1 JAN" is the first of January, "3 MON JAN" the
+# third Monday in January, "LAST MON MAY" the last Monday in May, "EASTER - 2D" two days before Western Easter Sunday.
+# "{SAT - 1D, SUN + 1D}" after a date moves it when it falls on a Saturday (one day back, to Friday) or a Sunday (one
+# day forward, to Monday); a weekday not named there leaves the date where it is. "IF MON TUE WED THU" keeps a date
+# only when it falls on one of those weekdays. "> NEXT WED" moves to the first Wednesday strictly after the date,
+# "> PRECEDING" / "> FOLLOWING" to the business day before / after when the date is closed (on the calendar after
+# "ON", else on the rule's own scope). "@key" stands for the dates of another rule. "ANNOUNCED BY <source> ELSE ..."
+# means the authority publishes the dates; the expression after ELSE only projects dates for the years it has not
+# published yet (without ELSE there are no dates until it publishes). The kind says what the day does: "closed" (no
+# trading or settlement), "short_day" (open with an early close; the session gives the hours), "event" (a dated
+# event such as a decision or a release; the day stays a normal business day). Dates are inclusive. The full syntax
+# is in README.md in this directory.
+#
+# Weekends: every scope here has the weekend Saturday and Sunday (see weekends.rules).
+#
+# Scopes used in this file:
+#   exchange:XNYS          New York Stock Exchange (exchange, MIC XNYS), New York, America/New_York.
+#   central_bank:FED       Federal Reserve (central bank of the United States). Its holidays are those of the
+#                          Federal Reserve System's K.8 holiday schedule (the days Fedwire and the Reserve Banks
+#                          are closed); the New York Fed's own survey releases are also filed here.
+#   segment:US_BOND        US bond market (market segment): the days on which SIFMA, the Securities Industry and
+#                          Financial Markets Association, recommends a full close of US dollar bond trading
+#                          (ISDA business-day code USGS); US Treasury auctions are filed here too.
+#   statistics_office:BLS  US Bureau of Labor Statistics (statistics office; consumer prices, jobs report).
+#   statistics_office:BEA  US Bureau of Economic Analysis (statistics office; GDP, personal income and outlays).
+#
+# How the three holiday calendars differ (from the catalog's own comments):
+#   - NYSE: a holiday on a Sunday is observed on the Monday after, a holiday on a Saturday on the Friday before,
+#     EXCEPT New Year's Day: when 1 January is a Saturday the exchange does not close the Friday before (that
+#     Friday is 31 December, the last trading day of the year). NYSE is open on Columbus Day and Veterans Day.
+#   - Federal Reserve (K.8): adds Columbus Day and Veterans Day; a holiday on a Sunday is observed on the Monday
+#     after, a holiday on a Saturday is NOT observed at all (no Friday closure). Good Friday is not a Fed holiday.
+#   - US bond market (SIFMA): the Fed's holidays, but a holiday on a Saturday closes the Friday before (for example
+#     Independence Day 2026: Friday 3 July "observed"), except New Year's Day (31 December is an early close, not a
+#     closure). Good Friday is decided each year. These SIFMA rules were completed after a comparison with the USGS
+#     calendar of the open-source library OpenGamma Strata.
+
+
+# =====================================================================================================================
+# exchange:XNYS - New York Stock Exchange (MIC XNYS)
+# Who sets it: the NYSE publishes its holiday and early-close calendar (source nyse_holidays, "NYSE holidays &
+# trading hours"). The holidays follow the US federal holidays, minus Columbus Day and Veterans Day, plus Good Friday.
+# =====================================================================================================================
+
+# New Year's Day, 1 January. The exchange is closed. If 1 January is a Sunday the exchange closes on Monday 2
+# January instead. If it is a Saturday nothing moves: NYSE does not close on Friday 31 December, the last trading
+# day of the year (an exception to its usual Saturday-to-Friday rule).
+rule xnys.new_years_day for new_years_day in exchange:XNYS = 1 JAN {SUN + 1D}
+  with kind = closed
+  cites "NYSE holidays & trading hours" url "https://www.nyse.com/markets/hours-calendars" label official;
+
+# Martin Luther King Jr. Day: the third Monday in January (a US federal holiday since 1986). The NYSE has closed on
+# it since 1998, so the rule starts with 1998.
+rule xnys.mlk_day for mlk_day in exchange:XNYS valid from 1998-01-01 = 3 MON JAN
+  with kind = closed
+  cites "NYSE holidays & trading hours" url "https://www.nyse.com/markets/hours-calendars" label official;
+
+# Washington's Birthday (also called Presidents' Day): the third Monday in February. The exchange is closed.
+rule xnys.washingtons_birthday for washingtons_birthday in exchange:XNYS = 3 MON FEB
+  with kind = closed
+  cites "NYSE holidays & trading hours" url "https://www.nyse.com/markets/hours-calendars" label official;
+
+# Good Friday: the Friday before Western Easter Sunday. Not a federal holiday, but the NYSE closes by its own rules.
+rule xnys.good_friday for good_friday in exchange:XNYS = EASTER - 2D
+  with kind = closed
+  cites "NYSE holidays & trading hours" url "https://www.nyse.com/markets/hours-calendars" label official;
+
+# Memorial Day: the last Monday in May. The exchange is closed.
+rule xnys.memorial_day for memorial_day in exchange:XNYS = LAST MON MAY
+  with kind = closed
+  cites "NYSE holidays & trading hours" url "https://www.nyse.com/markets/hours-calendars" label official;
+
+# Juneteenth National Independence Day, 19 June (a federal holiday since the Juneteenth National Independence Day
+# Act of June 2021). The NYSE first closed for it in 2022, so the rule starts with 2022. On a Saturday the exchange
+# closes the Friday before (18 June), on a Sunday the Monday after (20 June).
+rule xnys.juneteenth for juneteenth in exchange:XNYS valid from 2022-01-01 = 19 JUN {SAT - 1D, SUN + 1D}
+  with kind = closed
+  cites "NYSE holidays & trading hours" url "https://www.nyse.com/markets/hours-calendars" label official;
+
+# Independence Day, 4 July. On a Saturday the exchange closes the Friday before (3 July), on a Sunday the Monday
+# after (5 July).
+rule xnys.independence_day for independence_day in exchange:XNYS = 4 JUL {SAT - 1D, SUN + 1D}
+  with kind = closed
+  cites "NYSE holidays & trading hours" url "https://www.nyse.com/markets/hours-calendars" label official;
+
+# Labor Day: the first Monday in September. The exchange is closed.
+rule xnys.labor_day for labor_day in exchange:XNYS = 1 MON SEP
+  with kind = closed
+  cites "NYSE holidays & trading hours" url "https://www.nyse.com/markets/hours-calendars" label official;
+
+# Thanksgiving Day: the fourth Thursday in November. The exchange is closed.
+rule xnys.thanksgiving for thanksgiving in exchange:XNYS = 4 THU NOV
+  with kind = closed
+  cites "NYSE holidays & trading hours" url "https://www.nyse.com/markets/hours-calendars" label official;
+
+# Christmas Day, 25 December. On a Saturday the exchange closes the Friday before (24 December), on a Sunday the
+# Monday after (26 December).
+rule xnys.christmas_day for christmas_day in exchange:XNYS = 25 DEC {SAT - 1D, SUN + 1D}
+  with kind = closed
+  cites "NYSE holidays & trading hours" url "https://www.nyse.com/markets/hours-calendars" label official;
+
+# --- NYSE early closes: the exchange opens as usual at 09:30 New York time and closes early at 13:00 (the catalog
+# --- gives the 13:00 close; 09:30 is the NYSE's regular opening time).
+
+# The day after Thanksgiving (the Friday after the fourth Thursday in November): early close at 13:00.
+rule xnys.day_after_thanksgiving_early_close for day_after_thanksgiving_early_close in exchange:XNYS
+  = @xnys.thanksgiving + 1D
+  with kind = short_day, session 09:30 - 13:00 tz "America/New_York"
+  cites "NYSE holidays & trading hours" url "https://www.nyse.com/markets/hours-calendars" label official;
+
+# Christmas Eve, 24 December: early close at 13:00, but only when 24 December is a Monday to Thursday. When it is a
+# Friday the exchange is either closed for Christmas observed (Christmas on a Saturday) or trades a normal day; on a
+# weekend there is no session anyway.
+rule xnys.christmas_eve_early_close for christmas_eve_early_close in exchange:XNYS = 24 DEC IF MON TUE WED THU
+  with kind = short_day, session 09:30 - 13:00 tz "America/New_York"
+  cites "NYSE holidays & trading hours" url "https://www.nyse.com/markets/hours-calendars" label official;
+
+# The day before Independence Day, 3 July: early close at 13:00, but only when 3 July is a Monday to Thursday (on a
+# Friday it is the observed holiday when 4 July is a Saturday, or a normal day). The NYSE announces this early close
+# each year, so these dates are a projection until the exchange confirms them.
+rule xnys.independence_eve_early_close for independence_eve_early_close in exchange:XNYS = 3 JUL IF MON TUE WED THU
+  with kind = short_day, session 09:30 - 13:00 tz "America/New_York",
+       note "announced yearly by NYSE; a projection until confirmed"
+  cites "NYSE holidays & trading hours" url "https://www.nyse.com/markets/hours-calendars" label official;
+
+
+# =====================================================================================================================
+# central_bank:FED - Federal Reserve
+# Who sets it: the Board of Governors of the Federal Reserve System publishes the holiday schedule of the Federal
+# Reserve Banks in its K.8 list (source fed_k8, "Federal Reserve K.8 holidays"). These are the eleven US federal
+# holidays. A holiday on a Sunday is observed on the Monday after; a holiday on a Saturday is not observed, i.e. the
+# Fed is open on the Friday before.
+# =====================================================================================================================
+
+# New Year's Day, 1 January. On a Sunday the Fed closes on Monday 2 January; on a Saturday nothing moves.
+rule fed.new_years_day for new_years_day in central_bank:FED = 1 JAN {SUN + 1D}
+  with kind = closed
+  cites "Federal Reserve K.8 holidays" url "https://www.federalreserve.gov/aboutthefed/k8.htm" label official;
+
+# Martin Luther King Jr. Day: the third Monday in January.
+rule fed.mlk_day for mlk_day in central_bank:FED = 3 MON JAN
+  with kind = closed
+  cites "Federal Reserve K.8 holidays" url "https://www.federalreserve.gov/aboutthefed/k8.htm" label official;
+
+# Washington's Birthday (Presidents' Day): the third Monday in February.
+rule fed.washingtons_birthday for washingtons_birthday in central_bank:FED = 3 MON FEB
+  with kind = closed
+  cites "Federal Reserve K.8 holidays" url "https://www.federalreserve.gov/aboutthefed/k8.htm" label official;
+
+# Memorial Day: the last Monday in May.
+rule fed.memorial_day for memorial_day in central_bank:FED = LAST MON MAY
+  with kind = closed
+  cites "Federal Reserve K.8 holidays" url "https://www.federalreserve.gov/aboutthefed/k8.htm" label official;
+
+# Juneteenth National Independence Day, 19 June. Legal basis: the Juneteenth National Independence Day Act, signed
+# on 17 June 2021, which made it a federal holiday from that day (so 19 June 2021 already counts). On a Sunday the
+# Fed closes the Monday after; on a Saturday (as in 2021) nothing moves.
+rule fed.juneteenth for juneteenth in central_bank:FED valid from 2021-06-17 = 19 JUN {SUN + 1D}
+  with kind = closed
+  cites "Federal Reserve K.8 holidays" url "https://www.federalreserve.gov/aboutthefed/k8.htm" label official;
+
+# Independence Day, 4 July. On a Sunday the Fed closes the Monday after; on a Saturday nothing moves.
+rule fed.independence_day for independence_day in central_bank:FED = 4 JUL {SUN + 1D}
+  with kind = closed
+  cites "Federal Reserve K.8 holidays" url "https://www.federalreserve.gov/aboutthefed/k8.htm" label official;
+
+# Labor Day: the first Monday in September.
+rule fed.labor_day for labor_day in central_bank:FED = 1 MON SEP
+  with kind = closed
+  cites "Federal Reserve K.8 holidays" url "https://www.federalreserve.gov/aboutthefed/k8.htm" label official;
+
+# Columbus Day (also Indigenous Peoples' Day): the second Monday in October. A Fed holiday, while the NYSE is open.
+rule fed.columbus_day for columbus_day in central_bank:FED = 2 MON OCT
+  with kind = closed
+  cites "Federal Reserve K.8 holidays" url "https://www.federalreserve.gov/aboutthefed/k8.htm" label official;
+
+# Veterans Day, 11 November. A Fed holiday, while the NYSE is open. On a Sunday the Fed closes the Monday after; on a
+# Saturday nothing moves.
+rule fed.veterans_day for veterans_day in central_bank:FED = 11 NOV {SUN + 1D}
+  with kind = closed
+  cites "Federal Reserve K.8 holidays" url "https://www.federalreserve.gov/aboutthefed/k8.htm" label official;
+
+# Thanksgiving Day: the fourth Thursday in November.
+rule fed.thanksgiving for thanksgiving in central_bank:FED = 4 THU NOV
+  with kind = closed
+  cites "Federal Reserve K.8 holidays" url "https://www.federalreserve.gov/aboutthefed/k8.htm" label official;
+
+# Christmas Day, 25 December. On a Sunday the Fed closes the Monday after (26 December); on a Saturday nothing moves.
+rule fed.christmas_day for christmas_day in central_bank:FED = 25 DEC {SUN + 1D}
+  with kind = closed
+  cites "Federal Reserve K.8 holidays" url "https://www.federalreserve.gov/aboutthefed/k8.htm" label official;
+
+# --- Monetary policy: the Federal Open Market Committee (FOMC) meets eight times a year; the source for all three
+# --- rules below is the Fed's FOMC meeting calendar (source fed_fomc_calendar).
+
+# FOMC rate decision: the day the FOMC announces its decision on the federal funds rate (the last day of a
+# meeting, a Wednesday). The Fed publishes the meeting schedule for the next year in the middle of the year; those
+# published dates are the authority. Beyond that schedule, three of the eight meetings follow a fixed pattern found
+# in the Fed's own dates and are projected: the January, March and July decisions fall on the Wednesday on or after
+# 26 January, 16 March and 26 July (January and July hit in every year 2014-2027, March in 13 of 14 years, 2017
+# missed). The other five meetings move from year to year and have no projection: they appear only once announced.
+# "25 JAN > NEXT WED" is the first Wednesday strictly after 25 January, i.e. on or after 26 January.
+rule fed.fomc_decision for fomc_decision in central_bank:FED
+  = ANNOUNCED BY fed_fomc_calendar ELSE 25 JAN > NEXT WED, 15 MAR > NEXT WED, 25 JUL > NEXT WED
+  with kind = event, note "schedule for the next year published mid-year; January, March and July projected"
+  cites "FOMC meeting calendar" url "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm" label official;
+
+# FOMC minutes: the minutes of each meeting are released three weeks (21 days) after its rate decision, so a
+# Wednesday decision gives a Wednesday release. Follows every FOMC decision, announced or projected.
+rule fed.fomc_minutes for fomc_minutes in central_bank:FED = @fed.fomc_decision + 21D
+  with kind = event
+  cites "FOMC meeting calendar" url "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm" label official;
+
+# Fed communications blackout: the period around each FOMC meeting in which Fed officials do not speak in public
+# about monetary policy. It starts on the second Saturday before the meeting's decision day and ends on the day
+# after the decision (midnight Eastern Time). Every day of that span is an event day.
+# Caveat: the expression lists the thirteen days from the second Saturday before the decision through the day after
+# it ("> PREV 2ND SAT" goes back to the second Saturday strictly before the decision, "+ kD" adds k days). Thirteen
+# days is exact for a decision on a Wednesday, which is when scheduled FOMC decisions fall; for a decision on another
+# weekday the span would differ (the language cannot write a span between two dates derived from each occurrence of
+# another rule; README.md, "Known grammar gaps").
+rule fed.blackout for fed_blackout in central_bank:FED
+  = @fed.fomc_decision > PREV 2ND SAT,
+    @fed.fomc_decision > PREV 2ND SAT + 1D,
+    @fed.fomc_decision > PREV 2ND SAT + 2D,
+    @fed.fomc_decision > PREV 2ND SAT + 3D,
+    @fed.fomc_decision > PREV 2ND SAT + 4D,
+    @fed.fomc_decision > PREV 2ND SAT + 5D,
+    @fed.fomc_decision > PREV 2ND SAT + 6D,
+    @fed.fomc_decision > PREV 2ND SAT + 7D,
+    @fed.fomc_decision > PREV 2ND SAT + 8D,
+    @fed.fomc_decision > PREV 2ND SAT + 9D,
+    @fed.fomc_decision > PREV 2ND SAT + 10D,
+    @fed.fomc_decision > PREV 2ND SAT + 11D,
+    @fed.fomc_decision > PREV 2ND SAT + 12D
+  with kind = event, note "second Saturday before the meeting until the day after it ends"
+  cites "FOMC meeting calendar" url "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm" label official;
+
+# New York Fed Survey of Consumer Expectations: the monthly press release and data update of the Federal Reserve
+# Bank of New York's household survey (the bank's own survey, not an official statistic). The New York Fed publishes
+# the dates (without times) several months ahead in the calendar of its household surveys (source
+# nyfed_microeconomics_calendar, a CSV behind the page). Beyond that, the pattern observed since May 2025 projects
+# them: the 7th of each month, or the next business day of the Federal Reserve when the 7th is a weekend or Fed
+# holiday (17 of 20 releases exactly, all 20 within one business day).
+rule nyfed.consumer_expectations for nyfed_consumer_expectations in central_bank:FED
+  = ANNOUNCED BY nyfed_microeconomics_calendar ELSE [7 JAN : 1M : 7 DEC] > FOLLOWING
+  with kind = event, note "dates published several months ahead; projected as the 7th or the next business day"
+  cites "New York Fed calendar of household surveys (Survey of Consumer Expectations)"
+        url "https://www.newyorkfed.org/microeconomics/calendar" label official;
+
+
+# =====================================================================================================================
+# segment:US_BOND - US bond market (SIFMA recommendations)
+# Who sets it: SIFMA, the Securities Industry and Financial Markets Association, publishes yearly recommendations for
+# full and early closes of US dollar bond trading (source sifma_holidays, "SIFMA holiday schedule and early-close
+# recommendations"). The full closes are the Fed's holidays (including Columbus Day and Veterans Day, when the NYSE
+# is open), but a holiday on a Saturday closes the Friday before, except New Year's Day (when 1 January is a
+# Saturday, 31 December is an early close, not a closure). SIFMA's early closes are not modelled here.
+# =====================================================================================================================
+
+# New Year's Day, 1 January. On a Sunday the bond market closes on Monday 2 January. On a Saturday it does not close
+# on Friday 31 December (SIFMA recommends an early close that day instead).
+rule us_bond.new_years_day for new_years_day in segment:US_BOND = 1 JAN {SUN + 1D}
+  with kind = closed
+  cites "SIFMA holiday schedule and early-close recommendations"
+        url "https://www.sifma.org/resources/general/holiday-schedule/" label official;
+
+# Martin Luther King Jr. Day: the third Monday in January.
+rule us_bond.mlk_day for mlk_day in segment:US_BOND = 3 MON JAN
+  with kind = closed
+  cites "SIFMA holiday schedule and early-close recommendations"
+        url "https://www.sifma.org/resources/general/holiday-schedule/" label official;
+
+# Washington's Birthday (Presidents' Day): the third Monday in February.
+rule us_bond.washingtons_birthday for washingtons_birthday in segment:US_BOND = 3 MON FEB
+  with kind = closed
+  cites "SIFMA holiday schedule and early-close recommendations"
+        url "https://www.sifma.org/resources/general/holiday-schedule/" label official;
+
+# Good Friday: the Friday before Western Easter Sunday. SIFMA decides each year whether the bond market closes: a
+# full close in most years, but only an early close (12:00 New York time) when the monthly employment report falls
+# on Good Friday, as in 2026. So there is no rule: the date counts as a full close only once SIFMA's yearly
+# recommendation (published months ahead) says so; until then no date is given.
+rule us_bond.good_friday for good_friday in segment:US_BOND = ANNOUNCED BY sifma_holidays
+  with kind = closed,
+       note "full close in most years; early close (12:00 ET) when the employment report falls on Good Friday"
+  cites "SIFMA holiday schedule and early-close recommendations"
+        url "https://www.sifma.org/resources/general/holiday-schedule/" label official;
+
+# Memorial Day: the last Monday in May.
+rule us_bond.memorial_day for memorial_day in segment:US_BOND = LAST MON MAY
+  with kind = closed
+  cites "SIFMA holiday schedule and early-close recommendations"
+        url "https://www.sifma.org/resources/general/holiday-schedule/" label official;
+
+# Juneteenth National Independence Day, 19 June, from 2022 (the first year SIFMA recommended a close). On a Saturday
+# the bond market closes the Friday before, on a Sunday the Monday after.
+rule us_bond.juneteenth for juneteenth in segment:US_BOND valid from 2022-01-01 = 19 JUN {SAT - 1D, SUN + 1D}
+  with kind = closed
+  cites "SIFMA holiday schedule and early-close recommendations"
+        url "https://www.sifma.org/resources/general/holiday-schedule/" label official;
+
+# Independence Day, 4 July. On a Saturday the bond market closes the Friday before (3 July, as in 2026), on a Sunday
+# the Monday after.
+rule us_bond.independence_day for independence_day in segment:US_BOND = 4 JUL {SAT - 1D, SUN + 1D}
+  with kind = closed
+  cites "SIFMA holiday schedule and early-close recommendations"
+        url "https://www.sifma.org/resources/general/holiday-schedule/" label official;
+
+# Labor Day: the first Monday in September.
+rule us_bond.labor_day for labor_day in segment:US_BOND = 1 MON SEP
+  with kind = closed
+  cites "SIFMA holiday schedule and early-close recommendations"
+        url "https://www.sifma.org/resources/general/holiday-schedule/" label official;
+
+# Thanksgiving Day: the fourth Thursday in November.
+rule us_bond.thanksgiving for thanksgiving in segment:US_BOND = 4 THU NOV
+  with kind = closed
+  cites "SIFMA holiday schedule and early-close recommendations"
+        url "https://www.sifma.org/resources/general/holiday-schedule/" label official;
+
+# Christmas Day, 25 December. On a Saturday the bond market closes the Friday before (24 December), on a Sunday the
+# Monday after (26 December).
+rule us_bond.christmas_day for christmas_day in segment:US_BOND = 25 DEC {SAT - 1D, SUN + 1D}
+  with kind = closed
+  cites "SIFMA holiday schedule and early-close recommendations"
+        url "https://www.sifma.org/resources/general/holiday-schedule/" label official;
+
+# Columbus Day: the second Monday in October. The bond market closes although the NYSE is open.
+rule us_bond.columbus_day for columbus_day in segment:US_BOND = 2 MON OCT
+  with kind = closed
+  cites "SIFMA holiday schedule and early-close recommendations"
+        url "https://www.sifma.org/resources/general/holiday-schedule/" label official;
+
+# Veterans Day, 11 November. The bond market closes although the NYSE is open. On a Saturday it closes the Friday
+# before (10 November), on a Sunday the Monday after (12 November).
+rule us_bond.veterans_day for veterans_day in segment:US_BOND = 11 NOV {SAT - 1D, SUN + 1D}
+  with kind = closed
+  cites "SIFMA holiday schedule and early-close recommendations"
+        url "https://www.sifma.org/resources/general/holiday-schedule/" label official;
+
+# US Treasury auction: the auctions of Treasury bills, notes, bonds and TIPS by the US Department of the Treasury.
+# Each auction is announced a few days before it takes place; the Treasury's Fiscal Data service lists announced
+# auctions about two weeks ahead (source us_treasury_auctions, the "upcoming auctions" dataset). No pattern is
+# projected, so there are no dates until announced.
+rule ust.auction for us_treasury_auction in segment:US_BOND = ANNOUNCED BY us_treasury_auctions
+  with kind = event, note "announced a few days before each auction; listed about two weeks ahead"
+  cites "US Treasury upcoming auctions (Fiscal Data API)"
+        url "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/upcoming_auctions"
+        label official;
+
+
+# =====================================================================================================================
+# statistics_office:BLS - US Bureau of Labor Statistics
+# Who sets it: the BLS publishes a yearly release schedule, also as an iCal feed (source bls_ical, "BLS release
+# schedule (iCal)").
+# =====================================================================================================================
+
+# US Consumer Price Index (CPI) release: the monthly consumer-price report. The dates come only from the BLS's
+# yearly schedule; no pattern is projected, so there are no dates until announced.
+rule bls.cpi for us_cpi in statistics_office:BLS = ANNOUNCED BY bls_ical
+  with kind = event, note "yearly schedule"
+  cites "BLS release schedule (iCal)" url "https://www.bls.gov/schedule/news_release/bls.ics" label official;
+
+# US Employment Situation (the monthly jobs report with nonfarm payrolls). The dates come from the BLS's yearly
+# schedule. Beyond it they are projected from the BLS's own statement that the report is "typically released on the
+# third Friday after the conclusion of the reference week", the reference week being the week (Sunday to Saturday)
+# that includes the 12th of the previous month. Two observed adjustments: a January release that would fall on 1 to
+# 3 January moves one week later, and a release on a closed day moves to the business day before. Holidays are
+# taken from the Federal Reserve's calendar. Checked against the published dates for 2022-2027: 68 of 69 hits; the
+# miss is 2 July 2026, because federal offices close on Friday 3 July 2026 (Independence Day on a Saturday) but the
+# Fed, whose calendar is used here, does not.
+# The expression: for February to December, take the 12th of the previous month (January to November), go to the
+# Saturday on or after it ("- 1D > NEXT SAT": the first Saturday strictly after the 11th), add 20 days (the third
+# Friday after that Saturday), and roll back to a Fed business day. For January the same steps give a Friday from 1
+# to 7 January, and the early-January move turns 1-3 January into 8-10 January, so the January release is always
+# the first Friday on or after 4 January ("3 JAN > NEXT FRI"), rolled back to a Fed business day.
+rule bls.employment_situation for us_employment_situation in statistics_office:BLS
+  = ANNOUNCED BY bls_ical ELSE
+      3 JAN > NEXT FRI > PRECEDING ON central_bank:FED,
+      [12 JAN : 1M : 12 NOV] - 1D > NEXT SAT + 20D > PRECEDING ON central_bank:FED
+  with kind = event, note "projected as the third Friday after the reference week (the week including the 12th)"
+  cites "BLS release schedule (iCal)" url "https://www.bls.gov/schedule/news_release/bls.ics" label official;
+
+
+# =====================================================================================================================
+# statistics_office:BEA - US Bureau of Economic Analysis
+# Who sets it: the BEA publishes a yearly release schedule with the next year's tab already online (source
+# bea_release_schedule, "BEA release schedule (GDP, personal income and outlays incl. PCE)"). Release times are
+# 8:30, 10:00 or 13:30 Washington time.
+# =====================================================================================================================
+
+# US GDP release: the advance, second and third estimates of gross domestic product. The dates come only from the
+# BEA's schedule; no pattern is projected, so there are no dates until announced.
+rule bea.gdp for us_gdp in statistics_office:BEA = ANNOUNCED BY bea_release_schedule
+  with kind = event, note "yearly schedule, the next year's tab already online"
+  cites "BEA release schedule (GDP, personal income and outlays incl. PCE)"
+        url "https://www.bea.gov/news/schedule/full" label official;
+
+# US Personal Income and Outlays, which includes the PCE price index (the Fed's preferred inflation measure). The
+# dates come only from the BEA's schedule; no pattern is projected, so there are no dates until announced.
+rule bea.personal_income_outlays for us_personal_income_outlays in statistics_office:BEA
+  = ANNOUNCED BY bea_release_schedule
+  with kind = event, note "yearly schedule, the next year's tab already online"
+  cites "BEA release schedule (GDP, personal income and outlays incl. PCE)"
+        url "https://www.bea.gov/news/schedule/full" label official;

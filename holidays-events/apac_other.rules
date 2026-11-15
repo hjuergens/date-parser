@@ -1,0 +1,478 @@
+# Asia-Pacific and other markets: the rate decisions and minutes of the central banks of Japan, China, Korea, India,
+# Malaysia, Indonesia, Thailand, Singapore, the Philippines, Taiwan, Australia, New Zealand and Hong Kong; Japan's
+# GDP release; China's Spring Festival holiday and its make-up working days; the Muhurat trading session of the
+# National Stock Exchange of India; Yom Kippur at the Tel Aviv Stock Exchange; the quarterly MSCI index review; and
+# the closing days of two payment systems: BOJ-NET (Japanese yen) and RITS (Australian dollar).
+#
+# Translated from holidays-events rules/catalog/apac_other.yaml.
+#
+# How to read a rule: "rule <key> for <event> in <scope> = <dates> with kind = ... cites ...;" says on which days the
+# event <event> happens for the market, country or institution <scope>. The part after "=" is a date expression that
+# is evaluated once per year: "31 DEC" is 31 December, "EASTER - 2D" two days before Easter Sunday, "2 MON JUN" the
+# second Monday of June, "4 THU FEB" the fourth Thursday of February, "1 ZHENGYUE" the first day of the first month
+# of the Chinese lunisolar calendar (Chinese New Year), "10 TISHRI" the tenth day of the Hebrew month Tishri,
+# "[a : 1D : b]" every day from a to b, "{SAT + 2D, SUN + 1D}" moves a date that falls on a Saturday by two days and
+# one on a Sunday by one day, "> PRECEDING" moves a date that is not a business day of the rule's scope to the
+# business day before, "> FOLLOWING" to the business day after, "> EOM" to the last day of the month, "> NEXT TUE"
+# to the next Tuesday strictly after the date (so "24 SEP - 1D > NEXT TUE" is the Tuesday on or after 24
+# September), and "@other.rule + 1D" is the day after each date of another rule. "ANNOUNCED BY <source> ELSE
+# <dates>" means the authority publishes the dates itself and its published dates always win; the expression after
+# ELSE only gives projected dates for the years it has not published yet (without ELSE there are no dates at all
+# until it publishes). "kind = closed" marks a day on which the market or institution is shut; "working_day" a
+# weekend day that is worked; "short_day" a day with a shortened or special session; "event" a dated event (a
+# decision, a release, minutes, an index review) that does not change whether the day is a business day.
+# "precision = month" says that only the month is reliable and the day is an estimate. "session" gives the local
+# time (start - end, same time for a single announcement time). "cites" names the source the rule is taken from;
+# "label official" means that source is the authority itself. The full syntax is in README.md in this directory.
+# Weekends are declared in weekends.rules (every scope here has the Saturday-Sunday weekend except the Tel Aviv
+# Stock Exchange, which traded Sunday to Thursday until 4 January 2026).
+#
+# Projected meeting dates: many central banks publish their meeting dates only a year or so ahead. For years not yet
+# published, holidays-events projects a date only where the bank itself states a pattern or where an observed pattern
+# hit the bank's own dates exactly at least 80% of the time over at least two years. Where only the month is stable,
+# the rule gives one "representative" day in that month (usually the median of the past days), moved to the business
+# day before when it falls on a weekend, and marks the rule "precision = month".
+#
+# Scopes used in this file (time zone in brackets):
+#   central_bank:BOJ           Bank of Japan, Japan's central bank (Asia/Tokyo).
+#   statistics_office:ESRI     Cabinet Office of Japan, Economic and Social Research Institute: compiles Japan's
+#                              national accounts (GDP) (Asia/Tokyo).
+#   country:CN                 China (mainland), country (Asia/Shanghai).
+#   central_bank:PBOC          People's Bank of China, China's central bank (Asia/Shanghai).
+#   exchange:XNSE              National Stock Exchange of India, Mumbai, stock exchange (market identifier code XNSE)
+#                              (Asia/Kolkata).
+#   exchange:XTAE              Tel Aviv Stock Exchange, stock exchange (market identifier code XTAE) (Asia/Jerusalem).
+#   exchange:XNYS              New York Stock Exchange, stock exchange (market identifier code XNYS)
+#                              (America/New_York); used here as the business-day calendar of the MSCI index reviews.
+#   central_bank:BOK           Bank of Korea, South Korea's central bank (Asia/Seoul).
+#   central_bank:RBI           Reserve Bank of India, India's central bank (Asia/Kolkata).
+#   central_bank:BNM           Bank Negara Malaysia, Malaysia's central bank (Asia/Kuala_Lumpur).
+#   central_bank:BI            Bank Indonesia, Indonesia's central bank (Asia/Jakarta).
+#   central_bank:BOT           Bank of Thailand, Thailand's central bank (Asia/Bangkok).
+#   central_bank:MAS           Monetary Authority of Singapore, Singapore's central bank (Asia/Singapore).
+#   central_bank:BSP           Bangko Sentral ng Pilipinas, the central bank of the Philippines (Asia/Manila).
+#   central_bank:CBC           Central Bank of the Republic of China (Taiwan) (Asia/Taipei).
+#   central_bank:RBA           Reserve Bank of Australia, Australia's central bank (Australia/Sydney).
+#   central_bank:RBNZ          Reserve Bank of New Zealand, New Zealand's central bank (Pacific/Auckland).
+#   central_bank:HKMA          Hong Kong Monetary Authority, Hong Kong's central banking institution
+#                              (Asia/Hong_Kong).
+#   settlement_system:BOJNET   BOJ-NET, the Bank of Japan's real-time gross settlement system for Japanese yen
+#                              (Asia/Tokyo); in operation since 1 October 1988.
+#   settlement_system:RITS     RITS (Reserve Bank Information and Transfer System), the Reserve Bank of Australia's
+#                              real-time gross settlement system for Australian dollars (Australia/Sydney).
+
+
+# ===================================================================================================================
+# Bank of Japan (central_bank:BOJ)
+# ===================================================================================================================
+
+# Bank of Japan Monetary Policy Meeting: the day the Bank of Japan announces its monetary policy decision (the
+# second day of a two-day meeting). The Bank publishes a meeting table for the current and the next year (source
+# boj_mpm_schedule); those dates always win. The Bank states that it holds eight meetings a year; from 2022 to 2027
+# the decision fell in January, March, April, June, July, September, October and December in 47 of 48 meetings. The
+# day within the month varies (from the 17th to the 31st), so beyond the published table only the month is projected,
+# on a representative day (the median of past decision days): 22 January, 18 March, 28 April, 16 June, 29 July,
+# 21 September, 30 October and 19 December, each moved to the business day before if it falls on a weekend. A
+# decision does not close any market.
+rule boj.mpm_decision for boj_decision in central_bank:BOJ
+  = ANNOUNCED BY boj_mpm_schedule
+    ELSE 22 JAN > PRECEDING, 18 MAR > PRECEDING, 28 APR > PRECEDING, 16 JUN > PRECEDING,
+         29 JUL > PRECEDING, 21 SEP > PRECEDING, 30 OCT > PRECEDING, 19 DEC > PRECEDING
+  with kind = event, precision = month,
+       note "Meeting table for the current and next year; projected months: Jan, Mar, Apr, Jun, Jul, Sep, Oct, Dec (day estimated)"
+  cites "Bank of Japan Monetary Policy Meeting schedule, Bank of Japan" url "https://www.boj.or.jp/en/mopo/mpmsche_minu/index.htm" label official;
+
+
+# ===================================================================================================================
+# Cabinet Office of Japan, Economic and Social Research Institute (statistics_office:ESRI)
+# ===================================================================================================================
+
+# Japan GDP release: the quarterly first or second preliminary estimate of Japan's gross domestic product, published
+# by the Cabinet Office's Economic and Social Research Institute at 8:50 Tokyo time. The institute publishes a release
+# schedule covering the estimates of the next two quarters (source fd_esri_cao_go_jp). No pattern is projected:
+# there are no dates until the schedule names them. A release does not close any market.
+rule esri.gdp for jp_gdp in statistics_office:ESRI = ANNOUNCED BY fd_esri_cao_go_jp
+  with kind = event, session 08:50 - 08:50 tz "Asia/Tokyo",
+       note "Release schedule with the next two quarters' estimates; released at 8:50 Tokyo time"
+  cites "Cabinet Office Japan, Economic and Social Research Institute: quarterly GDP estimates" url "https://www.esri.cao.go.jp/en/sna/sokuhou/sokuhou_top.html" label official;
+
+
+# ===================================================================================================================
+# China (country:CN)
+# The public holidays of mainland China are set by the State Council's regulation on national holidays. Each year
+# (usually in early November) the General Office of the State Council publishes a notice for the next year that
+# fixes the actual days off per holiday, including bridge days, and the weekend days that are worked instead
+# ("make-up working days"); mainland exchanges stay closed on those make-up working days.
+# ===================================================================================================================
+
+# Make-up working days: weekend days (Saturdays or Sundays) that are declared normal working days to make up for
+# bridge days added to a holiday. They are fixed only by the State Council General Office's yearly notice (source
+# cn_state_council_holidays), so there are no dates until the notice is published. Banks and offices work on these
+# days; the mainland stock exchanges nevertheless stay closed.
+rule cn.makeup_workday for makeup_workday in country:CN = ANNOUNCED BY cn_state_council_holidays
+  with kind = working_day, note "State Council General Office notice, usually early November, for the next year"
+  cites "State Council General Office notice on the arrangement of public holidays, General Office of the State Council of the People's Republic of China" url "https://www.gov.cn/zhengce/" label official;
+
+# Chinese New Year (Spring Festival): the statutory days off only. The State Council notice each November adds
+# bridge days and make-up working days, which are not part of this rule.
+# Until the end of 2024 the national holidays regulation gave the first three days of the first lunar month (day 1
+# to day 3 of Zhengyue in the Chinese lunisolar calendar).
+rule cn.chinese_new_year for chinese_new_year in country:CN valid to 2024-12-31
+  = [1 ZHENGYUE : 1D : 1 ZHENGYUE + 2D]
+  with kind = closed, note "National holidays regulation: first three days of the first lunar month"
+  cites "State Council General Office notice on the arrangement of public holidays, General Office of the State Council of the People's Republic of China" url "https://www.gov.cn/zhengce/" label official;
+
+# Chinese New Year (Spring Festival) from 2025: the regulation as amended in 2024 adds Spring Festival Eve (the last
+# day of the old lunar year, the day before the first day of the first lunar month), so the statutory holiday is
+# four days: the eve plus the first three days of the new year.
+rule cn.chinese_new_year for chinese_new_year in country:CN valid from 2025-01-01
+  = [1 ZHENGYUE - 1D : 1D : 1 ZHENGYUE + 2D]
+  with kind = closed, note "National holidays regulation as amended in 2024: Spring Festival eve plus the first three days"
+  cites "State Council General Office notice on the arrangement of public holidays, General Office of the State Council of the People's Republic of China" url "https://www.gov.cn/zhengce/" label official;
+
+
+# ===================================================================================================================
+# People's Bank of China (central_bank:PBOC)
+# ===================================================================================================================
+
+# Loan Prime Rate (LPR) fixing: China's benchmark lending rate, published by the National Interbank Funding Center
+# (China Foreign Exchange Trade System, CFETS) under the authorisation of the People's Bank of China on the 20th of
+# every month, or on the next business day if the 20th is a weekend day. Only weekends are counted here: Chinese
+# public holidays are not taken into account by this rule. The fixing does not close any market. The catalog rule
+# names no source; the CFETS LPR page, where the fixings are published, is cited.
+rule pboc.lpr for pboc_lpr in central_bank:PBOC
+  = 20 JAN > FOLLOWING, 20 FEB > FOLLOWING, 20 MAR > FOLLOWING, 20 APR > FOLLOWING, 20 MAY > FOLLOWING,
+    20 JUN > FOLLOWING, 20 JUL > FOLLOWING, 20 AUG > FOLLOWING, 20 SEP > FOLLOWING, 20 OCT > FOLLOWING,
+    20 NOV > FOLLOWING, 20 DEC > FOLLOWING
+  with kind = event
+  cites "Loan Prime Rate (LPR), National Interbank Funding Center (China Foreign Exchange Trade System)" url "https://www.chinamoney.com.cn/english/bmklpr/" label official;
+
+
+# ===================================================================================================================
+# National Stock Exchange of India (exchange:XNSE)
+# ===================================================================================================================
+
+# Muhurat trading session: a short symbolic trading session (about an hour, usually in the evening) on Diwali
+# (Lakshmi Puja), a day on which the exchange is otherwise closed; it marks the start of the new Hindu accounting
+# year. The NSE announces the date and times by circular a few weeks before Diwali (source apac_exchange_circulars,
+# the exchanges' circulars), so there are no dates until then. The catalog files it as a session change; written
+# here as "short_day", the nearest kind: there is a shortened special session that day, but it does not make the
+# day a normal business day (no settlement takes place).
+rule xnse.muhurat_session for muhurat_session in exchange:XNSE = ANNOUNCED BY apac_exchange_circulars
+  with kind = short_day, note "NSE circular a few weeks before Diwali gives the date and the session times"
+  cites "Exchange circulars (NSE/BSE, TASE, HKEX, SGX, JPX)" label official;
+
+
+# ===================================================================================================================
+# Tel Aviv Stock Exchange (exchange:XTAE)
+# ===================================================================================================================
+
+# Yom Kippur (Day of Atonement): the 10th day of the Hebrew month Tishri, together with its eve (the 9th), on which
+# the Tel Aviv Stock Exchange is also closed. The Hebrew day begins at sunset; the two Gregorian days given are the
+# eve and the day itself. The catalog rule names no source.
+rule xtae.yom_kippur for yom_kippur in exchange:XTAE = [10 TISHRI - 1D : 1D : 10 TISHRI]
+  with kind = closed;
+
+
+# ===================================================================================================================
+# MSCI index review (exchange:XNYS)
+# ===================================================================================================================
+
+# MSCI index review effective: MSCI's quarterly index reviews (February, May, August and November) take effect as of
+# the close of the last business day of the month. The rule takes the last business day of the New York Stock
+# Exchange calendar: the last day of the month, moved back past weekends and NYSE holidays (the NYSE holidays are in
+# us.rules). The review does not close any market. The catalog rule names no source.
+rule msci.rebalance for msci_rebalance in exchange:XNYS
+  = 1 FEB > EOM > PRECEDING, 1 MAY > EOM > PRECEDING, 1 AUG > EOM > PRECEDING, 1 NOV > EOM > PRECEDING
+  with kind = event;
+
+
+# ===================================================================================================================
+# Bank of Korea (central_bank:BOK)
+# ===================================================================================================================
+
+# Bank of Korea Monetary Policy Board rate decision. The Bank publishes next year's eight meeting dates by press
+# release in late October (source bok_mpb_schedule); those dates always win. Observed since 2017: eight meetings, in
+# January, February, April, May, July, August, October and November. The meetings that come with the economic
+# outlook (February, May, August, November) fall on the fourth Thursday of the month (21 of 24 cases from 2021 to
+# 2026); they are projected on that day, or the business day before if it is not one. The January, April, July and
+# October meetings vary and are projected only by month, on the 15th (moved to the business day before if it is a
+# weekend day). Caveat: the language sets precision for a whole rule, not per date; the rule is left at day precision
+# because half of its projected dates follow a day-exact pattern, but the January, April, July and October dates are
+# month estimates only. A decision does not close any market.
+rule bok.mpb_decision for bok_decision in central_bank:BOK
+  = ANNOUNCED BY bok_mpb_schedule
+    ELSE 4 THU FEB > PRECEDING, 4 THU MAY > PRECEDING, 4 THU AUG > PRECEDING, 4 THU NOV > PRECEDING,
+         15 JAN > PRECEDING, 15 APR > PRECEDING, 15 JUL > PRECEDING, 15 OCT > PRECEDING
+  with kind = event,
+       note "Next year's dates by press release in late October; Feb/May/Aug/Nov projected on the fourth Thursday, Jan/Apr/Jul/Oct only by month (15th)"
+  cites "Bank of Korea Monetary Policy Board meeting dates and minutes, Bank of Korea" url "https://www.bok.or.kr/eng/main/contents.do?menuNo=400020" label official;
+
+# Bank of Korea Monetary Policy Board minutes. The Bank lists them once published; it states no fixed lag after the
+# meeting, so nothing is projected and there are no dates until they appear.
+rule bok.mpb_minutes for bok_minutes in central_bank:BOK = ANNOUNCED BY bok_mpb_schedule
+  with kind = event, note "Listed after publication; no fixed lag stated"
+  cites "Bank of Korea Monetary Policy Board meeting dates and minutes, Bank of Korea" url "https://www.bok.or.kr/eng/main/contents.do?menuNo=400020" label official;
+
+
+# ===================================================================================================================
+# Reserve Bank of India (central_bank:RBI)
+# ===================================================================================================================
+
+# Reserve Bank of India Monetary Policy Committee (MPC) decision. Under Section 45ZI of the Reserve Bank of India
+# Act the committee meets (in practice six three-day meetings per fiscal year, April to March); the Bank publishes the
+# schedule for the fiscal year in a press release in late March (source rbi_mpc_schedule), and those dates always
+# win. Meetings in February, April, June, August and December were held every year from fiscal 2022-23 to 2026-27;
+# beyond the published schedule they are projected by month only, on the 6th (moved to the business day before if
+# that is a weekend day). The meeting around the end of September / start of October straddles the month end and is
+# not projected. A decision does not close any market.
+rule rbi.mpc_decision for rbi_decision in central_bank:RBI
+  = ANNOUNCED BY rbi_mpc_schedule
+    ELSE 6 FEB > PRECEDING, 6 APR > PRECEDING, 6 JUN > PRECEDING, 6 AUG > PRECEDING, 6 DEC > PRECEDING
+  with kind = event, precision = month,
+       note "Press release for the fiscal year (April-March), late March; Feb, Apr, Jun, Aug, Dec projected by month"
+  cites "Reserve Bank of India Monetary Policy Committee meeting schedule, Reserve Bank of India" url "https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=62422" label official;
+
+
+# ===================================================================================================================
+# Bank Negara Malaysia (central_bank:BNM)
+# ===================================================================================================================
+
+# Bank Negara Malaysia Monetary Policy Committee decision (the Monetary Policy Statement, released at 3:00 pm Kuala
+# Lumpur time after each meeting). The Bank states six MPC meetings a year (Central Bank of Malaysia Act 2009) and
+# publishes next year's schedule in the last Monetary Policy Statement of the year (source bnm_mpc_schedule); those
+# dates always win. From 2023 to 2026 all 24 meetings were in January, March, May, July, September and November;
+# beyond the schedule they are projected by month, on a representative day: 22 January, 6 March, 8 May, 9 July,
+# 4 September and 5 November, each moved to the business day before if it falls on a weekend. A decision does not
+# close any market.
+rule bnm.mpc_decision for bnm_decision in central_bank:BNM
+  = ANNOUNCED BY bnm_mpc_schedule
+    ELSE 22 JAN > PRECEDING, 6 MAR > PRECEDING, 8 MAY > PRECEDING, 9 JUL > PRECEDING, 4 SEP > PRECEDING,
+         5 NOV > PRECEDING
+  with kind = event, precision = month, session 15:00 - 15:00 tz "Asia/Kuala_Lumpur",
+       note "Next year's schedule in the last Monetary Policy Statement of the year; statement released at 3:00 pm"
+  cites "Bank Negara Malaysia MPC meeting schedule (in the Monetary Policy Statement), Bank Negara Malaysia" url "https://www.bnm.gov.my/-/monetary-policy-statement-06112025" label official;
+
+
+# ===================================================================================================================
+# Bank Indonesia (central_bank:BI)
+# ===================================================================================================================
+
+# Bank Indonesia Board of Governors meeting (RDG) rate decision, announced on the second day of a two-day meeting.
+# By law the Board meets at least once a month ("the RDG shall be held at least once a month"); there was one
+# scheduled meeting in every month of 2023, 2025 and 2026. The Bank publishes next year's schedule in a news release
+# in December (source bi_bog_schedule); those dates always win. Beyond it one decision per month is projected, by
+# month only, on the 19th (moved to the business day before if that is a weekend day). Off-schedule decisions are
+# possible. A decision does not close any market.
+rule bi.bog_decision for bi_decision in central_bank:BI
+  = ANNOUNCED BY bi_bog_schedule
+    ELSE 19 JAN > PRECEDING, 19 FEB > PRECEDING, 19 MAR > PRECEDING, 19 APR > PRECEDING, 19 MAY > PRECEDING,
+         19 JUN > PRECEDING, 19 JUL > PRECEDING, 19 AUG > PRECEDING, 19 SEP > PRECEDING, 19 OCT > PRECEDING,
+         19 NOV > PRECEDING, 19 DEC > PRECEDING
+  with kind = event, precision = month, note "News release in December for the next year; one meeting per month projected"
+  cites "Bank Indonesia Board of Governors meeting schedule, Bank Indonesia" url "https://www.bi.go.id/en/publikasi/ruang-media/news-release/Pages/sp_2730825.aspx" label official;
+
+
+# ===================================================================================================================
+# Bank of Thailand (central_bank:BOT)
+# ===================================================================================================================
+
+# Bank of Thailand Monetary Policy Committee decision (six meetings a year, on Wednesdays). The Bank publishes a
+# table for the current and the next year (source bot_mpc_schedule); no pattern is projected, so there are no dates
+# until the table lists them. Special meetings are possible. A decision does not close any market.
+rule bot.mpc_decision for bot_decision in central_bank:BOT = ANNOUNCED BY bot_mpc_schedule
+  with kind = event, note "Table for the current and the next year"
+  cites "Bank of Thailand MPC meeting schedule and minutes, Bank of Thailand" url "https://www.bot.or.th/en/our-roles/monetary-policy/mpc-meeting.html" label official;
+
+# Bank of Thailand Monetary Policy Committee minutes, published two weeks after each meeting. Taken from the Bank's
+# table only; no dates until listed.
+rule bot.mpc_minutes for bot_minutes in central_bank:BOT = ANNOUNCED BY bot_mpc_schedule
+  with kind = event, note "Two weeks after each meeting"
+  cites "Bank of Thailand MPC meeting schedule and minutes, Bank of Thailand" url "https://www.bot.or.th/en/our-roles/monetary-policy/mpc-meeting.html" label official;
+
+
+# ===================================================================================================================
+# Monetary Authority of Singapore (central_bank:MAS)
+# ===================================================================================================================
+
+# MAS Monetary Policy Statement. MAS publishes the expected dates in its advance release calendar about four months
+# ahead (source mas_release_calendar); those dates always win. MAS states that the April and October statements
+# coincide with the Ministry of Trade and Industry's advance GDP estimates; they were on the 14th, or the business
+# day before it, in 17 of 18 cases from 2018 to 2026, and are projected that way (only weekends are counted as
+# non-business days here). The January and July statements vary and are not projected. A statement does not close
+# any market.
+rule mas.policy_statement for mas_policy_statement in central_bank:MAS
+  = ANNOUNCED BY mas_release_calendar ELSE 14 APR > PRECEDING, 14 OCT > PRECEDING
+  with kind = event, note "Advance release calendar, about four months ahead; April and October projected on the 14th"
+  cites "MAS advance release calendar (Monetary Policy Statement), Monetary Authority of Singapore" url "https://www.mas.gov.sg/monetary-policy/advance-release-calendar" label official;
+
+
+# ===================================================================================================================
+# Bangko Sentral ng Pilipinas (central_bank:BSP)
+# ===================================================================================================================
+
+# BSP Monetary Board policy decision (six meetings a year, on Thursdays). The central bank publishes a schedule table
+# for the year (source bsp_mb_schedule); no pattern is projected, so there are no dates until it is published.
+# Off-cycle meetings are possible and do not appear in the table. A decision does not close any market.
+rule bsp.mb_decision for bsp_decision in central_bank:BSP = ANNOUNCED BY bsp_mb_schedule
+  with kind = event, note "Schedule table for the year"
+  cites "BSP Monetary Board meetings on monetary policy, Bangko Sentral ng Pilipinas" url "https://www.bsp.gov.ph/Pages/PriceStability/ScheduleOfMeetingsOfTheAdvisoryCommitteeAndMonetaryBoardOnMonetaryPolicy.aspx" label official;
+
+
+# ===================================================================================================================
+# Central Bank of the Republic of China (Taiwan) (central_bank:CBC)
+# ===================================================================================================================
+
+# Central Bank of the Republic of China (Taiwan) quarterly Board meeting decision on monetary policy. The bank
+# publishes a provisional schedule for the next year the day after its December meeting (source cbc_mp_schedule); no
+# pattern is projected, so there are no dates until then. A decision does not close any market.
+rule cbc.board_decision for cbc_decision in central_bank:CBC = ANNOUNCED BY cbc_mp_schedule
+  with kind = event, note "Provisional schedule after the December meeting"
+  cites "Central Bank of the Republic of China (Taiwan) monetary policy meetings and minutes" url "https://www.cbc.gov.tw/en/cp-448-189515-f1342-2.html" label official;
+
+# Minutes of the Central Bank of the Republic of China (Taiwan) Board meetings, published about six weeks after each
+# meeting (the Chinese version prevails over the English translation). No dates until published.
+rule cbc.minutes for cbc_minutes in central_bank:CBC = ANNOUNCED BY cbc_mp_schedule
+  with kind = event, note "About six weeks after each meeting"
+  cites "Central Bank of the Republic of China (Taiwan) monetary policy meetings and minutes" url "https://www.cbc.gov.tw/en/cp-448-189515-f1342-2.html" label official;
+
+
+# ===================================================================================================================
+# Reserve Bank of Australia (central_bank:RBA)
+# ===================================================================================================================
+
+# Reserve Bank of Australia Monetary Policy Board decision, announced at 2:30 pm Sydney time on the second day of a
+# two-day meeting. The Bank's calendar lists the current and the next year (source rba_calendar); those dates always
+# win. Since the eight-meeting schedule began in 2024, three meetings followed a fixed pattern in all 12 cases from
+# 2024 to 2027: the last Tuesday of September (the Tuesday on or after 24 September), the first Tuesday of November
+# and the second Tuesday of December; the November and December dates move to the business day before if that
+# Tuesday is not a business day. The other five meetings are not projected. A decision does not close any market.
+# (The "session" here is the announcement time; start and end are the same.)
+rule rba.mpb_decision for rba_decision in central_bank:RBA
+  = ANNOUNCED BY rba_calendar ELSE 24 SEP - 1D > NEXT TUE, 1 TUE NOV > PRECEDING, 2 TUE DEC > PRECEDING
+  with kind = event, session 14:30 - 14:30 tz "Australia/Sydney",
+       note "Calendar with the current and the next year; September, November and December projected; decision at 2:30 pm"
+  cites "RBA calendar: Monetary Policy Board decisions and minutes, Reserve Bank of Australia" url "https://www.rba.gov.au/schedules-events/calendar/?topics=mone" label official;
+
+# Minutes of the Reserve Bank of Australia Monetary Policy Board, released two weeks after each decision at 11:30 am
+# Sydney time. Taken from the Bank's calendar only; no dates until listed.
+rule rba.mpb_minutes for rba_minutes in central_bank:RBA = ANNOUNCED BY rba_calendar
+  with kind = event, session 11:30 - 11:30 tz "Australia/Sydney", note "Two weeks after each decision, 11:30 am"
+  cites "RBA calendar: Monetary Policy Board decisions and minutes, Reserve Bank of Australia" url "https://www.rba.gov.au/schedules-events/calendar/?topics=mone" label official;
+
+
+# ===================================================================================================================
+# Reserve Bank of New Zealand (central_bank:RBNZ)
+# ===================================================================================================================
+
+# Reserve Bank of New Zealand Official Cash Rate (OCR) decision. The Bank publishes the dates about a year ahead
+# (source rbnz_ocr_dates). Its site blocks automated access, and the project does not get around such checks, so
+# the dates must come by another official route; no pattern is projected. A decision does not close any market.
+rule rbnz.ocr_decision for rbnz_ocr_decision in central_bank:RBNZ = ANNOUNCED BY rbnz_ocr_dates
+  with kind = event, note "Dates about a year ahead (site blocks automated access)"
+  cites "RBNZ Official Cash Rate decision dates, Reserve Bank of New Zealand" url "https://www.rbnz.govt.nz/news-and-events/how-we-release-information/ocr-decision-dates-and-financial-stability-report-dates-to-feb-2028" label official;
+
+
+# ===================================================================================================================
+# Hong Kong Monetary Authority (central_bank:HKMA)
+# ===================================================================================================================
+
+# HKMA Base Rate review. Hong Kong's currency is pegged to the US dollar, so the HKMA has no meeting calendar of its
+# own: the Base Rate is set at 50 basis points above the lower end of the US federal funds target range (or the
+# average of the five-day moving averages of the overnight and one-month HIBOR rates, whichever is higher), and is
+# adjusted on the Hong Kong morning after each US Federal Open Market Committee (FOMC) decision. Hence the date is
+# the calendar day after every FOMC decision, announced or projected (rule fed.fomc_decision in us.rules). The
+# review does not close any market.
+rule hkma.base_rate for hkma_base_rate in central_bank:HKMA = @fed.fomc_decision + 1D
+  with kind = event,
+       note "Base Rate = 50 bp above the lower end of the FOMC target range (or the HIBOR average if higher); adjusted the next Hong Kong morning after an FOMC move"
+  cites "HKMA Base Rate announcements, Hong Kong Monetary Authority" url "https://www.hkma.gov.hk/eng/news-and-media/press-releases/2024/11/20241108-3" label official;
+
+
+# ===================================================================================================================
+# BOJ-NET, Japanese yen settlement (settlement_system:BOJNET)
+# BOJ-NET settles on bank business days. Japanese bank holidays are set by the Order for Enforcement of the Banking
+# Act (Cabinet Order No. 40 of 1982), article 5(1): (i) the national holidays under the Act on National Holidays,
+# (ii) 31 December to 3 January, (iii) Saturdays; Sundays are holidays by the Banking Act itself. The national
+# holidays (including 1 January) come from the Cabinet Office's holiday list for Japan and are not repeated here;
+# the rules below add the remaining year-end days. They are single days rather than one span from 31 December to
+# 3 January, so that 1 January (and a substitute holiday on 2 January) stays recorded as the national holiday it is.
+# The days are fixed and not moved when they fall on a weekend (BOJ-NET is closed on weekends anyway).
+# ===================================================================================================================
+
+# Year-end bank holiday, 31 December.
+rule bojnet.dec_31 for jp_bank_new_year_holidays in settlement_system:BOJNET = 31 DEC
+  with kind = closed
+  cites "Japan bank holidays (Order for Enforcement of the Banking Act, art. 5; e-Gov law data), Digital Agency, Government of Japan"
+        art "Order for Enforcement of the Banking Act (Cabinet Order No. 40 of 1982) art. 5(1)(ii)"
+        url "https://laws.e-gov.go.jp/law/357CO0000000040" label official;
+
+# New Year bank holiday, 2 January.
+rule bojnet.jan_2 for jp_bank_holiday_jan_2 in settlement_system:BOJNET = 2 JAN
+  with kind = closed
+  cites "Japan bank holidays (Order for Enforcement of the Banking Act, art. 5; e-Gov law data), Digital Agency, Government of Japan"
+        art "Order for Enforcement of the Banking Act (Cabinet Order No. 40 of 1982) art. 5(1)(ii)"
+        url "https://laws.e-gov.go.jp/law/357CO0000000040" label official;
+
+# New Year bank holiday, 3 January.
+rule bojnet.jan_3 for jp_bank_holiday_jan_3 in settlement_system:BOJNET = 3 JAN
+  with kind = closed
+  cites "Japan bank holidays (Order for Enforcement of the Banking Act, art. 5; e-Gov law data), Digital Agency, Government of Japan"
+        art "Order for Enforcement of the Banking Act (Cabinet Order No. 40 of 1982) art. 5(1)(ii)"
+        url "https://laws.e-gov.go.jp/law/357CO0000000040" label official;
+
+
+# ===================================================================================================================
+# RITS, Australian dollar settlement (settlement_system:RITS)
+# The Reserve Bank of Australia states in its RITS business hours that RITS is closed on weekends and on the
+# following public holidays "where they are observed in NSW and Victoria": New Year's Day, Australia Day, Good
+# Friday, Easter Monday, Anzac Day, King's Birthday, Christmas Day and Boxing Day. The RBA publishes the list for one
+# year at a time (source rba_bank_holidays); these rules give the following years. A holiday counts only where both
+# New South Wales and Victoria observe it, so a weekend substitute day observed in only one of the two states does
+# not close RITS.
+# ===================================================================================================================
+
+# New Year's Day, 1 January; on a Saturday the holiday is observed on Monday 3 January, on a Sunday on Monday
+# 2 January.
+rule rits.new_years_day for new_years_day in settlement_system:RITS = 1 JAN {SAT + 2D, SUN + 1D}
+  with kind = closed
+  cites "Reserve Bank of Australia bank holidays and RITS closures, Reserve Bank of Australia" url "https://www.rba.gov.au/schedules-events/bank-holidays/" label official;
+
+# Australia Day, 26 January; on a Saturday observed on Monday 28 January, on a Sunday on Monday 27 January.
+rule rits.australia_day for australia_day in settlement_system:RITS = 26 JAN {SAT + 2D, SUN + 1D}
+  with kind = closed
+  cites "Reserve Bank of Australia bank holidays and RITS closures, Reserve Bank of Australia" url "https://www.rba.gov.au/schedules-events/bank-holidays/" label official;
+
+# Good Friday, two days before Easter Sunday (Western, Gregorian Easter).
+rule rits.good_friday for good_friday in settlement_system:RITS = EASTER - 2D
+  with kind = closed
+  cites "Reserve Bank of Australia bank holidays and RITS closures, Reserve Bank of Australia" url "https://www.rba.gov.au/schedules-events/bank-holidays/" label official;
+
+# Easter Monday, the day after Easter Sunday.
+rule rits.easter_monday for easter_monday in settlement_system:RITS = EASTER + 1D
+  with kind = closed
+  cites "Reserve Bank of Australia bank holidays and RITS closures, Reserve Bank of Australia" url "https://www.rba.gov.au/schedules-events/bank-holidays/" label official;
+
+# Anzac Day, 25 April. It is not moved when it falls on a weekend: Victoria has no Monday substitute for Anzac Day,
+# so it is not a holiday observed in both NSW and Victoria and RITS stays open on that Monday (for example on
+# Monday 27 April 2026, Anzac Day 2026 being a Saturday).
+rule rits.anzac_day for anzac_day in settlement_system:RITS = 25 APR
+  with kind = closed
+  cites "Reserve Bank of Australia bank holidays and RITS closures, Reserve Bank of Australia" url "https://www.rba.gov.au/schedules-events/bank-holidays/" label official;
+
+# King's Birthday (the Sovereign's Birthday holiday), the second Monday of June in NSW and Victoria.
+rule rits.kings_birthday for kings_birthday in settlement_system:RITS = 2 MON JUN
+  with kind = closed
+  cites "Reserve Bank of Australia bank holidays and RITS closures, Reserve Bank of Australia" url "https://www.rba.gov.au/schedules-events/bank-holidays/" label official;
+
+# Christmas Day, 25 December. If it falls on Saturday or Sunday the holiday moves to the next free weekday:
+# Saturday -> Monday 27, Sunday -> Tuesday 27, because Boxing Day takes Monday 26. Both cases are two days later.
+rule rits.christmas_day for christmas_day in settlement_system:RITS = 25 DEC {SAT + 2D, SUN + 2D}
+  with kind = closed
+  cites "Reserve Bank of Australia bank holidays and RITS closures, Reserve Bank of Australia" url "https://www.rba.gov.au/schedules-events/bank-holidays/" label official;
+
+# Boxing Day, 26 December. If it falls on a Saturday the holiday is Monday 28 (Christmas Day takes Monday 27); if it
+# falls on a Sunday, Tuesday 28 (Christmas Day, on Saturday 25, takes Monday 27). Both cases are two days later.
+rule rits.boxing_day for boxing_day in settlement_system:RITS = 26 DEC {SAT + 2D, SUN + 2D}
+  with kind = closed
+  cites "Reserve Bank of Australia bank holidays and RITS closures, Reserve Bank of Australia" url "https://www.rba.gov.au/schedules-events/bank-holidays/" label official;

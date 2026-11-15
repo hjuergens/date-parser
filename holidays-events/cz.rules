@@ -1,0 +1,41 @@
+# Czechia: the monetary-policy meetings of the Czech National Bank's Bank Board.
+#
+# Translated from holidays-events rules/catalog/cz.yaml. (Czech public holidays are not written as rules in that
+# catalog: holidays-events takes them from software libraries, python-holidays for Czechia, QuantLib's Prague Stock
+# Exchange calendar and exchange_calendars' XPRA, and checks them against the days on which the Czech National Bank
+# publishes its daily FX fixing. So this file has no holiday rules.)
+#
+# How to read a rule: "rule <key> for <event> in <scope> = <dates> with kind = ..., cites ...;" says on which days the
+# event <event> happens for the institution <scope>. "ANNOUNCED BY <source> ELSE <dates>" means the authority
+# publishes the dates itself, and those published dates always win; the expression after ELSE only gives projected
+# dates for the years it has not published yet. "1 THU FEB" is the first Thursday of February; "> PRECEDING" moves a
+# date that is not a business day of the rule's own scope to the business day before. "kind = event" marks a dated
+# event (here a rate decision) that does not change whether the day is a business day. "cites" names the source the
+# rule is taken from; "label official" means that source is the authority itself. The full syntax is in README.md in
+# this directory. Weekends are declared in weekends.rules (the scope here has the Saturday-Sunday weekend).
+#
+# Scopes used in this file:
+#   central_bank:CNB    Czech National Bank (Česká národní banka), the central bank of Czechia (Europe/Prague); its
+#                       Bank Board sets the monetary-policy interest rates.
+
+
+# ===================================================================================================================
+# Czech National Bank (central_bank:CNB)
+# ===================================================================================================================
+
+# CNB Bank Board monetary-policy meeting, the day the Board decides on the policy rates. The Board holds eight such
+# meetings a year. The CNB publishes them in its publication schedule, a spreadsheet (harmonogram.xls, source
+# cnb_schedule) that covers the full current year plus the next quarter (the latter marked preliminary); the same
+# dates are on its calendar page. Those published dates always win.
+# For years the schedule does not cover yet, three of the eight meetings are projected from an observed pattern (not
+# a CNB statement): the meetings with a new macroeconomic forecast, in February, August and November, fall on the
+# first Thursday of the month (17 of 18 cases from 2022 to 2027; the exception was February 2024, a week later). If
+# that Thursday is not a business day, the business day before it is taken (the scope declares no CNB closing days,
+# so in practice this only matters for weekends, and a Thursday never is one). The other five meetings move from year
+# to year and are not projected at all; they appear only once the CNB publishes them. A meeting does not close any
+# market.
+rule cnb.mp_decision for cnb_mp_decision in central_bank:CNB
+  = ANNOUNCED BY cnb_schedule
+    ELSE 1 THU FEB > PRECEDING, 1 THU AUG > PRECEDING, 1 THU NOV > PRECEDING
+  with kind = event, note "Eight meetings a year; only the forecast meetings of February, August and November are projected"
+  cites "CNB publication schedule (harmonogram.xls), Czech National Bank" url "https://www.cnb.cz/export/sites/cnb/cs/.galleries/kalendar/harmonogram.xls" label official;

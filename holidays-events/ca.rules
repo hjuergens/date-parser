@@ -1,0 +1,106 @@
+# Canada: the days on which Lynx, the Canadian-dollar large-value payment system (real-time gross settlement, RTGS)
+# run by Payments Canada, is closed. Lynx closes on the federal statutory holidays; when such a holiday falls on a
+# Saturday or Sunday, the system closes on the next business day instead.
+#
+# Translated from holidays-events rules/catalog/ca.yaml.
+#
+# How to read a rule: "rule <key> for <event> in <scope> [valid from A] = <dates> with kind = ..., cites ...;".
+# The part after "=" is a date expression evaluated for every year: "1 JUL" is the first of July, "1 MON SEP" the
+# first Monday in September, "2 MON OCT" the second Monday in October, "EASTER - 2D" two days before Western Easter
+# Sunday. "{SAT + 2D, SUN + 1D}" after a date moves it when it falls on a Saturday (two days forward, to Monday) or a
+# Sunday (one day forward, to Monday); a weekday not named there leaves the date where it is. "> PREV MON" moves to
+# the last Monday strictly before the date. The kind says what the day does: "closed" means Lynx does not settle
+# payments on that day. Dates are inclusive. The full syntax is in README.md in this directory.
+#
+# Weekends: Lynx has the weekend Saturday and Sunday (see weekends.rules).
+#
+# Scopes used in this file:
+#   settlement_system:LYNX  Lynx (CAD RTGS, Payments Canada): the settlement system for large Canadian-dollar
+#                           payments, operated by Payments Canada; part of Canada (country:CA); time zone
+#                           America/Toronto.
+#
+# Background (from the catalog's comments): Payments Canada publishes a "system closure schedule" that covers two
+# years at a time (read in November 2026: 2026 and 2027). For example Boxing Day 2026 falls on a Saturday, so Lynx
+# closes on Monday 28 December 2026; in 2027 Christmas Day falls on a Saturday, so Lynx closes on Monday 27 December
+# (Christmas) and Tuesday 28 December (Boxing Day). These rules project the closures for the years beyond the
+# published schedule; once Payments Canada publishes a year, its published closures take precedence over the rules.
+# An archived 2023 schedule (Internet Archive) confirms that every weekend holiday closes the next business day.
+# Only federal holidays are included: provincial holidays such as Ontario's Family Day or the Civic Holiday in
+# August are NOT Lynx closures, unlike some Toronto business-day calendars used in financial software.
+
+# =====================================================================================================================
+# settlement_system:LYNX - Lynx, the Canadian-dollar RTGS of Payments Canada
+# Who sets it: Payments Canada, in its system closure schedule (source payments_canada_closures); the underlying
+# holidays are the federal statutory holidays of the Holidays Act and related federal laws.
+# =====================================================================================================================
+
+# New Year's Day, 1 January. Lynx is closed. If 1 January is a Saturday, Lynx closes on Monday 3 January instead;
+# if it is a Sunday, on Monday 2 January.
+# Legal basis: Payments Canada system closure schedule; Holidays Act.
+rule lynx.new_years_day for new_years_day in settlement_system:LYNX = 1 JAN {SAT + 2D, SUN + 1D}
+  with kind = closed
+  cites "Payments Canada system closure schedule (Lynx, ACSS)" url "https://www.payments.ca/system-closure-schedule" label official;
+
+# Good Friday: the Friday before Western Easter Sunday. Lynx is closed.
+# Legal basis: Payments Canada system closure schedule.
+rule lynx.good_friday for good_friday in settlement_system:LYNX = EASTER - 2D
+  with kind = closed
+  cites "Payments Canada system closure schedule (Lynx, ACSS)" url "https://www.payments.ca/system-closure-schedule" label official;
+
+# Victoria Day: the Monday before 25 May, that is the last Monday strictly before 25 May (between 18 and 24 May).
+# Lynx is closed.
+# Legal basis: Payments Canada system closure schedule; Holidays Act section 2 ("the Monday immediately preceding
+# the 25th day of May").
+rule lynx.victoria_day for victoria_day in settlement_system:LYNX = 25 MAY > PREV MON
+  with kind = closed
+  cites "Payments Canada system closure schedule (Lynx, ACSS)" url "https://www.payments.ca/system-closure-schedule" label official;
+
+# Canada Day, 1 July. Lynx is closed. If 1 July is a Saturday, Lynx closes on Monday 3 July instead; if it is a
+# Sunday, on Monday 2 July.
+# Legal basis: Payments Canada system closure schedule; Holidays Act section 2.
+rule lynx.canada_day for canada_day in settlement_system:LYNX = 1 JUL {SAT + 2D, SUN + 1D}
+  with kind = closed
+  cites "Payments Canada system closure schedule (Lynx, ACSS)" url "https://www.payments.ca/system-closure-schedule" label official;
+
+# Labour Day: the first Monday in September. Lynx is closed.
+# Legal basis: Payments Canada system closure schedule.
+rule lynx.labor_day for labor_day in settlement_system:LYNX = 1 MON SEP
+  with kind = closed
+  cites "Payments Canada system closure schedule (Lynx, ACSS)" url "https://www.payments.ca/system-closure-schedule" label official;
+
+# National Day for Truth and Reconciliation, 30 September: a federal statutory holiday since 2021 (Statutes of
+# Canada 2021, chapter 11), first observed on 30 September 2021. Lynx is closed. If 30 September is a Saturday,
+# Lynx closes on Monday 2 October instead; if it is a Sunday, on Monday 1 October.
+# Legal basis: Payments Canada system closure schedule; S.C. 2021, c. 11.
+rule lynx.truth_and_reconciliation_day for truth_and_reconciliation_day in settlement_system:LYNX valid from 2021-09-30
+  = 30 SEP {SAT + 2D, SUN + 1D}
+  with kind = closed
+  cites "Payments Canada system closure schedule (Lynx, ACSS)" url "https://www.payments.ca/system-closure-schedule" label official;
+
+# Thanksgiving (Canada): the second Monday in October. Lynx is closed.
+# Legal basis: Payments Canada system closure schedule.
+rule lynx.thanksgiving_ca for thanksgiving_ca in settlement_system:LYNX = 2 MON OCT
+  with kind = closed
+  cites "Payments Canada system closure schedule (Lynx, ACSS)" url "https://www.payments.ca/system-closure-schedule" label official;
+
+# Remembrance Day, 11 November. Lynx is closed. If 11 November is a Saturday, Lynx closes on Monday 13 November
+# instead; if it is a Sunday, on Monday 12 November.
+# Legal basis: Payments Canada system closure schedule.
+rule lynx.remembrance_day for remembrance_day in settlement_system:LYNX = 11 NOV {SAT + 2D, SUN + 1D}
+  with kind = closed
+  cites "Payments Canada system closure schedule (Lynx, ACSS)" url "https://www.payments.ca/system-closure-schedule" label official;
+
+# Christmas Day, 25 December. Lynx is closed. If 25 December is a Saturday, Lynx closes on Monday 27 December
+# instead; if it is a Sunday, on Tuesday 27 December, because Monday 26 December is already closed for Boxing Day.
+# Legal basis: Payments Canada system closure schedule.
+rule lynx.christmas_day for christmas_day in settlement_system:LYNX = 25 DEC {SAT + 2D, SUN + 2D}
+  with kind = closed
+  cites "Payments Canada system closure schedule (Lynx, ACSS)" url "https://www.payments.ca/system-closure-schedule" label official;
+
+# Boxing Day, 26 December. Lynx is closed. If 26 December is a Saturday, Lynx closes on Monday 28 December instead
+# (as in 2026); if it is a Sunday, on Tuesday 28 December, because Christmas (then on Saturday 25) takes Monday 27
+# (as in 2027).
+# Legal basis: Payments Canada system closure schedule.
+rule lynx.boxing_day for boxing_day in settlement_system:LYNX = 26 DEC {SAT + 2D, SUN + 2D}
+  with kind = closed
+  cites "Payments Canada system closure schedule (Lynx, ACSS)" url "https://www.payments.ca/system-closure-schedule" label official;

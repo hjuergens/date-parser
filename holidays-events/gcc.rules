@@ -1,0 +1,215 @@
+# Gulf states and the Middle East: the Islamic (Hijri) holidays and the national days of Saudi Arabia and the United
+# Arab Emirates, the Eid closures of the Saudi central bank, its payment system and the Saudi stock exchange, the rate
+# decisions of the Gulf central banks whose currencies are pegged to the US dollar, and the shorter trading hours of
+# the Qatari and Egyptian exchanges during Ramadan.
+#
+# Translated from holidays-events rules/catalog/gcc.yaml.
+#
+# How to read a rule: "rule <key> for <event> in <scope> [valid from A to B] = <dates> with kind = ..., cites ...;".
+# The part after "=" is a date expression evaluated for every year. "1 SHAWWAL BY SIGHTING" is the first day of the
+# Hijri (Islamic lunar) month Shawwal; the Hijri months used here are RAMADAN (9th month), SHAWWAL (10th) and
+# DHULHIJJAH (Dhu al-Hijja, 12th). "BY SIGHTING" says the month begins when the new crescent moon is actually seen,
+# which is only known on the evening before; until then date-parser projects the date with the Umm al-Qura calendar
+# (Saudi Arabia's computed Hijri calendar) and marks it as a projection. "[A : B]" is every day from A to B,
+# inclusive. "23 SEP {FRI - 1D, SAT + 1D}" moves the date one day back when it falls on a Friday and one day forward
+# when it falls on a Saturday; other weekdays leave it where it is. "@key" stands for the dates of another rule (here
+# the US Federal Reserve's rate decisions in us.rules). "ANNOUNCED BY <source> [ELSE ...]" means the authority
+# publishes the dates; without ELSE the rule has no dates until it does. The kind says what the day does: "closed" (no
+# work, trading or settlement), "short_day" (open with shorter hours; the session gives them), "event" (a dated event
+# such as a rate decision; the day stays a normal business day). Dates are inclusive. The full syntax is in README.md
+# in this directory.
+#
+# Moon sighting in general: Saudi Arabia uses the computed Umm al-Qura calendar for civil dates, but starts the months
+# Ramadan, Shawwal and Dhu al-Hijja by sighting the new moon; the UAE, Qatar, Kuwait and Egypt decide all religious
+# months by local sighting. A Hijri month has 29 or 30 days, so a sighted date can be one day later or earlier than
+# the computed one. holidays-events therefore projects two dates (scenarios) for each sighted holiday: one after a
+# 29-day previous month, one after a 30-day previous month. date-parser has one date, the Umm al-Qura one, which is
+# always one of the two. How long an Eid closure lasts is set per authority: the Saudi central bank publishes its
+# schedule years ahead, the Saudi Exchange about a month ahead, the UAE's length depends on whether Ramadan has 29 or
+# 30 days.
+#
+# Weekends: see weekends.rules. Saudi Arabia, the Saudi Exchange, the Qatar Stock Exchange and the Egyptian Exchange
+# rest on Friday and Saturday (Saudi Arabia since 29 June 2013, Thursday and Friday before); the UAE on Saturday and
+# Sunday since 1 January 2022 (Friday and Saturday before).
+#
+# Scopes used in this file:
+#   country:SA                Saudi Arabia (country), Asia/Riyadh.
+#   central_bank:SAMA         Saudi Central Bank (formerly Saudi Arabian Monetary Authority, SAMA), the central bank
+#                             of Saudi Arabia; Riyadh.
+#   settlement_system:SARIE   SARIE, the Saudi riyal real-time gross settlement (RTGS) system run by SAMA.
+#   exchange:XSAU             Saudi Exchange (Tadawul), the Saudi stock exchange (MIC XSAU), Riyadh.
+#   country:AE                United Arab Emirates (country), Asia/Dubai.
+#   central_bank:CBUAE        Central Bank of the UAE (central bank of the United Arab Emirates), Abu Dhabi.
+#   central_bank:CBO          Central Bank of Oman (central bank of the Sultanate of Oman), Muscat.
+#   exchange:DSMD             Qatar Stock Exchange (stock exchange, MIC DSMD), Doha, Asia/Qatar.
+#   exchange:XCAI             Egyptian Exchange (EGX, stock exchange, MIC XCAI), Cairo, Africa/Cairo.
+
+
+# =====================================================================================================================
+# country:SA - Saudi Arabia
+# Who sets it: the Saudi government (Council of Ministers, Royal Orders). The religious holidays follow the official
+# moon sighting for Shawwal and Dhu al-Hijja. The catalog names no source for these rules.
+# =====================================================================================================================
+
+# Eid al-Fitr, the festival that ends the fasting month of Ramadan: 1 Shawwal. Shawwal starts when the new moon is
+# sighted after the 29th of Ramadan; if it is not seen, Ramadan has 30 days and Eid is one day later. holidays-events
+# gives both possibilities (scenarios "Ramadan has 29 days" and "Ramadan has 30 days"); this rule gives the Umm
+# al-Qura date, one of the two. Only the first day is listed; the length of the closure is set by each authority (see
+# the SAMA and Saudi Exchange rules below).
+rule sa.eid_al_fitr for eid_al_fitr in country:SA = 1 SHAWWAL BY SIGHTING
+  with kind = closed;
+
+# Eid al-Adha, the Festival of Sacrifice: 10 Dhu al-Hijja. Dhu al-Hijja starts with the moon sighting after the 29th of
+# Dhu al-Qadah (the 11th month), so the date depends on whether Dhu al-Qadah has 29 or 30 days; holidays-events gives
+# both scenarios, this rule the Umm al-Qura date. Only the first day is listed.
+rule sa.eid_al_adha for eid_al_adha in country:SA = 10 DHULHIJJAH BY SIGHTING
+  with kind = closed;
+
+# Arafat Day, the day of the pilgrims' standing at Mount Arafat during the Hajj: 9 Dhu al-Hijja, the day before Eid
+# al-Adha. Like Eid al-Adha it depends on the moon sighting that starts Dhu al-Hijja (two scenarios in
+# holidays-events, the Umm al-Qura date here).
+rule sa.arafat_day for arafat_day in country:SA = 9 DHULHIJJAH BY SIGHTING
+  with kind = closed;
+
+# Saudi National Day, 23 September (the unification of the Kingdom in 1932). Saudi Arabia's weekend is Friday and
+# Saturday; by a decision of the Council of Ministers a National Day on a Friday is taken on the Thursday before
+# (22 September) and one on a Saturday on the Sunday after (24 September).
+rule sa.national_day for saudi_national_day in country:SA = 23 SEP {FRI - 1D, SAT + 1D}
+  with kind = closed;
+
+# Saudi Founding Day, 22 February (the founding of the first Saudi state in 1727). Introduced by the Royal Order of
+# 27 January 2022, so the rule starts on that day (first observed 22 February 2022). As with National Day, a Friday
+# moves to the Thursday before (21 February) and a Saturday to the Sunday after (23 February).
+rule sa.founding_day for saudi_founding_day in country:SA valid from 2022-01-27 = 22 FEB {FRI - 1D, SAT + 1D}
+  with kind = closed;
+
+
+# =====================================================================================================================
+# central_bank:SAMA - Saudi Central Bank, and settlement_system:SARIE - its riyal RTGS payment system
+# Who sets it: SAMA publishes the holiday schedules of the banks and of SARIE separately, several (about four) years
+# ahead (source sama_holidays, "SAMA holiday schedules"). Its website currently fails TLS certificate verification
+# from a standard client (an intermediate certificate is missing), so it is not fetched automatically.
+# =====================================================================================================================
+
+# Eid al-Fitr holiday of the Saudi banks. SAMA sets the days in a schedule published years ahead, in which the bank
+# holiday and the SARIE holiday are listed separately. No projection: the rule has no dates until SAMA's schedule is
+# entered.
+rule sama.eid_al_fitr_bank for eid_al_fitr in central_bank:SAMA = ANNOUNCED BY sama_holidays
+  with kind = closed
+  cites "SAMA holiday schedules (Saudi Central Bank)" url "https://www.sama.gov.sa/" label official;
+
+# Rate decision of the Saudi Central Bank. The Saudi riyal is pegged to the US dollar, so SAMA follows each rate
+# decision of the US Federal Reserve's FOMC (Federal Open Market Committee), on the same evening Riyadh time or the
+# next day. The rule gives the FOMC decision day itself (offset 0 days); "@fed.fomc_decision" is the FOMC rule in
+# us.rules, whose dates are the Fed's published meeting calendar. The catalog files this rule under SAMA's own
+# website (the same source as the holiday schedules); SAMA announces its decisions there.
+rule sama.rate_decision for sama_rate_decision in central_bank:SAMA = @fed.fomc_decision
+  with kind = event, note "Follows the FOMC on the same evening (Riyadh time) or next day"
+  cites "SAMA holiday schedules (Saudi Central Bank)" url "https://www.sama.gov.sa/" label official;
+
+# Eid al-Fitr closure of SARIE, the riyal RTGS system. SAMA lists the SARIE days separately from the bank holiday in
+# its multi-year schedule. No projection: no dates until announced.
+rule sarie.eid_al_fitr for eid_al_fitr in settlement_system:SARIE = ANNOUNCED BY sama_holidays
+  with kind = closed
+  cites "SAMA holiday schedules (Saudi Central Bank)" url "https://www.sama.gov.sa/" label official;
+
+
+# =====================================================================================================================
+# exchange:XSAU - Saudi Exchange (Tadawul), MIC XSAU
+# Who sets it: the exchange announces its Eid closures in notices about one month ahead (source tadawul_notices,
+# "Saudi Exchange holiday calendar and Ramadan notices"). Its website blocks automated access with a bot check, so the
+# notices are entered by hand or obtained under a data agreement.
+# =====================================================================================================================
+
+# Eid al-Fitr closure of the Saudi Exchange. The days are announced about one month ahead; no projection.
+rule xsau.eid_al_fitr for eid_al_fitr in exchange:XSAU = ANNOUNCED BY tadawul_notices
+  with kind = closed
+  cites "Saudi Exchange holiday calendar and Ramadan notices" url "https://www.saudiexchange.sa/" label official;
+
+# Eid al-Adha closure of the Saudi Exchange. Announced about one month ahead; no projection.
+rule xsau.eid_al_adha for eid_al_adha in exchange:XSAU = ANNOUNCED BY tadawul_notices
+  with kind = closed
+  cites "Saudi Exchange holiday calendar and Ramadan notices" url "https://www.saudiexchange.sa/" label official;
+
+
+# =====================================================================================================================
+# country:AE - United Arab Emirates
+# Who sets it: the UAE Cabinet; the public holidays are stated on the government portal u.ae (source
+# uae_gov_holidays, "UAE government portal public holidays / MoHRE announcements", MoHRE being the Ministry of Human
+# Resources and Emiratisation). The UAE decides the religious months by local moon sighting.
+# =====================================================================================================================
+
+# Eid al-Fitr, until the end of 2024: from 29 Ramadan to 3 Shawwal, under the Cabinet resolution on official holidays
+# that was in force before Cabinet Resolution No. 27 of 2024. The holiday starts on 29 Ramadan in any case and ends on
+# 3 Shawwal, which depends on the moon sighting (Ramadan of 29 or 30 days): four or five days. holidays-events gives
+# both endings as scenarios; this rule uses the Umm al-Qura month lengths.
+rule ae.eid_al_fitr for eid_al_fitr in country:AE valid to 2024-12-31
+  = [29 RAMADAN BY SIGHTING : 3 SHAWWAL BY SIGHTING]
+  with kind = closed
+  cites "UAE government portal public holidays" url "https://u.ae/en/information-and-services/public-holidays-and-religious-affairs/public-holidays" label official;
+
+# Eid al-Fitr since 1 January 2025, under Cabinet Resolution No. 27 of 2024 concerning public holidays (as stated on
+# u.ae, checked 27 October 2026; first applied for Eid al-Fitr 2025, still to be verified): 1 to 3 Shawwal, and in
+# addition 30 Ramadan when Ramadan has 30 days. So the holiday is three days after a 29-day Ramadan and four days
+# after a 30-day Ramadan. The expression runs from the day after 29 Ramadan to 3 Shawwal: the day after 29 Ramadan is
+# 30 Ramadan when Ramadan has 30 days, and 1 Shawwal when it has 29. (A plain "30 RAMADAN" cannot be written: in a
+# 29-day Ramadan that day does not exist.) holidays-events gives both scenarios; this rule uses the Umm al-Qura month
+# length.
+rule ae.eid_al_fitr for eid_al_fitr in country:AE valid from 2025-01-01
+  = [29 RAMADAN BY SIGHTING + 1D : 3 SHAWWAL BY SIGHTING]
+  with kind = closed, note "1 to 3 Shawwal; day 30 of Ramadan too if Ramadan has 30 days"
+  cites "UAE government portal public holidays" url "https://u.ae/en/information-and-services/public-holidays-and-religious-affairs/public-holidays" label official;
+
+# Eid al-Adha: from Arafat Day (9 Dhu al-Hijja) to 12 Dhu al-Hijja, four days. The start of Dhu al-Hijja depends on
+# the moon sighting; holidays-events gives both scenarios, this rule the Umm al-Qura dates. The catalog names no
+# source for this rule.
+rule ae.eid_al_adha for eid_al_adha in country:AE = [9 DHULHIJJAH BY SIGHTING : 12 DHULHIJJAH BY SIGHTING]
+  with kind = closed, note "Arafat Day to Dhu al-Hijja 12";
+
+# UAE National Day (Eid al-Etihad, the union of the emirates on 2 December 1971): 2 and 3 December, two days. The
+# catalog names no source for this rule.
+rule ae.national_day for uae_national_day in country:AE = [2 DEC : 3 DEC]
+  with kind = closed;
+
+
+# =====================================================================================================================
+# central_bank:CBO - Central Bank of Oman, and central_bank:CBUAE - Central Bank of the UAE
+# Both currencies are pegged to the US dollar, so both banks follow the rate decisions of the US Federal Reserve's
+# FOMC. "@fed.fomc_decision" is the FOMC rule in us.rules.
+# =====================================================================================================================
+
+# Central Bank of Oman repo rate decision. The Omani rial is pegged to the US dollar; the bank follows each FOMC
+# decision on the same evening Muscat time or the next day. The rule gives the FOMC decision day (offset 0 days).
+# Source: "Central Bank of Oman notices and decisions" (cbo_notices); its site fails TLS certificate verification
+# from a standard client (intermediate certificate missing).
+rule cbo.rate_decision for cbo_rate_decision in central_bank:CBO = @fed.fomc_decision
+  with kind = event, note "Pegged to USD; follows the FOMC on the same evening (Muscat time) or next day"
+  cites "Central Bank of Oman notices and decisions" url "https://cbo.gov.om/" label official;
+
+# Central Bank of the UAE base rate decision. The dirham is pegged to the US dollar; the bank follows each FOMC
+# decision. The rule gives the FOMC decision day (offset 0 days). Source: "Central Bank of the UAE notices"
+# (cbuae_notices); the site blocks automated access with a bot check.
+rule cbuae.rate_decision for cbuae_rate_decision in central_bank:CBUAE = @fed.fomc_decision
+  with kind = event
+  cites "Central Bank of the UAE notices" url "https://www.centralbank.ae/" label official;
+
+
+# =====================================================================================================================
+# Ramadan trading hours: exchange:DSMD (Qatar Stock Exchange) and exchange:XCAI (Egyptian Exchange)
+# Each exchange announces its Ramadan session once a year in a circular (source gcc_exchange_circulars, "DFM / ADX /
+# QSE / Boursa Kuwait / EGX circulars", one source for several exchanges' circulars; it has no single URL). The catalog
+# models this as one session change per year and gives the hours the exchanges usually set. The event class is
+# "session change"; the nearest kind is short_day (the exchange is open, with shorter hours than usual), with the
+# expected Ramadan session. No projection: the days (the month of Ramadan, by moon sighting) appear only once the
+# circular is entered.
+# =====================================================================================================================
+
+# Qatar Stock Exchange, Ramadan session: expected 09:30 to 13:15 Doha time, announced each year by circular.
+rule dsmd.ramadan_session for ramadan_session in exchange:DSMD = ANNOUNCED BY gcc_exchange_circulars
+  with kind = short_day, session 09:30 - 13:15 tz "Asia/Qatar"
+  cites "DFM / ADX / QSE / Boursa Kuwait / EGX circulars" label official;
+
+# Egyptian Exchange, Ramadan session: expected 10:00 to 13:30 Cairo time, announced each year by circular.
+rule xcai.ramadan_session for ramadan_session in exchange:XCAI = ANNOUNCED BY gcc_exchange_circulars
+  with kind = short_day, session 10:00 - 13:30 tz "Africa/Cairo"
+  cites "DFM / ADX / QSE / Boursa Kuwait / EGX circulars" label official;

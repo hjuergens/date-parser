@@ -170,3 +170,22 @@ def test_hindu_is_not_computed(book):
 def test_load_errors(text, message):
     with pytest.raises(ValueError, match=message):
         parse_rules(text)
+
+
+def test_announced_by_with_and_without_projection_and_kind_event():
+    from datetime import date
+
+    from lark_schedule.rules import parse_rules
+
+    book = parse_rules("""
+rule fed.christmas for christmas_day in central_bank:FED = 25 DEC;
+rule fed.fomc for fomc_decision in central_bank:FED = ANNOUNCED BY fed_fomc_calendar ELSE 3 THU MAR with kind = event;
+rule fed.minutes for fomc_minutes in central_bank:FED = ANNOUNCED BY fed_fomc_calendar with kind = event;
+rule fed.after for test_day in central_bank:FED = 18 MAR > FOLLOWING;
+""", announcements={"fed.fomc": [date(2026, 3, 18)], "fed.minutes": [date(2026, 4, 8)]})
+    got = {y: [(o.rule, o.date, o.projected) for o in book.holidays("central_bank:FED", y)] for y in (2026, 2027)}
+    assert ("fed.fomc", date(2026, 3, 18), False) in got[2026]            # the announcement wins
+    assert ("fed.fomc", date(2027, 3, 18), True) in got[2027]             # else the projection, marked
+    assert ("fed.minutes", date(2026, 4, 8), False) in got[2026]
+    assert not [o for o in got[2027] if o[0] == "fed.minutes"]            # no ELSE: nothing until announced
+    assert ("fed.after", date(2027, 3, 18), False) in got[2027]           # the event on that day closes nothing

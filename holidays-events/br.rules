@@ -1,0 +1,118 @@
+# Brazil: the days on which the Banco Central do Brasil (BCB), Brazil's central bank, does not work, judged by its
+# daily US dollar fixing. These are the federal holidays plus Carnival Monday, Carnival Tuesday and Corpus Christi,
+# which are not federal holidays but on which the central bank publishes no PTAX either.
+#
+# Translated from holidays-events rules/catalog/br.yaml.
+#
+# How to read a rule: "rule <key> for <event> in <scope> [valid from A] = <dates> with kind = ..., cites ...;".
+# The part after "=" is a date expression evaluated for every year: "21 APR" is the twenty-first of April,
+# "EASTER - 48D" forty-eight days before Western Easter Sunday, "EASTER + 60D" sixty days after it. "valid from A"
+# means the rule applies only to dates on or after A. The kind says what the day does: "closed" means the central
+# bank does not work that day (no PTAX fixing). Dates are inclusive. The full syntax is in README.md in this
+# directory.
+#
+# Weekends: the central bank has the weekend Saturday and Sunday (see weekends.rules). Brazilian holidays are not
+# moved when they fall on a weekend; that day is then simply lost.
+#
+# Scopes used in this file:
+#   central_bank:BCB  Banco Central do Brasil (central bank of Brazil); part of Brazil (country:BR); time zone
+#                     America/Sao_Paulo.
+#
+# What PTAX is and why it defines these days: PTAX is the official USD/BRL exchange rate that the Banco Central do
+# Brasil publishes every working day (the closing PTAX around 13:00 Brasilia time); it is the fixing used by BRL
+# non-deliverable forwards. A weekday without a PTAX is a day on which the central bank did not fix. The full PTAX
+# history from 2000 to 2026 (read November 2026 from the BCB open-data API) has 262 weekdays without PTAX, and they
+# are exactly the days these rules project: the federal holidays plus Carnival Monday and Tuesday and Corpus Christi.
+# General-purpose holiday libraries list those three only as optional days, so a plain national calendar for Brazil
+# misses them.
+
+# =====================================================================================================================
+# central_bank:BCB - Banco Central do Brasil
+# Who sets it: the federal holidays are set by federal law (mainly Law 662 of 1949 and its amendments); Carnival and
+# Corpus Christi are the central bank's own practice. The source is the PTAX fixing history (source bcb_ptax,
+# "Banco Central do Brasil PTAX (USD/BRL closing rate, Olinda open-data API)"), published by the central bank itself.
+# =====================================================================================================================
+
+# New Year's Day (Confraternizacao Universal), 1 January. Federal holiday; no PTAX. Not moved if on a weekend.
+# Legal basis: Law 662 of 1949.
+rule bcb.new_years_day for new_years_day in central_bank:BCB = 1 JAN
+  with kind = closed
+  cites "Banco Central do Brasil PTAX (USD/BRL closing rate, Olinda open-data API)" url "https://dadosabertos.bcb.gov.br/dataset/dolar-americano-usd-todos-os-boletins-diarios" label official;
+
+# Carnival Monday: 48 days before Western Easter Sunday. Not a federal holiday (a "ponto facultativo", an optional
+# day off), but the central bank has published no PTAX on any Carnival Monday from 2000 to 2026.
+rule bcb.carnival_monday for carnival_monday in central_bank:BCB = EASTER - 48D
+  with kind = closed
+  cites "Banco Central do Brasil PTAX (USD/BRL closing rate, Olinda open-data API)" url "https://dadosabertos.bcb.gov.br/dataset/dolar-americano-usd-todos-os-boletins-diarios" label official;
+
+# Carnival Tuesday (Shrove Tuesday): 47 days before Western Easter Sunday. Not a federal holiday, but the central
+# bank has published no PTAX on any Carnival Tuesday from 2000 to 2026. (Ash Wednesday, the day after, is a normal
+# fixing day.)
+rule bcb.carnival_tuesday for carnival_tuesday in central_bank:BCB = EASTER - 47D
+  with kind = closed
+  cites "Banco Central do Brasil PTAX (USD/BRL closing rate, Olinda open-data API)" url "https://dadosabertos.bcb.gov.br/dataset/dolar-americano-usd-todos-os-boletins-diarios" label official;
+
+# Good Friday (Paixao de Cristo): the Friday before Western Easter Sunday. Observed nationwide as a religious
+# holiday; the catalog gives no legal basis. No PTAX.
+rule bcb.good_friday for good_friday in central_bank:BCB = EASTER - 2D
+  with kind = closed
+  cites "Banco Central do Brasil PTAX (USD/BRL closing rate, Olinda open-data API)" url "https://dadosabertos.bcb.gov.br/dataset/dolar-americano-usd-todos-os-boletins-diarios" label official;
+
+# Tiradentes Day, 21 April (in memory of the independence fighter Tiradentes). Federal holiday; no PTAX. Not moved
+# if on a weekend.
+# Legal basis: Law 662 of 1949.
+rule bcb.tiradentes_day for tiradentes_day in central_bank:BCB = 21 APR
+  with kind = closed
+  cites "Banco Central do Brasil PTAX (USD/BRL closing rate, Olinda open-data API)" url "https://dadosabertos.bcb.gov.br/dataset/dolar-americano-usd-todos-os-boletins-diarios" label official;
+
+# Labour Day (Dia do Trabalho), 1 May. Federal holiday; no PTAX. Not moved if on a weekend.
+# Legal basis: Law 662 of 1949.
+rule bcb.labour_day for labour_day in central_bank:BCB = 1 MAY
+  with kind = closed
+  cites "Banco Central do Brasil PTAX (USD/BRL closing rate, Olinda open-data API)" url "https://dadosabertos.bcb.gov.br/dataset/dolar-americano-usd-todos-os-boletins-diarios" label official;
+
+# Corpus Christi: the Thursday 60 days after Western Easter Sunday. Not a federal holiday (an optional day off), but
+# the central bank has published no PTAX on any Corpus Christi from 2000 to 2026.
+rule bcb.corpus_christi for corpus_christi in central_bank:BCB = EASTER + 60D
+  with kind = closed
+  cites "Banco Central do Brasil PTAX (USD/BRL closing rate, Olinda open-data API)" url "https://dadosabertos.bcb.gov.br/dataset/dolar-americano-usd-todos-os-boletins-diarios" label official;
+
+# Independence Day, 7 September. Federal holiday; no PTAX. Not moved if on a weekend.
+# Legal basis: Law 662 of 1949.
+rule bcb.independence_day for independence_day in central_bank:BCB = 7 SEP
+  with kind = closed
+  cites "Banco Central do Brasil PTAX (USD/BRL closing rate, Olinda open-data API)" url "https://dadosabertos.bcb.gov.br/dataset/dolar-americano-usd-todos-os-boletins-diarios" label official;
+
+# Our Lady of Aparecida (Nossa Senhora Aparecida, patron saint of Brazil), 12 October; also Children's Day. Federal
+# holiday since Law 6,802 of 30 June 1980, hence the rule starts on that date. No PTAX. Not moved if on a weekend.
+# Legal basis: Law 6,802 of 1980.
+rule bcb.our_lady_aparecida for our_lady_aparecida in central_bank:BCB valid from 1980-06-30 = 12 OCT
+  with kind = closed
+  cites "Banco Central do Brasil PTAX (USD/BRL closing rate, Olinda open-data API)" url "https://dadosabertos.bcb.gov.br/dataset/dolar-americano-usd-todos-os-boletins-diarios" label official;
+
+# All Souls' Day (Finados), 2 November. Observed nationwide; the catalog gives no legal basis. No PTAX. Not moved
+# if on a weekend.
+rule bcb.all_souls_day for all_souls_day in central_bank:BCB = 2 NOV
+  with kind = closed
+  cites "Banco Central do Brasil PTAX (USD/BRL closing rate, Olinda open-data API)" url "https://dadosabertos.bcb.gov.br/dataset/dolar-americano-usd-todos-os-boletins-diarios" label official;
+
+# Proclamation of the Republic Day, 15 November (the republic was proclaimed on 15 November 1889). Federal holiday;
+# no PTAX. Not moved if on a weekend.
+# Legal basis: Law 662 of 1949.
+rule bcb.republic_day for br_republic_day in central_bank:BCB = 15 NOV
+  with kind = closed
+  cites "Banco Central do Brasil PTAX (USD/BRL closing rate, Olinda open-data API)" url "https://dadosabertos.bcb.gov.br/dataset/dolar-americano-usd-todos-os-boletins-diarios" label official;
+
+# National Day of Zumbi and Black Consciousness (Dia Nacional de Zumbi e da Consciencia Negra), 20 November. A
+# federal holiday from 2024 on, by Law 14,759 of 21 December 2023 (before that only some states and cities kept
+# it). No PTAX. Not moved if on a weekend.
+# Legal basis: Law 14,759 of 21 December 2023.
+rule bcb.black_consciousness_day for black_consciousness_day in central_bank:BCB valid from 2024-01-01 = 20 NOV
+  with kind = closed
+  cites "Banco Central do Brasil PTAX (USD/BRL closing rate, Olinda open-data API)" url "https://dadosabertos.bcb.gov.br/dataset/dolar-americano-usd-todos-os-boletins-diarios" label official;
+
+# Christmas Day (Natal), 25 December. Federal holiday; no PTAX. Not moved if on a weekend.
+# Legal basis: Law 662 of 1949.
+rule bcb.christmas_day for christmas_day in central_bank:BCB = 25 DEC
+  with kind = closed
+  cites "Banco Central do Brasil PTAX (USD/BRL closing rate, Olinda open-data API)" url "https://dadosabertos.bcb.gov.br/dataset/dolar-americano-usd-todos-os-boletins-diarios" label official;

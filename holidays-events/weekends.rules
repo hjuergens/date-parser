@@ -1,0 +1,78 @@
+# Weekend regimes of the scopes in this directory, from holidays-events rules/catalog/scopes.yaml.
+#
+# A weekend day is never a business day. A scope without a line here has the weekend Saturday and Sunday.
+# Weekdays: MON TUE WED THU FRI SAT SUN. "from" gives the first day of a regime; the regime before it ends there.
+# In holidays-events a scope without its own regime takes its parent's (a central bank or a settlement system takes
+# its country's); the rule files here have no parent scopes, so those scopes are listed again with the country's
+# regime. Notes in brackets are the catalog's own remarks.
+
+# Saudi Arabia
+weekend country:SA = {THU, FRI};   # [Thu-Fri weekend]
+weekend country:SA = {FRI, SAT} from 2013-06-29;   # [Fri-Sat weekend since 29 Jun 2013]
+
+# Saudi Exchange (Tadawul)
+weekend exchange:XSAU = {FRI, SAT} from 2013-06-29;   # [Trading Sun-Thu]
+
+# United Arab Emirates
+weekend country:AE = {FRI, SAT};   # [Fri-Sat weekend]
+weekend country:AE = {SAT, SUN} from 2022-01-01;   # [Sat-Sun weekend since 1 Jan 2022]
+
+# Dubai Financial Market
+weekend exchange:XDFM = {FRI, SAT};
+weekend exchange:XDFM = {SAT, SUN} from 2022-01-01;
+
+# Abu Dhabi Securities Exchange
+weekend exchange:XADS = {FRI, SAT};
+weekend exchange:XADS = {SAT, SUN} from 2022-01-01;
+
+# Qatar
+weekend country:QA = {FRI, SAT};   # [Fri-Sat weekend; earlier Thu-Fri regime not yet modelled]
+
+# Qatar Stock Exchange
+weekend exchange:DSMD = {FRI, SAT};
+
+# Kuwait
+weekend country:KW = {FRI, SAT};   # [Fri-Sat weekend; earlier Thu-Fri regime not yet modelled]
+
+# Oman
+weekend country:OM = {THU, FRI};   # [Thu-Fri weekend (switch date to verify)]
+weekend country:OM = {FRI, SAT} from 2013-05-01;   # [Fri-Sat weekend since May 2013 (date to verify)]
+
+# Muscat Stock Exchange
+weekend exchange:XMUS = {FRI, SAT} from 2013-05-01;   # [Trading Sun-Thu (to verify)]
+
+# Boursa Kuwait
+weekend exchange:XKUW = {FRI, SAT};
+
+# Egypt
+weekend country:EG = {FRI, SAT};   # [Fri-Sat weekend]
+
+# Egyptian Exchange
+weekend exchange:XCAI = {FRI, SAT};   # [Trading Sun-Thu]
+
+# Israel
+weekend country:IL = {FRI, SAT};   # [Fri-Sat weekend]
+
+# Tel Aviv Stock Exchange
+weekend exchange:XTAE = {FRI, SAT};   # [Trading Sun-Thu]
+weekend exchange:XTAE = {SAT, SUN} from 2026-01-05;   # [Trading Mon-Fri since 5 Jan 2026]
+
+# Algeria
+weekend country:DZ = {THU, FRI};   # [Thu-Fri weekend (switch date to verify)]
+weekend country:DZ = {FRI, SAT} from 2009-08-14;   # [Fri-Sat weekend since August 2009 (date to verify)]
+
+# SARIE (SAMA RTGS) (as its parent country:SA)
+weekend settlement_system:SARIE = {THU, FRI};   # [Thu-Fri weekend]
+weekend settlement_system:SARIE = {FRI, SAT} from 2013-06-29;   # [Fri-Sat weekend since 29 Jun 2013]
+
+# Saudi Central Bank (as its parent country:SA)
+weekend central_bank:SAMA = {THU, FRI};   # [Thu-Fri weekend]
+weekend central_bank:SAMA = {FRI, SAT} from 2013-06-29;   # [Fri-Sat weekend since 29 Jun 2013]
+
+# Central Bank of the UAE (as its parent country:AE)
+weekend central_bank:CBUAE = {FRI, SAT};   # [Fri-Sat weekend]
+weekend central_bank:CBUAE = {SAT, SUN} from 2022-01-01;   # [Sat-Sun weekend since 1 Jan 2022]
+
+# Central Bank of Oman (as its parent country:OM)
+weekend central_bank:CBO = {THU, FRI};   # [Thu-Fri weekend (switch date to verify)]
+weekend central_bank:CBO = {FRI, SAT} from 2013-05-01;   # [Fri-Sat weekend since May 2013 (date to verify)]

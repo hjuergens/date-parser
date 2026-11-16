@@ -189,3 +189,60 @@ rule fed.after for test_day in central_bank:FED = 18 MAR > FOLLOWING;
     assert ("fed.minutes", date(2026, 4, 8), False) in got[2026]
     assert not [o for o in got[2027] if o[0] == "fed.minutes"]            # no ELSE: nothing until announced
     assert ("fed.after", date(2027, 3, 18), False) in got[2027]           # the event on that day closes nothing
+
+
+def test_one_of_gives_named_alternatives_as_projections():
+    book = parse_rules("""
+rule sa.eid for eid_al_fitr in country:SA = ONE OF { 1 RAMADAN + 29D AS ramadan_29, 1 RAMADAN + 30D AS ramadan_30 };
+rule ae.eid for eid_al_fitr in country:AE
+  = ONE OF { [1 RAMADAN + 29D : 1 RAMADAN + 31D] AS ramadan_29, [1 RAMADAN + 29D : 1 RAMADAN + 32D] AS ramadan_30 };
+rule xsau.eid for eid_al_fitr in exchange:XSAU = ANNOUNCED BY tadawul ELSE ONE OF { 1 SHAWWAL AS uq, 1 SHAWWAL + 1D AS late };
+""", announcements={"xsau.eid": [date(2026, 3, 22)]})
+    sa = [(o.date, o.scenario, o.projected) for o in book.holidays("country:SA", 2026)]
+    assert sa == [(date(2026, 3, 19), "ramadan_29", True), (date(2026, 3, 20), "ramadan_30", True)]
+    ae = [(o.date, o.scenario) for o in book.holidays("country:AE", 2026)]
+    assert len(ae) == 7 and (date(2026, 3, 19), "ramadan_29") in ae and (date(2026, 3, 19), "ramadan_30") in ae
+    assert [(o.date, o.scenario) for o in book.holidays("exchange:XSAU", 2026)] == [(date(2026, 3, 22), None)]
+    assert {o.scenario for o in book.holidays("exchange:XSAU", 2027)} == {"uq", "late"}
+    # 2030 has two Ramadans: one Eid in February 2030, the other in January 2031
+    assert [o.date for o in book.holidays("country:SA", 2030) if o.scenario == "ramadan_29"] == [date(2030, 2, 3)]
+    assert [o.date for o in book.holidays("country:SA", 2031) if o.scenario == "ramadan_29"] == [date(2031, 1, 24)]
+
+
+@pytest.mark.parametrize("text, message", [
+    ("rule a.b for x in country:SA = ONE OF { 1 RAMADAN AS a, 2 RAMADAN AS a };", "names twice"),
+])
+def test_one_of_errors(text, message):
+    with pytest.raises(ValueError, match=message):
+        parse_rules(text)
+
+
+def test_single_session_time_new_kinds_and_day_condition():
+    book = parse_rules("""
+rule rba.decision for rba_decision in central_bank:RBA = 3 TUE MAR with kind = event, session 14:30 tz "Australia/Sydney";
+rule xnse.muhurat for muhurat_session in exchange:XNSE = 1 NOV with kind = special_session;
+rule dsmd.ramadan for ramadan_session in exchange:DSMD = 1 MAR with kind = changed_hours, session 09:30 - 13:15;
+rule zrh.s for sechselaeuten in subdivision:CH_ZRH
+  = 3 MON APR \\ {EASTER - 6D, EASTER + 1D}, EASTER - 13D IF DAY 8..14 APR, EASTER + 8D IF DAY 22..28 APR;
+rule x.first for test_day in country:XX = [1 JAN : 1M : 1 DEC] > NEXT FRI IF DAY 1..3 AND NOT DAY 1..3 MAY;
+""")
+    (rba,) = book.holidays("central_bank:RBA", 2026)
+    assert rba.session == ("14:30", "14:30", "Australia/Sydney")
+    assert book.holidays("exchange:XNSE", 2026)[0].kind == "special_session"
+    assert book.holidays("exchange:DSMD", 2026)[0].kind == "changed_hours"
+    assert [o.date for y in (2019, 2022, 2025, 2026, 2027) for o in book.holidays("subdivision:CH_ZRH", y)] == [
+        date(2019, 4, 8), date(2022, 4, 25), date(2025, 4, 28), date(2026, 4, 20), date(2027, 4, 19)]
+    assert [o.date for o in book.holidays("country:XX", 2025)] == [date(2025, 1, 3), date(2025, 10, 3)]
+
+
+def test_parse_body_for_hosts():
+    from lark_schedule.rules import RuleContext, parse_body
+
+    body = parse_body("ONE OF { 1 RAMADAN + 29D AS ramadan_29, 1 RAMADAN + 30D AS ramadan_30 }")
+    assert body.dates(RuleContext(base=date(2026, 1, 1))) == [(date(2026, 3, 19), "ramadan_29"),
+                                                               (date(2026, 3, 20), "ramadan_30")]
+    assert not body.calendar and not body.references
+    rel = parse_body("@fed.fomc_decision + 1B")
+    assert rel.references == {"fed.fomc_decision"} and rel.calendar
+    assert parse_body("15 MAY {SUN + 1D}").dates(RuleContext(base=date(2022, 1, 1))) == [(date(2022, 5, 16), None)]
+    assert parse_body("EASTER + 60D > PRECEDING").calendar

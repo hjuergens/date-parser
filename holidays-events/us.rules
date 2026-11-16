@@ -222,25 +222,10 @@ rule fed.fomc_minutes for fomc_minutes in central_bank:FED = @fed.fomc_decision 
 # Fed communications blackout: the period around each FOMC meeting in which Fed officials do not speak in public
 # about monetary policy. It starts on the second Saturday before the meeting's decision day and ends on the day
 # after the decision (midnight Eastern Time). Every day of that span is an event day.
-# Caveat: the expression lists the thirteen days from the second Saturday before the decision through the day after
-# it ("> PREV 2ND SAT" goes back to the second Saturday strictly before the decision, "+ kD" adds k days). Thirteen
-# days is exact for a decision on a Wednesday, which is when scheduled FOMC decisions fall; for a decision on another
-# weekday the span would differ (the language cannot write a span between two dates derived from each occurrence of
-# another rule; README.md, "Known grammar gaps").
+# The expression is one range per decision, from the second Saturday strictly before it ("> PREV 2ND SAT") to the
+# day after it; the two ends are paired per occurrence of the FOMC rule.
 rule fed.blackout for fed_blackout in central_bank:FED
-  = @fed.fomc_decision > PREV 2ND SAT,
-    @fed.fomc_decision > PREV 2ND SAT + 1D,
-    @fed.fomc_decision > PREV 2ND SAT + 2D,
-    @fed.fomc_decision > PREV 2ND SAT + 3D,
-    @fed.fomc_decision > PREV 2ND SAT + 4D,
-    @fed.fomc_decision > PREV 2ND SAT + 5D,
-    @fed.fomc_decision > PREV 2ND SAT + 6D,
-    @fed.fomc_decision > PREV 2ND SAT + 7D,
-    @fed.fomc_decision > PREV 2ND SAT + 8D,
-    @fed.fomc_decision > PREV 2ND SAT + 9D,
-    @fed.fomc_decision > PREV 2ND SAT + 10D,
-    @fed.fomc_decision > PREV 2ND SAT + 11D,
-    @fed.fomc_decision > PREV 2ND SAT + 12D
+  = [@fed.fomc_decision > PREV 2ND SAT : @fed.fomc_decision + 1D]
   with kind = event, note "second Saturday before the meeting until the day after it ends"
   cites "FOMC meeting calendar" url "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm" label official;
 

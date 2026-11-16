@@ -44,10 +44,8 @@
 # does not close any market, so the day stays a business day.
 rule ons.cpi for uk_cpi in statistics_office:ONS
   = ANNOUNCED BY ons_release_calendar
-    ELSE 16 JAN - 1D > NEXT WED, 16 FEB - 1D > NEXT WED, 16 MAR - 1D > NEXT WED, 16 APR - 1D > NEXT WED,
-         16 MAY - 1D > NEXT WED, 16 JUN - 1D > NEXT WED, 16 JUL - 1D > NEXT WED, 16 AUG - 1D > NEXT WED,
-         16 SEP - 1D > NEXT WED, 16 OCT - 1D > NEXT WED, 16 NOV - 1D > NEXT WED, 16 DEC - 1D > NEXT WED
-  with kind = event, note "Released at 07:00 UK time (Europe/London); dates from the ONS release calendar, projected beyond it"
+    ELSE [16 JAN : 1M : 16 DEC] - 1D > NEXT WED
+  with kind = event, session 07:00 tz "Europe/London", note "Dates from the ONS release calendar, projected beyond it"
   cites "ONS release calendar (iCal), Office for National Statistics" url "https://www.ons.gov.uk/calendar/releasecalendar" label official;
 
 
@@ -319,5 +317,29 @@ rule eurosic.boxing_day for boxing_day in settlement_system:EUROSIC = 26 DEC
 rule snb.assessment for snb_decision in central_bank:SNB
   = ANNOUNCED BY snb_calendar
     ELSE 10 DEC - 1D > NEXT THU
-  with kind = event, note "Announced at 09:30 Swiss time (Europe/Zurich); only the December assessment is projected"
+  with kind = event, session 09:30 tz "Europe/Zurich", note "Only the December assessment is projected"
   cites "SNB monetary policy assessment dates, Swiss National Bank" url "https://www.snb.ch/" label official;
+
+
+# =====================================================================================================================
+# subdivision:CH_ZRH - City of Zurich (D-220)
+# Who sets it: the city council (Sechseläuten date rule of 1952); both customs are local afternoon holidays, not cantonal or
+# federal ones. SIX and SIC operate normally.
+# =====================================================================================================================
+
+# Sechseläuten, Zurich's spring custom: work stops at midday, the afternoon is a local holiday. The third Monday of April;
+# when that Monday falls in Holy Week the second Monday instead, and when it is Easter Monday the fourth Monday
+# (Stadtratsbeschluss Nr. 1214 of 13 June 1952). The first item is the usual third Monday unless it is Holy Week Monday
+# (Easter - 6 days) or Easter Monday; the second item gives the second Monday when the third one is Holy Week Monday
+# (then Easter - 13 days is a Monday from 8 to 14 April); the third gives the fourth Monday when the third one is Easter
+# Monday (then Easter + 8 days is a Monday from 22 to 28 April).
+rule zrh.sechselaeuten for sechselaeuten in subdivision:CH_ZRH
+  = 3 MON APR \ {EASTER - 6D, EASTER + 1D}, EASTER - 13D IF DAY 8..14 APR, EASTER + 8D IF DAY 22..28 APR
+  with kind = short_day, note "afternoon only; no closing time stated"
+  cites "City of Zurich customs (Sechseläuten, Knabenschiessen)" art "Stadtratsbeschluss Nr. 1214 of 13 June 1952" url "https://www.stadt-zuerich.ch/de/stadtleben/stadtportraet/zuerichs-geschichte/stadtarchiv/wissensportal/zuercher-sechselaeuten.html" label official;
+
+# Knabenschiessen, Zurich's autumn shooting contest, held on the second weekend of September; the Monday afternoon is
+# the city's holiday: the Monday after the second Sunday of September.
+rule zrh.knabenschiessen for knabenschiessen in subdivision:CH_ZRH = 2 SUN SEP + 1D
+  with kind = short_day, note "afternoon only; no closing time stated"
+  cites "City of Zurich customs (Sechseläuten, Knabenschiessen)" url "https://www.stadt-zuerich.ch/de/stadtleben/stadtportraet/zuerichs-geschichte/stadtarchiv/wissensportal/zuercher-sechselaeuten.html" label official;

@@ -277,3 +277,30 @@ rule destatis.cpi_final for de_cpi_final in statistics_office:DESTATIS = ANNOUNC
 rule ecb.consumer_expectations for ecb_consumer_expectations in central_bank:ECB = ANNOUNCED BY ecb_consumer_expectations
   with kind = event, note "Only the next publication date is published, on the survey page; not projected"
   cites "ECB Consumer Expectations Survey publication dates, European Central Bank" url "https://www.ecb.europa.eu/stats/ecb_surveys/consumer_exp_survey/html/index.en.html" label official;
+
+
+# =====================================================================================================================
+# subdivision:DE_HE - Hesse, subdivision:IT_MI - Milan, subdivision:ES_MAD - City of Madrid (D-221..D-223)
+# Local holidays on top of the national ones; the national days of these scopes come from python-holidays in holidays-events,
+# not from rules, so only the local days are here.
+# =====================================================================================================================
+
+# Corpus Christi (Fronleichnam), 60 days after Easter Sunday: a public holiday in Hesse, so Frankfurt's banks close
+# (ISDA business centre DEFR); Xetra and the Frankfurt exchange trade, T2 is open.
+rule de_he.corpus_christi for corpus_christi in subdivision:DE_HE = EASTER + 60D
+  with kind = closed
+  cites "Hessisches Feiertagsgesetz (HFeiertagsG)" art "§ 1 (Fronleichnam)" label official;
+
+# Saint Ambrose (Sant'Ambrogio), 7 December, the patron saint's day of Milan: a local holiday on which Milan's banks
+# close (ISDA ITMI); Borsa Italiana and T2 operate.
+rule it_mi.saint_ambrose for saint_ambrose in subdivision:IT_MI = 7 DEC
+  with kind = closed, note "Patron saint's day of the Comune di Milano (local holiday)";
+
+# San Isidro, 15 May, patron saint of the City of Madrid, and Nuestra Señora de la Almudena, 9 November, its
+# patroness: the city's two local holidays (Estatuto de los Trabajadores art. 37.2), fixed each year by the city
+# council and moved to the Monday when they fall on a Sunday.
+rule es_mad.san_isidro for san_isidro in subdivision:ES_MAD = 15 MAY {SUN + 1D}
+  with kind = closed, note "Local holiday of the Ayuntamiento de Madrid, set each year by the city council";
+
+rule es_mad.almudena for almudena in subdivision:ES_MAD = 9 NOV {SUN + 1D}
+  with kind = closed, note "Local holiday of the Ayuntamiento de Madrid, set each year by the city council";

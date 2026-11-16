@@ -130,9 +130,13 @@ Month names of other calendars work like Gregorian ones:
   Yom Kippur and its eve, `xtae.yom_kippur`).
 - **Chinese:** `ZHENGYUE` (first month) ... `LAYUE` (twelfth). `1 ZHENGYUE` is Chinese New Year.
 
-`1 SHAWWAL BY SIGHTING` (Eid al-Fitr, `sa.eid_al_fitr`) says that the real date depends on an actual sighting of
-the new moon and is only known a day or so before. The rule computes the Umm al-Qura date and marks every such date
-as a projection; the authority's announcement replaces it.
+A lunar date that falls twice in a Gregorian year gives both (`1 RAMADAN` in 2030: 5 January and 26 December).
+
+Where the real date depends on an actual sighting of the new moon, known only on the evening before, a rule gives
+the alternatives: `ONE OF { 1 RAMADAN + 29D AS ramadan_29, 1 RAMADAN + 30D AS ramadan_30 }` (Eid al-Fitr,
+`sa.eid_al_fitr`) is the day after a 29-day or a 30-day Ramadan, counted from the Umm al-Qura start of Ramadan.
+Exactly one of them happens; each date is a projection under its name (`Occurrence.scenario`) until the authority's
+announcement replaces them.
 
 ### Conditions
 
@@ -289,44 +293,28 @@ Output (shortened):
 - `parse_rules(text, announcements={rule_key: [date, ...]})` loads the rules. Announcements are data, not rules:
   the dates an authority published for a rule; for each year that has some, they replace the rule's dates.
 - `book.holidays(scope, year)` returns every date of the rules in that scope as `Occurrence` records with `date`,
-  `rule`, `event_class`, `kind`, `precision`, `session`, `citations` and `projected` (true for `BY SIGHTING` dates
-  and for `ELSE` dates of a year without an announcement). Events (`kind = event`) are included; filter on `kind`
+  `rule`, `event_class`, `kind`, `precision`, `session`, `citations`, `projected` (true for the dates of `ONE OF`
+  and for `ELSE` dates of a year without an announcement) and `scenario` (the name of the `ONE OF` alternative). Events (`kind = event`) are included; filter on `kind`
   for closing days only.
 - Loading fails on an unknown or circular reference and on versions of a rule that overlap in time.
 
 ## 6. Verification
 
 Every rule was compared day by day for the years **2021 to 2031** with the projections of the holidays-events rule
-engine (the same catalog rule, evaluated by holidays-events itself; rules without `ELSE` give no dates in either).
+engine (the same catalog rule, evaluated by holidays-events itself; rules without `ELSE` give no dates in either), the
+scenario names of the moon-sighting rules included.
 
 | Files | Rules | Agree | Differ |
 |---|---|---|---|
 | `us.rules` | 45 | 45 | 0 |
-| `uk_ch.rules` | 40 | 40 | 0 |
+| `uk_ch.rules` | 42 | 42 | 0 |
 | `apac_other.rules` | 34 | 34 | 0 |
-| `de_ez.rules`, `cz.rules` | 32 | 32 | 0 |
+| `de_ez.rules`, `cz.rules` | 36 | 36 | 0 |
 | `issuers.rules` | 18 | 18 | 0 |
-| `gcc.rules` | 17 | 12 | 5 |
-| `br.rules`, `ca.rules` | 23 | 23 | 0 |
+| `gcc.rules` | 17 | 17 | 0 |
+| `br.rules`, `ca.rules` | 26 | 26 | 0 |
 | `ru_cis.rules` | 11 | 11 | 0 |
-| **Total** | **220** | **215** | **5** |
-
-All five differences are moon-sighting rules in `gcc.rules`. holidays-events gives **two** candidate dates per year
-for them, one if the previous Hijri month has 29 days and one if it has 30. date-parser gives **one**, the Umm
-al-Qura date, which is always one of the two. date-parser never has a day that holidays-events lacks; it only lacks
-the days of the other scenario.
-
-| Rule | Missing days (2021-2031) |
-|---|---|
-| `sa.eid_al_fitr` | 11: the other Ramadan-length scenario, one per year |
-| `sa.eid_al_adha` | 11: the other Dhu al-Qadah-length scenario |
-| `sa.arafat_day` | 11: the other scenario of the previous month (the engine's default scenarios) |
-| `ae.eid_al_fitr` | 6: 2023-04-24 (3 Shawwal after a 30-day Ramadan, version before 2025) and 30 Ramadan in the 30-day scenario in 2025, 2027, 2028, 2029 and 2031 |
-| `ae.eid_al_adha` | 5: 12 Dhu al-Hijja in the 30-day Dhu al-Qadah scenario in 2023, 2024, 2025, 2027 and 2031 |
-
-The missing day falls before the Umm al-Qura date in some years and after it in others, so no fixed offset can
-reproduce it, and listing both days would declare two closures. In practice both engines are overridden by the
-authority's announcement, which comes days before the holiday.
+| **Total** | **229** | **229** | **0** |
 
 Equivalent but indirect forms (both engines agree, the comments explain them):
 
@@ -336,29 +324,28 @@ Equivalent but indirect forms (both engines agree, the comments explain them):
   The results are the same for 2021-2031 but would differ if a day after an AGM were a Xetra holiday.
 - `> PRECEDING` on central-bank scopes without closing-day rules (Eurex, CNB, the Asia-Pacific banks) only skips
   weekends, as in holidays-events.
+- "On or after a weekday" is written `16 JAN - 1D > NEXT WED` (`NEXT` is strictly after), which is exact.
 
-## 7. Known gaps in the language
+## 7. Gaps in the language, and how they were closed
 
-Found while translating; each affected rule's comment explains its workaround.
+Found while translating (2026-11-14) and closed on 2026-11-16:
 
-- **No moon-sighting scenarios.** `BY SIGHTING` gives one date; there is no way to say "one of two days depending
-  on whether the previous month has 29 or 30 days" (the five differences above).
-- **No condition on Hijri month length.** A literal `30 RAMADAN` is an error in a 29-day month instead of yielding
-  nothing; `29 RAMADAN BY SIGHTING + 1D` is used instead.
-- **Series endpoints must be single dates.** A span from each occurrence of a multi-date rule cannot be written.
-  `fed.blackout` ("second Saturday before each FOMC decision until the day after") lists 13 days as
-  `@fed.fomc_decision > PREV 2ND SAT + kD`, k = 0 to 12, exact only for Wednesday decisions (which scheduled FOMC
-  decisions are).
-- **No condition on the day of the month** (such as "if it falls on 1-3 January, add 7 days"); see the January
-  jobs report above.
-- **No "on or after a weekday" shift.** `NEXT` is strictly after, so "the Wednesday on or after the 16th" becomes
-  `16 JAN - 1D > NEXT WED`.
-- **No monthly series of a fixed day plus a weekday shift**; `ons.cpi` spells out all twelve months.
-- **No single time of day.** `session` needs a start and an end; single release or decision times are written as
-  zero-length sessions (`14:30 - 14:30`) or in a `note` (ONS CPI at 07:00, the SNB assessment at 09:30).
-- **Precision is per rule, not per date.** `bok.mpb_decision` mixes day-exact and month-only meetings and stays at
-  day precision.
-- **No kind for a special session on a closed day** (the NSE's Muhurat session) or for a month of changed trading
-  hours (Ramadan); `short_day` is used.
-- **No conditional events.** A German ex-dividend day happens only if the AGM resolves a dividend; the rules give
-  the day every year and say so in a note.
+- **Moon-sighting scenarios:** `ONE OF { expr AS name, ... }` (rule files) gives alternatives of which exactly one
+  happens, each under its name; it replaces `BY SIGHTING` in the five Gulf rules.
+- **Hijri month length:** not needed any more; the alternatives count from the Umm al-Qura start of the previous
+  month (`1 RAMADAN + 29D`, `+ 30D`).
+- **A lunar date twice in a Gregorian year** gives both dates instead of an error (all twelve implementations).
+- **Ranges from each occurrence:** `[@e > PREV 2ND SAT : @e + 1D]` pairs both ends per occurrence of `@e`
+  (all twelve implementations); `fed.blackout` is one range per FOMC decision.
+- **Day of the month:** `IF DAY 1..3`, `IF DAY 8..14 APR` (all twelve implementations); Zurich's Sechseläuten uses it.
+- **Monthly series with a weekday shift:** this already worked (`[16 JAN : 1M : 16 DEC] - 1D > NEXT WED`, `ons.cpi`).
+- **A single time of day:** `session 14:30` (rule files).
+- **Kinds:** `special_session` (a short session on a day that stays closed, the NSE's Muhurat session) and
+  `changed_hours` (other trading hours, Ramadan sessions) (rule files).
+
+Closed without a language change:
+
+- **Precision per date:** a rule whose precision changes is split into versions with `valid from/to`
+  (`bok.mpb_decision` would be).
+- **Conditional events** (a German ex-dividend day only if the AGM resolves a dividend) are data: the authority's
+  announcement, not a rule.

@@ -116,3 +116,24 @@ rule bcb.black_consciousness_day for black_consciousness_day in central_bank:BCB
 rule bcb.christmas_day for christmas_day in central_bank:BCB = 25 DEC
   with kind = closed
   cites "Banco Central do Brasil PTAX (USD/BRL closing rate, Olinda open-data API)" url "https://dadosabertos.bcb.gov.br/dataset/dolar-americano-usd-todos-os-boletins-diarios" label official;
+
+
+# =====================================================================================================================
+# subdivision:BR_SAO - City of São Paulo (D-223)
+# The state's and the city's own holidays on top of the federal ones (ISDA business centre BRSP); whether B3 trades on
+# them is not checked yet.
+# =====================================================================================================================
+
+# Anniversary of São Paulo, 25 January (the founding of the city in 1554): a municipal holiday.
+rule br_sao.sao_paulo_anniversary for sao_paulo_anniversary in subdivision:BR_SAO = 25 JAN
+  with kind = closed, note "Municipal holiday of the City of São Paulo (founding, 1554)";
+
+# Corpus Christi, 60 days after Easter Sunday: optional elsewhere in Brazil, a municipal holiday in São Paulo (one of
+# the religious holidays a municipality may set under Law 9,093 of 1995).
+rule br_sao.corpus_christi for corpus_christi in subdivision:BR_SAO = EASTER + 60D
+  with kind = closed, note "Municipal holiday of the City of São Paulo (religious holiday under Law 9,093 of 1995)";
+
+# Constitutionalist Revolution of 1932, 9 July: a state holiday of São Paulo since State Law 9,497 of 1997.
+rule br_sao.constitutionalist_revolution for constitutionalist_revolution in subdivision:BR_SAO valid from 1997-01-01 = 9 JUL
+  with kind = closed
+  cites "State of São Paulo Law 9,497 of 1997" label official;

@@ -92,7 +92,7 @@ rule boj.mpm_decision for boj_decision in central_bank:BOJ
 # schedule covering the estimates of the next two quarters (source fd_esri_cao_go_jp). No pattern is projected:
 # there are no dates until the schedule names them. A release does not close any market.
 rule esri.gdp for jp_gdp in statistics_office:ESRI = ANNOUNCED BY fd_esri_cao_go_jp
-  with kind = event, session 08:50 - 08:50 tz "Asia/Tokyo",
+  with kind = event, session 08:50 tz "Asia/Tokyo",
        note "Release schedule with the next two quarters' estimates; released at 8:50 Tokyo time"
   cites "Cabinet Office Japan, Economic and Social Research Institute: quarterly GDP estimates" url "https://www.esri.cao.go.jp/en/sna/sokuhou/sokuhou_top.html" label official;
 
@@ -155,11 +155,10 @@ rule pboc.lpr for pboc_lpr in central_bank:PBOC
 # Muhurat trading session: a short symbolic trading session (about an hour, usually in the evening) on Diwali
 # (Lakshmi Puja), a day on which the exchange is otherwise closed; it marks the start of the new Hindu accounting
 # year. The NSE announces the date and times by circular a few weeks before Diwali (source apac_exchange_circulars,
-# the exchanges' circulars), so there are no dates until then. The catalog files it as a session change; written
-# here as "short_day", the nearest kind: there is a shortened special session that day, but it does not make the
-# day a normal business day (no settlement takes place).
+# the exchanges' circulars), so there are no dates until then. The catalog files it as a session change; the kind is
+# "special_session": a short session on a day that stays closed (no settlement takes place).
 rule xnse.muhurat_session for muhurat_session in exchange:XNSE = ANNOUNCED BY apac_exchange_circulars
-  with kind = short_day, note "NSE circular a few weeks before Diwali gives the date and the session times"
+  with kind = special_session, note "NSE circular a few weeks before Diwali gives the date and the session times"
   cites "Exchange circulars (NSE/BSE, TASE, HKEX, SGX, JPX)" label official;
 
 
@@ -249,7 +248,7 @@ rule bnm.mpc_decision for bnm_decision in central_bank:BNM
   = ANNOUNCED BY bnm_mpc_schedule
     ELSE 22 JAN > PRECEDING, 6 MAR > PRECEDING, 8 MAY > PRECEDING, 9 JUL > PRECEDING, 4 SEP > PRECEDING,
          5 NOV > PRECEDING
-  with kind = event, precision = month, session 15:00 - 15:00 tz "Asia/Kuala_Lumpur",
+  with kind = event, precision = month, session 15:00 tz "Asia/Kuala_Lumpur",
        note "Next year's schedule in the last Monetary Policy Statement of the year; statement released at 3:00 pm"
   cites "Bank Negara Malaysia MPC meeting schedule (in the Monetary Policy Statement), Bank Negara Malaysia" url "https://www.bnm.gov.my/-/monetary-policy-statement-06112025" label official;
 
@@ -347,17 +346,17 @@ rule cbc.minutes for cbc_minutes in central_bank:CBC = ANNOUNCED BY cbc_mp_sched
 # 2024 to 2027: the last Tuesday of September (the Tuesday on or after 24 September), the first Tuesday of November
 # and the second Tuesday of December; the November and December dates move to the business day before if that
 # Tuesday is not a business day. The other five meetings are not projected. A decision does not close any market.
-# (The "session" here is the announcement time; start and end are the same.)
+# (The "session" here is the announcement time.)
 rule rba.mpb_decision for rba_decision in central_bank:RBA
   = ANNOUNCED BY rba_calendar ELSE 24 SEP - 1D > NEXT TUE, 1 TUE NOV > PRECEDING, 2 TUE DEC > PRECEDING
-  with kind = event, session 14:30 - 14:30 tz "Australia/Sydney",
+  with kind = event, session 14:30 tz "Australia/Sydney",
        note "Calendar with the current and the next year; September, November and December projected; decision at 2:30 pm"
   cites "RBA calendar: Monetary Policy Board decisions and minutes, Reserve Bank of Australia" url "https://www.rba.gov.au/schedules-events/calendar/?topics=mone" label official;
 
 # Minutes of the Reserve Bank of Australia Monetary Policy Board, released two weeks after each decision at 11:30 am
 # Sydney time. Taken from the Bank's calendar only; no dates until listed.
 rule rba.mpb_minutes for rba_minutes in central_bank:RBA = ANNOUNCED BY rba_calendar
-  with kind = event, session 11:30 - 11:30 tz "Australia/Sydney", note "Two weeks after each decision, 11:30 am"
+  with kind = event, session 11:30 tz "Australia/Sydney", note "Two weeks after each decision, 11:30 am"
   cites "RBA calendar: Monetary Policy Board decisions and minutes, Reserve Bank of Australia" url "https://www.rba.gov.au/schedules-events/calendar/?topics=mone" label official;
 
 

@@ -24,7 +24,7 @@ from lark.exceptions import VisitError
 from . import Rules, semantics
 from .semantics import WEEKDAYS, Context, Market
 
-PARSER = Lark.open("rules.lark", rel_to=__file__, parser="lalr", start=["rule_file", "exprs"])
+PARSER = Lark.open("rules.lark", rel_to=__file__, parser="lalr", start=["rule_file", "exprs", "body"])
 
 CLOSED = {"closed", "non_working"}   # kinds that close a day; working_day opens one
 ESTIMATED = {"SIGHTING", "DIYANET", "FOLLOW"}
@@ -278,6 +278,10 @@ class RuleTransformer(Rules):
     def on_weekday(self, weekdays):
         return lambda d, context: WEEKDAYS[d.weekday()] in weekdays
 
+    def on_day(self, first, last, month):
+        days = semantics.on_days(int(first), int(last), str(month) if month else None)
+        return lambda d, context: days(d) is not None
+
     def subject(self, start, *shifts):
         return self.expr(start, *shifts)
 
@@ -459,14 +463,33 @@ class RuleTransformer(Rules):
         include, exclude = scopes
         valid_from, valid_to = validity or (None, None)
         attributes = dict(attributes or ())
+        alternatives = ()
         if isinstance(exprs, Announced):
             attributes["announced_by"] = exprs.authority
+            alternatives = exprs.alternatives.alternatives if exprs.alternatives else ()
             exprs = exprs.projection or (lambda context: [])
+        elif isinstance(exprs, OneOf):
+            alternatives, exprs = exprs.alternatives, exprs.union
         return RuleDecl(str(key), str(event_class), tuple(include), tuple(exclude), valid_from, valid_to, exprs,
-                        attributes, tuple(provenance or ()))
+                        attributes, tuple(provenance or ()), alternatives=alternatives,
+                        estimated=bool(alternatives))
 
     def announced(self, authority, projection):
+        if isinstance(projection, OneOf):
+            return Announced(str(authority), projection.union, projection)
         return Announced(str(authority), projection)
+
+    def body(self, node):
+        return node
+
+    def one_of(self, *alternatives):
+        names = [name for name, _ in alternatives]
+        if len(set(names)) != len(names):
+            raise ValueError(f"ONE OF: names twice in {names}")
+        return OneOf(tuple(alternatives))
+
+    def alternative(self, item, name):
+        return str(name), self.exprs(item)
 
     def scope_sel(self, include, exclude):
         return include, exclude or []
@@ -496,7 +519,8 @@ class RuleTransformer(Rules):
         return str(token)
 
     def session(self, start, end, tz):
-        return "session", (start, end, tz and str(tz)[1:-1])
+        """session 09:30 - 13:00, or a single time such as a release or a decision: session 14:30 (start = end)"""
+        return "session", (start, end or start, tz and str(tz)[1:-1])
 
     def time(self, h, m):
         return f"{int(h):02}:{int(m):02}"
@@ -560,6 +584,17 @@ class Announced:
     it has not published yet"""
     authority: str
     projection: object = None
+    alternatives: object = None
+
+
+@dataclass(frozen=True)
+class OneOf:
+    """ONE OF {item AS name, ...}: alternatives of which exactly one will happen; their dates are projections, each
+    under its scenario name, and together they are the rule's dates for the other rules (references, calendars)"""
+    alternatives: tuple   # (name, exprs) pairs
+
+    def union(self, context):
+        return [d for _, expr in self.alternatives for d in expr(context)]
 
 
 @dataclass(frozen=True, eq=False)
@@ -575,6 +610,7 @@ class RuleDecl:
     citations: tuple = ()
     references: frozenset = frozenset()
     estimated: bool = False
+    alternatives: tuple = ()   # (scenario name, exprs) of ONE OF
 
     @property
     def kind(self):
@@ -604,6 +640,7 @@ class Occurrence:
     session: tuple | None
     citations: tuple
     projected: bool
+    scenario: str | None = None   # the name of the ONE OF alternative the date belongs to
 
 
 def contains(outer, inner):
@@ -770,13 +807,27 @@ class RuleBook:
         found = []
         for y in (year - 1, year, year + 1):
             for rule, (dates, projected) in self._state(scope, y).items():
-                for d in dates:
+                attributes = rule.attributes
+                for d, scenario in self._scenarios(rule, scope, y, dates):
                     if d.year == year:
-                        attributes = rule.attributes
                         found.append(Occurrence(d, rule.key, rule.event_class, rule.kind,
                                                 attributes.get("precision", "day"), attributes.get("session"),
-                                                rule.citations, projected))
+                                                rule.citations, projected, scenario))
         return sorted(set(found), key=lambda o: (o.date, o.rule))
+
+    def _scenarios(self, rule, scope, year, dates):
+        """(date, scenario) for the dates of the rule: per alternative of ONE OF (a date can belong to several), else
+        with no scenario; announced dates have none"""
+        if not rule.alternatives or self.announcement(rule.key, year):
+            return [(d, None) for d in dates]
+        context = self._context(rule, scope, year, False)
+        out = []
+        for name, expr in rule.alternatives:
+            try:
+                out.extend((d, name) for d in sorted(set(expr(context))) if rule.valid(d))
+            except VisitError as e:
+                raise e.orig_exc from None
+        return out
 
     def reference_dates(self, name, scope, year, shallow=False):
         dates = set()
@@ -833,5 +884,50 @@ def parse_rules(text, announcements=None):
     for i, declaration in enumerate(declarations):
         if isinstance(declaration, RuleDecl):
             references, estimated = next(rules)
-            declarations[i] = replace(declaration, references=references, estimated=estimated)
+            declarations[i] = replace(declaration, references=references,
+                                      estimated=estimated or declaration.estimated)
     return RuleBook(declarations, announcements)
+
+
+# ================= one rule body, for hosts that store rules themselves =================
+
+# tokens that read a business-day calendar: business or fixing days, rolls, BD, holidays, spot, ON another calendar
+CALENDAR_WORDS = {"BD", "FD", "HOLIDAY", "NONHOLIDAY", "HOLIDAYS", "SPOT", "TOM", "FIX", "ON", "POSTPONE"}
+
+
+@dataclass(frozen=True)
+class Body:
+    """what follows "=" in a rule: an expression list or ONE OF; references are the @keys it reads, calendar whether
+    it needs business days (else every evaluation is independent of the holidays)"""
+    text: str
+    expr: object = field(repr=False)
+    alternatives: tuple = field(default=(), repr=False)
+    references: frozenset = frozenset()
+    calendar: bool = False
+
+    def dates(self, context):
+        """(date, scenario) pairs: the alternatives each under their name, else the dates without a scenario"""
+        try:
+            if self.alternatives:
+                return [(d, name) for name, expr in self.alternatives for d in expr(context)]
+            return [(d, None) for d in self.expr(context)]
+        except VisitError as e:
+            raise e.orig_exc from None
+
+
+def parse_body(text):
+    """one rule body, such as "3 MON APR", "EASTER + 60D > PRECEDING" or "ONE OF { 1 RAMADAN + 29D AS a, ... }";
+    evaluate it with Body.dates(RuleContext(base, market, events, book=..., scope=...)), where a book needs resolve() only
+    for ON
+
+    :raises lark.exceptions.UnexpectedInput: on a syntax error
+    :raises ValueError: on an invalid date or the same name twice in ONE OF
+    """
+    tree = PARSER.parse(text, start="body")
+    tokens = list(tree.scan_values(lambda t: isinstance(t, Token)))
+    references = frozenset(str(t)[1:] for t in tokens if t.type == "REF")
+    calendar = any(t.type == "ROLL" or t.type == "UNIT" and str(t) in "BF" or str(t) in CALENDAR_WORDS for t in tokens)
+    node = _transform(tree)
+    if isinstance(node, OneOf):
+        return Body(text, node.union, node.alternatives, references, calendar)
+    return Body(text, node, (), references, calendar)

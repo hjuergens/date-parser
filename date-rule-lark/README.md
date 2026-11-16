@@ -86,6 +86,9 @@ book.schedule("T > SPOT EURUSD ON usd_eur")(book.context(date(2026, 7, 2)))
 - **Load errors:** a cyclic or unknown reference, versions of a rule that overlap in time.
 - **Not computed:** `HINDU` is an error at evaluation; `BY SIGHTING`, `DIYANET` and `FOLLOW` project with Umm al-Qura
   and mark the dates as projections.
+- **Alternatives:** `ONE OF { item AS name, ... }` (also after `ELSE`) gives dates of which exactly one alternative
+  happens; each date is a projection with `Occurrence.scenario` = its name, and together they are the rule's dates for
+  references and calendars.
 - **Announcements** are data, not grammar: the dates published for a rule and year always replace the rule's dates for
   that year; in the other years the dates of an announced rule are projections.
 - **`ANNOUNCED BY source [ELSE exprs]`** names the authority whose published dates a rule follows. Without `ELSE` the

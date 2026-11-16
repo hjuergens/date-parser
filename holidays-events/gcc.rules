@@ -6,11 +6,12 @@
 # Translated from holidays-events rules/catalog/gcc.yaml.
 #
 # How to read a rule: "rule <key> for <event> in <scope> [valid from A to B] = <dates> with kind = ..., cites ...;".
-# The part after "=" is a date expression evaluated for every year. "1 SHAWWAL BY SIGHTING" is the first day of the
-# Hijri (Islamic lunar) month Shawwal; the Hijri months used here are RAMADAN (9th month), SHAWWAL (10th) and
-# DHULHIJJAH (Dhu al-Hijja, 12th). "BY SIGHTING" says the month begins when the new crescent moon is actually seen,
-# which is only known on the evening before; until then date-parser projects the date with the Umm al-Qura calendar
-# (Saudi Arabia's computed Hijri calendar) and marks it as a projection. "[A : B]" is every day from A to B,
+# The part after "=" is a date expression evaluated for every year. "1 RAMADAN" is the first day of the Hijri (Islamic
+# lunar) month Ramadan in the Umm al-Qura calendar (Saudi Arabia's computed Hijri calendar); the Hijri months used here
+# are RAMADAN (9th month), SHAWWAL (10th), DHULQADAH (Dhu al-Qadah, 11th) and DHULHIJJAH (Dhu al-Hijja, 12th). Where a
+# month begins only when the new crescent moon is actually seen, which is known on the evening before, the rule gives
+# "ONE OF { A AS name, B AS name }": alternatives of which exactly one happens (the previous month has 29 or 30 days),
+# each a projection under its name until the sighting is announced. "[A : B]" is every day from A to B,
 # inclusive. "23 SEP {FRI - 1D, SAT + 1D}" moves the date one day back when it falls on a Friday and one day forward
 # when it falls on a Saturday; other weekdays leave it where it is. "@key" stands for the dates of another rule (here
 # the US Federal Reserve's rate decisions in us.rules). "ANNOUNCED BY <source> [ELSE ...]" means the authority
@@ -52,23 +53,27 @@
 # =====================================================================================================================
 
 # Eid al-Fitr, the festival that ends the fasting month of Ramadan: 1 Shawwal. Shawwal starts when the new moon is
-# sighted after the 29th of Ramadan; if it is not seen, Ramadan has 30 days and Eid is one day later. holidays-events
-# gives both possibilities (scenarios "Ramadan has 29 days" and "Ramadan has 30 days"); this rule gives the Umm
-# al-Qura date, one of the two. Only the first day is listed; the length of the closure is set by each authority (see
-# the SAMA and Saudi Exchange rules below).
-rule sa.eid_al_fitr for eid_al_fitr in country:SA = 1 SHAWWAL BY SIGHTING
+# sighted after the 29th of Ramadan; if it is not seen, Ramadan has 30 days and Eid is one day later. Both are given
+# as alternatives, counted from the Umm al-Qura start of Ramadan: "Ramadan has 29 days" and "Ramadan has 30 days";
+# the sighting decides which one happens. Only the first day is listed; the length of the closure is set by each
+# authority (see the SAMA and Saudi Exchange rules below).
+rule sa.eid_al_fitr for eid_al_fitr in country:SA
+  = ONE OF { 1 RAMADAN + 29D AS ramadan_29, 1 RAMADAN + 30D AS ramadan_30 }
   with kind = closed;
 
 # Eid al-Adha, the Festival of Sacrifice: 10 Dhu al-Hijja. Dhu al-Hijja starts with the moon sighting after the 29th of
-# Dhu al-Qadah (the 11th month), so the date depends on whether Dhu al-Qadah has 29 or 30 days; holidays-events gives
-# both scenarios, this rule the Umm al-Qura date. Only the first day is listed.
-rule sa.eid_al_adha for eid_al_adha in country:SA = 10 DHULHIJJAH BY SIGHTING
+# Dhu al-Qadah (the 11th month), so the date depends on whether Dhu al-Qadah has 29 or 30 days: two alternatives,
+# counted from the Umm al-Qura start of Dhu al-Qadah (10 Dhu al-Hijja is 29 + 9 or 30 + 9 days later). Only the first
+# day is listed.
+rule sa.eid_al_adha for eid_al_adha in country:SA
+  = ONE OF { 1 DHULQADAH + 38D AS dhu_al_qadah_29, 1 DHULQADAH + 39D AS dhu_al_qadah_30 }
   with kind = closed;
 
 # Arafat Day, the day of the pilgrims' standing at Mount Arafat during the Hajj: 9 Dhu al-Hijja, the day before Eid
-# al-Adha. Like Eid al-Adha it depends on the moon sighting that starts Dhu al-Hijja (two scenarios in
-# holidays-events, the Umm al-Qura date here).
-rule sa.arafat_day for arafat_day in country:SA = 9 DHULHIJJAH BY SIGHTING
+# al-Adha. Like Eid al-Adha it depends on the moon sighting that starts Dhu al-Hijja: two alternatives, named after the
+# length of the previous month.
+rule sa.arafat_day for arafat_day in country:SA
+  = ONE OF { 1 DHULQADAH + 37D AS prev_month_29, 1 DHULQADAH + 38D AS prev_month_30 }
   with kind = closed;
 
 # Saudi National Day, 23 September (the unification of the Kingdom in 1932). Saudi Arabia's weekend is Friday and
@@ -141,29 +146,27 @@ rule xsau.eid_al_adha for eid_al_adha in exchange:XSAU = ANNOUNCED BY tadawul_no
 
 # Eid al-Fitr, until the end of 2024: from 29 Ramadan to 3 Shawwal, under the Cabinet resolution on official holidays
 # that was in force before Cabinet Resolution No. 27 of 2024. The holiday starts on 29 Ramadan in any case and ends on
-# 3 Shawwal, which depends on the moon sighting (Ramadan of 29 or 30 days): four or five days. holidays-events gives
-# both endings as scenarios; this rule uses the Umm al-Qura month lengths.
+# 3 Shawwal, which depends on the moon sighting (Ramadan of 29 or 30 days): four or five days. The start is the Umm
+# al-Qura 29 Ramadan; the two endings are alternatives, 3 Shawwal after a 29- or a 30-day Ramadan.
 rule ae.eid_al_fitr for eid_al_fitr in country:AE valid to 2024-12-31
-  = [29 RAMADAN BY SIGHTING : 3 SHAWWAL BY SIGHTING]
+  = ONE OF { [29 RAMADAN : 1 RAMADAN + 31D] AS prev_month_29, [29 RAMADAN : 1 RAMADAN + 32D] AS prev_month_30 }
   with kind = closed
   cites "UAE government portal public holidays" url "https://u.ae/en/information-and-services/public-holidays-and-religious-affairs/public-holidays" label official;
 
 # Eid al-Fitr since 1 January 2025, under Cabinet Resolution No. 27 of 2024 concerning public holidays (as stated on
 # u.ae, checked 27 October 2026; first applied for Eid al-Fitr 2025, still to be verified): 1 to 3 Shawwal, and in
 # addition 30 Ramadan when Ramadan has 30 days. So the holiday is three days after a 29-day Ramadan and four days
-# after a 30-day Ramadan. The expression runs from the day after 29 Ramadan to 3 Shawwal: the day after 29 Ramadan is
-# 30 Ramadan when Ramadan has 30 days, and 1 Shawwal when it has 29. (A plain "30 RAMADAN" cannot be written: in a
-# 29-day Ramadan that day does not exist.) holidays-events gives both scenarios; this rule uses the Umm al-Qura month
-# length.
+# after a 30-day Ramadan; both run from the day after 29 Ramadan, counted from the Umm al-Qura start of Ramadan.
 rule ae.eid_al_fitr for eid_al_fitr in country:AE valid from 2025-01-01
-  = [29 RAMADAN BY SIGHTING + 1D : 3 SHAWWAL BY SIGHTING]
+  = ONE OF { [1 RAMADAN + 29D : 1 RAMADAN + 31D] AS ramadan_29, [1 RAMADAN + 29D : 1 RAMADAN + 32D] AS ramadan_30 }
   with kind = closed, note "1 to 3 Shawwal; day 30 of Ramadan too if Ramadan has 30 days"
   cites "UAE government portal public holidays" url "https://u.ae/en/information-and-services/public-holidays-and-religious-affairs/public-holidays" label official;
 
 # Eid al-Adha: from Arafat Day (9 Dhu al-Hijja) to 12 Dhu al-Hijja, four days. The start of Dhu al-Hijja depends on
-# the moon sighting; holidays-events gives both scenarios, this rule the Umm al-Qura dates. The catalog names no
-# source for this rule.
-rule ae.eid_al_adha for eid_al_adha in country:AE = [9 DHULHIJJAH BY SIGHTING : 12 DHULHIJJAH BY SIGHTING]
+# the moon sighting. The start is the Umm al-Qura 9 Dhu al-Hijja; the two endings are alternatives, 12 Dhu al-Hijja
+# after a 29- or a 30-day Dhu al-Qadah. The catalog names no source for this rule.
+rule ae.eid_al_adha for eid_al_adha in country:AE
+  = ONE OF { [9 DHULHIJJAH : 1 DHULQADAH + 40D] AS prev_month_29, [9 DHULHIJJAH : 1 DHULQADAH + 41D] AS prev_month_30 }
   with kind = closed, note "Arafat Day to Dhu al-Hijja 12";
 
 # UAE National Day (Eid al-Etihad, the union of the emirates on 2 December 1971): 2 and 3 December, two days. The
@@ -199,17 +202,17 @@ rule cbuae.rate_decision for cbuae_rate_decision in central_bank:CBUAE = @fed.fo
 # Each exchange announces its Ramadan session once a year in a circular (source gcc_exchange_circulars, "DFM / ADX /
 # QSE / Boursa Kuwait / EGX circulars", one source for several exchanges' circulars; it has no single URL). The catalog
 # models this as one session change per year and gives the hours the exchanges usually set. The event class is
-# "session change"; the nearest kind is short_day (the exchange is open, with shorter hours than usual), with the
-# expected Ramadan session. No projection: the days (the month of Ramadan, by moon sighting) appear only once the
+# "session change", the kind "changed_hours" (the exchange is open, with other hours than usual), with the expected
+# Ramadan session. No projection: the days (the month of Ramadan, by moon sighting) appear only once the
 # circular is entered.
 # =====================================================================================================================
 
 # Qatar Stock Exchange, Ramadan session: expected 09:30 to 13:15 Doha time, announced each year by circular.
 rule dsmd.ramadan_session for ramadan_session in exchange:DSMD = ANNOUNCED BY gcc_exchange_circulars
-  with kind = short_day, session 09:30 - 13:15 tz "Asia/Qatar"
+  with kind = changed_hours, session 09:30 - 13:15 tz "Asia/Qatar"
   cites "DFM / ADX / QSE / Boursa Kuwait / EGX circulars" label official;
 
 # Egyptian Exchange, Ramadan session: expected 10:00 to 13:30 Cairo time, announced each year by circular.
 rule xcai.ramadan_session for ramadan_session in exchange:XCAI = ANNOUNCED BY gcc_exchange_circulars
-  with kind = short_day, session 10:00 - 13:30 tz "Africa/Cairo"
+  with kind = changed_hours, session 10:00 - 13:30 tz "Africa/Cairo"
   cites "DFM / ADX / QSE / Boursa Kuwait / EGX circulars" label official;

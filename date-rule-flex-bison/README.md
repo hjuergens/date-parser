@@ -67,8 +67,9 @@ base := time.Date(2025, 6, 9, 0, 0, 0, 0, time.UTC)
 dates, err := rule.Evaluate(schedule.Context{Base: &base})   // [2025-06-27 00:00:00 +0000 UTC]
 ```
 
-`NewMarket(rule)` and `(*Events).Add(name, rule)` take the rule over, as in C. A market caches holidays, so don't share it
-between goroutines. `make test-go` builds `build/libschedule.a` and runs `go vet` and `go test`: 6070 subtests over the
+`NewMarket(rule)` and `(*Events).Add(name, rule)` take the rule over, as in C. A market caches holidays behind a lock, so
+rules, markets, events and contexts can be shared between goroutines; only `Add` and `Close` must not run while others
+use them. `make test-go` builds `build/libschedule.a` and runs `go vet` and `go test`: 6070 subtests over the
 spec files, as in [schedule_test.go](go/schedule_test.go), plus an ownership test and the example above. You need Go 1.24
 or newer and SWIG 4; the Dockerfile has both.
 

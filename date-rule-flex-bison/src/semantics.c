@@ -5,6 +5,7 @@
  * An evaluation error unwinds with longjmp to schedule_evaluate, which frees what the evaluation allocated. */
 #include <limits.h>
 #include <math.h>
+#include <pthread.h>
 #include <setjmp.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -160,12 +161,15 @@ typedef struct {
 /* the value of a node with several values that isn't bound */
 #define UNBOUND INT_MIN
 
+/* The holidays are cached per year. Threads may share a market: the lock guards the cache, and an entry, once added,
+ * is neither moved nor changed, so its holidays can be read without the lock. */
 struct Market {
     Schedule *rule;
+    pthread_mutex_t lock;
     struct {
         int year;
         DateList holidays;  /* sorted */
-    } *years;
+    } **years;
     int count, capacity;
 };
 
@@ -223,22 +227,43 @@ static int base(Eval *eval, const Ctx *ctx) {
 
 /* Monday to Friday except the holidays of the year before, the year and the year after (an observed holiday can
  * fall into the neighbouring year) */
-static const DateList *holidays(Eval *eval, Market *market, int year) {
+static const DateList *cached(Market *market, int year) {
     for (int i = 0; i < market->count; i++)
-        if (market->years[i].year == year) return &market->years[i].holidays;
+        if (market->years[i]->year == year) return &market->years[i]->holidays;
+    return NULL;
+}
+
+/* computed without the lock (an error unwinds with longjmp); if another thread added the year meanwhile, its entry wins */
+static const DateList *holidays(Eval *eval, Market *market, int year) {
+    pthread_mutex_lock(&market->lock);
+    const DateList *found = cached(market, year);
+    pthread_mutex_unlock(&market->lock);
+    if (found) return found;
     Ctx first = { 1, make(eval, year, 1, 1), NULL, NULL, NULL, 0, NULL, 0, NULL };
     DateList *dates = nested(eval, market->rule, &first);
-    if (market->count == market->capacity) {
-        market->capacity = market->capacity ? 2 * market->capacity : 8;
-        market->years = realloc(market->years, market->capacity * sizeof *market->years);
-        if (!market->years) abort();
+    __typeof__(*market->years) entry = calloc(1, sizeof *entry);
+    if (!entry) abort();
+    entry->year = year;
+    for (int i = 0; i < dates->count; i++) datelist_push(&entry->holidays, dates->dates[i]);
+    if (entry->holidays.count) qsort(entry->holidays.dates, entry->holidays.count, sizeof(int), compare);
+    pthread_mutex_lock(&market->lock);
+    found = cached(market, year);
+    if (!found) {
+        if (market->count == market->capacity) {
+            market->capacity = market->capacity ? 2 * market->capacity : 8;
+            market->years = realloc(market->years, market->capacity * sizeof *market->years);
+            if (!market->years) abort();
+        }
+        market->years[market->count++] = entry;
+        found = &entry->holidays;
+        entry = NULL;
     }
-    DateList *kept = &market->years[market->count].holidays;
-    market->years[market->count++].year = year;
-    *kept = (DateList) { 0 };
-    for (int i = 0; i < dates->count; i++) datelist_push(kept, dates->dates[i]);
-    if (kept->count) qsort(kept->dates, kept->count, sizeof(int), compare);
-    return kept;
+    pthread_mutex_unlock(&market->lock);
+    if (entry) {
+        datelist_free(&entry->holidays);
+        free(entry);
+    }
+    return found;
 }
 
 static int is_business_day(Eval *eval, Market *market, int date) {
@@ -831,13 +856,18 @@ Market *market_new(Schedule *rule) {
     Market *market = calloc(1, sizeof(Market));
     if (!market) abort();
     market->rule = rule;
+    pthread_mutex_init(&market->lock, NULL);
     return market;
 }
 
 void market_free(Market *market) {
     if (!market) return;
-    for (int i = 0; i < market->count; i++) datelist_free(&market->years[i].holidays);
+    for (int i = 0; i < market->count; i++) {
+        datelist_free(&market->years[i]->holidays);
+        free(market->years[i]);
+    }
     free(market->years);
+    pthread_mutex_destroy(&market->lock);
     schedule_free(market->rule);
     free(market);
 }

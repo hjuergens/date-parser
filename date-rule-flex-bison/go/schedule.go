@@ -9,7 +9,8 @@
 //	dates, err := rule.Evaluate(schedule.Context{Base: &base})   // [2025-06-27]
 //
 // Schedules, markets and events hold C memory: close them when done. A Market caches the holidays of the years it
-// has been asked about, so neither it nor a Context using it may be shared between goroutines.
+// has been asked about behind a lock, so rules, markets, events and contexts can be shared between goroutines; only
+// Add and Close must not run while others use them.
 package schedule
 
 import (

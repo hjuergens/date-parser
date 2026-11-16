@@ -76,7 +76,7 @@ class ScheduleParsers extends RegexParsers {
   def pair: Parser[String] = "(?!EASTER|SHABAN|TAMMUZ|TISHRI|KISLEV|SHEVAT|ADARII|SANYUE|LIUYUE|JIUYUE|SHIYUE)[A-Z]{6}".r
 
   /** a named event such as @FOMC, without the sigil; the sigil keeps names apart from keywords and pairs */
-  def eventName: Parser[String] = "@[A-Z][A-Z0-9_]*".r ^^ (_.tail)
+  def eventName: Parser[String] = """@[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)*""".r ^^ (_.tail)
 
   /** NEXT 3RD FRI: the third Friday; the ordinal is tried before the number of 3 FRI JAN could take the digits */
   def counted: Parser[Anchor] = opt(ordinal) ~ anchor ^^ { case n ~ a => n.fold(a)(times(_, a)) }

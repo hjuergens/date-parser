@@ -39,7 +39,7 @@ UTC[+-][0-9]+               {
                                 yylval->num *= yytext[3] == '-' ? -60 : 60;
                                 return ZONE;
                             }
-@[A-Z][A-Z0-9_]*            { yylval->text = arena_strdup(yyextra->schedule, yytext + 1); return EVENT; }
+@[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)* { yylval->text = arena_strdup(yyextra->schedule, yytext + 1); return EVENT; }
 [A-Z]+                      { return word(yytext, yylval, yyextra); }
 [-+>{},:\[\]./&\\]           { return yytext[0]; }
 .                           { return YYUNDEF; }

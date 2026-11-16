@@ -332,6 +332,12 @@ class ScheduleLexer implements ScheduleParser.Lexer {
     return value;
   }
 
+  /* a character of an event name after its first letter: ASCII letter, digit or "_" */
+  private static boolean nameChar (char c)
+  {
+    return c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '_';
+  }
+
   public int yylex ()
   {
     while (pos < text.length () && Character.isWhitespace (text.charAt (pos)))
@@ -420,11 +426,11 @@ class ScheduleLexer implements ScheduleParser.Lexer {
           return UNIT;
         return YYUNDEF;
       }
-    if (c == '@' && pos + 1 < text.length () && text.charAt (pos + 1) >= 'A' && text.charAt (pos + 1) <= 'Z')
-      {   /* a named event such as @FOMC; the value is the name without the sigil */
+    if (c == '@' && pos + 1 < text.length () && nameChar (text.charAt (pos + 1)) && !Character.isDigit (text.charAt (pos + 1)) && text.charAt (pos + 1) != '_')
+      {   /* a named event such as @FOMC or @fed.fomc_decision; the value is the name without the sigil */
         int start = ++pos;
-        while (pos < text.length () && (text.charAt (pos) >= 'A' && text.charAt (pos) <= 'Z'
-                                         || text.charAt (pos) >= '0' && text.charAt (pos) <= '9' || text.charAt (pos) == '_'))
+        while (pos < text.length () && nameChar (text.charAt (pos))
+               || pos + 1 < text.length () && text.charAt (pos) == '.' && nameChar (text.charAt (pos + 1)))
           pos++;
         value = text.substring (start, pos);
         return EVENT;

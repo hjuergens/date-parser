@@ -110,4 +110,4 @@ period   = NUM UNIT
 (* currency pair such as EURUSD; without a lexer nothing reserves the six-letter keywords, so a lookahead excludes them *)
 <PAIR>    = !('EASTER' | 'SHABAN' | 'TAMMUZ' | 'TISHRI' | 'KISLEV' | 'SHEVAT' | 'ADARII' | 'SANYUE' | 'LIUYUE' | 'JIUYUE' | 'SHIYUE') #'[A-Z]{6}'
 (* a named event such as @FOMC; one regex, so there is no whitespace inside *)
-<EVENT>   = #'@[A-Z][A-Z0-9_]*'
+<EVENT>   = #'@[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)*'

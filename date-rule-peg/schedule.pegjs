@@ -616,7 +616,7 @@ Month
 
 // a named event such as @FOMC; the sigil keeps names apart from keywords and pairs
 Event
-  = "@" name:$([A-Z] [A-Z0-9_]*) { return name; }
+  = "@" name:$([A-Za-z] [A-Za-z0-9_]* ("." [A-Za-z0-9_]+)*) { return name; }
 
 Weekday
   = $("MON" / "TUE" / "WED" / "THU" / "FRI" / "SAT" / "SUN")

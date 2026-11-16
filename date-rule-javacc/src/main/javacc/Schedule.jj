@@ -56,7 +56,7 @@ TOKEN : {
   // MONTH and EASTER are declared before PAIR: on a match of the same length the earlier token wins
 | < EASTER : "EASTER" >
 | < PAIR : (["A"-"Z"]){6} >   // currency pair such as EURUSD
-| < EVENT : "@" ["A"-"Z"] (["A"-"Z", "0"-"9", "_"])* >   // a named event such as @FOMC
+| < EVENT : "@" ["A"-"Z", "a"-"z"] (["A"-"Z", "a"-"z", "0"-"9", "_"])* ("." (["A"-"Z", "a"-"z", "0"-"9", "_"])+)* >   // a named event such as @FOMC
 | < ZONE : "UTC" ["+", "-"] (["0"-"9"])+ >   // the time zone of an equinox, solstice or solar term
 }
 

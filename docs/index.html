@@ -235,11 +235,11 @@
     <h1>Twelve parsers, one date language</h1>
     <p class="lead">
       The same small language for dates, periods and ranges, implemented with twelve parser generators and
-      parser libraries, from LL(1) to LALR(1), Earley, GLL and PEG. Every implementation passes the same 537 test cases.
+      parser libraries, from LL(1) to LALR(1), Earley, GLL and PEG. Every implementation passes the same 546 test cases.
     </p>
     <ul class="stats">
       <li><strong>12</strong><span>implementations, 6 languages</span></li>
-      <li><strong>537</strong><span>shared test cases</span></li>
+      <li><strong>546</strong><span>shared test cases</span></li>
       <li><strong>0</strong><span>grammar conflicts</span></li>
       <li><strong>1</strong><span>specification file</span></li>
     </ul>
@@ -1489,6 +1489,7 @@ observe  = WEEKDAY SIGN period
       <p class="market"><code>event FOMC = 2025-01-29, 2025-03-19, 2025-05-07, 2025-06-18, 2025-07-30, 2025-09-17, 2025-10-29, 2025-12-10</code></p>
       <p class="market"><code>event THANKSGIVING = 4 THU NOV</code></p>
       <p class="market"><code>event NEWYEAR = 1 JAN {SAT - 1D}</code></p>
+      <p class="market"><code>event fed.fomc_decision = 2025-01-29, 2025-03-19, 2025-05-07, 2025-06-18, 2025-07-30, 2025-09-17, 2025-10-29, 2025-12-10</code></p>
       <table class="cases">
         <tbody>
           <tr><td><code><span class="ctx">[2025-01-01]</span> @FOMC</code></td><td><span class="date">2025-01-29</span>, <span class="date">2025-03-19</span>, <span class="date">2025-05-07</span>, <span class="date">2025-06-18</span>, <span class="date">2025-07-30</span>, <span class="date">2025-09-17</span>, <span class="date">2025-10-29</span>, <span class="date">2025-12-10</span></td></tr>
@@ -1510,6 +1511,15 @@ observe  = WEEKDAY SIGN period
           <tr><td><code><span class="ctx">[2025-01-01]</span> FOMC</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code><span class="ctx">[2025-01-01]</span> @fomc</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code><span class="ctx">[2025-01-01]</span> @ FOMC</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> @fed.fomc_decision</code></td><td><span class="date">2025-01-29</span>, <span class="date">2025-03-19</span>, <span class="date">2025-05-07</span>, <span class="date">2025-06-18</span>, <span class="date">2025-07-30</span>, <span class="date">2025-09-17</span>, <span class="date">2025-10-29</span>, <span class="date">2025-12-10</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01 XNYS]</span> @fed.fomc_decision + 1B IF THU</code></td><td><span class="date">2025-01-30</span>, <span class="date">2025-03-20</span>, <span class="date">2025-05-08</span>, <span class="date">2025-07-31</span>, <span class="date">2025-09-18</span>, <span class="date">2025-10-30</span>, <span class="date">2025-12-11</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-02-01]</span> T &gt; NEXT @fed.fomc_decision</code></td><td><span class="date">2025-03-19</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> @FED.FOMC_DECISION</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> @fed.</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> @fed..fomc_decision</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> @fed .fomc_decision</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> @_fed</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> @1fed</code></td><td><span class="err">error</span></td></tr>
         </tbody>
       </table>
       </section>
@@ -2561,7 +2571,7 @@ Month
 
 // a named event such as @FOMC; the sigil keeps names apart from keywords and pairs
 Event
-  = "@" name:$([A-Z] [A-Z0-9_]*) { return name; }
+  = "@" name:$([A-Za-z] [A-Za-z0-9_]* ("." [A-Za-z0-9_]+)*) { return name; }
 
 Weekday
   = $("MON" / "TUE" / "WED" / "THU" / "FRI" / "SAT" / "SUN")
@@ -2602,7 +2612,8 @@ _ "whitespace"
  "events": {
   "FOMC": "2025-01-29, 2025-03-19, 2025-05-07, 2025-06-18, 2025-07-30, 2025-09-17, 2025-10-29, 2025-12-10",
   "THANKSGIVING": "4 THU NOV",
-  "NEWYEAR": "1 JAN {SAT - 1D}"
+  "NEWYEAR": "1 JAN {SAT - 1D}",
+  "fed.fomc_decision": "2025-01-29, 2025-03-19, 2025-05-07, 2025-06-18, 2025-07-30, 2025-09-17, 2025-10-29, 2025-12-10"
  }
 }</script>
 <script src="https://cdn.jsdelivr.net/npm/peggy@5.1.1/browser/peggy.min.js" integrity="sha384-INVf3CCoK9rVkW2sqHHXbdcBexMaN9NJOtLlqpBxTMVfQyJNdqFHHiJOs1jdmdAY" crossorigin="anonymous"></script>

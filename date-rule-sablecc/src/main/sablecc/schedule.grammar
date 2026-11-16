@@ -10,6 +10,7 @@ Package de.juergens.schedule;
 Helpers
 	digit = ['0' .. '9'];
 	upper = ['A' .. 'Z'];
+	lower = ['a' .. 'z'];
 
 Tokens
 	number = digit+;
@@ -40,7 +41,7 @@ Tokens
 	roll = 'FOLLOWING' | 'PRECEDING' | 'MODFOLLOWING' | 'BOW' | 'EOW' | 'BOM' | 'EOM' | 'BOQ' | 'EOQ' | 'BOH' | 'EOH' | 'BOY' | 'EOY';
 	easter = 'EASTER';   /* before pair: on a match of the same length the earlier token wins */
 	pair = upper upper upper upper upper upper;
-	event = '@' upper (upper | digit | '_')*;   /* a named event such as @FOMC; the sigil keeps it apart from keywords */
+	event = '@' (upper | lower) (upper | lower | digit | '_')* ('.' (upper | lower | digit | '_')+)*;   /* a named event such as @FOMC; the sigil keeps it apart from keywords */
 	season = 'EQUINOX' | 'SOLSTICE';
 	solarterm = 'SOLARTERM';
 	zone = 'UTC' ('+' | '-') digit+;   /* the time zone of an equinox, solstice or solar term */

@@ -69,7 +69,7 @@ private Symbol symbol(int type, Object value) {
                 { return symbol(ScheduleSym.ZONE, yytext()); }
 [A-Z]{6}        { return symbol(ScheduleSym.PAIR, yytext()); }
 /* a named event such as @FOMC; the value is the name without the sigil */
-"@" [A-Z] [A-Z0-9_]*
+"@" [A-Za-z] [A-Za-z0-9_]* ("." [A-Za-z0-9_]+)*
                 { return symbol(ScheduleSym.EVENT, yytext().substring(1)); }
 [DWMQHYBF]      { return symbol(ScheduleSym.UNIT, yytext()); }
 "+"             { return symbol(ScheduleSym.PLUS); }

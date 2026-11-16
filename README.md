@@ -121,7 +121,7 @@ MONTH    = "JAN" | … | "DEC"                                                (*
          | "NISAN" | … | "TISHRI" | … | "ADAR" | "ADARII"                    (* Hebrew *)
          | "ZHENGYUE" | "ERYUE" | … | "LAYUE" .                             (* Chinese *)
 WEEKDAY  = "MON" | … | "SUN" .
-EVENT    = "@" UPPER { UPPER | DIGIT | "_" } .                              (* a named event such as @FOMC *)
+EVENT    = "@" LETTER { LETTER | DIGIT | "_" } { "." ( LETTER | DIGIT | "_" ) { LETTER | DIGIT | "_" } } .   (* @FOMC, @fed.fomc_decision *)
 ZONE     = "UTC" ("+" | "-") NUM .
 ORDINAL  = NUM ( "ST" | "ND" | "RD" | "TH" ) .                              (* one token: 3RD *)                                         (* one token: UTC+9 *)
 ```

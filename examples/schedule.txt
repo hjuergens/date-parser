@@ -71,6 +71,8 @@
 # ("@FOMC + 1B"); "> NEXT @FOMC" and "> PREV @FOMC" move to the next or previous one. Events for the tests are declared
 # as  event <name> = <schedule>, evaluated like a market with the first of January of the year as base date and kept
 # if they fall into that year. An event with several dates in that year is an error at the end of a range.
+# An event name is a letter followed by letters, digits and "_", in parts joined by single dots ("@FOMC",
+# "@fed.fomc_decision", the keys of a rule catalog); names are case-sensitive.
 # US employment report (non-farm payrolls): a forecast, not a fact. BLS publishes its release dates about a year ahead,
 # and only those count; a shutdown can still move them (October and November 2025). The rule is BLS's working
 # convention: the third Friday after the week (Sunday to Saturday) that contains the 12th, "12 MAY - 1D > NEXT SAT + 20D",
@@ -335,6 +337,7 @@ EQUINOX MAR => error
 event FOMC = 2025-01-29, 2025-03-19, 2025-05-07, 2025-06-18, 2025-07-30, 2025-09-17, 2025-10-29, 2025-12-10
 event THANKSGIVING = 4 THU NOV
 event NEWYEAR = 1 JAN {SAT - 1D}
+event fed.fomc_decision = 2025-01-29, 2025-03-19, 2025-05-07, 2025-06-18, 2025-07-30, 2025-09-17, 2025-10-29, 2025-12-10
 [2025-01-01] @FOMC => 2025-01-29, 2025-03-19, 2025-05-07, 2025-06-18, 2025-07-30, 2025-09-17, 2025-10-29, 2025-12-10
 [2025-06-30] @FOMC + 3W => 2025-02-19, 2025-04-09, 2025-05-28, 2025-07-09, 2025-08-20, 2025-10-08, 2025-11-19, 2025-12-31
 [2025-01-01 XNYS] @FOMC + 1B => 2025-01-30, 2025-03-20, 2025-05-08, 2025-06-20, 2025-07-31, 2025-09-18, 2025-10-30, 2025-12-11
@@ -354,6 +357,15 @@ event NEWYEAR = 1 JAN {SAT - 1D}
 [2025-01-01] FOMC => error
 [2025-01-01] @fomc => error
 [2025-01-01] @ FOMC => error
+[2025-01-01] @fed.fomc_decision => 2025-01-29, 2025-03-19, 2025-05-07, 2025-06-18, 2025-07-30, 2025-09-17, 2025-10-29, 2025-12-10
+[2025-01-01 XNYS] @fed.fomc_decision + 1B IF THU => 2025-01-30, 2025-03-20, 2025-05-08, 2025-07-31, 2025-09-18, 2025-10-30, 2025-12-11
+[2025-02-01] T > NEXT @fed.fomc_decision => 2025-03-19
+[2025-01-01] @FED.FOMC_DECISION => error
+[2025-01-01] @fed. => error
+[2025-01-01] @fed..fomc_decision => error
+[2025-01-01] @fed .fomc_decision => error
+[2025-01-01] @_fed => error
+[2025-01-01] @1fed => error
 
 # US employment report (non-farm payrolls)
 market XFED = 1 JAN {SAT - 1D, SUN + 1D}, 3 MON JAN, 3 MON FEB, LAST MON MAY, 19 JUN {SAT - 1D, SUN + 1D}, 4 JUL {SAT - 1D, SUN + 1D}, 1 MON SEP, 2 MON OCT, 11 NOV {SAT - 1D, SUN + 1D}, 4 THU NOV, 25 DEC {SAT - 1D, SUN + 1D}

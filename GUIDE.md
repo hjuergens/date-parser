@@ -143,7 +143,7 @@ them, so each moves to the end of its month: 2026-11-30, 2027-02-28, 2027-05-31,
 | `{…}` after `NEXT`, `IN` or `&`/`\` | a set: the nearest of several targets, or several dates | `T > NEXT {MON, FRI}` |
 | `&`, `\` | include, exclude | `[a : b] \ {1 JAN}` |
 | `1ST`, `2ND`, `3RD`, `LAST` | counts for `NEXT`, selections and picks | `T > NEXT 3RD FRI` |
-| `@NAME` | a named event, its dates supplied with the context | `@FOMC + 1B` |
+| `@NAME` | a named event, its dates supplied with the context; letters, digits, `_` and single dots, case-sensitive | `@FOMC + 1B`, `@fed.fomc_decision` |
 
 ## Next
 

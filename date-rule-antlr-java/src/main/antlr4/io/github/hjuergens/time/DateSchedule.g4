@@ -262,7 +262,7 @@ MONTH   : 'JAN' | 'FEB' | 'MAR' | 'APR' | 'MAY' | 'JUN' | 'JUL' | 'AUG' | 'SEP' 
         | 'ZHENGYUE' | 'ERYUE' | 'SANYUE' | 'SIYUE' | 'WUYUE' | 'LIUYUE' | 'QIYUE' | 'BAYUE' | 'JIUYUE' | 'SHIYUE'
         | 'DONGYUE' | 'LAYUE' ;
 // a named event such as @FOMC; the sigil keeps names apart from keywords and pairs
-EVENT   : '@' [A-Z] [A-Z0-9_]* ;
+EVENT   : '@' [A-Za-z] [A-Za-z0-9_]* ('.' [A-Za-z0-9_]+)* ;
 WEEKDAY : 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN' ;
 ROLL    : 'FOLLOWING' | 'PRECEDING' | 'MODFOLLOWING' | 'BOW' | 'EOW' | 'BOM' | 'EOM' | 'BOQ' | 'EOQ' | 'BOH' | 'EOH' | 'BOY' | 'EOY' ;
 // the periods of a selection; WEEK is Monday to Sunday

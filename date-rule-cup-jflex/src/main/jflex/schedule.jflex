@@ -42,6 +42,7 @@ private Symbol symbol(int type, Object value) {
 "FIX"           { return symbol(ScheduleSym.FIX); }
 "LAST"          { return symbol(ScheduleSym.LAST); }
 "IF"            { return symbol(ScheduleSym.IF); }
+"DAY"           { return symbol(ScheduleSym.DAY); }
 "IN"            { return symbol(ScheduleSym.IN); }
 /* the periods of a selection; WEEK is Monday to Sunday */
 "WEEK" | "MONTH" | "QUARTER" | "HALFYEAR" | "YEAR"

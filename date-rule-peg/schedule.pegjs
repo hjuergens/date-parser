@@ -52,6 +52,13 @@
   // [first : step : last]: one element of the series, bound by values(), so the shifts after it apply to each
   function series(first, step, last, startOut, endOut) {
     return (c) => take(c, (c) => {
+      if (last !== null) {   // one range per occurrence: [@E - 3D : @E + 1D]
+        const firsts = values(first, c), lasts = values(last, c);
+        if (firsts.length > 1 && firsts.length === lasts.length) {
+          return distinct(firsts.flatMap((a, i) => expand(a, step, lasts[i], c.market, c.fixing)
+            .filter((d) => !(startOut && compare(d, a) <= 0 || endOut && compare(d, lasts[i]) >= 0))));
+        }
+      }
       const start = single(first, c);
       if (last === null) {   // an open series [first : step : ], only under a pick, which sets how many elements it yields
         if (!c.limit) throw new Error('an open series needs a pick in front of the item');
@@ -203,7 +210,11 @@
   // annual dates: functions of the year
   // Solar: the Chinese calendar of lunar-javascript, passed as parse option (a generated parser can't import it)
   function monthDay(day, month, Solar) {
-    if (!MONTHS.includes(month)) return (year) => lunar(day, month, year, Solar);
+    if (!MONTHS.includes(month)) {
+      const annual = (year) => lunar(day, month, year, Solar);
+      annual.every = (year) => lunarDates(day, month, year, Solar);   // a lunar date can fall twice in a year
+      return annual;
+    }
     return (year) => date(year, MONTHS.indexOf(month) + 1, day);
   }
 
@@ -233,15 +244,24 @@
     return { month, day: Number(parts.day) };
   }
 
-  // the day of a lunar month in the Gregorian year; an error if it occurs twice or not at all
+  // the day of a lunar month in the Gregorian year, where one date is needed (an anchor); an error if it occurs twice
+  // or not at all
   function lunar(day, month, year, Solar) {
+    const hits = lunarDates(day, month, year, Solar);
+    if (hits.length !== 1) throw new RangeError(`${day} ${month} occurs ${hits.length} times in ${year}`);
+    return hits[0];
+  }
+
+  // the days of a lunar month in the Gregorian year: one, or two when the lunar year is shorter than the Gregorian one
+  // (1 RAMADAN in 2030: 5 January and 26 December); an error if there is none
+  function lunarDates(day, month, year, Solar) {
     const hits = [];
     for (let d = date(year, 1, 1); d.year === year; d = plusDays(d, 1)) {
       const md = lunarMonthDay(d, month, Solar);
       if (md.month === month && md.day === day) hits.push(d);
     }
-    if (hits.length !== 1) throw new RangeError(`${day} ${month} occurs ${hits.length} times in ${year}`);
-    return hits[0];
+    if (hits.length === 0) throw new RangeError(`${day} ${month} occurs 0 times in ${year}`);
+    return hits;
   }
 
   function nthWeekday(n, wd, month) {
@@ -459,8 +479,8 @@ Schedule
 // 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays
 Item
   = PickedItem
-  / expr:Combined _ "IF" days:Weekdays {
-      return (c) => { const d = expr(c); return days.includes(WEEKDAYS[weekday(d)]) ? d : null; };
+  / expr:Combined _ "IF" keep:Condition {
+      return (c) => { const d = expr(c); return keep(d) ? d : null; };
     }
   / Combined
 
@@ -468,10 +488,10 @@ Item
 // starts with a series or an event, where several dates come from
 PickedItem
   = count:$([0-9]+ ("ST" / "ND" / "RD" / "TH")) last:(_ "LAST")? _ start:(Series / name:Event { return event(name); })
-    shifts:(_ @Shift)* combines:(_ @Combine)* days:(_ "IF" @Weekdays)? {
+    shifts:(_ @Shift)* combines:(_ @Combine)* keep:(_ "IF" @Condition)? {
       const first = (c) => shifts.reduce((d, shift) => shift(d, c), start(c));
       const expr = combines.reduce((left, combine) => combine(left), first);
-      const item = days ? (c) => { const d = expr(c); return days.includes(WEEKDAYS[weekday(d)]) ? d : null; } : expr;
+      const item = keep ? (c) => { const d = expr(c); return keep(d) ? d : null; } : expr;
       return pick(ordinal(count), last !== null, item);
     }
 
@@ -491,6 +511,15 @@ Combine
 Operand
   = "{" _ head:Expr tail:(_ "," _ @Expr)* _ "}" { return [head, ...tail]; }
   / date:Date { return [date]; }
+
+// IF MON TUE, IF {MON, TUE}: the weekdays of the date; IF DAY 8..14 APR: its day of the month (of that month)
+Condition
+  = days:Weekdays { return (d) => days.includes(WEEKDAYS[weekday(d)]); }
+  / _ "DAY" _ first:Number _ ".." _ last:Number month:(_ @Month)? {
+      if (!(first >= 1 && first <= last && last <= 31)) throw new RangeError(`days must run from 1 to 31 upwards: ${first}..${last}`);
+      if (month !== null && !MONTHS.includes(month)) throw new RangeError(`IF DAY takes a Gregorian month, not ${month}`);
+      return (d) => d.day >= first && d.day <= last && (month === null || d.month === MONTHS.indexOf(month) + 1);
+    }
 
 Weekdays
   = _ "{" _ head:Weekday tail:(_ "," _ @Weekday)* _ "}" { return [head, ...tail]; }
@@ -582,7 +611,7 @@ SingleDate
   / y:Number _ "-" _ m:Number _ "-" _ d:Number { const value = date(y, m, d); return () => value; }  // ISO
   / d:Number _ "." _ m:Number _ "." _ y:Number { const value = date(y, m, d); return () => value; }  // German
   / m:Number _ "/" _ d:Number _ "/" _ y:Number { const value = date(y, m, d); return () => value; }  // US
-  / annual:Annual { return (c) => annual(base(c).year); }
+  / annual:Annual { return annual.every ? (c) => take(c, (c) => annual.every(base(c).year)) : (c) => annual(base(c).year); }
   / name:Event { return event(name); }
 
 // dates that recur every year, evaluated in the year of the base date

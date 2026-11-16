@@ -59,18 +59,21 @@
 #
 # Lunar months: "1 SHAWWAL" (Hijri, Umm al-Qura), "10 TISHRI" (Hebrew; ADAR is Adar I in a leap year, ADARII
 # Adar II) and "1 ZHENGYUE" (Chinese, without leap months) are the day of that month in the Gregorian year of the
-# base date; an error if it falls there twice or not at all. Their names are month names: "3 MON SHAWWAL" is an error.
+# base date: both when it falls there twice ("1 RAMADAN" in 2030), an error if not at all; where one date is needed
+# (an anchor of NEXT or PREV) twice is an error too. Their names are month names: "3 MON SHAWWAL" is an error.
 # Equinoxes, solstices and solar terms: "EQUINOX MAR", "SOLSTICE JUN", "EQUINOX SEP" and "SOLSTICE DEC" are the days on which
 # the sun's apparent longitude reaches 0, 90, 180 and 270 degrees, "SOLARTERM 1" to "SOLARTERM 24" those of the Chinese solar
 # terms, counted from Lichun (315 degrees; SOLARTERM 5 is Qingming, 15 degrees), all in the Gregorian year of the base
 # date. The day is the one in UTC, or in a fixed offset written after it ("EQUINOX MAR UTC+9" for Japan), as the rule
 # doesn't depend on the market. Computed after Meeus, Astronomical Algorithms (VSOP87 with the terms of appendix III).
 # Conditional dates: "24 DEC IF MON TUE WED THU" is the date on these weekdays and no date otherwise; IF closes
-# an item of a list.
+# an item of a list. "IF DAY 1..3" keeps the dates on these days of the month, "IF DAY 8..14 APR" only in April (a
+# Gregorian month); the days run upwards from 1 to 31.
 # Named events: "@FOMC" is every date of the event FOMC in the year of the base date, the shifts applied to each
 # ("@FOMC + 1B"); "> NEXT @FOMC" and "> PREV @FOMC" move to the next or previous one. Events for the tests are declared
 # as  event <name> = <schedule>, evaluated like a market with the first of January of the year as base date and kept
-# if they fall into that year. An event with several dates in that year is an error at the end of a range.
+# if they fall into that year. A range whose two ends have the same number of dates (an event, a lunar date that
+# falls twice) is one range per pair, in order: "[@FOMC - 1D : 1D : @FOMC]"; other counts are an error.
 # An event name is a letter followed by letters, digits and "_", in parts joined by single dots ("@FOMC",
 # "@fed.fomc_decision", the keys of a rule catalog); names are case-sensitive.
 # US employment report (non-farm payrolls): a forecast, not a fact. BLS publishes its release dates about a year ahead,
@@ -284,7 +287,10 @@ TOM => error
 # lunar months
 [2025-01-01] 1 SHAWWAL => 2025-03-30
 [2025-01-01] [29 RAMADAN : 1D : 3 SHAWWAL] => 2025-03-29, 2025-03-30, 2025-03-31, 2025-04-01
-[2030-01-01] 1 RAMADAN => error
+[2030-01-01] 1 RAMADAN => 2030-01-05, 2030-12-26
+[2030-01-01] 1 RAMADAN + 29D => 2030-02-03, 2031-01-24
+[2030-01-01] [1 RAMADAN + 29D : 1 RAMADAN + 31D] => 2030-02-03, 2030-02-04, 2030-02-05, 2031-01-24, 2031-01-25, 2031-01-26
+[2030-01-01] [1 RAMADAN : 1D : 3 SHAWWAL] => error
 [2025-01-01] 10 TISHRI => 2025-10-02
 [2025-01-01] 10 TISHRI - 1D => 2025-10-01
 [2024-01-01] 14 ADAR => 2024-02-23
@@ -332,6 +338,19 @@ EQUINOX MAR => error
 [2025-01-01] 24 DEC IF WED, 25 DEC => 2025-12-24, 2025-12-25
 [2025-01-01] 24 DEC IF => error
 [2025-01-01] [24 DEC : 1D : 26 DEC] IF WED => 2025-12-24
+[2025-01-01] [1 JAN : 1M : 1 DEC] > NEXT FRI IF DAY 1..3 => 2025-01-03, 2025-05-02, 2025-10-03
+[2025-01-01] [1 JAN : 1M : 1 DEC] > NEXT FRI IF DAY 1..3 OCT => 2025-10-03
+[2019-01-01] 3 MON APR \ {EASTER - 6D, EASTER + 1D}, EASTER - 13D IF DAY 8..14 APR, EASTER + 8D IF DAY 22..28 APR => 2019-04-08
+[2022-01-01] 3 MON APR \ {EASTER - 6D, EASTER + 1D}, EASTER - 13D IF DAY 8..14 APR, EASTER + 8D IF DAY 22..28 APR => 2022-04-25
+[2026-01-01] 3 MON APR \ {EASTER - 6D, EASTER + 1D}, EASTER - 13D IF DAY 8..14 APR, EASTER + 8D IF DAY 22..28 APR => 2026-04-20
+[2025-01-01] 3RD [1 JAN : 1D : ] IF DAY 10..12 => 2025-01-12
+[2025-01-01] 24 DEC IF DAY 25..31 => none
+[2025-01-01] 24 DEC IF DAY 3..1 => error
+[2025-01-01] 24 DEC IF DAY 0..3 => error
+[2025-01-01] 24 DEC IF DAY 1..32 => error
+[2025-01-01] 24 DEC IF DAY 1..31 RAMADAN => error
+[2025-01-01] 24 DEC IF DAY 1 => error
+[2025-01-01] 24 DEC IF DAY => error
 
 # named events
 event FOMC = 2025-01-29, 2025-03-19, 2025-05-07, 2025-06-18, 2025-07-30, 2025-09-17, 2025-10-29, 2025-12-10
@@ -351,6 +370,8 @@ event fed.fomc_decision = 2025-01-29, 2025-03-19, 2025-05-07, 2025-06-18, 2025-0
 [2022-01-01] @NEWYEAR => none
 [2025-12-15] T > NEXT @FOMC => error
 [2025-01-01] [@FOMC : 1D : 31 DEC] => error
+[2025-01-01] [@FOMC - 1D : 1D : @FOMC] => 2025-01-28, 2025-01-29, 2025-03-18, 2025-03-19, 2025-05-06, 2025-05-07, 2025-06-17, 2025-06-18, 2025-07-29, 2025-07-30, 2025-09-16, 2025-09-17, 2025-10-28, 2025-10-29, 2025-12-09, 2025-12-10
+[2025-01-01] [@FOMC > PREV 2ND SAT : @FOMC + 1D] IF WED => 2025-01-22, 2025-01-29, 2025-03-12, 2025-03-19, 2025-04-30, 2025-05-07, 2025-06-11, 2025-06-18, 2025-07-23, 2025-07-30, 2025-09-10, 2025-09-17, 2025-10-22, 2025-10-29, 2025-12-03, 2025-12-10
 [2025-01-01] @NOPE => error
 @FOMC => error
 [2025-01-01] @EASTER => error

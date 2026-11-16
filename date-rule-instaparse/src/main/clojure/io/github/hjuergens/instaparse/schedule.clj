@@ -25,6 +25,8 @@
                            weekdays (seq (filter string? rest))]
                        (ScheduleSemantics/pick n from-end (if weekdays (ScheduleSemantics/onlyOn moved (vec weekdays)) moved))))
    :pick           identity   ; [count from-end], as for a selection
+   :days           (fn [from to & [month]]   ; IF DAY 8..14 APR: the condition onlyOn reads, as its one string
+                     (first (ScheduleSemantics/days (int-of from) (int-of to) month)))
    :endpoint       (fn [start & shifts] (reduce (fn [e shift] (shift e)) start shifts))
    :series         (fn ([start-out first last end-out]   ; [a : b], or an open series [a : step : ]
                       (if (instance? java.time.temporal.TemporalAmount last)

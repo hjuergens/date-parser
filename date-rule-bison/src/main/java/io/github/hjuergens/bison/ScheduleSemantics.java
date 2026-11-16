@@ -152,7 +152,7 @@ public final class ScheduleSemantics {
     }
 
     /**
-     * thrown by a date with several values (an event, a series) that is not bound to one of them yet; values() catches
+     * thrown by a date with several values (an event, a series, a lunar date that falls twice) that is not bound to one of them yet; values() catches
      * it and evaluates the expression once per date of {@code dates}
      */
     private static final class Unbound extends RuntimeException {
@@ -242,6 +242,19 @@ public final class ScheduleSemantics {
             throw new IllegalArgumentException("an open series ends with ]");
         }
         return context -> take(context, c -> {
+            if (last != null) {   // one range per occurrence: [@E - 3D : @E + 1D]
+                List<LocalDate> firsts = values(first, c), lasts = values(last, c);
+                if (firsts.size() > 1 && firsts.size() == lasts.size()) {
+                    java.util.TreeSet<LocalDate> dates = new java.util.TreeSet<>();
+                    for (int i = 0; i < firsts.size(); i++) {
+                        LocalDate a = firsts.get(i), b = lasts.get(i);
+                        range(a, every, b, c).stream()
+                                .filter(date -> !(startOut && !date.isAfter(a) || endOut && !date.isBefore(b)))
+                                .forEach(dates::add);
+                    }
+                    return List.copyOf(dates);
+                }
+            }
             LocalDate start = single(first, c);
             if (last == null) {
                 if (c.limit() == null) {
@@ -309,15 +322,34 @@ public final class ScheduleSemantics {
         LocalDate in(int year);
     }
 
-    /** an annual date in the year of the base date */
+    /** a day of a lunar month: one date where one is needed (an anchor), else every date in the year (all) */
+    private record LunarAnnual(int day, String month) implements Annual {
+        public LocalDate in(int year) {
+            return lunar(day, month, year);
+        }
+
+        List<LocalDate> all(int year) {
+            return lunarDates(day, month, year);
+        }
+    }
+
+    /** whether an annual date is a day of a lunar month, which can fall twice in a Gregorian year */
+    public static boolean isLunar(Annual annual) {
+        return annual instanceof LunarAnnual;
+    }
+
+    /** an annual date in the year of the base date; a lunar date that falls twice in it gives both, one at a time */
     public static Expr inYear(Annual annual) {
+        if (annual instanceof LunarAnnual lunar) {
+            return context -> take(context, c -> lunar.all(BASE.at(c).getYear()));
+        }
         return context -> annual.in(BASE.at(context).getYear());
     }
 
     /** day of month, e.g. 4 JUL, or of a lunar month, e.g. 1 SHAWWAL */
     public static Annual monthDay(int day, String month) {
         if (!MONTHS.contains(month)) {
-            return year -> lunar(day, month, year);
+            return new LunarAnnual(day, month);
         }
         return year -> LocalDate.of(year, month(month), day);
     }
@@ -325,8 +357,23 @@ public final class ScheduleSemantics {
     /** "day month year" -> the dates lunar() found: the search converts every day of the year, so it runs once */
     private static final Map<String, List<LocalDate>> LUNAR_DATES = new java.util.concurrent.ConcurrentHashMap<>();
 
-    /** the day of a Hijri (Umm al-Qura), Hebrew or Chinese month in the Gregorian year; an error if it occurs twice or not at all */
+    /**
+     * the day of a Hijri (Umm al-Qura), Hebrew or Chinese month in the Gregorian year, where one date is needed (an
+     * anchor); an error if it occurs twice or not at all
+     */
     private static LocalDate lunar(int day, String month, int year) {
+        List<LocalDate> hits = lunarDates(day, month, year);
+        if (hits.size() != 1) {
+            throw new java.time.DateTimeException(day + " " + month + " occurs " + hits.size() + " times in " + year);
+        }
+        return hits.get(0);
+    }
+
+    /**
+     * the days of a Hijri, Hebrew or Chinese month in the Gregorian year: one, or two when the lunar year is shorter than
+     * the Gregorian one (1 RAMADAN in 2030: 5 January and 26 December); an error if there is none
+     */
+    private static List<LocalDate> lunarDates(int day, String month, int year) {
         List<LocalDate> hits = LUNAR_DATES.computeIfAbsent(day + " " + month + " " + year, key -> {
             Calendar hebrew = new HebrewCalendar();
             List<LocalDate> found = new ArrayList<>();
@@ -337,10 +384,10 @@ public final class ScheduleSemantics {
             }
             return List.copyOf(found);
         });
-        if (hits.size() != 1) {
-            throw new java.time.DateTimeException(day + " " + month + " occurs " + hits.size() + " times in " + year);
+        if (hits.isEmpty()) {
+            throw new java.time.DateTimeException(day + " " + month + " occurs 0 times in " + year);
         }
-        return hits.get(0);
+        return hits;
     }
 
     // ICU's Hebrew months start with Tishri; ADAR_1 (5) only exists in a leap year, where ADAR (6) is Adar II
@@ -694,6 +741,20 @@ public final class ScheduleSemantics {
         return DayOfWeek.of(WEEKDAYS.indexOf(name) + 1);
     }
 
+    /**
+     * IF DAY 8..14 APR: the condition for onlyOn, the date only on these days of the month (of that Gregorian month);
+     * the days run upwards from 1 to 31
+     */
+    public static List<String> days(int first, int last, String month) {
+        if (first < 1 || last > 31 || first > last) {
+            throw new IllegalArgumentException("days must run from 1 to 31 upwards: " + first + ".." + last);
+        }
+        if (month != null && !MONTHS.contains(month)) {
+            throw new IllegalArgumentException("IF DAY takes a Gregorian month, not " + month);
+        }
+        return List.of("DAY " + first + " " + last + (month == null ? "" : " " + month));
+    }
+
     /** a list of dates; an item that yields no date (see onlyOn) is left out, an event yields one per occurrence */
     public static Rule list(List<Expr> exprs) {
         List<Expr> copy = new ArrayList<>(exprs);
@@ -703,6 +764,16 @@ public final class ScheduleSemantics {
 
     /** 24 DEC IF MON TUE WED THU: the date on these weekdays, otherwise none (null) */
     public static Expr onlyOn(Expr expr, List<String> weekdays) {
+        if (weekdays.size() == 1 && weekdays.get(0).startsWith("DAY ")) {   // from days(): IF DAY 8..14 APR
+            String[] spec = weekdays.get(0).split(" ");
+            int first = Integer.parseInt(spec[1]), last = Integer.parseInt(spec[2]);
+            int month = spec.length > 3 ? month(spec[3]) : 0;
+            return context -> {
+                LocalDate date = expr.at(context);
+                return date != null && date.getDayOfMonth() >= first && date.getDayOfMonth() <= last
+                        && (month == 0 || date.getMonthValue() == month) ? date : null;
+            };
+        }
         Set<DayOfWeek> days = new HashSet<>();
         weekdays.forEach(weekday -> days.add(dayOfWeek(weekday)));
         return context -> {

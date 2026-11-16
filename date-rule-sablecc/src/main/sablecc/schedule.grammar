@@ -27,6 +27,7 @@ Tokens
 	fix = 'FIX';
 	last = 'LAST';
 	if = 'IF';
+	day = 'DAY';   /* IF DAY 8..14 APR */
 	in = 'IN';
 	period_word = 'WEEK' | 'MONTH' | 'QUARTER' | 'HALFYEAR' | 'YEAR';   /* the periods of a selection */
 	/* Gregorian, then Hijri (Umm al-Qura), Hebrew and Chinese months; before pair, like easter */
@@ -91,7 +92,8 @@ Productions
 
 	condition
 		= {plain} if weekday+
-		| {set} if l_brace weekday more_weekday* r_brace;
+		| {set} if l_brace weekday more_weekday* r_brace
+		| {days} if day [first]:number [dot1]:dot [dot2]:dot [last]:number month?;   /* IF DAY 8..14 APR */
 
 	more_weekday = comma weekday;
 

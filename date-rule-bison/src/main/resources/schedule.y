@@ -54,6 +54,7 @@
 %token LAST "LAST"
 %token EASTER "EASTER"
 %token IF "IF"
+%token DAY "DAY"
 %token IN "IN"
 %token <String> PERIOD "period"
 %token <String> PAIR "currency pair"
@@ -116,6 +117,8 @@ condition:
   %empty                            { $$ = null; }
 | IF weekdays                       { $$ = $2; }
 | IF '{' weekday_set '}'            { $$ = $3; }
+| IF DAY NUM '.' '.' NUM            { $$ = new ArrayList<String> (ScheduleSemantics.days ($3, $6, null)); }   /* IF DAY 1..3 */
+| IF DAY NUM '.' '.' NUM MONTH      { $$ = new ArrayList<String> (ScheduleSemantics.days ($3, $6, $7)); }
 ;
 
 weekday_set:
@@ -390,6 +393,8 @@ class ScheduleLexer implements ScheduleParser.Lexer {
           return LAST;
         if (word.equals ("IF"))
           return IF;
+        if (word.equals ("DAY"))
+          return DAY;
         if (word.equals ("IN"))
           return IN;
         if (word.matches ("WEEK|MONTH|QUARTER|HALFYEAR|YEAR"))   /* the periods of a selection */

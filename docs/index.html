@@ -235,11 +235,11 @@
     <h1>Twelve parsers, one date language</h1>
     <p class="lead">
       The same small language for dates, periods and ranges, implemented with twelve parser generators and
-      parser libraries, from LL(1) to LALR(1), Earley, GLL and PEG. Every implementation passes the same 546 test cases.
+      parser libraries, from LL(1) to LALR(1), Earley, GLL and PEG. Every implementation passes the same 564 test cases.
     </p>
     <ul class="stats">
       <li><strong>12</strong><span>implementations, 6 languages</span></li>
-      <li><strong>546</strong><span>shared test cases</span></li>
+      <li><strong>564</strong><span>shared test cases</span></li>
       <li><strong>0</strong><span>grammar conflicts</span></li>
       <li><strong>1</strong><span>specification file</span></li>
     </ul>
@@ -490,7 +490,10 @@ def visitRoll(self, ctx):
 def singleDate: Parser[Context =&gt; LocalDate] = eventName ^^ event | &quot;TOM&quot; ^^^ ((c: Context) =&gt; plusBusinessDays(base(c), 1, c.market)) |
   &quot;T&quot; ^^^ base |
   &quot;SPOT&quot; ~&gt; opt(pair) ^^ (p =&gt; (c: Context) =&gt; c.market.spot(base(c), p)) |
-  annual ^^ (a =&gt; (c: Context) =&gt; a(base(c).getYear)) | number ~ (
+  annual ^^ {
+    case l: LunarAnnual =&gt; (c: Context) =&gt; take(c, c =&gt; l.all(base(c).getYear))   <span class="c">// a lunar date can fall twice</span>
+    case a =&gt; (c: Context) =&gt; a(base(c).getYear)
+  } | number ~ (
     (&quot;-&quot; ~&gt; number) ~ (&quot;-&quot; ~&gt; number) ^^ { case m ~ d =&gt; (y: Int) =&gt; LocalDate.of(y, m, d) }  <span class="c">// ISO</span>
   | (&quot;.&quot; ~&gt; number) ~ (&quot;.&quot; ~&gt; number) ^^ { case m ~ y =&gt; (d: Int) =&gt; LocalDate.of(y, m, d) }  <span class="c">// German</span>
   | (&quot;/&quot; ~&gt; number) ~ (&quot;/&quot; ~&gt; number) ^^ { case d ~ y =&gt; (m: Int) =&gt; LocalDate.of(y, m, d) }  <span class="c">// US</span>
@@ -1423,7 +1426,10 @@ observe  = WEEKDAY SIGN period
         <tbody>
           <tr><td><code><span class="ctx">[2025-01-01]</span> 1 SHAWWAL</code></td><td><span class="date">2025-03-30</span></td></tr>
           <tr><td><code><span class="ctx">[2025-01-01]</span> [29 RAMADAN : 1D : 3 SHAWWAL]</code></td><td><span class="date">2025-03-29</span>, <span class="date">2025-03-30</span>, <span class="date">2025-03-31</span>, <span class="date">2025-04-01</span></td></tr>
-          <tr><td><code><span class="ctx">[2030-01-01]</span> 1 RAMADAN</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2030-01-01]</span> 1 RAMADAN</code></td><td><span class="date">2030-01-05</span>, <span class="date">2030-12-26</span></td></tr>
+          <tr><td><code><span class="ctx">[2030-01-01]</span> 1 RAMADAN + 29D</code></td><td><span class="date">2030-02-03</span>, <span class="date">2031-01-24</span></td></tr>
+          <tr><td><code><span class="ctx">[2030-01-01]</span> [1 RAMADAN + 29D : 1 RAMADAN + 31D]</code></td><td><span class="date">2030-02-03</span>, <span class="date">2030-02-04</span>, <span class="date">2030-02-05</span>, <span class="date">2031-01-24</span>, <span class="date">2031-01-25</span>, <span class="date">2031-01-26</span></td></tr>
+          <tr><td><code><span class="ctx">[2030-01-01]</span> [1 RAMADAN : 1D : 3 SHAWWAL]</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code><span class="ctx">[2025-01-01]</span> 10 TISHRI</code></td><td><span class="date">2025-10-02</span></td></tr>
           <tr><td><code><span class="ctx">[2025-01-01]</span> 10 TISHRI - 1D</code></td><td><span class="date">2025-10-01</span></td></tr>
           <tr><td><code><span class="ctx">[2024-01-01]</span> 14 ADAR</code></td><td><span class="date">2024-02-23</span></td></tr>
@@ -1481,6 +1487,19 @@ observe  = WEEKDAY SIGN period
           <tr><td><code><span class="ctx">[2025-01-01]</span> 24 DEC IF WED, 25 DEC</code></td><td><span class="date">2025-12-24</span>, <span class="date">2025-12-25</span></td></tr>
           <tr><td><code><span class="ctx">[2025-01-01]</span> 24 DEC IF</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code><span class="ctx">[2025-01-01]</span> [24 DEC : 1D : 26 DEC] IF WED</code></td><td><span class="date">2025-12-24</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> [1 JAN : 1M : 1 DEC] &gt; NEXT FRI IF DAY 1..3</code></td><td><span class="date">2025-01-03</span>, <span class="date">2025-05-02</span>, <span class="date">2025-10-03</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> [1 JAN : 1M : 1 DEC] &gt; NEXT FRI IF DAY 1..3 OCT</code></td><td><span class="date">2025-10-03</span></td></tr>
+          <tr><td><code><span class="ctx">[2019-01-01]</span> 3 MON APR \ {EASTER - 6D, EASTER + 1D}, EASTER - 13D IF DAY 8..14 APR, EASTER + 8D IF DAY 22..28 APR</code></td><td><span class="date">2019-04-08</span></td></tr>
+          <tr><td><code><span class="ctx">[2022-01-01]</span> 3 MON APR \ {EASTER - 6D, EASTER + 1D}, EASTER - 13D IF DAY 8..14 APR, EASTER + 8D IF DAY 22..28 APR</code></td><td><span class="date">2022-04-25</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-01-01]</span> 3 MON APR \ {EASTER - 6D, EASTER + 1D}, EASTER - 13D IF DAY 8..14 APR, EASTER + 8D IF DAY 22..28 APR</code></td><td><span class="date">2026-04-20</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> 3RD [1 JAN : 1D : ] IF DAY 10..12</code></td><td><span class="date">2025-01-12</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> 24 DEC IF DAY 25..31</code></td><td><span class="none">empty list</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> 24 DEC IF DAY 3..1</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> 24 DEC IF DAY 0..3</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> 24 DEC IF DAY 1..32</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> 24 DEC IF DAY 1..31 RAMADAN</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> 24 DEC IF DAY 1</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> 24 DEC IF DAY</code></td><td><span class="err">error</span></td></tr>
         </tbody>
       </table>
       </section>
@@ -1505,6 +1524,8 @@ observe  = WEEKDAY SIGN period
           <tr><td><code><span class="ctx">[2022-01-01]</span> @NEWYEAR</code></td><td><span class="none">empty list</span></td></tr>
           <tr><td><code><span class="ctx">[2025-12-15]</span> T &gt; NEXT @FOMC</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code><span class="ctx">[2025-01-01]</span> [@FOMC : 1D : 31 DEC]</code></td><td><span class="err">error</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> [@FOMC - 1D : 1D : @FOMC]</code></td><td><span class="date">2025-01-28</span>, <span class="date">2025-01-29</span>, <span class="date">2025-03-18</span>, <span class="date">2025-03-19</span>, <span class="date">2025-05-06</span>, <span class="date">2025-05-07</span>, <span class="date">2025-06-17</span>, <span class="date">2025-06-18</span>, <span class="date">2025-07-29</span>, <span class="date">2025-07-30</span>, <span class="date">2025-09-16</span>, <span class="date">2025-09-17</span>, <span class="date">2025-10-28</span>, <span class="date">2025-10-29</span>, <span class="date">2025-12-09</span>, <span class="date">2025-12-10</span></td></tr>
+          <tr><td><code><span class="ctx">[2025-01-01]</span> [@FOMC &gt; PREV 2ND SAT : @FOMC + 1D] IF WED</code></td><td><span class="date">2025-01-22</span>, <span class="date">2025-01-29</span>, <span class="date">2025-03-12</span>, <span class="date">2025-03-19</span>, <span class="date">2025-04-30</span>, <span class="date">2025-05-07</span>, <span class="date">2025-06-11</span>, <span class="date">2025-06-18</span>, <span class="date">2025-07-23</span>, <span class="date">2025-07-30</span>, <span class="date">2025-09-10</span>, <span class="date">2025-09-17</span>, <span class="date">2025-10-22</span>, <span class="date">2025-10-29</span>, <span class="date">2025-12-03</span>, <span class="date">2025-12-10</span></td></tr>
           <tr><td><code><span class="ctx">[2025-01-01]</span> @NOPE</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code>@FOMC</code></td><td><span class="err">error</span></td></tr>
           <tr><td><code><span class="ctx">[2025-01-01]</span> @EASTER</code></td><td><span class="err">error</span></td></tr>
@@ -2007,6 +2028,13 @@ docker run --rm -v "$PWD:/work" -w /work/date-rule-flex-bison date-rule-flex-bis
   // [first : step : last]: one element of the series, bound by values(), so the shifts after it apply to each
   function series(first, step, last, startOut, endOut) {
     return (c) => take(c, (c) => {
+      if (last !== null) {   // one range per occurrence: [@E - 3D : @E + 1D]
+        const firsts = values(first, c), lasts = values(last, c);
+        if (firsts.length > 1 && firsts.length === lasts.length) {
+          return distinct(firsts.flatMap((a, i) => expand(a, step, lasts[i], c.market, c.fixing)
+            .filter((d) => !(startOut && compare(d, a) <= 0 || endOut && compare(d, lasts[i]) >= 0))));
+        }
+      }
       const start = single(first, c);
       if (last === null) {   // an open series [first : step : ], only under a pick, which sets how many elements it yields
         if (!c.limit) throw new Error('an open series needs a pick in front of the item');
@@ -2158,7 +2186,11 @@ docker run --rm -v "$PWD:/work" -w /work/date-rule-flex-bison date-rule-flex-bis
   // annual dates: functions of the year
   // Solar: the Chinese calendar of lunar-javascript, passed as parse option (a generated parser can't import it)
   function monthDay(day, month, Solar) {
-    if (!MONTHS.includes(month)) return (year) => lunar(day, month, year, Solar);
+    if (!MONTHS.includes(month)) {
+      const annual = (year) => lunar(day, month, year, Solar);
+      annual.every = (year) => lunarDates(day, month, year, Solar);   // a lunar date can fall twice in a year
+      return annual;
+    }
     return (year) => date(year, MONTHS.indexOf(month) + 1, day);
   }
 
@@ -2188,15 +2220,24 @@ docker run --rm -v "$PWD:/work" -w /work/date-rule-flex-bison date-rule-flex-bis
     return { month, day: Number(parts.day) };
   }
 
-  // the day of a lunar month in the Gregorian year; an error if it occurs twice or not at all
+  // the day of a lunar month in the Gregorian year, where one date is needed (an anchor); an error if it occurs twice
+  // or not at all
   function lunar(day, month, year, Solar) {
+    const hits = lunarDates(day, month, year, Solar);
+    if (hits.length !== 1) throw new RangeError(`${day} ${month} occurs ${hits.length} times in ${year}`);
+    return hits[0];
+  }
+
+  // the days of a lunar month in the Gregorian year: one, or two when the lunar year is shorter than the Gregorian one
+  // (1 RAMADAN in 2030: 5 January and 26 December); an error if there is none
+  function lunarDates(day, month, year, Solar) {
     const hits = [];
     for (let d = date(year, 1, 1); d.year === year; d = plusDays(d, 1)) {
       const md = lunarMonthDay(d, month, Solar);
       if (md.month === month && md.day === day) hits.push(d);
     }
-    if (hits.length !== 1) throw new RangeError(`${day} ${month} occurs ${hits.length} times in ${year}`);
-    return hits[0];
+    if (hits.length === 0) throw new RangeError(`${day} ${month} occurs 0 times in ${year}`);
+    return hits;
   }
 
   function nthWeekday(n, wd, month) {
@@ -2414,8 +2455,8 @@ Schedule
 // 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays
 Item
   = PickedItem
-  / expr:Combined _ "IF" days:Weekdays {
-      return (c) => { const d = expr(c); return days.includes(WEEKDAYS[weekday(d)]) ? d : null; };
+  / expr:Combined _ "IF" keep:Condition {
+      return (c) => { const d = expr(c); return keep(d) ? d : null; };
     }
   / Combined
 
@@ -2423,10 +2464,10 @@ Item
 // starts with a series or an event, where several dates come from
 PickedItem
   = count:$([0-9]+ ("ST" / "ND" / "RD" / "TH")) last:(_ "LAST")? _ start:(Series / name:Event { return event(name); })
-    shifts:(_ @Shift)* combines:(_ @Combine)* days:(_ "IF" @Weekdays)? {
+    shifts:(_ @Shift)* combines:(_ @Combine)* keep:(_ "IF" @Condition)? {
       const first = (c) => shifts.reduce((d, shift) => shift(d, c), start(c));
       const expr = combines.reduce((left, combine) => combine(left), first);
-      const item = days ? (c) => { const d = expr(c); return days.includes(WEEKDAYS[weekday(d)]) ? d : null; } : expr;
+      const item = keep ? (c) => { const d = expr(c); return keep(d) ? d : null; } : expr;
       return pick(ordinal(count), last !== null, item);
     }
 
@@ -2446,6 +2487,15 @@ Combine
 Operand
   = "{" _ head:Expr tail:(_ "," _ @Expr)* _ "}" { return [head, ...tail]; }
   / date:Date { return [date]; }
+
+// IF MON TUE, IF {MON, TUE}: the weekdays of the date; IF DAY 8..14 APR: its day of the month (of that month)
+Condition
+  = days:Weekdays { return (d) => days.includes(WEEKDAYS[weekday(d)]); }
+  / _ "DAY" _ first:Number _ ".." _ last:Number month:(_ @Month)? {
+      if (!(first >= 1 && first <= last && last <= 31)) throw new RangeError(`days must run from 1 to 31 upwards: ${first}..${last}`);
+      if (month !== null && !MONTHS.includes(month)) throw new RangeError(`IF DAY takes a Gregorian month, not ${month}`);
+      return (d) => d.day >= first && d.day <= last && (month === null || d.month === MONTHS.indexOf(month) + 1);
+    }
 
 Weekdays
   = _ "{" _ head:Weekday tail:(_ "," _ @Weekday)* _ "}" { return [head, ...tail]; }
@@ -2537,7 +2587,7 @@ SingleDate
   / y:Number _ "-" _ m:Number _ "-" _ d:Number { const value = date(y, m, d); return () => value; }  // ISO
   / d:Number _ "." _ m:Number _ "." _ y:Number { const value = date(y, m, d); return () => value; }  // German
   / m:Number _ "/" _ d:Number _ "/" _ y:Number { const value = date(y, m, d); return () => value; }  // US
-  / annual:Annual { return (c) => annual(base(c).year); }
+  / annual:Annual { return annual.every ? (c) => take(c, (c) => annual.every(base(c).year)) : (c) => annual(base(c).year); }
   / name:Event { return event(name); }
 
 // dates that recur every year, evaluated in the year of the base date

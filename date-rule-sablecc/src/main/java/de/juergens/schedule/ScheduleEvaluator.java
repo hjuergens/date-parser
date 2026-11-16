@@ -85,6 +85,10 @@ public final class ScheduleEvaluator {
         if (condition == null) {
             return value;
         }
+        if (condition instanceof ADaysCondition days) {
+            return ScheduleSemantics.onlyOn(value, ScheduleSemantics.days(Integer.parseInt(days.getFirst().getText()),
+                    Integer.parseInt(days.getLast().getText()), days.getMonth() == null ? null : days.getMonth().getText()));
+        }
         List<String> weekdays = new ArrayList<>();
         if (condition instanceof APlainCondition plain) {
             for (Object weekday : plain.getWeekday()) {

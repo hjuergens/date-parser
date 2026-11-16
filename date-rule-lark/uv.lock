@@ -1,6 +1,6 @@
 version = 1
 revision = 3
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 
 [[package]]
 name = "colorama"
@@ -14,7 +14,7 @@ wheels = [
 [[package]]
 name = "date-rule-lark"
 version = "0.0.1"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "hijridate" },
     { name = "lark" },

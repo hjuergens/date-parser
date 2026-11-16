@@ -108,6 +108,10 @@ def series_date(first, step, last, start_out, end_out):
     [first : step : ] (last None) is open, only under a pick, which sets how many elements it yields"""
     def dates(c):
         if last is not None:
+            firsts, lasts = values(first, c), values(last, c)
+            if len(firsts) == len(lasts) > 1:   # one range per occurrence: [@E - 3D : @E + 1D]
+                return sorted({d for a, b in zip(firsts, lasts)
+                               for d in series(a, step, b, start_out, end_out, c.market, c.fixing)})
             return series(single(first, c), step, single(last, c), start_out, end_out, c.market, c.fixing)
         if c.limit is None:
             raise ValueError("an open series needs a pick in front of the item")
@@ -281,12 +285,24 @@ CHINESE = "ZHENGYUE ERYUE SANYUE SIYUE WUYUE LIUYUE QIYUE BAYUE JIUYUE SHIYUE DO
 def month_day(day, month):
     """day of month, e.g. 4 JUL, or of a lunar month, e.g. 1 SHAWWAL"""
     if month not in MONTHS:
-        return lambda year: lunar(day, month, year)
+        annual = lambda year: lunar(day, month, year)  # noqa: E731
+        annual.every = lambda year: lunar_dates(day, month, year)
+        return annual
     return lambda year: date(year, MONTHS.index(month) + 1, day)
 
 
 def lunar(day, month, year):
-    """the day of a Hijri, Hebrew or Chinese month in the Gregorian year; an error if it occurs twice or not at all"""
+    """the day of a Hijri, Hebrew or Chinese month in the Gregorian year, where one date is needed (an anchor, a
+    condition); an error if it occurs twice or not at all"""
+    hits = lunar_dates(day, month, year)
+    if len(hits) != 1:
+        raise ValueError(f"{day} {month} occurs {len(hits)} times in {year}")
+    return hits[0]
+
+
+def lunar_dates(day, month, year):
+    """the days of a Hijri, Hebrew or Chinese month in the Gregorian year: one, or two when the lunar year is shorter
+    than the Gregorian one (1 RAMADAN in 2030: 5 January and 26 December); an error if there is none"""
     if month in HIJRI:
         first, last = (Gregorian(year, m, d).to_hijri().year for m, d in ((1, 1), (12, 31)))
         candidates = [lambda y=y: Hijri(y, HIJRI.index(month) + 1, day).to_gregorian() for y in range(first, last + 1)]
@@ -302,9 +318,30 @@ def lunar(day, month, year):
             continue
         if d.year == year:
             hits.append(d)
-    if len(hits) != 1:
-        raise ValueError(f"{day} {month} occurs {len(hits)} times in {year}")
-    return hits[0]
+    if not hits:
+        raise ValueError(f"{day} {month} occurs 0 times in {year}")
+    return sorted(hits)
+
+
+@dataclass(frozen=True)
+class OnDays:
+    """IF DAY 8..14 [APR]: the date on these days of the month (of that Gregorian month), otherwise none"""
+    first: int
+    last: int
+    month: str | None = None
+
+    def __call__(self, d):
+        if d is None or not self.first <= d.day <= self.last:
+            return None
+        return d if self.month is None or d.month == MONTHS.index(self.month) + 1 else None
+
+
+def on_days(first, last, month=None):
+    if not 1 <= first <= last <= 31:
+        raise ValueError(f"days must run from 1 to 31 upwards: {first}..{last}")
+    if month is not None and month not in MONTHS:
+        raise ValueError(f"IF DAY takes a Gregorian month, not {month}")
+    return OnDays(first, last, month)
 
 
 def only_on(weekdays):
@@ -436,7 +473,10 @@ def sun_at(degrees, year, offset):
 
 
 def in_year(annual):
-    """an annual date in the year of the base date"""
+    """an annual date in the year of the base date; a lunar date that falls twice in it gives both, one at a time"""
+    every = getattr(annual, "every", None)
+    if every is not None:
+        return lambda context: take(context, lambda c: every(base(c).year))
     return lambda context: annual(base(context).year)
 
 

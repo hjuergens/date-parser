@@ -63,6 +63,7 @@ PRODUCTIONS
   /* 5TH [SPOT : 1Q : ] > EOQ > 3RD WED IN MONTH: the 5th date after T of the item, 2ND LAST from the last one */
   Item<out ScheduleSemantics.Expr d>      (. String w; List<String> weekdays = new ArrayList<>(); boolean include;
                                              List<ScheduleSemantics.Expr> operand; int pick = 0; boolean fromEnd = false;
+                                             int d1, d2; String dm = null;
                                              d = ScheduleSemantics.BASE; .)
   = ( ordinal                             (. try { pick = ScheduleSemantics.ordinal(t.val); } catch (RuntimeException e) { SemErr(e.getMessage()); } .)
       [ "LAST"                            (. fromEnd = true; .)
@@ -86,6 +87,8 @@ PRODUCTIONS
       | "{" Weekday<out w>                (. weekdays.add(w); .)
         { "," Weekday<out w>              (. weekdays.add(w); .)
         } "}"
+      | "DAY" Number<out d1> "." "." Number<out d2>   /* IF DAY 8..14 APR: only on these days of the month */
+        [ Month<out dm> ]                 (. weekdays = ScheduleSemantics.days(d1, d2, dm); .)
       )                                   (. d = ScheduleSemantics.onlyOn(d, weekdays); .)
     ]                                     (. if (pick > 0) d = ScheduleSemantics.pick(pick, fromEnd, d); .)
   .

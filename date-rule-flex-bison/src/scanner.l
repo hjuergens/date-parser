@@ -62,7 +62,7 @@ static const char *const ROLL_NAMES[] = {
 static const char *const PERIOD_NAMES[] = { "WEEK", "MONTH", "QUARTER", "HALFYEAR", "YEAR", NULL };
 static const struct { const char *name; int token; } KEYWORDS[] = {
     { "T", TODAY }, { "TOM", TOM }, { "SPOT", SPOT }, { "IMM", IMM }, { "NEXT", NEXT }, { "PREV", PREV },
-    { "BD", BD }, { "FD", FD }, { "FIX", FIX }, { "LAST", LAST }, { "EASTER", EASTER }, { "SOLARTERM", SOLARTERM }, { "IF", IF }, { "IN", IN },
+    { "BD", BD }, { "FD", FD }, { "FIX", FIX }, { "LAST", LAST }, { "EASTER", EASTER }, { "SOLARTERM", SOLARTERM }, { "IF", IF }, { "IN", IN }, { "DAY", DAY },
     { NULL, 0 },
 };
 

@@ -115,6 +115,7 @@ them, so each moves to the end of its month: 2026-11-30, 2027-02-28, 2027-05-31,
 | a shift (`+ 1D`, `> EOM`, `> NEXT FRI`, …) | the date on its left; after a series, an event or `{…}` dates in year: each of their dates | `[T : 3M : T + 9M] > EOM` |
 | `& B`, `\ B` | everything on its left; the shifts after `B` apply to the result | `[a : b] & c + 1D` shifts the union |
 | `IF MON TUE`, `IF {SAT, SUN}` | each date of the item | `[T : T + 9D] IF {SAT, SUN}` |
+| `IF DAY 1..3`, `IF DAY 8..14 APR` | each date of the item: days of the month (of that Gregorian month) | `EASTER - 13D IF DAY 8..14 APR` |
 | a pick (`5TH`, `2ND LAST`) | the whole item, which starts with a series or an event | `5TH [SPOT : 1Q : ] > EOQ > 3RD WED IN MONTH` |
 | `,` | nothing: it separates items | `T, 25 DEC` |
 

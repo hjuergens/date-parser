@@ -13,7 +13,9 @@ plain-item  = expr combine* condition?
    starts with a series or an event, where several dates come from *)
 picked-item = pick (series | event) shift* combine* condition?
 pick     = from-start | from-end
-<condition> = <'IF'> (WEEKDAY+ | <'{'> WEEKDAY (<','> WEEKDAY)* <'}'>)
+<condition> = <'IF'> (WEEKDAY+ | <'{'> WEEKDAY (<','> WEEKDAY)* <'}'> | days)
+(* IF DAY 8..14 APR: only on these days of the month (of that Gregorian month) *)
+days     = <'DAY'> NUM <'..'> NUM MONTH?
 
 (* A & B includes the dates of B, A \ B excludes them; the shifts after it apply to the result *)
 <combine> = include | exclude

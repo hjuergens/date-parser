@@ -81,7 +81,7 @@ static int fixed(Parse *parse, long year, long month, long day, int *date) {
 
 %token TODAY "T" TOM "TOM" SPOT "SPOT" IMM "IMM" NEXT "NEXT" PREV "PREV" BD "BD" LAST "LAST" EASTER "EASTER"
 %token FD "FD" FIX "FIX"
-%token SOLARTERM "SOLARTERM" IF "IF" IN "IN"
+%token SOLARTERM "SOLARTERM" IF "IF" IN "IN" DAY "DAY"
 %token <num> NUM ORDINAL ZONE
 %token <code> MONTH WEEKDAY ROLL UNIT SEASON PERIOD
 %token <text> PAIR EVENT
@@ -140,6 +140,8 @@ pick: ORDINAL
 condition: %empty               { $$ = 0; }
          | IF weekdays          { $$ = $2; }
          | IF '{' weekday_set '}' { $$ = $3; }
+         | IF DAY NUM '.' '.' NUM { $$ = DAY_CONDITION($3, $6, -1); }   /* IF DAY 1..3 */
+         | IF DAY NUM '.' '.' NUM MONTH { $$ = DAY_CONDITION($3, $6, $7); }
          ;
 
 /* A & B includes the dates of B, A \\ B excludes them; the shifts after it apply to the result */

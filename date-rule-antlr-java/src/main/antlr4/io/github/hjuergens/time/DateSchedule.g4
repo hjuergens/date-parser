@@ -60,7 +60,7 @@ isoDate returns [LocalDate value]
     : y=NUM '-' m=NUM '-' d=NUM     { $value = LocalDate.of($y.int, $m.int, $d.int); }
     ;
 
-// 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays
+// 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays; IF DAY 1..3 only on these days
 item returns [Expr value]
 locals [int pickCount, boolean pickFromEnd]
       // 5TH [SPOT : 1Q : ] > EOQ > 3RD WED IN MONTH: the 5th date after T of the item, 2ND LAST from the last one; the
@@ -80,13 +80,15 @@ locals [int pickCount, boolean pickFromEnd]
         ( move[$value]              { $value = $move.value; }
         )*
       )*
-      ( 'IF' ((w+=WEEKDAY)+ | '{' w+=WEEKDAY (',' w+=WEEKDAY)* '}')
+      ( 'IF' ( ((w+=WEEKDAY)+ | '{' w+=WEEKDAY (',' w+=WEEKDAY)* '}')
         {
             List<String> weekdays = new ArrayList<>();
             for (Token weekday : $w) weekdays.add(weekday.getText());
             $value = ScheduleSemantics.onlyOn($value, weekdays);
         }
-      )?                            { if ($o != null) $value = ScheduleSemantics.pick($pickCount, $pickFromEnd, $value); }
+      | 'DAY' d1=NUM '..' d2=NUM (dm=MONTH)?    // IF DAY 8..14 APR: only on these days of the month
+        { $value = ScheduleSemantics.onlyOn($value, ScheduleSemantics.days($d1.int, $d2.int, $dm == null ? null : $dm.text)); }
+      ) )?                            { if ($o != null) $value = ScheduleSemantics.pick($pickCount, $pickFromEnd, $value); }
     ;
 
 // a date, a series or a set of dates

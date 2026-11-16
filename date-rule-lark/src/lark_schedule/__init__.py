@@ -26,8 +26,8 @@ class Rules(Transformer):
     def picked_item(self, pick, start, *rest):
         if isinstance(start, Token):
             start = semantics.event(str(start)[1:])
-        shifts = [r for r in rest if callable(r)]
-        others = [r for r in rest if not callable(r)]
+        shifts = [r for r in rest if callable(r) and not isinstance(r, semantics.OnDays)]
+        others = [r for r in rest if not callable(r) or isinstance(r, semantics.OnDays)]
         return semantics.pick(*pick, self._item(self.expr(start, *shifts), *others))
 
     def pick(self, ordinal, last):
@@ -38,14 +38,18 @@ class Rules(Transformer):
 
     def _item(self, expr, *rest):
         for step in rest:
-            if not isinstance(step, Token):
+            if not isinstance(step, (Token, semantics.OnDays)):
                 include, operand, shifts = step
                 expr = self.expr(semantics.combined(expr, include, operand), *shifts)
         weekdays = {str(w) for w in rest if isinstance(w, Token)}
-        if not weekdays:
+        days = [r for r in rest if isinstance(r, semantics.OnDays)]
+        if not weekdays and not days:
             return expr
-        keep = semantics.only_on(weekdays)
+        keep = days[0] if days else semantics.only_on(weekdays)
         return lambda context: keep(expr(context))
+
+    def if_day(self, first, last, month):
+        return semantics.on_days(int(first), int(last), str(month) if month else None)
 
     def include(self, operand, *shifts):
         return True, operand, shifts

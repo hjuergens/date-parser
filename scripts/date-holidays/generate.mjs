@@ -270,8 +270,7 @@ for (const [rule, byPlace] of found) {
         lunarSkipped.add(rule);
         continue;
       }
-      // a lunar date that falls twice in the Gregorian year is an error in the language
-      if (!/[(,]/.test(schedule) && set.size === 2) expected = 'error';
+      // a lunar date that falls twice in the Gregorian year gives both dates in the language
     }
     if (/^\d{4}-/.test(schedule) && !expected.startsWith(schedule.slice(0, 4))) continue;
     if (!cases.has(schedule)) cases.set(schedule, new Map());

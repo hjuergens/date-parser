@@ -113,13 +113,16 @@ final class RuleCompiler implements Opcodes {
         }
     }
 
-    /** an item with one date: no pick, no &amp; or \, a single date (not an event) and no dates in year among its moves */
+    /**
+     * an item with one date: no pick, no &amp; or \, no IF DAY, a single date (not an event, not a lunar date, which can
+     * fall twice in a year) and no dates in year among its moves
+     */
     private static boolean isSingle(ItemContext item) {
-        if (item.o != null || !item.operand().isEmpty() || !item.move().isEmpty() || item.expr() == null) {
+        if (item.o != null || !item.operand().isEmpty() || !item.move().isEmpty() || item.expr() == null || item.d1 != null) {
             return false;
         }
         SingleDateContext date = item.expr().date().singleDate();
-        return date != null && date.EVENT() == null
+        return date != null && date.EVENT() == null && !(date.annual() != null && ScheduleSemantics.isLunar(date.annual().value))
                 && item.expr().move().stream().noneMatch(move -> move.getChild(1) != null && move.getChild(1).getText().equals("{"));
     }
 

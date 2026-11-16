@@ -7,6 +7,11 @@
 /* month codes: Gregorian, Hijri (Umm al-Qura), Hebrew (ADAR is Adar I in a leap year), Chinese */
 enum { GREGORIAN = 0, HIJRI = 12, HEBREW = 24, CHINESE = 37, MONTHS = 49 };
 
+/* IF DAY 8..14 APR in Item.weekdays: bit 7 set, the first and last day (capped at 63) and the month code + 1 (0: any
+ * month); checked when the item is evaluated */
+#define DAY_CAP(n) ((n) > 63 ? 63 : (n) < 0 ? 0 : (int) (n))
+#define DAY_CONDITION(first, last, month) (1 << 7 | DAY_CAP(first) << 8 | DAY_CAP(last) << 14 | ((month) + 1) << 20)
+
 typedef struct {
     long long months, days, business, fixing;
 } Period;
@@ -95,7 +100,7 @@ typedef struct Item {
     Combine *combines;
     int has_pick, from_end;   /* 5TH [SPOT : 1Q : ] ...: the pick-th date after T, 2ND LAST from the last one */
     long pick;
-    int weekdays;          /* IF: a bit per weekday, 0 without IF */
+    int weekdays;          /* IF: a bit per weekday, 0 without IF; or DAY_CONDITION */
     struct Item *next;
 } Item;
 

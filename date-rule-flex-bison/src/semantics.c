@@ -130,7 +130,7 @@ static int compare(const void *a, const void *b) {
 /* ---- evaluation ---- */
 
 /* a node with several values that wasn't bound yet: an event, a series, a combination or dates in year */
-enum { P_EVENT, P_SERIES, P_COMBINED, P_DATES_IN_YEAR };
+enum { P_EVENT, P_SERIES, P_COMBINED, P_DATES_IN_YEAR, P_LUNAR };
 
 typedef struct {
     jmp_buf jump;
@@ -389,9 +389,10 @@ static int table_year(const int (*months)[12][2], int first, int last, int date)
     return year;
 }
 
-/* the day of a Hijri, Hebrew or Chinese month in the Gregorian year; an error if it occurs twice or not at all */
-static int lunar(Eval *eval, long day, int month, long year) {
-    int hits = 0, hit = 0, candidates[200], count = 0;
+/* the days of a Hijri, Hebrew or Chinese month in the Gregorian year into hits[2]: one, or two when the lunar year is
+ * shorter than the Gregorian one (1 RAMADAN in 2030: 5 January and 26 December); an error if there is none */
+static int lunar_dates(Eval *eval, long day, int month, long year, int hits[2]) {
+    int count_hits = 0, candidates[200], count = 0;
     if (month < HEBREW) {   /* Hijri */
         const int *end = HIJRI_MONTHS[HIJRI_LAST_YEAR - HIJRI_FIRST_YEAR][11];
         if (year < 1 || year > 9999 || date_of((int) year, 1, 1) < HIJRI_MONTHS[0][0][0]
@@ -417,10 +418,20 @@ static int lunar(Eval *eval, long day, int month, long year) {
         }
     }
     for (int i = 0; i < count; i++)
-        if (candidates[i] >= date_of(1, 1, 1) && candidates[i] <= date_of(9999, 12, 31) && year_of(candidates[i]) == year)
-            hits++, hit = candidates[i];
-    if (hits != 1) fail(eval, "%ld of month %d occurs %d times in %ld", day, month, hits, year);
-    return hit;
+        if (candidates[i] >= date_of(1, 1, 1) && candidates[i] <= date_of(9999, 12, 31) && year_of(candidates[i]) == year) {
+            if (count_hits == 2) fail(eval, "%ld of month %d occurs more than twice in %ld", day, month, year);
+            hits[count_hits++] = candidates[i];
+        }
+    if (!count_hits) fail(eval, "%ld of month %d occurs 0 times in %ld", day, month, year);
+    if (count_hits == 2 && hits[1] < hits[0]) { int t = hits[0]; hits[0] = hits[1]; hits[1] = t; }
+    return count_hits;
+}
+
+/* the day of a lunar month in the Gregorian year, where one date is needed (an anchor); an error if it occurs twice */
+static int lunar(Eval *eval, long day, int month, long year) {
+    int hits[2], n = lunar_dates(eval, day, month, year, hits);
+    if (n != 1) fail(eval, "%ld of month %d occurs %d times in %ld", day, month, n, year);
+    return hits[0];
 }
 
 /* the terms of VSOP87D (Meeus, Astronomical Algorithms, appendix III) with A >= 100: A (1e-8 rad or AU), B, C */
@@ -653,7 +664,9 @@ static int date_at(Eval *eval, const Date *date, const Ctx *ctx) {
     case D_TOM: return plus_business_days(eval, base(eval, ctx), 1, ctx->market);
     case D_SPOT: return spot(eval, base(eval, ctx), date->pair, ctx->market);
     case D_FIXED: return date->fixed;
-    case D_ANNUAL: return annual_in(eval, &date->annual, year_of(base(eval, ctx)));
+    case D_ANNUAL:   /* a lunar date can fall twice in the year: a node with several values */
+        if (date->annual.kind == MONTH_DAY && date->annual.month >= HIJRI) return take(eval, ctx, P_LUNAR, date, 0, NULL, 0);
+        return annual_in(eval, &date->annual, year_of(base(eval, ctx)));
     case D_EVENT: return take(eval, ctx, P_EVENT, date, 0, NULL, 0);
     case D_SERIES: return take(eval, ctx, P_SERIES, date, 0, NULL, 0);
     }
@@ -705,11 +718,32 @@ static int item_at(Eval *eval, const Item *item, int upto, const Ctx *ctx) {
 }
 
 static int single(Eval *eval, const Expr *expr, const Ctx *ctx);
+static void collect(Eval *eval, const Item *item, int upto, const Expr *expr, const Ctx *ctx, const int *bindings,
+                    int count, int weekdays, DateList *out);
+static void distinct(DateList *dates);
 
 /* [first : step : last]: first + k * step for k = 0, 1, ... while not after last, without the endpoints left out */
 static DateList *elements(Eval *eval, const Date *series, const Ctx *ctx) {
-    int first = single(eval, series->first, ctx);
     DateList *dates = temp(eval);
+    if (series->last) {   /* one range per occurrence: [@E - 3D : @E + 1D] */
+        DateList *firsts = temp(eval), *lasts = temp(eval);
+        collect(eval, NULL, 0, series->first, ctx, NULL, 0, 0, firsts);
+        collect(eval, NULL, 0, series->last, ctx, NULL, 0, 0, lasts);
+        if (firsts->count > 1 && firsts->count == lasts->count) {
+            for (int i = 0; i < firsts->count; i++) {
+                int a = firsts->dates[i], b = lasts->dates[i];
+                for (long long k = 0;; k++) {
+                    Period step = { k * series->step.months, k * series->step.days, k * series->step.business, k * series->step.fixing };
+                    int date = plus(eval, a, step, 1, ctx->market, ctx->fixing);
+                    if (date > b) break;
+                    if (!(series->start_out && date <= a) && !(series->end_out && date >= b)) datelist_push(dates, date);
+                }
+            }
+            distinct(dates);
+            return dates;
+        }
+    }
+    int first = single(eval, series->first, ctx);
     if (!series->last) {   /* an open series [first : step : ], only under a pick, which sets how many elements it yields */
         if (!ctx->limit) fail(eval, "an open series needs a pick in front of the item");
         for (long long k = 0; k < ctx->limit; k++) {
@@ -731,6 +765,18 @@ static DateList *elements(Eval *eval, const Date *series, const Ctx *ctx) {
 static void collect(Eval *eval, const Item *item, int upto, const Expr *expr, const Ctx *ctx, const int *bindings,
                     int count, int weekdays, DateList *out);
 
+/* IF: the weekdays of the date (a bit each), or DAY_CONDITION: its day of the month (of that Gregorian month) */
+static int keeps(Eval *eval, int condition, int date) {
+    if (!condition) return 1;
+    if (!(condition & 1 << 7)) return condition & 1 << weekday_of(date);
+    int first = condition >> 8 & 63, last = condition >> 14 & 63, month = (condition >> 20) - 1;
+    if (first < 1 || first > last || last > 31) fail(eval, "days must run from 1 to 31 upwards: %d..%d", first, last);
+    if (month >= HIJRI) fail(eval, "IF DAY takes a Gregorian month");
+    int year, m, day;
+    date_split(date, &year, &m, &day);
+    return day >= first && day <= last && (month < 0 || m == month + 1);
+}
+
 /* sorted and without duplicates */
 static void distinct(DateList *dates) {
     if (!dates->count) return;
@@ -750,6 +796,12 @@ static DateList *pending_dates(Eval *eval, const Ctx *ctx) {
     if (kind == P_EVENT) return occurrences(eval, ((const Date *) node)->event, year_of(base(eval, ctx)), ctx);
     if (kind == P_SERIES) return elements(eval, node, ctx);
     DateList *dates = temp(eval);
+    if (kind == P_LUNAR) {
+        const Annual *a = &((const Date *) node)->annual;
+        int hits[2], n = lunar_dates(eval, a->n, a->month, year_of(base(eval, ctx)), hits);
+        for (int i = 0; i < n; i++) datelist_push(dates, hits[i]);
+        return dates;
+    }
     if (kind == P_DATES_IN_YEAR) {
         for (const Anchor *a = ((const Shift *) node)->anchor; a; a = a->next)
             datelist_push(dates, annual_in(eval, &a->annual, year_of(date)));
@@ -781,7 +833,7 @@ static void collect(Eval *eval, const Item *item, int upto, const Expr *expr, co
     bound.bindings = bindings, bound.count = count, bound.cursor = &cursor;
     int date = item ? item_at(eval, item, upto, &bound) : expr_at(eval, expr, &bound);
     if (date != UNBOUND) {
-        if (!weekdays || weekdays & 1 << weekday_of(date)) datelist_push(out, date);
+        if (keeps(eval, weekdays, date)) datelist_push(out, date);
         return;
     }
     DateList *found = pending_dates(eval, ctx), *more = temp(eval);

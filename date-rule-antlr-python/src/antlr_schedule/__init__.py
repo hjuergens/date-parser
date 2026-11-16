@@ -45,6 +45,10 @@ class Rules(DateScheduleVisitor):
         if ctx.WEEKDAY():
             keep, unfiltered = semantics.only_on({w.getText() for w in ctx.WEEKDAY()}), expr
             expr = lambda context: keep(unfiltered(context))
+        elif ctx.first is not None:   # IF DAY 8..14 APR
+            keep = semantics.on_days(int(ctx.first.text), int(ctx.last.text), ctx.dayMonth.text if ctx.dayMonth else None)
+            unfiltered = expr
+            expr = lambda context: keep(unfiltered(context))
         if ctx.ORDINAL():
             expr = semantics.pick(semantics.ordinal(ctx.ORDINAL().getText()), ctx.fromEnd is not None, expr)
         return expr

@@ -23,7 +23,7 @@ action code {:
     }
 :};
 
-terminal            PLUS, MINUS, GT, IMM, SPOT, BASE, TOM, NEXT, PREV, BD, LAST, EASTER, IF, IN, FD, FIX;
+terminal            PLUS, MINUS, GT, IMM, SPOT, BASE, TOM, NEXT, PREV, BD, LAST, EASTER, IF, IN, FD, FIX, DAY;
 terminal            DOT, SLASH, COMMA, COLON, LBRACKET, RBRACKET, LBRACE, RBRACE, AMP, BACKSLASH;
 terminal Integer    NUM;
 terminal String     UNIT, PAIR, MONTH, WEEKDAY, ROLL, EVENT, SEASON, ZONE, ORDINAL, PERIOD;
@@ -81,6 +81,8 @@ pick ::= ORDINAL:o                  {: RESULT = ScheduleSemantics.ordinal(o); :}
 condition ::=                       {: RESULT = null; :}
             | IF weekdays:w         {: RESULT = w; :}
             | IF LBRACE weekday_set:w RBRACE {: RESULT = w; :}
+            | IF DAY NUM:a DOT DOT NUM:b    {: RESULT = new ArrayList<>(ScheduleSemantics.days(a, b, null)); :}   /* IF DAY 8..14 APR */
+            | IF DAY NUM:a DOT DOT NUM:b MONTH:m {: RESULT = new ArrayList<>(ScheduleSemantics.days(a, b, m)); :}
             ;
 
 weekdays ::= WEEKDAY:w              {: RESULT = new ArrayList<>(); RESULT.add(w); :}

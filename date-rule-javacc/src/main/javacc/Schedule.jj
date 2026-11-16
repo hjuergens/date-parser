@@ -79,8 +79,8 @@ Rule Exprs() :
 /** 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays */
 /** 5TH [SPOT : 1Q : ] > EOQ > 3RD WED IN MONTH: the 5th date after T of the item, 2ND LAST from the last one */
 ScheduleSemantics.Expr Item() :
-{ ScheduleSemantics.Expr d; Token w, o = null; List<String> weekdays = new ArrayList<String>(); boolean include;
-  List<ScheduleSemantics.Expr> operand; boolean fromEnd = false; }
+{ ScheduleSemantics.Expr d; Token w, o = null, m = null; List<String> weekdays = new ArrayList<String>(); boolean include;
+  List<ScheduleSemantics.Expr> operand; boolean fromEnd = false; int d1, d2; }
 {
   ( o = <ORDINAL> ( "LAST" { fromEnd = true; } )?
     // the item starts with a series or an event, where several dates come from
@@ -96,6 +96,9 @@ ScheduleSemantics.Expr Item() :
   ( "IF"
     ( ( w = <WEEKDAY> { weekdays.add(w.image); } )+
     | "{" w = <WEEKDAY> { weekdays.add(w.image); } ( "," w = <WEEKDAY> { weekdays.add(w.image); } )* "}"
+    // IF DAY 8..14 APR: only on these days of the month (of that Gregorian month)
+    | "DAY" d1 = Number() "." "." d2 = Number() ( m = <MONTH> )?
+      { weekdays = ScheduleSemantics.days(d1, d2, m == null ? null : m.image); }
     )
     { d = ScheduleSemantics.onlyOn(d, weekdays); }
   )?

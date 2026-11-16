@@ -88,7 +88,8 @@ schedule = item { "," item } .
 item     = expr { combine } [ condition ]
          | pick ( series | EVENT ) { move } { combine } [ condition ] .        (* picked_item *)
 pick     = ORDINAL [ "LAST" ] .                                            (* the n-th date after T; 2ND LAST from the last *)
-condition = "IF" ( WEEKDAY { WEEKDAY } | "{" WEEKDAY { "," WEEKDAY } "}" ) . (* no date on other weekdays *)
+condition = "IF" ( WEEKDAY { WEEKDAY } | "{" WEEKDAY { "," WEEKDAY } "}"     (* no date on other weekdays *)
+            | "DAY" NUM ".." NUM [ MONTH ] ) .                            (* or other days of the (Gregorian) month *)
 combine  = ( "&" | "\\" ) operand { move } .                           (* include, exclude; sorted, no duplicates *)
 operand  = date | "{" expr { "," expr } "}" .
 series   = ( "[" | "]" ) endpoint ":" ( period ":" [ endpoint ] | endpoint ) ( "]" | "[" ) .   (* no end: open, only under a pick *)

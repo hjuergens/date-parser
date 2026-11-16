@@ -38,8 +38,8 @@ class ScheduleParsers extends RegexParsers {
         LocalDate.of(y, months(m), 1).`with`(TemporalAdjusters.lastInMonth(weekdays(w))) }
 
   /** the annual dates that don't start with LAST, which also starts the count of a selection */
-  def fixedAnnual: Parser[Annual] = (number ~ month ^^ { case d ~ m => (y: Int) =>
-        if (months.contains(m)) LocalDate.of(y, months(m), d) else lunar(d, m, y) }
+  def fixedAnnual: Parser[Annual] = (number ~ month ^^ { case d ~ m =>
+        if (months.contains(m)) (y: Int) => LocalDate.of(y, months(m), d) else LunarAnnual(d, m) }
     | number ~ weekday ~ month ^^ { case n ~ w ~ m => nthWeekday(n, w, m) }
     | "EASTER" ^^^ (easter _)
     | ("EQUINOX" | "SOLSTICE") ~ month ~ zone ^^ { case k ~ m ~ z => season(k, m, z) }
@@ -55,7 +55,10 @@ class ScheduleParsers extends RegexParsers {
   def singleDate: Parser[Context => LocalDate] = eventName ^^ event | "TOM" ^^^ ((c: Context) => plusBusinessDays(base(c), 1, c.market)) |
     "T" ^^^ base |
     "SPOT" ~> opt(pair) ^^ (p => (c: Context) => c.market.spot(base(c), p)) |
-    annual ^^ (a => (c: Context) => a(base(c).getYear)) | number ~ (
+    annual ^^ {
+      case l: LunarAnnual => (c: Context) => take(c, c => l.all(base(c).getYear))   // a lunar date can fall twice
+      case a => (c: Context) => a(base(c).getYear)
+    } | number ~ (
       ("-" ~> number) ~ ("-" ~> number) ^^ { case m ~ d => (y: Int) => LocalDate.of(y, m, d) }  // ISO
     | ("." ~> number) ~ ("." ~> number) ^^ { case m ~ y => (d: Int) => LocalDate.of(y, m, d) }  // German
     | ("/" ~> number) ~ ("/" ~> number) ^^ { case d ~ y => (m: Int) => LocalDate.of(y, m, d) }  // US
@@ -166,6 +169,14 @@ class ScheduleParsers extends RegexParsers {
           case FixingDays(n) => FixingDays(k * n)
         }
         (c: Context) => take(c, c => {
+          val pairs = last.map(lastExpr => (values(first, c), values(lastExpr, c)))
+            .filter { case (fs, ls) => fs.size > 1 && fs.size == ls.size }
+          pairs match {   // one range per occurrence: [@E - 3D : @E + 1D]
+            case Some((fs, ls)) => fs.zip(ls).flatMap { case (a, b) =>
+              Iterator.from(0).map(k => plus(a, times(k), 1, c.market, c.fixing)).takeWhile(!_.isAfter(b))
+                .filterNot(d => startOut && !d.isAfter(a) || endOut && !d.isBefore(b)).toList
+            }.distinct.sortWith(_.isBefore(_))
+            case None =>
           val start = single(first, c)
           val elements = Iterator.from(0).map(k => plus(start, times(k), 1, c.market, c.fixing))
           last match {
@@ -176,6 +187,7 @@ class ScheduleParsers extends RegexParsers {
             case None =>   // an open series [first : step : ], only under a pick, which sets how many elements it yields
               val limit = c.limit.getOrElse(throw new IllegalArgumentException("an open series needs a pick in front of the item"))
               elements.take(limit).filterNot(d => startOut && !d.isAfter(start)).toList
+          }
           }
         })
     }
@@ -211,14 +223,23 @@ class ScheduleParsers extends RegexParsers {
 
   /** the combines and the IF of an item */
   def rest: Parser[(Context => LocalDate) => (Context => Option[LocalDate])] =
-    rep(combine) ~ opt("IF" ~> (rep1(weekday) | "{" ~> rep1sep(weekday, ",") <~ "}")) ^^ {
-    case combines ~ days => (first: Context => LocalDate) =>
+    rep(combine) ~ opt("IF" ~> condition) ^^ {
+    case combines ~ keep => (first: Context => LocalDate) =>
       val e = combines.foldLeft(first)((left, c) => c(left))
-      days match {
+      keep match {
         case None => (c: Context) => Some(e(c))
-        case Some(days) => (c: Context) => Some(e(c)).filter(d => days.map(weekdays).contains(d.getDayOfWeek))
+        case Some(keep) => (c: Context) => Some(e(c)).filter(keep)
       }
   }
+
+  /** IF MON TUE, IF {MON, TUE}: the weekdays of the date; IF DAY 8..14 APR: its day of the month (of that month) */
+  def condition: Parser[LocalDate => Boolean] =
+    (rep1(weekday) | "{" ~> rep1sep(weekday, ",") <~ "}") ^^ (days => (d: LocalDate) => days.map(weekdays).contains(d.getDayOfWeek)) |
+    "DAY" ~> number ~ (".." ~> number) ~ opt(month) ^^ { case first ~ last ~ m =>
+      require(1 <= first && first <= last && last <= 31, s"days must run from 1 to 31 upwards: $first..$last")
+      m.foreach(name => require(months.contains(name), s"IF DAY takes a Gregorian month, not $name"))
+      (d: LocalDate) => first <= d.getDayOfMonth && d.getDayOfMonth <= last && m.forall(months(_) == d.getMonthValue)
+    }
 
   def schedule: Parser[Context => List[LocalDate]] =
     rep1sep(item, ",") ^^ (items => (c: Context) => items.flatMap(values(_, c).flatten))
@@ -395,8 +416,23 @@ object ScheduleParsers {
   // ICU's Hebrew months start with Tishri; ADAR_1 (5) only exists in a leap year, where ADAR (6) is Adar II
   private val icuHebrew = "TISHRI HESHVAN KISLEV TEVET SHEVAT ADAR ADAR NISAN IYAR SIVAN TAMMUZ AV ELUL".split(" ")
 
-  /** the day of a Hijri (Umm al-Qura), Hebrew or Chinese month in the Gregorian year; an error if it occurs twice or not at all */
+  /** a day of a lunar month: one date where one is needed (an anchor), else every date in the year (all) */
+  case class LunarAnnual(day: Int, month: String) extends (Int => LocalDate) {
+    def apply(year: Int): LocalDate = lunar(day, month, year)
+    def all(year: Int): List[LocalDate] = lunarDates(day, month, year)
+  }
+
+  /** the day of a Hijri (Umm al-Qura), Hebrew or Chinese month in the Gregorian year, where one date is needed (an
+   *  anchor); an error if it occurs twice or not at all */
   def lunar(day: Int, month: String, year: Int): LocalDate = {
+    val hits = lunarDates(day, month, year)
+    if (hits.size != 1) throw new DateTimeException(s"$day $month occurs ${hits.size} times in $year")
+    hits.head
+  }
+
+  /** the days of a Hijri, Hebrew or Chinese month in the Gregorian year: one, or two when the lunar year is shorter
+   *  than the Gregorian one (1 RAMADAN in 2030: 5 January and 26 December); an error if there is none */
+  def lunarDates(day: Int, month: String, year: Int): List[LocalDate] = {
     val calendar: Calendar = new HebrewCalendar()
     def monthDay(date: LocalDate): (String, Int) =
       if (hijri.contains(month)) {
@@ -414,8 +450,8 @@ object ScheduleParsers {
       }
     val hits = Iterator.iterate(LocalDate.of(year, 1, 1))(_.plusDays(1)).takeWhile(_.getYear == year)
       .filter(monthDay(_) == (month, day)).toList
-    if (hits.size != 1) throw new DateTimeException(s"$day $month occurs ${hits.size} times in $year")
-    hits.head
+    if (hits.isEmpty) throw new DateTimeException(s"$day $month occurs 0 times in $year")
+    hits
   }
 
   /** the n-th weekday of the month; there is no fifth Monday in every month */

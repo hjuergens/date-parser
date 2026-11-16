@@ -10,10 +10,11 @@ schedule
     : item (',' item)* EOF
     ;
 
-// 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays
+// 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays; IF DAY 1..3 only on these days
 // 5TH [SPOT : 1Q : ] > EOQ > 3RD WED IN MONTH: the 5th date after T of the item, 2ND LAST from the last one
 item
-    : (ORDINAL fromEnd='LAST'? (series | EVENT) shift* | expr) combine* ('IF' (WEEKDAY+ | '{' WEEKDAY (',' WEEKDAY)* '}'))?
+    : (ORDINAL fromEnd='LAST'? (series | EVENT) shift* | expr) combine*
+      ('IF' (WEEKDAY+ | '{' WEEKDAY (',' WEEKDAY)* '}' | 'DAY' first=NUM '..' last=NUM dayMonth=MONTH?))?
     ;
 
 // A & B includes the dates of B, A \ B excludes them; the shifts after it apply to the result

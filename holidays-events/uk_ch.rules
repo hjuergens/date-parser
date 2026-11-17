@@ -10,13 +10,12 @@
 # first Monday of May, "LAST MON AUG" the last Monday of August, "{SAT + 2D, SUN + 1D}" moves a date that falls on a
 # Saturday by two days and one on a Sunday by one day, "> NEXT WED" moves to the next Wednesday strictly after the
 # date (so "16 JAN - 1D > NEXT WED" is the Wednesday on or after 16 January), "> PRECEDING ON country:GB" moves a
-# date that is not a business day in the UK calendar to the business day before. "ANNOUNCED BY <source> ELSE <dates>"
-# means the authority publishes the dates itself; the expression after ELSE only gives projected dates for the years
-# it has not published yet (without ELSE there are no dates until it publishes). "kind = closed" marks a day on which
-# the market or institution is shut; "kind = event" marks a dated event (a decision, a release) that does not change
-# whether the day is a business day. "cites" names the source the rule is taken from; "label official" means that
-# source is the authority itself. The full syntax is in README.md in this directory. Weekends are declared in
-# weekends.rules (all scopes here have the Saturday-Sunday weekend).
+# date that is not a business day in the UK calendar to the business day before. Rules only project: the dates an
+# authority publishes are data that replace a rule's dates for that year, and dates that are only ever published have
+# no rule. "kind = closed" marks a day on which the market or institution is shut; "kind = event" marks a dated event
+# (a decision, a release) that does not change whether the day is a business day. "cites" names the source the rule
+# is taken from; "label official" means that source is the authority itself. The full syntax is in README.md in this
+# directory. Weekends are declared in weekends.rules (all scopes here have the Saturday-Sunday weekend).
 #
 # Scopes used in this file:
 #   statistics_office:ONS       Office for National Statistics, the UK's national statistics office (Europe/London).
@@ -43,8 +42,7 @@
 # releases from September 2022 to January 2027 hit that day exactly, and all were within a week of it. The release
 # does not close any market, so the day stays a business day.
 rule ons.cpi for uk_cpi in statistics_office:ONS
-  = ANNOUNCED BY ons_release_calendar
-    ELSE [16 JAN : 1M : 16 DEC] - 1D > NEXT WED
+  = [16 JAN : 1M : 16 DEC] - 1D > NEXT WED
   with kind = event, session 07:00 tz "Europe/London", note "Dates from the ONS release calendar, projected beyond it"
   cites "ONS release calendar (iCal), Office for National Statistics" url "https://www.ons.gov.uk/calendar/releasecalendar" label official;
 
@@ -110,9 +108,8 @@ rule gb.boxing_day for boxing_day in country:GB = 26 DEC {SAT + 2D, SUN + 2D}
 # there are no dates until they are announced. The catalog files them under the event "unscheduled market
 # disruption", which is a dated event rather than a closure class, hence kind = event here; in reality an announced
 # one-off bank holiday closes UK banks and the London markets for the whole day.
-rule gb.one_off for market_disruption in country:GB = ANNOUNCED BY govuk_bank_holidays
-  with kind = event, note "One-off bank holidays (e.g. coronation, state funeral), declared by royal proclamation months ahead"
-  cites "GOV.UK bank holidays JSON, UK Government" url "https://www.gov.uk/bank-holidays.json" label official;
+# No rule: the dates are only announced (govuk_bank_holidays); they are data for the evaluator, under the key
+# gb.one_off.
 
 
 # ===================================================================================================================
@@ -127,8 +124,7 @@ rule gb.one_off for market_disruption in country:GB = ANNOUNCED BY govuk_bank_ho
 # other four meetings (May, June, August, September) moved between years in 2021-2023 and 2026, so they are not
 # projected at all; they appear only once the Bank announces them. A decision does not close any market.
 rule boe.mpc_decision for boe_decision in central_bank:BOE
-  = ANNOUNCED BY boe_mpc_dates
-    ELSE 1 THU FEB > PRECEDING ON country:GB, 1 THU NOV > PRECEDING ON country:GB,
+  = 1 THU FEB > PRECEDING ON country:GB, 1 THU NOV > PRECEDING ON country:GB,
          3 THU MAR > PRECEDING ON country:GB, 3 THU DEC > PRECEDING ON country:GB
   with kind = event, note "Provisional dates published about a year ahead; only the February, March, November and December slots are projected"
   cites "Bank of England MPC dates, Bank of England" url "https://www.bankofengland.co.uk/monetary-policy/upcoming-mpc-dates" label official;
@@ -315,8 +311,7 @@ rule eurosic.boxing_day for boxing_day in settlement_system:EUROSIC = 26 DEC
 # The March, June and September dates move between years and appear only once the SNB announces them. A decision does
 # not close any market.
 rule snb.assessment for snb_decision in central_bank:SNB
-  = ANNOUNCED BY snb_calendar
-    ELSE 10 DEC - 1D > NEXT THU
+  = 10 DEC - 1D > NEXT THU
   with kind = event, session 09:30 tz "Europe/Zurich", note "Only the December assessment is projected"
   cites "SNB monetary policy assessment dates, Swiss National Bank" url "https://www.snb.ch/" label official;
 

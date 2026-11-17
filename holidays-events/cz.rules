@@ -6,13 +6,13 @@
 # publishes its daily FX fixing. So this file has no holiday rules.)
 #
 # How to read a rule: "rule <key> for <event> in <scope> = <dates> with kind = ..., cites ...;" says on which days the
-# event <event> happens for the institution <scope>. "ANNOUNCED BY <source> ELSE <dates>" means the authority
-# publishes the dates itself, and those published dates always win; the expression after ELSE only gives projected
-# dates for the years it has not published yet. "1 THU FEB" is the first Thursday of February; "> PRECEDING" moves a
-# date that is not a business day of the rule's own scope to the business day before. "kind = event" marks a dated
-# event (here a rate decision) that does not change whether the day is a business day. "cites" names the source the
-# rule is taken from; "label official" means that source is the authority itself. The full syntax is in README.md in
-# this directory. Weekends are declared in weekends.rules (the scope here has the Saturday-Sunday weekend).
+# event <event> happens for the institution <scope>. Rules only project: the dates an authority publishes are data
+# that replace a rule's dates for that year, and dates that are only ever published have no rule. "1 THU FEB" is the
+# first Thursday of February; "> PRECEDING" moves a date that is not a business day of the rule's own scope to the
+# business day before. "kind = event" marks a dated event (here a rate decision) that does not change whether the day
+# is a business day. "cites" names the source the rule is taken from; "label official" means that source is the
+# authority itself. The full syntax is in README.md in this directory. Weekends are declared in weekends.rules (the
+# scope here has the Saturday-Sunday weekend).
 #
 # Scopes used in this file:
 #   central_bank:CNB    Czech National Bank (Česká národní banka), the central bank of Czechia (Europe/Prague); its
@@ -35,7 +35,6 @@
 # to year and are not projected at all; they appear only once the CNB publishes them. A meeting does not close any
 # market.
 rule cnb.mp_decision for cnb_mp_decision in central_bank:CNB
-  = ANNOUNCED BY cnb_schedule
-    ELSE 1 THU FEB > PRECEDING, 1 THU AUG > PRECEDING, 1 THU NOV > PRECEDING
+  = 1 THU FEB > PRECEDING, 1 THU AUG > PRECEDING, 1 THU NOV > PRECEDING
   with kind = event, note "Eight meetings a year; only the forecast meetings of February, August and November are projected"
   cites "CNB publication schedule (harmonogram.xls), Czech National Bank" url "https://www.cnb.cz/export/sites/cnb/cs/.galleries/kalendar/harmonogram.xls" label official;

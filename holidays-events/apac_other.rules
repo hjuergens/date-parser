@@ -13,19 +13,18 @@
 # of the Chinese lunisolar calendar (Chinese New Year), "10 TISHRI" the tenth day of the Hebrew month Tishri,
 # "[a : 1D : b]" every day from a to b, "{SAT + 2D, SUN + 1D}" moves a date that falls on a Saturday by two days and
 # one on a Sunday by one day, "> PRECEDING" moves a date that is not a business day of the rule's scope to the
-# business day before, "> FOLLOWING" to the business day after, "> EOM" to the last day of the month, "> NEXT TUE"
-# to the next Tuesday strictly after the date (so "24 SEP - 1D > NEXT TUE" is the Tuesday on or after 24
-# September), and "@other.rule + 1D" is the day after each date of another rule. "ANNOUNCED BY <source> ELSE
-# <dates>" means the authority publishes the dates itself and its published dates always win; the expression after
-# ELSE only gives projected dates for the years it has not published yet (without ELSE there are no dates at all
-# until it publishes). "kind = closed" marks a day on which the market or institution is shut; "working_day" a
-# weekend day that is worked; "short_day" a day with a shortened or special session; "event" a dated event (a
-# decision, a release, minutes, an index review) that does not change whether the day is a business day.
-# "precision = month" says that only the month is reliable and the day is an estimate. "session" gives the local
-# time (start - end, same time for a single announcement time). "cites" names the source the rule is taken from;
-# "label official" means that source is the authority itself. The full syntax is in README.md in this directory.
-# Weekends are declared in weekends.rules (every scope here has the Saturday-Sunday weekend except the Tel Aviv
-# Stock Exchange, which traded Sunday to Thursday until 4 January 2026).
+# business day before, "> FOLLOWING" to the business day after, "> EOM" to the last day of the month, "> NEXT TUE" to
+# the next Tuesday strictly after the date (so "24 SEP - 1D > NEXT TUE" is the Tuesday on or after 24 September), and
+# "@other.rule + 1D" is the day after each date of another rule. Rules only project: the dates an authority publishes
+# are data that replace a rule's dates for that year, and dates that are only ever published have no rule.
+# "kind = closed" marks a day on which the market or institution is shut; "working_day" a weekend day that is worked;
+# "short_day" a day with a shortened or special session; "event" a dated event (a decision, a release, minutes, an
+# index review) that does not change whether the day is a business day. "precision = month" says that only the month
+# is reliable and the day is an estimate. "session" gives the local time (start - end, same time for a single
+# announcement time). "cites" names the source the rule is taken from; "label official" means that source is the
+# authority itself. The full syntax is in README.md in this directory. Weekends are declared in weekends.rules (every
+# scope here has the Saturday-Sunday weekend except the Tel Aviv Stock Exchange, which traded Sunday to Thursday
+# until 4 January 2026).
 #
 # Projected meeting dates: many central banks publish their meeting dates only a year or so ahead. For years not yet
 # published, holidays-events projects a date only where the bank itself states a pattern or where an observed pattern
@@ -75,8 +74,7 @@
 # 21 September, 30 October and 19 December, each moved to the business day before if it falls on a weekend. A
 # decision does not close any market.
 rule boj.mpm_decision for boj_decision in central_bank:BOJ
-  = ANNOUNCED BY boj_mpm_schedule
-    ELSE 22 JAN > PRECEDING, 18 MAR > PRECEDING, 28 APR > PRECEDING, 16 JUN > PRECEDING,
+  = 22 JAN > PRECEDING, 18 MAR > PRECEDING, 28 APR > PRECEDING, 16 JUN > PRECEDING,
          29 JUL > PRECEDING, 21 SEP > PRECEDING, 30 OCT > PRECEDING, 19 DEC > PRECEDING
   with kind = event, precision = month,
        note "Meeting table for the current and next year; projected months: Jan, Mar, Apr, Jun, Jul, Sep, Oct, Dec (day estimated)"
@@ -91,10 +89,8 @@ rule boj.mpm_decision for boj_decision in central_bank:BOJ
 # by the Cabinet Office's Economic and Social Research Institute at 8:50 Tokyo time. The institute publishes a release
 # schedule covering the estimates of the next two quarters (source fd_esri_cao_go_jp). No pattern is projected:
 # there are no dates until the schedule names them. A release does not close any market.
-rule esri.gdp for jp_gdp in statistics_office:ESRI = ANNOUNCED BY fd_esri_cao_go_jp
-  with kind = event, session 08:50 tz "Asia/Tokyo",
-       note "Release schedule with the next two quarters' estimates; released at 8:50 Tokyo time"
-  cites "Cabinet Office Japan, Economic and Social Research Institute: quarterly GDP estimates" url "https://www.esri.cao.go.jp/en/sna/sokuhou/sokuhou_top.html" label official;
+# No rule: the dates are only announced (fd_esri_cao_go_jp); they are data for the evaluator, under the key
+# esri.gdp.
 
 
 # ===================================================================================================================
@@ -109,9 +105,8 @@ rule esri.gdp for jp_gdp in statistics_office:ESRI = ANNOUNCED BY fd_esri_cao_go
 # bridge days added to a holiday. They are fixed only by the State Council General Office's yearly notice (source
 # cn_state_council_holidays), so there are no dates until the notice is published. Banks and offices work on these
 # days; the mainland stock exchanges nevertheless stay closed.
-rule cn.makeup_workday for makeup_workday in country:CN = ANNOUNCED BY cn_state_council_holidays
-  with kind = working_day, note "State Council General Office notice, usually early November, for the next year"
-  cites "State Council General Office notice on the arrangement of public holidays, General Office of the State Council of the People's Republic of China" url "https://www.gov.cn/zhengce/" label official;
+# No rule: the dates are only announced (cn_state_council_holidays); they are data for the evaluator, under the key
+# cn.makeup_workday.
 
 # Chinese New Year (Spring Festival): the statutory days off only. The State Council notice each November adds
 # bridge days and make-up working days, which are not part of this rule.
@@ -157,9 +152,8 @@ rule pboc.lpr for pboc_lpr in central_bank:PBOC
 # year. The NSE announces the date and times by circular a few weeks before Diwali (source apac_exchange_circulars,
 # the exchanges' circulars), so there are no dates until then. The catalog files it as a session change; the kind is
 # "special_session": a short session on a day that stays closed (no settlement takes place).
-rule xnse.muhurat_session for muhurat_session in exchange:XNSE = ANNOUNCED BY apac_exchange_circulars
-  with kind = special_session, note "NSE circular a few weeks before Diwali gives the date and the session times"
-  cites "Exchange circulars (NSE/BSE, TASE, HKEX, SGX, JPX)" label official;
+# No rule: the dates are only announced (apac_exchange_circulars); they are data for the evaluator, under the key
+# xnse.muhurat_session.
 
 
 # ===================================================================================================================
@@ -200,8 +194,7 @@ rule msci.rebalance for msci_rebalance in exchange:XNYS
 # because half of its projected dates follow a day-exact pattern, but the January, April, July and October dates are
 # month estimates only. A decision does not close any market.
 rule bok.mpb_decision for bok_decision in central_bank:BOK
-  = ANNOUNCED BY bok_mpb_schedule
-    ELSE 4 THU FEB > PRECEDING, 4 THU MAY > PRECEDING, 4 THU AUG > PRECEDING, 4 THU NOV > PRECEDING,
+  = 4 THU FEB > PRECEDING, 4 THU MAY > PRECEDING, 4 THU AUG > PRECEDING, 4 THU NOV > PRECEDING,
          15 JAN > PRECEDING, 15 APR > PRECEDING, 15 JUL > PRECEDING, 15 OCT > PRECEDING
   with kind = event,
        note "Next year's dates by press release in late October; Feb/May/Aug/Nov projected on the fourth Thursday, Jan/Apr/Jul/Oct only by month (15th)"
@@ -209,9 +202,8 @@ rule bok.mpb_decision for bok_decision in central_bank:BOK
 
 # Bank of Korea Monetary Policy Board minutes. The Bank lists them once published; it states no fixed lag after the
 # meeting, so nothing is projected and there are no dates until they appear.
-rule bok.mpb_minutes for bok_minutes in central_bank:BOK = ANNOUNCED BY bok_mpb_schedule
-  with kind = event, note "Listed after publication; no fixed lag stated"
-  cites "Bank of Korea Monetary Policy Board meeting dates and minutes, Bank of Korea" url "https://www.bok.or.kr/eng/main/contents.do?menuNo=400020" label official;
+# No rule: the dates are only announced (bok_mpb_schedule); they are data for the evaluator, under the key
+# bok.mpb_minutes.
 
 
 # ===================================================================================================================
@@ -226,8 +218,7 @@ rule bok.mpb_minutes for bok_minutes in central_bank:BOK = ANNOUNCED BY bok_mpb_
 # that is a weekend day). The meeting around the end of September / start of October straddles the month end and is
 # not projected. A decision does not close any market.
 rule rbi.mpc_decision for rbi_decision in central_bank:RBI
-  = ANNOUNCED BY rbi_mpc_schedule
-    ELSE 6 FEB > PRECEDING, 6 APR > PRECEDING, 6 JUN > PRECEDING, 6 AUG > PRECEDING, 6 DEC > PRECEDING
+  = 6 FEB > PRECEDING, 6 APR > PRECEDING, 6 JUN > PRECEDING, 6 AUG > PRECEDING, 6 DEC > PRECEDING
   with kind = event, precision = month,
        note "Press release for the fiscal year (April-March), late March; Feb, Apr, Jun, Aug, Dec projected by month"
   cites "Reserve Bank of India Monetary Policy Committee meeting schedule, Reserve Bank of India" url "https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=62422" label official;
@@ -245,8 +236,7 @@ rule rbi.mpc_decision for rbi_decision in central_bank:RBI
 # 4 September and 5 November, each moved to the business day before if it falls on a weekend. A decision does not
 # close any market.
 rule bnm.mpc_decision for bnm_decision in central_bank:BNM
-  = ANNOUNCED BY bnm_mpc_schedule
-    ELSE 22 JAN > PRECEDING, 6 MAR > PRECEDING, 8 MAY > PRECEDING, 9 JUL > PRECEDING, 4 SEP > PRECEDING,
+  = 22 JAN > PRECEDING, 6 MAR > PRECEDING, 8 MAY > PRECEDING, 9 JUL > PRECEDING, 4 SEP > PRECEDING,
          5 NOV > PRECEDING
   with kind = event, precision = month, session 15:00 tz "Asia/Kuala_Lumpur",
        note "Next year's schedule in the last Monetary Policy Statement of the year; statement released at 3:00 pm"
@@ -264,8 +254,7 @@ rule bnm.mpc_decision for bnm_decision in central_bank:BNM
 # month only, on the 19th (moved to the business day before if that is a weekend day). Off-schedule decisions are
 # possible. A decision does not close any market.
 rule bi.bog_decision for bi_decision in central_bank:BI
-  = ANNOUNCED BY bi_bog_schedule
-    ELSE 19 JAN > PRECEDING, 19 FEB > PRECEDING, 19 MAR > PRECEDING, 19 APR > PRECEDING, 19 MAY > PRECEDING,
+  = 19 JAN > PRECEDING, 19 FEB > PRECEDING, 19 MAR > PRECEDING, 19 APR > PRECEDING, 19 MAY > PRECEDING,
          19 JUN > PRECEDING, 19 JUL > PRECEDING, 19 AUG > PRECEDING, 19 SEP > PRECEDING, 19 OCT > PRECEDING,
          19 NOV > PRECEDING, 19 DEC > PRECEDING
   with kind = event, precision = month, note "News release in December for the next year; one meeting per month projected"
@@ -279,15 +268,13 @@ rule bi.bog_decision for bi_decision in central_bank:BI
 # Bank of Thailand Monetary Policy Committee decision (six meetings a year, on Wednesdays). The Bank publishes a
 # table for the current and the next year (source bot_mpc_schedule); no pattern is projected, so there are no dates
 # until the table lists them. Special meetings are possible. A decision does not close any market.
-rule bot.mpc_decision for bot_decision in central_bank:BOT = ANNOUNCED BY bot_mpc_schedule
-  with kind = event, note "Table for the current and the next year"
-  cites "Bank of Thailand MPC meeting schedule and minutes, Bank of Thailand" url "https://www.bot.or.th/en/our-roles/monetary-policy/mpc-meeting.html" label official;
+# No rule: the dates are only announced (bot_mpc_schedule); they are data for the evaluator, under the key
+# bot.mpc_decision.
 
 # Bank of Thailand Monetary Policy Committee minutes, published two weeks after each meeting. Taken from the Bank's
 # table only; no dates until listed.
-rule bot.mpc_minutes for bot_minutes in central_bank:BOT = ANNOUNCED BY bot_mpc_schedule
-  with kind = event, note "Two weeks after each meeting"
-  cites "Bank of Thailand MPC meeting schedule and minutes, Bank of Thailand" url "https://www.bot.or.th/en/our-roles/monetary-policy/mpc-meeting.html" label official;
+# No rule: the dates are only announced (bot_mpc_schedule); they are data for the evaluator, under the key
+# bot.mpc_minutes.
 
 
 # ===================================================================================================================
@@ -301,7 +288,7 @@ rule bot.mpc_minutes for bot_minutes in central_bank:BOT = ANNOUNCED BY bot_mpc_
 # non-business days here). The January and July statements vary and are not projected. A statement does not close
 # any market.
 rule mas.policy_statement for mas_policy_statement in central_bank:MAS
-  = ANNOUNCED BY mas_release_calendar ELSE 14 APR > PRECEDING, 14 OCT > PRECEDING
+  = 14 APR > PRECEDING, 14 OCT > PRECEDING
   with kind = event, note "Advance release calendar, about four months ahead; April and October projected on the 14th"
   cites "MAS advance release calendar (Monetary Policy Statement), Monetary Authority of Singapore" url "https://www.mas.gov.sg/monetary-policy/advance-release-calendar" label official;
 
@@ -313,9 +300,8 @@ rule mas.policy_statement for mas_policy_statement in central_bank:MAS
 # BSP Monetary Board policy decision (six meetings a year, on Thursdays). The central bank publishes a schedule table
 # for the year (source bsp_mb_schedule); no pattern is projected, so there are no dates until it is published.
 # Off-cycle meetings are possible and do not appear in the table. A decision does not close any market.
-rule bsp.mb_decision for bsp_decision in central_bank:BSP = ANNOUNCED BY bsp_mb_schedule
-  with kind = event, note "Schedule table for the year"
-  cites "BSP Monetary Board meetings on monetary policy, Bangko Sentral ng Pilipinas" url "https://www.bsp.gov.ph/Pages/PriceStability/ScheduleOfMeetingsOfTheAdvisoryCommitteeAndMonetaryBoardOnMonetaryPolicy.aspx" label official;
+# No rule: the dates are only announced (bsp_mb_schedule); they are data for the evaluator, under the key
+# bsp.mb_decision.
 
 
 # ===================================================================================================================
@@ -325,15 +311,13 @@ rule bsp.mb_decision for bsp_decision in central_bank:BSP = ANNOUNCED BY bsp_mb_
 # Central Bank of the Republic of China (Taiwan) quarterly Board meeting decision on monetary policy. The bank
 # publishes a provisional schedule for the next year the day after its December meeting (source cbc_mp_schedule); no
 # pattern is projected, so there are no dates until then. A decision does not close any market.
-rule cbc.board_decision for cbc_decision in central_bank:CBC = ANNOUNCED BY cbc_mp_schedule
-  with kind = event, note "Provisional schedule after the December meeting"
-  cites "Central Bank of the Republic of China (Taiwan) monetary policy meetings and minutes" url "https://www.cbc.gov.tw/en/cp-448-189515-f1342-2.html" label official;
+# No rule: the dates are only announced (cbc_mp_schedule); they are data for the evaluator, under the key
+# cbc.board_decision.
 
 # Minutes of the Central Bank of the Republic of China (Taiwan) Board meetings, published about six weeks after each
 # meeting (the Chinese version prevails over the English translation). No dates until published.
-rule cbc.minutes for cbc_minutes in central_bank:CBC = ANNOUNCED BY cbc_mp_schedule
-  with kind = event, note "About six weeks after each meeting"
-  cites "Central Bank of the Republic of China (Taiwan) monetary policy meetings and minutes" url "https://www.cbc.gov.tw/en/cp-448-189515-f1342-2.html" label official;
+# No rule: the dates are only announced (cbc_mp_schedule); they are data for the evaluator, under the key
+# cbc.minutes.
 
 
 # ===================================================================================================================
@@ -348,16 +332,15 @@ rule cbc.minutes for cbc_minutes in central_bank:CBC = ANNOUNCED BY cbc_mp_sched
 # Tuesday is not a business day. The other five meetings are not projected. A decision does not close any market.
 # (The "session" here is the announcement time.)
 rule rba.mpb_decision for rba_decision in central_bank:RBA
-  = ANNOUNCED BY rba_calendar ELSE 24 SEP - 1D > NEXT TUE, 1 TUE NOV > PRECEDING, 2 TUE DEC > PRECEDING
+  = 24 SEP - 1D > NEXT TUE, 1 TUE NOV > PRECEDING, 2 TUE DEC > PRECEDING
   with kind = event, session 14:30 tz "Australia/Sydney",
        note "Calendar with the current and the next year; September, November and December projected; decision at 2:30 pm"
   cites "RBA calendar: Monetary Policy Board decisions and minutes, Reserve Bank of Australia" url "https://www.rba.gov.au/schedules-events/calendar/?topics=mone" label official;
 
 # Minutes of the Reserve Bank of Australia Monetary Policy Board, released two weeks after each decision at 11:30 am
 # Sydney time. Taken from the Bank's calendar only; no dates until listed.
-rule rba.mpb_minutes for rba_minutes in central_bank:RBA = ANNOUNCED BY rba_calendar
-  with kind = event, session 11:30 tz "Australia/Sydney", note "Two weeks after each decision, 11:30 am"
-  cites "RBA calendar: Monetary Policy Board decisions and minutes, Reserve Bank of Australia" url "https://www.rba.gov.au/schedules-events/calendar/?topics=mone" label official;
+# No rule: the dates are only announced (rba_calendar); they are data for the evaluator, under the key
+# rba.mpb_minutes.
 
 
 # ===================================================================================================================
@@ -367,9 +350,8 @@ rule rba.mpb_minutes for rba_minutes in central_bank:RBA = ANNOUNCED BY rba_cale
 # Reserve Bank of New Zealand Official Cash Rate (OCR) decision. The Bank publishes the dates about a year ahead
 # (source rbnz_ocr_dates). Its site blocks automated access, and the project does not get around such checks, so
 # the dates must come by another official route; no pattern is projected. A decision does not close any market.
-rule rbnz.ocr_decision for rbnz_ocr_decision in central_bank:RBNZ = ANNOUNCED BY rbnz_ocr_dates
-  with kind = event, note "Dates about a year ahead (site blocks automated access)"
-  cites "RBNZ Official Cash Rate decision dates, Reserve Bank of New Zealand" url "https://www.rbnz.govt.nz/news-and-events/how-we-release-information/ocr-decision-dates-and-financial-stability-report-dates-to-feb-2028" label official;
+# No rule: the dates are only announced (rbnz_ocr_dates); they are data for the evaluator, under the key
+# rbnz.ocr_decision.
 
 
 # ===================================================================================================================

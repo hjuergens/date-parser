@@ -10,8 +10,9 @@ date, for trade-date rules such as spot; book.schedule(text) parses one expressi
 Not computed here: HINDU (no Hindu calendar library in this module) is an error at evaluation; the Hijri methods other
 than UMMALQURA are projected with Umm al-Qura and marked as projections.
 
-Announcements are data, not grammar: the dates an authority published for a rule and year always replace the dates the
-rule gives for that year; in the years without an announcement, the dates of an announced rule are projections.
+Rules only project. Announcements are data, not grammar: the dates an authority published for a key and year replace
+the dates of the rule with that key for that year, and in the other years its dates are projections. A key without a
+rule (an AGM, which no rule can project) holds only announced dates, and other rules can refer to it with @key.
 """
 import math
 from dataclasses import dataclass, field, replace
@@ -140,14 +141,15 @@ def market(on, context, pair=None):
 
 
 class References:
-    """@key: the dates of a rule (by key) or of the rules of an event class, in the year of the base date; during the
-    evaluation of a year (home) other years are read shallow, or not at all from a shallow evaluation"""
+    """@key: the dates of a rule (by key), of the rules of an event class or of a key with announced dates only, in the
+    year of the base date; during the evaluation of a year (home) other years are read shallow, or not at all from a
+    shallow evaluation"""
 
     def __init__(self, book, scope, home=None, shallow=False):
         self.book, self.scope, self.home, self.shallow = book, scope, home, shallow
 
     def __contains__(self, name):
-        return bool(self.book._referenced(name))
+        return bool(self.book._referenced(name)) or name in self.book.announcements
 
     def __getitem__(self, name):
         def dates(context):
@@ -464,20 +466,11 @@ class RuleTransformer(Rules):
         valid_from, valid_to = validity or (None, None)
         attributes = dict(attributes or ())
         alternatives = ()
-        if isinstance(exprs, Announced):
-            attributes["announced_by"] = exprs.authority
-            alternatives = exprs.alternatives.alternatives if exprs.alternatives else ()
-            exprs = exprs.projection or (lambda context: [])
-        elif isinstance(exprs, OneOf):
+        if isinstance(exprs, OneOf):
             alternatives, exprs = exprs.alternatives, exprs.union
         return RuleDecl(str(key), str(event_class), tuple(include), tuple(exclude), valid_from, valid_to, exprs,
                         attributes, tuple(provenance or ()), alternatives=alternatives,
                         estimated=bool(alternatives))
-
-    def announced(self, authority, projection):
-        if isinstance(projection, OneOf):
-            return Announced(str(authority), projection.union, projection)
-        return Announced(str(authority), projection)
 
     def body(self, node):
         return node
@@ -579,15 +572,6 @@ class Citation:
 
 
 @dataclass(frozen=True)
-class Announced:
-    """ANNOUNCED BY authority [ELSE projection]: the dates come from the authority; the projection fills the years
-    it has not published yet"""
-    authority: str
-    projection: object = None
-    alternatives: object = None
-
-
-@dataclass(frozen=True)
 class OneOf:
     """ONE OF {item AS name, ...}: alternatives of which exactly one will happen; their dates are projections, each
     under its scenario name, and together they are the rule's dates for the other rules (references, calendars)"""
@@ -616,10 +600,6 @@ class RuleDecl:
     def kind(self):
         return self.attributes.get("kind", "closed")
 
-    @property
-    def announced_by(self):
-        return self.attributes.get("announced_by")
-
     def valid(self, d):
         return (self.valid_from is None or d >= self.valid_from) and (self.valid_to is None or d <= self.valid_to)
 
@@ -631,7 +611,7 @@ class RuleDecl:
 @dataclass(frozen=True)
 class Occurrence:
     """a date with the rule that produced it: its kind, precision, session and citations; projected when it comes
-    from a projection (a Hijri date by sighting, an announced rule in a year without announcement)"""
+    from a projection (a Hijri date by sighting, a rule with announced dates in a year without them)"""
     date: date
     rule: str
     event_class: str
@@ -649,7 +629,7 @@ def contains(outer, inner):
 
 
 class RuleBook:
-    """the declarations of a rule file; announcements maps a rule key to the dates an authority published for it"""
+    """the declarations of a rule file; announcements maps a key to the dates an authority published for it: a rule's key, or a key without a rule that @key reads"""
 
     def __init__(self, declarations, announcements=None):
         self.rules = [d for d in declarations if isinstance(d, RuleDecl)]
@@ -690,8 +670,8 @@ class RuleBook:
             targets = set()
             for name in rule.references:
                 found = self._referenced(name)
-                if not found:
-                    raise ValueError(f"rule {rule.key}: no rule or event class {name}")
+                if not found and name not in self.announcements:
+                    raise ValueError(f"rule {rule.key}: no rule, event class or announced key {name}")
                 targets.update(r.key for r in found)
             graph.setdefault(rule.key, set()).update(targets)
         done, path = set(), []
@@ -762,7 +742,7 @@ class RuleBook:
         except VisitError as e:
             raise e.orig_exc from None
         dates = sorted({d for d in dates if rule.valid(d)})
-        return dates, rule.estimated or rule.key in self.announcements or rule.announced_by is not None
+        return dates, rule.estimated or rule.key in self.announcements
 
     def _state(self, scope, year, shallow=False):
         """rule -> (dates, projected) of the rules of the scope evaluated with the first of January of the year"""
@@ -775,7 +755,7 @@ class RuleBook:
         if key in self._running:
             return self._running[key]
         rules = [r for r in self.rules if self.applies(r, scope) and r.in_year(year)]
-        state = {r: ([], r.estimated or r.key in self.announcements or r.announced_by is not None) for r in rules}
+        state = {r: ([], r.estimated or r.key in self.announcements) for r in rules}
         self._running[key] = state
         try:
             order = sorted(range(len(rules)), key=lambda i: (self._nominal(rules[i], scope, year), i))
@@ -830,7 +810,7 @@ class RuleBook:
         return out
 
     def reference_dates(self, name, scope, year, shallow=False):
-        dates = set()
+        dates = set() if self._referenced(name) else set(self.announcement(name, year))   # a key with data only
         for rule in self._referenced(name):
             in_scope = scope if self.applies(rule, scope) else rule.include[0]
             dates.update(self._state(in_scope, year, shallow).get(rule, ((), False))[0])

@@ -16,12 +16,13 @@ Authorities publish only a year or two ahead. For the years beyond, holidays-eve
 "the third Monday in January", "Easter Sunday minus two days", "the fourth Thursday of the meeting month". These
 files are those rules. Two principles apply throughout:
 
-- **An announcement always wins.** Once the authority publishes its dates for a year, they replace the projection
-  for that year completely, even if the rule would have given other days.
+- **Rules only project; an announcement always wins.** The authority's published dates are data, never part of a
+  rule. Once it publishes its dates for a year, they replace the projection for that year completely, even if the
+  rule would have given other days.
 - **A projection is only as good as its pattern.** Fixed holidays are certain. Meeting and release dates are
   projected only where the authority states the pattern itself, or where an observed pattern hit the authority's
-  own dates exactly at least 80% of the time over at least two years. Where no pattern is good enough, the rule has
-  no dates until the authority publishes.
+  own dates exactly at least 80% of the time over at least two years. Where no pattern is good enough, there is no rule:
+  the dates exist only once the authority publishes them, and a comment in the file says so.
 
 Each rule was translated from the holidays-events rule catalog (one YAML file per region, named in each file's
 header) and checked day by day against holidays-events' own rule engine (section 6).
@@ -161,23 +162,27 @@ rule sama.rate_decision for sama_rate_decision in central_bank:SAMA = @fed.fomc_
 The Gulf and Hong Kong currencies are pegged to the US dollar, so their rate decisions follow the Fed's.
 Unknown or circular references are errors when the files are loaded.
 
-### Announced rules: `ANNOUNCED BY ... ELSE ...`
+### Announced dates
+
+Announced dates are data, given to the evaluator (section 5), not written in the rule files. A rule projects only
+where there is a pattern; the Bank of England's rule covers four of its eight meetings:
 
 ```
 rule boe.mpc_decision for boe_decision in central_bank:BOE
-  = ANNOUNCED BY boe_mpc_dates
-    ELSE 1 THU FEB > PRECEDING ON country:GB, 1 THU NOV > PRECEDING ON country:GB,
-         3 THU MAR > PRECEDING ON country:GB, 3 THU DEC > PRECEDING ON country:GB
+  = 1 THU FEB > PRECEDING ON country:GB, 1 THU NOV > PRECEDING ON country:GB,
+    3 THU MAR > PRECEDING ON country:GB, 3 THU DEC > PRECEDING ON country:GB
 ```
 
-`ANNOUNCED BY boe_mpc_dates` names the authority's publication (a source key of the holidays-events catalog). For
-a year in which it has published, its dates are used and the `ELSE` part is ignored. For other years the `ELSE`
-dates are used and marked as projected. The `ELSE` part often covers only the meetings with a reliable pattern
-(here four of the Bank's eight). Without `ELSE` the rule has no dates at all until the authority publishes:
+For a year with announced dates under the rule's key, those dates replace the rule's; in the other years the rule's
+dates are marked as projected. Events without any pattern (GDP releases, earnings dates, AGMs, one-off closures) have
+no rule, only a comment naming the key and the source of their dates:
 
 ```
-rule bea.gdp for us_gdp in statistics_office:BEA = ANNOUNCED BY bea_release_schedule ...
+# No rule: the dates are only announced (bea_release_schedule); they are data for the evaluator, under the key
+# bea.gdp.
 ```
+
+A rule can still refer to such a key: `@issuer.allianz.agm > NEXT BD ON exchange:XETR` reads the announced AGM dates.
 
 ### Kinds
 
@@ -185,7 +190,7 @@ rule bea.gdp for us_gdp in statistics_office:BEA = ANNOUNCED BY bea_release_sche
 |---|---|
 | `closed` (default) | the market, system or office is shut; the day is not a business day |
 | `short_day` | open with shortened or special hours; the `session` gives them |
-| `working_day` | a weekend day that is worked (Russian and Chinese make-up days); it becomes a business day |
+| `working_day` | a weekend day that is worked (such as Russian and Chinese make-up days, which are only announced, so none in these files); it becomes a business day |
 | `event` | a dated event: a decision, a release, minutes, an AGM, an index review; the day stays as it is |
 
 The language also has `non_working`, `paid_no_rest` and `tourist`, unused here.
@@ -227,18 +232,20 @@ are the catalog's own remarks, including switch dates still to be verified (Oman
 
 | File | Covers | Rules |
 |---|---|---|
-| `us.rules` | NYSE holidays and early closes, Federal Reserve holidays (K.8), US bond market (SIFMA), FOMC decisions and minutes, Fed blackout, BLS (CPI, jobs report), BEA (GDP, personal income), New York Fed consumer expectations survey, Treasury auctions | 45 |
-| `uk_ch.rules` | Bank holidays of England and Wales (most also apply in Northern Ireland), Bank of England decisions, UK CPI (ONS), SIX Swiss Exchange, Swiss payment systems SIC and euroSIC, Swiss National Bank | 40 |
-| `apac_other.rules` | Rate decisions and minutes of 13 Asia-Pacific central banks, Japan's GDP, China's Spring Festival and make-up days, NSE Muhurat session, Yom Kippur at Tel Aviv, MSCI quarterly reviews, BOJ-NET and RITS closing days | 34 (35 declarations) |
-| `de_ez.rules` | TARGET2 (euro payment system), Bundesbank, Xetra, German nationwide holidays, Eurex quarterly expiry, euro-area and German inflation releases, ECB consumer expectations survey | 31 |
+| `us.rules` | NYSE holidays and early closes, Federal Reserve holidays (K.8), US bond market (SIFMA), FOMC decisions and minutes, Fed blackout, BLS jobs report, New York Fed consumer expectations survey | 40 |
+| `uk_ch.rules` | Bank holidays of England and Wales (most also apply in Northern Ireland), Bank of England decisions, UK CPI (ONS), SIX Swiss Exchange, Swiss payment systems SIC and euroSIC, Swiss National Bank | 41 |
+| `apac_other.rules` | Rate decisions of 11 Asia-Pacific central banks, China's Spring Festival, Yom Kippur at Tel Aviv, MSCI quarterly reviews, BOJ-NET and RITS closing days | 23 (24 declarations) |
+| `de_ez.rules` | TARGET2 (euro payment system), Bundesbank, Xetra, German nationwide and regional holidays, Eurex quarterly expiry | 30 |
 | `cz.rules` | Czech National Bank rate decisions (Czech holidays come from libraries, not rules) | 1 |
-| `gcc.rules` | Islamic holidays and national days of Saudi Arabia and the UAE, Eid closures of SAMA, SARIE and Tadawul, Gulf central-bank decisions following the Fed, Ramadan sessions in Qatar and Egypt | 17 (18 declarations) |
-| `issuers.rules` | Results, AGMs and ex-dividend days of six listed companies | 18 |
-| `br.rules` | Days on which Brazil's central bank publishes no PTAX dollar fixing | 13 |
+| `gcc.rules` | Islamic holidays and national days of Saudi Arabia and the UAE, Gulf central-bank decisions following the Fed | 11 (12 declarations) |
+| `issuers.rules` | AGMs with a pattern (Lufthansa, LVMH) and ex-dividend days of four listed companies | 6 |
+| `br.rules` | Days on which Brazil's central bank publishes no PTAX dollar fixing | 16 |
 | `ca.rules` | Closing days of Lynx, Canada's large-value payment system | 10 |
-| `ru_cis.rules` | Russian non-working holidays, transferred days off and make-up working days, Bank of Russia key-rate meetings | 11 |
+| `ru_cis.rules` | Russian non-working holidays, Bank of Russia key-rate meetings | 9 |
 | `weekends.rules` | Weekend regimes that are not Saturday-Sunday | 0 (31 weekend lines) |
-| **Total** | | **220** |
+| **Total** | | **187** |
+
+The 42 events whose dates are only ever announced have no rule; each has a comment with its key and source.
 
 Some files refer to rules in others (`@fed.fomc_decision` from `us.rules` is used in `apac_other.rules` and
 `gcc.rules`; `msci.rebalance` needs the NYSE holidays; the ex-dividend rules need the Xetra calendar), so load
@@ -256,12 +263,14 @@ from lark_schedule.rules import parse_rules
 rules_dir = Path("../holidays-events")
 text = "\n".join(p.read_text() for p in sorted(rules_dir.glob("*.rules")))
 
-book = parse_rules(text)
+# the AGMs have no rule, only announced dates; the ex-dividend rules refer to them
+agms = {k: [] for k in ("issuer.deutsche_bank.agm", "issuer.allianz.agm", "issuer.commerzbank.agm")}
+book = parse_rules(text, announcements=agms)
 for o in book.holidays("exchange:XNYS", 2027):
     print(o.date, o.rule, o.kind)
 
 # The Bank of England publishes its meeting dates: they replace the projection for that year.
-book = parse_rules(text, announcements={"boe.mpc_decision": [date(2027, 2, 4), date(2027, 3, 18)]})
+book = parse_rules(text, announcements={**agms, "boe.mpc_decision": [date(2027, 2, 4), date(2027, 3, 18)]})
 for o in book.holidays("central_bank:BOE", 2027):
     print(o.date, o.rule, "projected" if o.projected else "announced")
 for o in book.holidays("central_bank:BOE", 2028):
@@ -290,31 +299,33 @@ Output (shortened):
 2028-12-21 boe.mpc_decision projected
 ```
 
-- `parse_rules(text, announcements={rule_key: [date, ...]})` loads the rules. Announcements are data, not rules:
-  the dates an authority published for a rule; for each year that has some, they replace the rule's dates.
+- `parse_rules(text, announcements={key: [date, ...]})` loads the rules. Announcements are data, not rules: the
+  dates an authority published under a key. For a rule's key they replace the rule's dates in each year that has
+  some; a key without a rule (an AGM) holds announced dates only, which other rules read with `@key`.
 - `book.holidays(scope, year)` returns every date of the rules in that scope as `Occurrence` records with `date`,
   `rule`, `event_class`, `kind`, `precision`, `session`, `citations`, `projected` (true for the dates of `ONE OF`
-  and for `ELSE` dates of a year without an announcement) and `scenario` (the name of the `ONE OF` alternative). Events (`kind = event`) are included; filter on `kind`
+  and for the dates of a rule with announcements in a year without one) and `scenario` (the name of the `ONE OF` alternative). Events (`kind = event`) are included; filter on `kind`
   for closing days only.
-- Loading fails on an unknown or circular reference and on versions of a rule that overlap in time.
+- Loading fails on an unknown or circular reference (a key without a rule must be among the announcements) and on
+  versions of a rule that overlap in time.
 
 ## 6. Verification
 
 Every rule was compared day by day for the years **2021 to 2031** with the projections of the holidays-events rule
-engine (the same catalog rule, evaluated by holidays-events itself; rules without `ELSE` give no dates in either), the
+engine (the same catalog rule, evaluated by holidays-events itself), the
 scenario names of the moon-sighting rules included.
 
 | Files | Rules | Agree | Differ |
 |---|---|---|---|
-| `us.rules` | 45 | 45 | 0 |
-| `uk_ch.rules` | 42 | 42 | 0 |
-| `apac_other.rules` | 34 | 34 | 0 |
-| `de_ez.rules`, `cz.rules` | 36 | 36 | 0 |
-| `issuers.rules` | 18 | 18 | 0 |
-| `gcc.rules` | 17 | 17 | 0 |
+| `us.rules` | 40 | 40 | 0 |
+| `uk_ch.rules` | 41 | 41 | 0 |
+| `apac_other.rules` | 23 | 23 | 0 |
+| `de_ez.rules`, `cz.rules` | 31 | 31 | 0 |
+| `issuers.rules` | 6 | 6 | 0 |
+| `gcc.rules` | 11 | 11 | 0 |
 | `br.rules`, `ca.rules` | 26 | 26 | 0 |
-| `ru_cis.rules` | 11 | 11 | 0 |
-| **Total** | **229** | **229** | **0** |
+| `ru_cis.rules` | 9 | 9 | 0 |
+| **Total** | **187** | **187** | **0** |
 
 Equivalent but indirect forms (both engines agree, the comments explain them):
 

@@ -34,9 +34,9 @@ mise run test:lark        # or, inside this directory:
 uv run pytest             # uv installs Lark and pytest into .venv (versions in uv.lock)
 ```
 
-There are 12209 tests (pytest): the 537 cases of [examples/schedule.txt](../examples/schedule.txt), the 2186 of
+There are 12268 tests (pytest): the 564 cases of [examples/schedule.txt](../examples/schedule.txt), the 2186 of
 [examples/catalog.txt](../examples/catalog.txt) and the 3347 of [examples/date-holidays.txt](../examples/date-holidays.txt), each with
-`lalr` and `earley`, 23 for the grammar of rule files and 46 for their evaluation.
+`lalr` and `earley`, 23 for the grammar of rule files and 51 for their evaluation.
 
 ## Shared example
 
@@ -86,14 +86,13 @@ book.schedule("T > SPOT EURUSD ON usd_eur")(book.context(date(2026, 7, 2)))
 - **Load errors:** a cyclic or unknown reference, versions of a rule that overlap in time.
 - **Not computed:** `HINDU` is an error at evaluation; `BY SIGHTING`, `DIYANET` and `FOLLOW` project with Umm al-Qura
   and mark the dates as projections.
-- **Alternatives:** `ONE OF { item AS name, ... }` (also after `ELSE`) gives dates of which exactly one alternative
+- **Alternatives:** `ONE OF { item AS name, ... }` gives dates of which exactly one alternative
   happens; each date is a projection with `Occurrence.scenario` = its name, and together they are the rule's dates for
   references and calendars.
-- **Announcements** are data, not grammar: the dates published for a rule and year always replace the rule's dates for
-  that year; in the other years the dates of an announced rule are projections.
-- **`ANNOUNCED BY source [ELSE exprs]`** names the authority whose published dates a rule follows. Without `ELSE` the
-  rule has no dates until an announcement arrives; with it, the `ELSE` dates fill the years not announced yet, marked as
-  projections (central-bank meetings, moon-sighted holidays, one-off closures).
+- **Rules only project. Announcements** are data, not grammar (`parse_rules(text, announcements={key: [dates]})`):
+  the dates published under a rule's key replace the rule's dates for that year, and in the other years its dates are
+  projections. A key without a rule holds announced dates only (an AGM, which no rule can project); other rules read
+  it with `@key`, and a reference to a key that is neither a rule nor announced is a load error.
 - **`with kind = event`** marks a dated event (a decision, a release, an auction) that leaves the day as it is, unlike
   `closed`, `non_working` and `working_day`.
 - **[../holidays-events/](../holidays-events/)** holds the projection rules of holidays-events written in this language,

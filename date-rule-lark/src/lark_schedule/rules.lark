@@ -1,9 +1,10 @@
 // Rule files: the schedule language (schedule.lark) inside declarations with scope, validity, kind and provenance.
 // From the O-73 draft of holidays-events (docs/rule-grammar.md, section 2); LALR(1), no conflicts.
 // Three start rules: rule_file (declarations), exprs (one expression, a superset of schedule.lark) and body (what
-// follows "=" in a rule without ANNOUNCED BY: an expression or ONE OF, for hosts that store the rule text by itself).
+// follows "=" in a rule: an expression or ONE OF, for hosts that store the rule text by itself).
 // The extensions of the schedule language are marked with "+".
-// Announcements are not part of a rule: an authority's published dates replace the rule's dates for that year (G11).
+// Rules only project. Announcements are data, never part of a rule: an authority's published dates replace the rule's
+// dates for that year (G11).
 
 // ================= declarations =================
 
@@ -15,9 +16,7 @@ body: exprs | one_of
             | weekend_decl
             | calendar_decl
 
-rule: "rule" KEY "for" KEY "in" scope_sel [validity] "=" (exprs | announced | one_of) [attributes] [provenance] ";"
-// the authority publishes the dates; until it does, the ELSE expression gives projected dates (none without ELSE)
-announced: "ANNOUNCED" "BY" KEY ["ELSE" (exprs | one_of)]
+rule: "rule" KEY "for" KEY "in" scope_sel [validity] "=" (exprs | one_of) [attributes] [provenance] ";"
 // + alternatives: exactly one of them will happen (a moon sighting decides); each gives projected dates under its name
 one_of: "ONE" "OF" "{" alternative ("," alternative)* "}"
 alternative: item "AS" KEY

@@ -4,14 +4,13 @@
 # Translated from holidays-events rules/catalog/issuers.yaml.
 #
 # How to read a rule: "rule <key> for <event> in <scope> = <dates> with kind = ..., cites ...;" says on which days
-# the event <event> happens for the company <scope>. "ANNOUNCED BY <source>" means the company publishes the dates
-# itself (in the financial calendar of its investor-relations website); the rule has no dates until it does. With
-# "ELSE <dates>" the dates after ELSE are projections used for the years the company has not published yet; the
-# published dates always win. "5 MAY > NEXT TUE" is the first Tuesday strictly after 5 May, i.e. the first Tuesday
-# on or after 6 May. "@<key>" stands for the dates of another rule, and "> NEXT BD ON exchange:XETR" moves to the
-# next business day (strictly after the date) of the Xetra trading calendar. "kind = event" marks a dated event
-# that does not change whether the day is a business day. "cites" names the source; "label official" means the
-# source is the company itself. The full syntax is in README.md in this directory.
+# the event <event> happens for the company <scope>. Rules only project: the dates an authority publishes are data
+# that replace a rule's dates for that year, and dates that are only ever published have no rule.
+# "5 MAY > NEXT TUE" is the first Tuesday strictly after 5 May, i.e. the first Tuesday on or after 6 May. "@<key>"
+# stands for the dates of another rule, and "> NEXT BD ON exchange:XETR" moves to the next business day (strictly
+# after the date) of the Xetra trading calendar. "kind = event" marks a dated event that does not change whether
+# the day is a business day. "cites" names the source; "label official" means the source is the company itself.
+# The full syntax is in README.md in this directory.
 #
 # All dates of this file come from the companies themselves. Most rules have no projection at all: without the
 # company's announcement there is no date. Two AGMs (Lufthansa and LVMH) follow a pattern regular enough to be
@@ -45,19 +44,13 @@
 
 # Deutsche Bank's results releases (annual and quarterly). Only the dates in its financial calendar count, which is
 # usually published about a year ahead; no projection.
-rule issuer.deutsche_bank.earnings_release for earnings_release in issuer:7LTWFZYICNSX8D621K86
-  = ANNOUNCED BY ir_deutsche_bank
-  with kind = event
-  cites "Deutsche Bank AG investor relations financial calendar"
-    url "https://investor-relations.db.com/reports-and-events/financial-calendar" label official;
+# No rule: the dates are only announced (ir_deutsche_bank); they are data for the evaluator, under the key
+# issuer.deutsche_bank.earnings_release.
 
 # Deutsche Bank's annual general meeting. Listed in the financial calendar; the formal invitation comes about a
 # month ahead. No projection: the date has no regular pattern.
-rule issuer.deutsche_bank.agm for agm in issuer:7LTWFZYICNSX8D621K86
-  = ANNOUNCED BY ir_deutsche_bank
-  with kind = event
-  cites "Deutsche Bank AG investor relations financial calendar"
-    url "https://investor-relations.db.com/reports-and-events/financial-calendar" label official;
+# No rule: the dates are only announced (ir_deutsche_bank); they are data for the evaluator, under the key
+# issuer.deutsche_bank.agm.
 
 # Deutsche Bank's ex-dividend day: the first business day after the AGM on the Xetra calendar (German law, see the file
 # header; Xetra is where the shares trade in Germany, so its business days decide), only if
@@ -77,18 +70,15 @@ rule issuer.deutsche_bank.ex_dividend for ex_dividend in issuer:7LTWFZYICNSX8D62
 
 # Lufthansa's results releases (annual and quarterly). Only the dates in its financial calendar count, usually
 # published about a year ahead; no projection.
-rule issuer.lufthansa.earnings_release for earnings_release in issuer:529900PH63HYJ86ASW55
-  = ANNOUNCED BY ir_lufthansa
-  with kind = event
-  cites "Deutsche Lufthansa AG investor relations financial calendar"
-    url "https://investor-relations.lufthansagroup.com/en/events/financial-calendar.html" label official;
+# No rule: the dates are only announced (ir_lufthansa); they are data for the evaluator, under the key
+# issuer.lufthansa.earnings_release.
 
 # Lufthansa's annual general meeting. The company announces it in its financial calendar (invitation about a month
 # ahead). For the years not announced yet it is projected as the first Tuesday on or after 6 May: an observed
 # pattern, not a rule of the company. It held every year since 2022 and in 2019, and missed in 2016, 2017, 2020
 # and 2021.
 rule issuer.lufthansa.agm for agm in issuer:529900PH63HYJ86ASW55
-  = ANNOUNCED BY ir_lufthansa ELSE 5 MAY > NEXT TUE
+  = 5 MAY > NEXT TUE
   with kind = event
   cites "Deutsche Lufthansa AG investor relations financial calendar"
     url "https://investor-relations.lufthansagroup.com/en/events/financial-calendar.html" label official;
@@ -111,21 +101,13 @@ rule issuer.lufthansa.ex_dividend for ex_dividend in issuer:529900PH63HYJ86ASW55
 
 # Allianz's results releases (annual and quarterly). Only the dates in its financial calendar count, usually
 # published about a year ahead; no projection.
-rule issuer.allianz.earnings_release for earnings_release in issuer:529900K9B0N5BT694847
-  = ANNOUNCED BY ir_allianz
-  with kind = event
-  cites "Allianz SE investor relations financial calendar"
-    url "https://www.allianz.com/en/investor_relations/conferences-presentations/financial-calendar.html"
-    label official;
+# No rule: the dates are only announced (ir_allianz); they are data for the evaluator, under the key
+# issuer.allianz.earnings_release.
 
 # Allianz's annual general meeting, announced in its financial calendar (invitation about a month ahead). No
 # projection.
-rule issuer.allianz.agm for agm in issuer:529900K9B0N5BT694847
-  = ANNOUNCED BY ir_allianz
-  with kind = event
-  cites "Allianz SE investor relations financial calendar"
-    url "https://www.allianz.com/en/investor_relations/conferences-presentations/financial-calendar.html"
-    label official;
+# No rule: the dates are only announced (ir_allianz); they are data for the evaluator, under the key
+# issuer.allianz.agm.
 
 # Allianz's ex-dividend day: the first business day after the AGM on the Xetra calendar (German law, see the file
 # header; Xetra is where the shares trade in Germany, so its business days decide), only if the
@@ -146,19 +128,13 @@ rule issuer.allianz.ex_dividend for ex_dividend in issuer:529900K9B0N5BT694847
 
 # Commerzbank's results releases (annual and quarterly). Only the dates in its financial calendar count, usually
 # published about a year ahead; no projection.
-rule issuer.commerzbank.earnings_release for earnings_release in issuer:851WYGNLUQLFZBSYGB56
-  = ANNOUNCED BY ir_commerzbank
-  with kind = event
-  cites "Commerzbank AG investor relations financial calendar"
-    url "https://investor-relations.commerzbank.com/financial-calendar" label official;
+# No rule: the dates are only announced (ir_commerzbank); they are data for the evaluator, under the key
+# issuer.commerzbank.earnings_release.
 
 # Commerzbank's annual general meeting, announced in its financial calendar (invitation about a month ahead). No
 # projection.
-rule issuer.commerzbank.agm for agm in issuer:851WYGNLUQLFZBSYGB56
-  = ANNOUNCED BY ir_commerzbank
-  with kind = event
-  cites "Commerzbank AG investor relations financial calendar"
-    url "https://investor-relations.commerzbank.com/financial-calendar" label official;
+# No rule: the dates are only announced (ir_commerzbank); they are data for the evaluator, under the key
+# issuer.commerzbank.agm.
 
 # Commerzbank's ex-dividend day: the first business day after the AGM on the Xetra calendar (German law, see the file
 # header; Xetra is where the shares trade in Germany, so its business days decide), only if
@@ -177,28 +153,19 @@ rule issuer.commerzbank.ex_dividend for ex_dividend in issuer:851WYGNLUQLFZBSYGB
 
 # SEB's results releases (annual and quarterly). Only the dates in its financial calendar count, usually
 # published about a year ahead; no projection.
-rule issuer.seb.earnings_release for earnings_release in issuer:F3JS33DEI6XQ4ZBPTN86
-  = ANNOUNCED BY ir_seb
-  with kind = event
-  cites "Skandinaviska Enskilda Banken AB (SEB) investor relations financial calendar"
-    url "https://sebgroup.com/investor-relations/reports-and-presentations/financial-calendar" label official;
+# No rule: the dates are only announced (ir_seb); they are data for the evaluator, under the key
+# issuer.seb.earnings_release.
 
 # SEB's annual general meeting, announced in its financial calendar (invitation about a month ahead). No
 # projection.
-rule issuer.seb.agm for agm in issuer:F3JS33DEI6XQ4ZBPTN86
-  = ANNOUNCED BY ir_seb
-  with kind = event
-  cites "Skandinaviska Enskilda Banken AB (SEB) investor relations financial calendar"
-    url "https://sebgroup.com/investor-relations/reports-and-presentations/financial-calendar" label official;
+# No rule: the dates are only announced (ir_seb); they are data for the evaluator, under the key
+# issuer.seb.agm.
 
 # SEB's ex-dividend day. The catalog links it to no other date (the German rule of the file header is German law
 # and does not apply to a Swedish company), so only the date SEB publishes (financial calendar or dividend
 # announcement) counts; no projection.
-rule issuer.seb.ex_dividend for ex_dividend in issuer:F3JS33DEI6XQ4ZBPTN86
-  = ANNOUNCED BY ir_seb
-  with kind = event
-  cites "Skandinaviska Enskilda Banken AB (SEB) investor relations financial calendar"
-    url "https://sebgroup.com/investor-relations/reports-and-presentations/financial-calendar" label official;
+# No rule: the dates are only announced (ir_seb); they are data for the evaluator, under the key
+# issuer.seb.ex_dividend.
 
 
 # ===================================================================================================================
@@ -208,24 +175,20 @@ rule issuer.seb.ex_dividend for ex_dividend in issuer:F3JS33DEI6XQ4ZBPTN86
 
 # LVMH's results releases (annual and half-year results, quarterly revenue). Only the dates in its financial
 # calendar count, usually published about a year ahead; no projection.
-rule issuer.lvmh.earnings_release for earnings_release in issuer:IOG4E947OATN0KJYSD45
-  = ANNOUNCED BY ir_lvmh
-  with kind = event
-  cites "LVMH investor relations financial calendar" url "https://www.lvmh.com/en/financial-calendar" label official;
+# No rule: the dates are only announced (ir_lvmh); they are data for the evaluator, under the key
+# issuer.lvmh.earnings_release.
 
 # LVMH's annual general meeting. The company announces it in its financial calendar (invitation about a month
 # ahead). For the years not announced yet it is projected as the first Thursday on or after 17 April ("16 APR >
 # NEXT THU"): an observed pattern, not a rule of the company. It held every year since 2022 and in 2019, and
 # missed in 2017, 2018 and 2021.
 rule issuer.lvmh.agm for agm in issuer:IOG4E947OATN0KJYSD45
-  = ANNOUNCED BY ir_lvmh ELSE 16 APR > NEXT THU
+  = 16 APR > NEXT THU
   with kind = event
   cites "LVMH investor relations financial calendar" url "https://www.lvmh.com/en/financial-calendar" label official;
 
 # LVMH's ex-dividend day. The catalog links it to no other date (the German rule of the file header is German law
 # and does not apply to a French company), so only the date LVMH publishes (financial calendar or dividend
 # announcement) counts; no projection.
-rule issuer.lvmh.ex_dividend for ex_dividend in issuer:IOG4E947OATN0KJYSD45
-  = ANNOUNCED BY ir_lvmh
-  with kind = event
-  cites "LVMH investor relations financial calendar" url "https://www.lvmh.com/en/financial-calendar" label official;
+# No rule: the dates are only announced (ir_lvmh); they are data for the evaluator, under the key
+# issuer.lvmh.ex_dividend.

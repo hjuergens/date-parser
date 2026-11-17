@@ -172,23 +172,25 @@ def test_load_errors(text, message):
         parse_rules(text)
 
 
-def test_announced_by_with_and_without_projection_and_kind_event():
-    from datetime import date
-
-    from lark_schedule.rules import parse_rules
-
+def test_announcements_are_data_and_kind_event():
     book = parse_rules("""
 rule fed.christmas for christmas_day in central_bank:FED = 25 DEC;
-rule fed.fomc for fomc_decision in central_bank:FED = ANNOUNCED BY fed_fomc_calendar ELSE 3 THU MAR with kind = event;
-rule fed.minutes for fomc_minutes in central_bank:FED = ANNOUNCED BY fed_fomc_calendar with kind = event;
+rule fed.fomc for fomc_decision in central_bank:FED = 3 THU MAR with kind = event;
 rule fed.after for test_day in central_bank:FED = 18 MAR > FOLLOWING;
-""", announcements={"fed.fomc": [date(2026, 3, 18)], "fed.minutes": [date(2026, 4, 8)]})
+rule xetr.ex_dividend for ex_dividend in exchange:XETR = @issuer.agm > NEXT BD;
+""", announcements={"fed.fomc": [date(2026, 3, 18)], "issuer.agm": [date(2026, 5, 7)]})
     got = {y: [(o.rule, o.date, o.projected) for o in book.holidays("central_bank:FED", y)] for y in (2026, 2027)}
     assert ("fed.fomc", date(2026, 3, 18), False) in got[2026]            # the announcement wins
     assert ("fed.fomc", date(2027, 3, 18), True) in got[2027]             # else the projection, marked
-    assert ("fed.minutes", date(2026, 4, 8), False) in got[2026]
-    assert not [o for o in got[2027] if o[0] == "fed.minutes"]            # no ELSE: nothing until announced
     assert ("fed.after", date(2027, 3, 18), False) in got[2027]           # the event on that day closes nothing
+    # a key without a rule holds announced dates only; a rule can refer to it
+    assert [o.date for o in book.holidays("exchange:XETR", 2026)] == [date(2026, 5, 8)]
+    assert book.holidays("exchange:XETR", 2027) == []
+
+
+def test_announced_by_is_not_grammar():
+    with pytest.raises(Exception):
+        parse_rules("rule fed.fomc for fomc_decision in central_bank:FED = ANNOUNCED BY fed_fomc_calendar ELSE 3 THU MAR;")
 
 
 def test_one_of_gives_named_alternatives_as_projections():
@@ -196,7 +198,7 @@ def test_one_of_gives_named_alternatives_as_projections():
 rule sa.eid for eid_al_fitr in country:SA = ONE OF { 1 RAMADAN + 29D AS ramadan_29, 1 RAMADAN + 30D AS ramadan_30 };
 rule ae.eid for eid_al_fitr in country:AE
   = ONE OF { [1 RAMADAN + 29D : 1 RAMADAN + 31D] AS ramadan_29, [1 RAMADAN + 29D : 1 RAMADAN + 32D] AS ramadan_30 };
-rule xsau.eid for eid_al_fitr in exchange:XSAU = ANNOUNCED BY tadawul ELSE ONE OF { 1 SHAWWAL AS uq, 1 SHAWWAL + 1D AS late };
+rule xsau.eid for eid_al_fitr in exchange:XSAU = ONE OF { 1 SHAWWAL AS uq, 1 SHAWWAL + 1D AS late };
 """, announcements={"xsau.eid": [date(2026, 3, 22)]})
     sa = [(o.date, o.scenario, o.projected) for o in book.holidays("country:SA", 2026)]
     assert sa == [(date(2026, 3, 19), "ramadan_29", True), (date(2026, 3, 20), "ramadan_30", True)]

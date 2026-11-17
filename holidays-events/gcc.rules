@@ -11,14 +11,14 @@
 # are RAMADAN (9th month), SHAWWAL (10th), DHULQADAH (Dhu al-Qadah, 11th) and DHULHIJJAH (Dhu al-Hijja, 12th). Where a
 # month begins only when the new crescent moon is actually seen, which is known on the evening before, the rule gives
 # "ONE OF { A AS name, B AS name }": alternatives of which exactly one happens (the previous month has 29 or 30 days),
-# each a projection under its name until the sighting is announced. "[A : B]" is every day from A to B,
-# inclusive. "23 SEP {FRI - 1D, SAT + 1D}" moves the date one day back when it falls on a Friday and one day forward
-# when it falls on a Saturday; other weekdays leave it where it is. "@key" stands for the dates of another rule (here
-# the US Federal Reserve's rate decisions in us.rules). "ANNOUNCED BY <source> [ELSE ...]" means the authority
-# publishes the dates; without ELSE the rule has no dates until it does. The kind says what the day does: "closed" (no
-# work, trading or settlement), "short_day" (open with shorter hours; the session gives them), "event" (a dated event
-# such as a rate decision; the day stays a normal business day). Dates are inclusive. The full syntax is in README.md
-# in this directory.
+# each a projection under its name until the sighting is announced. "[A : B]" is every day from A to B, inclusive.
+# "23 SEP {FRI - 1D, SAT + 1D}" moves the date one day back when it falls on a Friday and one day forward when it falls
+# on a Saturday; other weekdays leave it where it is. "@key" stands for the dates of another rule (here the US Federal
+# Reserve's rate decisions in us.rules). Rules only project: the dates an authority publishes are data that replace a
+# rule's dates for that year, and dates that are only ever published have no rule. The kind says what the day does:
+# "closed" (no work, trading or settlement), "short_day" (open with shorter hours; the session gives them), "event" (a
+# dated event such as a rate decision; the day stays a normal business day). Dates are inclusive. The full syntax is in
+# README.md in this directory.
 #
 # Moon sighting in general: Saudi Arabia uses the computed Umm al-Qura calendar for civil dates, but starts the months
 # Ramadan, Shawwal and Dhu al-Hijja by sighting the new moon; the UAE, Qatar, Kuwait and Egypt decide all religious
@@ -99,9 +99,8 @@ rule sa.founding_day for saudi_founding_day in country:SA valid from 2022-01-27 
 # Eid al-Fitr holiday of the Saudi banks. SAMA sets the days in a schedule published years ahead, in which the bank
 # holiday and the SARIE holiday are listed separately. No projection: the rule has no dates until SAMA's schedule is
 # entered.
-rule sama.eid_al_fitr_bank for eid_al_fitr in central_bank:SAMA = ANNOUNCED BY sama_holidays
-  with kind = closed
-  cites "SAMA holiday schedules (Saudi Central Bank)" url "https://www.sama.gov.sa/" label official;
+# No rule: the dates are only announced (sama_holidays); they are data for the evaluator, under the key
+# sama.eid_al_fitr_bank.
 
 # Rate decision of the Saudi Central Bank. The Saudi riyal is pegged to the US dollar, so SAMA follows each rate
 # decision of the US Federal Reserve's FOMC (Federal Open Market Committee), on the same evening Riyadh time or the
@@ -114,9 +113,8 @@ rule sama.rate_decision for sama_rate_decision in central_bank:SAMA = @fed.fomc_
 
 # Eid al-Fitr closure of SARIE, the riyal RTGS system. SAMA lists the SARIE days separately from the bank holiday in
 # its multi-year schedule. No projection: no dates until announced.
-rule sarie.eid_al_fitr for eid_al_fitr in settlement_system:SARIE = ANNOUNCED BY sama_holidays
-  with kind = closed
-  cites "SAMA holiday schedules (Saudi Central Bank)" url "https://www.sama.gov.sa/" label official;
+# No rule: the dates are only announced (sama_holidays); they are data for the evaluator, under the key
+# sarie.eid_al_fitr.
 
 
 # =====================================================================================================================
@@ -127,14 +125,12 @@ rule sarie.eid_al_fitr for eid_al_fitr in settlement_system:SARIE = ANNOUNCED BY
 # =====================================================================================================================
 
 # Eid al-Fitr closure of the Saudi Exchange. The days are announced about one month ahead; no projection.
-rule xsau.eid_al_fitr for eid_al_fitr in exchange:XSAU = ANNOUNCED BY tadawul_notices
-  with kind = closed
-  cites "Saudi Exchange holiday calendar and Ramadan notices" url "https://www.saudiexchange.sa/" label official;
+# No rule: the dates are only announced (tadawul_notices); they are data for the evaluator, under the key
+# xsau.eid_al_fitr.
 
 # Eid al-Adha closure of the Saudi Exchange. Announced about one month ahead; no projection.
-rule xsau.eid_al_adha for eid_al_adha in exchange:XSAU = ANNOUNCED BY tadawul_notices
-  with kind = closed
-  cites "Saudi Exchange holiday calendar and Ramadan notices" url "https://www.saudiexchange.sa/" label official;
+# No rule: the dates are only announced (tadawul_notices); they are data for the evaluator, under the key
+# xsau.eid_al_adha.
 
 
 # =====================================================================================================================
@@ -208,11 +204,9 @@ rule cbuae.rate_decision for cbuae_rate_decision in central_bank:CBUAE = @fed.fo
 # =====================================================================================================================
 
 # Qatar Stock Exchange, Ramadan session: expected 09:30 to 13:15 Doha time, announced each year by circular.
-rule dsmd.ramadan_session for ramadan_session in exchange:DSMD = ANNOUNCED BY gcc_exchange_circulars
-  with kind = changed_hours, session 09:30 - 13:15 tz "Asia/Qatar"
-  cites "DFM / ADX / QSE / Boursa Kuwait / EGX circulars" label official;
+# No rule: the dates are only announced (gcc_exchange_circulars); they are data for the evaluator, under the key
+# dsmd.ramadan_session.
 
 # Egyptian Exchange, Ramadan session: expected 10:00 to 13:30 Cairo time, announced each year by circular.
-rule xcai.ramadan_session for ramadan_session in exchange:XCAI = ANNOUNCED BY gcc_exchange_circulars
-  with kind = changed_hours, session 10:00 - 13:30 tz "Africa/Cairo"
-  cites "DFM / ADX / QSE / Boursa Kuwait / EGX circulars" label official;
+# No rule: the dates are only announced (gcc_exchange_circulars); they are data for the evaluator, under the key
+# xcai.ramadan_session.

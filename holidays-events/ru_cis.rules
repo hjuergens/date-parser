@@ -15,9 +15,8 @@
 # event <event> happens for the country or institution <scope>. "7 JAN" is 7 January of every year; "[1 JAN : 8 JAN]"
 # is every day from 1 to 8 January inclusive; "3 FRI DEC" is the third Friday of December; "16 MAR > NEXT FRI" is the
 # first Friday strictly after 16 March, i.e. the Friday on or after 17 March; "> PRECEDING ON country:RU" moves a date
-# that is not a Russian business day to the business day before. "ANNOUNCED BY <source> [ELSE <dates>]" means the
-# authority publishes the dates itself and those published dates always win; the expression after ELSE only gives
-# projected dates for the years not yet published (without ELSE there are no dates until the announcement). The kind
+# that is not a Russian business day to the business day before. Rules only project: the dates an authority publishes
+# are data that replace a rule's dates for that year, and dates that are only ever published have no rule. The kind
 # says what the day does: "closed" (a non-working day), "working_day" (a weekend day that is worked), "event" (a dated
 # event such as a rate decision; the day stays a normal business day). "cites" names the source; "label official"
 # means that source is the authority itself. The full syntax is in README.md in this directory. Weekends are declared
@@ -100,19 +99,15 @@ rule ru.unity_day for unity_day in country:RU valid from 2005-01-01
 # usually published in September or October of the previous year, and listed by the Bank of Russia on its holidays
 # page. They follow no rule (the government picks them freely), so no dates are projected: the rule has dates only
 # once the decree is announced.
-rule ru.transferred_day_off for transferred_day_off in country:RU
-  = ANNOUNCED BY cbr_holidays
-  with kind = closed, note "Government decree, usually September-October of the previous year"
-  cites "Bank of Russia list of non-working holidays and transferred days off" url "https://www.cbr.ru/other/holidays/" label official;
+# No rule: the dates are only announced (cbr_holidays); they are data for the evaluator, under the key
+# ru.transferred_day_off.
 
 # Make-up working day: a Saturday (or other weekend day) that the government declares a working day, usually in
 # exchange for a transferred day off elsewhere. Fixed by the same yearly government decree (usually published in
 # September or October of the previous year) and listed by the Bank of Russia. Not projected; dates only once
 # announced. Kind working_day: the weekend day becomes a business day.
-rule ru.makeup_workday for makeup_workday in country:RU
-  = ANNOUNCED BY cbr_holidays
-  with kind = working_day, note "Government decree, usually September-October of the previous year"
-  cites "Bank of Russia list of non-working holidays and transferred days off" url "https://www.cbr.ru/other/holidays/" label official;
+# No rule: the dates are only announced (cbr_holidays); they are data for the evaluator, under the key
+# ru.makeup_workday.
 
 
 # ===================================================================================================================
@@ -134,8 +129,7 @@ rule ru.makeup_workday for makeup_workday in country:RU
 # taken. The other four meetings (February, June, July, September) move too much and are not projected. A meeting does
 # not close any market; the session gives the window from the press release to the press conference.
 rule cbr.key_rate_decision for cbr_key_rate_decision in central_bank:CBR
-  = ANNOUNCED BY cbr_key_rate_calendar
-    ELSE 16 MAR > NEXT FRI, 23 APR > NEXT FRI,
+  = 16 MAR > NEXT FRI, 23 APR > NEXT FRI,
          4 FRI OCT > PRECEDING ON country:RU, 3 FRI DEC > PRECEDING ON country:RU
   with kind = event, session 13:30 - 15:00 tz "Europe/Moscow",
        note "Eight regular meetings a year; only March, April, October and December are projected"

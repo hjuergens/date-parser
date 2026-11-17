@@ -9,12 +9,12 @@
 # which days the event <event> happens for the market, country or institution <scope>. The part after "=" is a date
 # expression evaluated once per year: "25 DEC" is 25 December, "EASTER - 2D" two days before Easter Sunday (Western,
 # Gregorian Easter), "3 FRI MAR" the third Friday of March, "> PRECEDING" moves a date that is not a business day of
-# the rule's own scope to the business day before. "ANNOUNCED BY <source>" means the authority publishes the dates
-# itself and the rule has no dates until it does; with "ELSE <dates>" those dates would be projected meanwhile.
-# "kind = closed" marks a day on which the market or institution is shut; "kind = event" marks a dated event (a
-# release, an expiry) that does not change whether the day is a business day. "cites" names the source the rule is
-# taken from; "label official" means that source is the authority itself. The full syntax is in README.md in this
-# directory. Weekends are declared in weekends.rules (every scope here has the Saturday-Sunday weekend).
+# the rule's own scope to the business day before. Rules only project: the dates an authority publishes are data that
+# replace a rule's dates for that year, and dates that are only ever published have no rule. "kind = closed" marks a
+# day on which the market or institution is shut; "kind = event" marks a dated event (a release, an expiry) that does
+# not change whether the day is a business day. "cites" names the source the rule is taken from; "label official"
+# means that source is the authority itself. The full syntax is in README.md in this directory. Weekends are declared
+# in weekends.rules (every scope here has the Saturday-Sunday weekend).
 #
 # Scopes used in this file:
 #   settlement_system:TARGET2    T2 / TARGET, the euro area's real-time gross settlement system for euro payments,
@@ -235,15 +235,13 @@ rule xeur.quarterly_expiry for eurex_quarterly_expiry in exchange:XEUR
 # Euro area inflation, flash estimate: Eurostat's first estimate of the Harmonised Index of Consumer Prices (HICP) for
 # the euro area, usually at the very end of the month or the first working days of the next. No dates until Eurostat
 # announces them.
-rule eurostat.hicp_flash for ea_hicp_flash in statistics_office:EUROSTAT = ANNOUNCED BY eurostat_release_calendar
-  with kind = event, note "Dates only, from the euro indicators iCal feed (Europe/Luxembourg); not projected"
-  cites "Eurostat release calendar (iCal), Eurostat" url "https://ec.europa.eu/eurostat/news/release-calendar" label official;
+# No rule: the dates are only announced (eurostat_release_calendar); they are data for the evaluator, under the key
+# eurostat.hicp_flash.
 
 # Euro area inflation (HICP), full release: Eurostat's complete HICP figures for the euro area, about two to three
 # weeks after the flash estimate. No dates until Eurostat announces them.
-rule eurostat.hicp for ea_hicp in statistics_office:EUROSTAT = ANNOUNCED BY eurostat_release_calendar
-  with kind = event, note "Dates only, from the euro indicators iCal feed (Europe/Luxembourg); not projected"
-  cites "Eurostat release calendar (iCal), Eurostat" url "https://ec.europa.eu/eurostat/news/release-calendar" label official;
+# No rule: the dates are only announced (eurostat_release_calendar); they are data for the evaluator, under the key
+# eurostat.hicp.
 
 
 # ===================================================================================================================
@@ -255,15 +253,13 @@ rule eurostat.hicp for ea_hicp in statistics_office:EUROSTAT = ANNOUNCED BY euro
 
 # Germany's consumer price index (Verbraucherpreisindex), provisional results for the month, usually published at the
 # end of that month. No dates until Destatis announces them.
-rule destatis.cpi_provisional for de_cpi_provisional in statistics_office:DESTATIS = ANNOUNCED BY destatis_calendar
-  with kind = event, note "Released at 08:00 German time (Europe/Berlin); one .ics per release; not projected"
-  cites "Destatis release calendar, Statistisches Bundesamt" url "https://www.destatis.de/DE/Presse/Termine/_inhalt.html" label official;
+# No rule: the dates are only announced (destatis_calendar); they are data for the evaluator, under the key
+# destatis.cpi_provisional.
 
 # Germany's consumer price index, final results for the month, usually published around the middle of the following
 # month. No dates until Destatis announces them.
-rule destatis.cpi_final for de_cpi_final in statistics_office:DESTATIS = ANNOUNCED BY destatis_calendar
-  with kind = event, note "Released at 08:00 German time (Europe/Berlin); one .ics per release; not projected"
-  cites "Destatis release calendar, Statistisches Bundesamt" url "https://www.destatis.de/DE/Presse/Termine/_inhalt.html" label official;
+# No rule: the dates are only announced (destatis_calendar); they are data for the evaluator, under the key
+# destatis.cpi_final.
 
 
 # ===================================================================================================================
@@ -274,9 +270,8 @@ rule destatis.cpi_final for de_cpi_final in statistics_office:DESTATIS = ANNOUNC
 # only the next publication date, on the survey page (for example "Next publication of CES results and press release:
 # 27 November 2026"), with no time, no iCal feed and no entry in the ECB's statistical calendar. So there is only one
 # date ahead at a time, and nothing is projected.
-rule ecb.consumer_expectations for ecb_consumer_expectations in central_bank:ECB = ANNOUNCED BY ecb_consumer_expectations
-  with kind = event, note "Only the next publication date is published, on the survey page; not projected"
-  cites "ECB Consumer Expectations Survey publication dates, European Central Bank" url "https://www.ecb.europa.eu/stats/ecb_surveys/consumer_exp_survey/html/index.en.html" label official;
+# No rule: the dates are only announced (ecb_consumer_expectations); they are data for the evaluator, under the key
+# ecb.consumer_expectations.
 
 
 # =====================================================================================================================

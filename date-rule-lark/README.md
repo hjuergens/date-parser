@@ -63,15 +63,16 @@ for what isn't dates (attributes, announcements, the API for hosts).
 [rules.lark](src/lark_schedule/rules.lark) puts the schedule language inside declarations
 (`rule KEY for CLASS in SCOPES [except SCOPES] [valid from/to] = <schedule> [with …] [cites …];`, `weekend`, `calendar`),
 as drafted for the rule catalog of holidays-events (its `docs/rule-grammar.md`, O-74), and
-[rules.py](src/lark_schedule/rules.py) evaluates them:
+[catalog.py](src/lark_schedule/catalog.py) evaluates them ([rules.py](src/lark_schedule/rules.py) only builds the
+declarations from the parse tree; date-rule-antlr-python copies catalog.py unchanged):
 
 ```python
 from lark_schedule.rules import parse_rules
 
-book = parse_rules(open("country.rules").read(), announcements={"ae.eid": [...]})
-book.holidays("country:JP", 2026)        # Occurrence(date, rule, event_class, kind, precision, session, citations, projected)
-book.evaluate("fx.spot", date(2026, 7, 2))                     # a trade-date rule
-book.schedule("T > SPOT EURUSD ON usd_eur")(book.context(date(2026, 7, 2)))
+catalog = parse_rules(open("country.rules").read(), announcements={"ae.eid": [...]})   # a RuleCatalog
+catalog.holidays("country:JP", 2026)     # Occurrence(date, rule, event_class, kind, precision, session, citations, projected)
+catalog.evaluate("fx.spot", date(2026, 7, 2))                     # a trade-date rule
+catalog.schedule("T > SPOT EURUSD ON usd_eur")(catalog.context(date(2026, 7, 2)))
 ```
 
 - **Calendars:** a scope (`country:GB`, `region:AU-NSW`) has its weekend regime (`weekend country:AE = {SAT, SUN} from

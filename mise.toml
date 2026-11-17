@@ -28,11 +28,14 @@ dir = "{{config_root}}/date-rule-lark"
 run = "uv run pytest"
 
 [tasks."generate:antlr-python"]
-description = "Generate the Python parser from DateSchedule.g4"
+description = "Generate the Python parsers from DateSchedule.g4 and RuleFile.g4"
 dir = "{{config_root}}/date-rule-antlr-python"
-run = "uv run antlr4 -v 4.13.2 -Dlanguage=Python3 -visitor -no-listener -Xexact-output-dir -o src/antlr_schedule/generated DateSchedule.g4"
-sources = ["DateSchedule.g4"]
-outputs = ["src/antlr_schedule/generated/DateScheduleParser.py"]
+run = [
+  "uv run antlr4 -v 4.13.2 -Dlanguage=Python3 -visitor -no-listener -Xexact-output-dir -o src/antlr_schedule/generated DateSchedule.g4",
+  "uv run antlr4 -v 4.13.2 -Dlanguage=Python3 -visitor -no-listener -Xexact-output-dir -o src/antlr_schedule/generated RuleFile.g4",
+]
+sources = ["DateSchedule.g4", "RuleFile.g4"]
+outputs = ["src/antlr_schedule/generated/DateScheduleParser.py", "src/antlr_schedule/generated/RuleFileParser.py"]
 
 [tasks."test:antlr-python"]
 description = "ANTLR 4, Python target"

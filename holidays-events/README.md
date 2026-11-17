@@ -253,7 +253,7 @@ all files together.
 
 ## 5. Evaluating the rules in Python
 
-The evaluator is `lark_schedule.rules` in `../date-rule-lark`. Run from that directory:
+The evaluator is `lark_schedule.catalog` in `../date-rule-lark` (parsed by `lark_schedule.rules`; `date-rule-antlr-python` has the same). Run from that directory:
 
 ```python
 from datetime import date
@@ -265,15 +265,15 @@ text = "\n".join(p.read_text() for p in sorted(rules_dir.glob("*.rules")))
 
 # the AGMs have no rule, only announced dates; the ex-dividend rules refer to them
 agms = {k: [] for k in ("issuer.deutsche_bank.agm", "issuer.allianz.agm", "issuer.commerzbank.agm")}
-book = parse_rules(text, announcements=agms)
-for o in book.holidays("exchange:XNYS", 2027):
+catalog = parse_rules(text, announcements=agms)
+for o in catalog.holidays("exchange:XNYS", 2027):
     print(o.date, o.rule, o.kind)
 
 # The Bank of England publishes its meeting dates: they replace the projection for that year.
-book = parse_rules(text, announcements={**agms, "boe.mpc_decision": [date(2027, 2, 4), date(2027, 3, 18)]})
-for o in book.holidays("central_bank:BOE", 2027):
+catalog = parse_rules(text, announcements={**agms, "boe.mpc_decision": [date(2027, 2, 4), date(2027, 3, 18)]})
+for o in catalog.holidays("central_bank:BOE", 2027):
     print(o.date, o.rule, "projected" if o.projected else "announced")
-for o in book.holidays("central_bank:BOE", 2028):
+for o in catalog.holidays("central_bank:BOE", 2028):
     print(o.date, o.rule, "projected" if o.projected else "announced")
 ```
 
@@ -302,7 +302,7 @@ Output (shortened):
 - `parse_rules(text, announcements={key: [date, ...]})` loads the rules. Announcements are data, not rules: the
   dates an authority published under a key. For a rule's key they replace the rule's dates in each year that has
   some; a key without a rule (an AGM) holds announced dates only, which other rules read with `@key`.
-- `book.holidays(scope, year)` returns every date of the rules in that scope as `Occurrence` records with `date`,
+- `catalog.holidays(scope, year)` returns every date of the rules in that scope as `Occurrence` records with `date`,
   `rule`, `event_class`, `kind`, `precision`, `session`, `citations`, `projected` (true for the dates of `ONE OF`
   and for the dates of a rule with announcements in a year without one) and `scenario` (the name of the `ONE OF` alternative). Events (`kind = event`) are included; filter on `kind`
   for closing days only.

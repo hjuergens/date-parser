@@ -34,6 +34,7 @@ By hand, inside this directory:
 
 ```
 uv run antlr4 -v 4.13.2 -Dlanguage=Python3 -visitor -no-listener -Xexact-output-dir -o src/antlr_schedule/generated DateSchedule.g4
+uv run antlr4 -v 4.13.2 -Dlanguage=Python3 -visitor -no-listener -Xexact-output-dir -o src/antlr_schedule/generated RuleFile.g4
 uv run pytest
 ```
 
@@ -41,7 +42,7 @@ uv run pytest
   so generating a Python parser still needs a JDK (mise provides one). Without `java` on the `PATH` it asks to install a JRE.
 - The runtime `antlr4-python3-runtime` must have exactly the tool's version (4.13.2).
 - The generated sources in `src/antlr_schedule/generated` are not checked in.
-- There are 6070 tests (pytest), one per case of [examples/schedule.txt](../examples/schedule.txt), [examples/catalog.txt](../examples/catalog.txt) and [examples/date-holidays.txt](../examples/date-holidays.txt).
+- There are 6156 tests (pytest), one per case of [examples/schedule.txt](../examples/schedule.txt), [examples/catalog.txt](../examples/catalog.txt), [examples/date-holidays.txt](../examples/date-holidays.txt) and [examples/rules.txt](../examples/rules.txt).
 
 ## Shared example
 
@@ -55,6 +56,27 @@ uv run pytest
 - Selection (`> 3RD WED IN MONTH`): the alternative label can't be `# select`, the name of a rule (error 124), so it is `# selectIn`.
 - Series (`[a : step : b]`): the target renames labels that shadow a Python builtin (`open` becomes `open_`), as it did with the old rule `range`, so the brackets are labelled `left` and `right`.
 - Named events: the lexer rule `EVENT : '@' [A-Z] [A-Z0-9_]*` is one more alternative of `date` (`# event`) and `anchor` (`# eventAnchor`); shifts now receive the whole context, as `> NEXT @FOMC` needs the events.
+
+## Rule files
+
+[RuleFile.g4](RuleFile.g4) is the language of date-rule-lark's [rules.lark](../date-rule-lark/src/lark_schedule/rules.lark)
+for ANTLR: the schedule language with its extensions inside declarations (`rule`, `weekend`, `calendar`, `ONE OF`).
+
+```python
+from antlr_schedule.rules import parse_rules
+
+catalog = parse_rules(open("country.rules").read())
+catalog.holidays("country:JP", 2026)        # Occurrence(date, rule, ...), as in Lark
+```
+
+- [catalog.py](src/antlr_schedule/catalog.py), the evaluator, is a copy of the Lark module's file; the visitor of
+  [rules.py](src/antlr_schedule/rules.py) only builds its declarations.
+- Where a rule is the same as in DateSchedule.g4, RuleFile.g4 keeps its labels, so `RuleVisitor` extends the schedule
+  visitor and overrides only what changed (an `IF` with conditions, `ON` calendars, `ENDEND`, the observances, ...).
+- The declaration words are literals, so a lower-case word such as `short_day` is never a `KEY`. In the ANTLR grammar,
+  the rule `name` lets the words of kinds, precisions and labels also be keys and event classes
+  (`rule il.zahav for short_day ... with kind = short_day`). Lark's contextual lexer doesn't need that rule.
+- Every rule file of [holidays-events](../holidays-events/) gives the same 3915 dates (2021 to 2031) as with Lark.
 
 ## Status
 

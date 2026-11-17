@@ -34,9 +34,10 @@ mise run test:lark        # or, inside this directory:
 uv run pytest             # uv installs Lark and pytest into .venv (versions in uv.lock)
 ```
 
-There are 12268 tests (pytest): the 564 cases of [examples/schedule.txt](../examples/schedule.txt), the 2186 of
+There are 12282 tests (pytest): the 564 cases of [examples/schedule.txt](../examples/schedule.txt), the 2186 of
 [examples/catalog.txt](../examples/catalog.txt) and the 3347 of [examples/date-holidays.txt](../examples/date-holidays.txt), each with
-`lalr` and `earley`, 23 for the grammar of rule files and 51 for their evaluation.
+`lalr` and `earley`, the 59 cases of [examples/rules.txt](../examples/rules.txt) for rule files, 23 for their grammar and 6
+for what isn't dates (attributes, announcements, the API for hosts).
 
 ## Shared example
 
@@ -98,8 +99,10 @@ book.schedule("T > SPOT EURUSD ON usd_eur")(book.context(date(2026, 7, 2)))
 - **[../holidays-events/](../holidays-events/)** holds the projection rules of holidays-events written in this language,
   with comments for readers without context, checked day by day against its rule engine.
 
-[test_rules.py](tests/test_rules.py) checks these with real dates where they are known (Japan 2026, Britain 2021 and
-2022, Chile, South Africa, Colombia, Argentina, Mexico, US Inauguration Day, Orthodox Easter), [test_rule_grammar.py](tests/test_rule_grammar.py)
+The shared cases of [examples/rules.txt](../examples/rules.txt) ([test_rule_cases.py](tests/test_rule_cases.py)) check these
+with real dates where they are known (Japan 2026, Britain 2021 and 2022, Chile, South Africa, Colombia, Argentina, Mexico, US
+Inauguration Day, Orthodox Easter); [test_rules.py](tests/test_rules.py) checks the attributes, announcements and the API for
+hosts, [test_rule_grammar.py](tests/test_rule_grammar.py)
 the grammar: LALR(1) without conflicts, and its start rule `exprs` accepts every case of the three example files that
 `schedule.lark` accepts, except references in lower case (`@za.freedom_day`).
 

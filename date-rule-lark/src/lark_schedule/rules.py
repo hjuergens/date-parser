@@ -793,7 +793,7 @@ class RuleBook:
                         found.append(Occurrence(d, rule.key, rule.event_class, rule.kind,
                                                 attributes.get("precision", "day"), attributes.get("session"),
                                                 rule.citations, projected, scenario))
-        return sorted(set(found), key=lambda o: (o.date, o.rule))
+        return sorted(dict.fromkeys(found), key=lambda o: (o.date, o.rule))   # alternatives in the order written
 
     def _scenarios(self, rule, scope, year, dates):
         """(date, scenario) for the dates of the rule: per alternative of ONE OF (a date can belong to several), else

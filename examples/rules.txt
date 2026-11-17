@@ -1,0 +1,159 @@
+# Shared test cases for rule files: declarations that put the schedule language of schedule.txt into rules
+# (rule KEY for CLASS in SCOPES [except SCOPES] [valid from/to] = <schedule> [with ...] [cites ...];, weekend, calendar).
+#
+# A block is a run of declarations followed by its cases; declarations after cases start a new block, evaluated on
+# its own. A declaration may continue on indented lines. The cases have two forms:
+#
+#   <scope> <year> => <dates>          the dates of all rules for the scope in that year
+#   [<base>] <schedule> => <dates>     a schedule evaluated on the calendars of the block, T = <base>
+#
+# <dates> is a comma-separated list of ISO dates, "none" for an empty list, or "error" (also when the block doesn't
+# load: a cyclic or unknown reference, overlapping versions of a rule, a date that isn't computed). The dates of a
+# scope are sorted by date, then by rule key; a date of a ONE OF alternative is followed by the alternative's name.
+#
+# A scope gets the rules of its own and of the scopes above it (region:AU-NSW those of country:AU) unless excluded.
+# A business day or roll without ON uses the scope of the rule. Kinds closed (default) and non_working close a day,
+# working_day opens one, the others (short_day, event, ...) leave it as it is.
+# Rules only project: announced dates are data given to the evaluator, not part of the language, and are not tested
+# here. Attributes that aren't dates (sessions, precision, citations) are checked by each implementation's own tests.
+
+# calendars and scopes
+rule us.independence_day for independence_day in country:US = 4 JUL {SAT - 1D, SUN + 1D};
+rule us.inauguration_day for inauguration_day in region:US-DC = 20 JAN {SUN + 1D} IF EVERY 4Y FROM 1965;
+rule au.anzac for anzac_day in country:AU except region:AU-VIC = 25 APR {SAT + 2D, SUN + 1D};
+rule za.freedom_day for freedom_day in country:ZA = 27 APR;
+rule za.sunday for public_holiday_substitute in country:ZA = @za.freedom_day IF SUN + 1D;
+region:US-DC 2013 => 2013-01-21, 2013-07-04
+region:US-DC 2025 => 2025-01-20, 2025-07-04
+region:US-DC 2026 => 2026-07-03
+country:US 2025 => 2025-07-04
+region:AU-NSW 2026 => 2026-04-27
+region:AU-VIC 2026 => none
+country:ZA 2025 => 2025-04-27, 2025-04-28
+country:ZA 2026 => 2026-04-27
+
+# set-level passes: rules that read the holidays of their own scope
+rule jp.new_year for national_holiday in country:JP = 1 JAN;
+rule jp.constitution for national_holiday in country:JP = 3 MAY;
+rule jp.greenery for national_holiday in country:JP = 4 MAY;
+rule jp.children for national_holiday in country:JP = 5 MAY;
+rule jp.respect_for_aged for national_holiday in country:JP = 3 MON SEP;
+rule jp.autumn_equinox for national_holiday in country:JP = EQUINOX SEP "Asia/Tokyo";
+rule jp.substitute for substitute_holiday in country:JP = @national_holiday IF SUN > NEXT NONHOLIDAY
+  cites "Act No. 178 of 1948" art "3(2)" label official;
+rule jp.citizens for citizens_holiday in country:JP
+  = [1 JAN : 31 DEC] IF BETWEEN HOLIDAYS AND NOT HOLIDAY AND NOT SUN
+  cites "Act No. 178 of 1948" art "3(3)" label official;
+rule gb.christmas_day for christmas_day in country:GB = 25 DEC {SAT SUN > FOLLOWING};
+rule gb.boxing_day for boxing_day in country:GB = 26 DEC {SAT SUN > FOLLOWING};
+country:JP 2026 => 2026-01-01, 2026-05-03, 2026-05-04, 2026-05-05, 2026-05-06, 2026-09-21, 2026-09-22, 2026-09-23
+country:GB 2021 => 2021-12-27, 2021-12-28
+country:GB 2022 => 2022-12-26, 2022-12-27
+
+# versions and cycles
+rule mx.transfer_of_power for transfer_of_power in country:MX valid to 2023-12-31 = 1 DEC IF EVERY 6Y FROM 2018;
+rule mx.transfer_of_power for transfer_of_power in country:MX valid from 2024-01-01 = 1 OCT IF EVERY 6Y FROM 2024
+  cites "Ley Federal del Trabajo" art "74" label secondary;
+rule ar.guemes for guemes_day in country:AR valid from 2017-01-01 = 17 JUN {TUE WED > PREV MON, THU FRI > NEXT MON};
+country:MX 2018 => 2018-12-01
+country:MX 2024 => 2024-10-01
+country:MX 2025 => none
+country:AR 2016 => none
+country:AR 2026 => 2026-06-15
+
+# observances and conditions
+rule co.ascension for ascension_day in country:CO = EASTER + 39D {TUE WED THU FRI SAT SUN > NEXT MON}
+  cites "Ley 51 de 1983" art "1" label official;
+rule cl.bridge for national_holiday_bridge in country:CL = 17 SEP IF 18 SEP IS TUE, 20 SEP IF 19 SEP IS THU;
+rule gr.easter_monday for easter_monday in country:GR = ORTHODOX EASTER + 1D;
+rule zrh.s for sechselaeuten in subdivision:CH_ZRH
+  = 3 MON APR \ {EASTER - 6D, EASTER + 1D}, EASTER - 13D IF DAY 8..14 APR, EASTER + 8D IF DAY 22..28 APR;
+rule x.first for test_day in country:XX = [1 JAN : 1M : 1 DEC] > NEXT FRI IF DAY 1..3 AND NOT DAY 1..3 MAY;
+country:CO 2026 => 2026-05-18
+country:CL 2018 => 2018-09-17
+country:CL 2024 => 2024-09-20
+country:GR 2026 => 2026-04-13
+subdivision:CH_ZRH 2019 => 2019-04-08
+subdivision:CH_ZRH 2022 => 2022-04-25
+subdivision:CH_ZRH 2025 => 2025-04-28
+subdivision:CH_ZRH 2026 => 2026-04-20
+subdivision:CH_ZRH 2027 => 2027-04-19
+country:XX 2025 => 2025-01-03, 2025-10-03
+
+# weekends and kinds of day
+weekend country:IL = {FRI, SAT};
+rule il.zahav for short_day in country:IL = [1 JAN : 31 DEC] IF THU
+  with kind = short_day, session 09:00 - 14:00 tz "Asia/Jerusalem";
+weekend country:AE = {FRI, SAT};
+weekend country:AE = {SAT, SUN} from 2022-01-01;
+rule cn.makeup for makeup_day in country:CN = 2026-02-14 with kind = working_day;
+rule fed.fomc for fomc_decision in central_bank:FED = 3 THU MAR with kind = event;
+rule fed.after for test_day in central_bank:FED = 18 MAR > FOLLOWING;
+[2026-11-12] T + 1B ON country:IL => 2026-11-15
+[2026-11-11] T + 1B ON country:IL => 2026-11-12
+[2021-12-30] T + 1B ON country:AE => 2022-01-03
+[2022-01-06] T + 1B ON country:AE => 2022-01-07
+[2026-02-13] T + 1B ON country:CN => 2026-02-14
+central_bank:FED 2027 => 2027-03-18, 2027-03-18
+
+# combined calendars: USD is ignored on T + 1 unless the pair has MXN
+rule fedwire.independence_day for independence_day in settlement_system:FEDWIRE = 4 JUL {SAT - 1D, SUN + 1D};
+rule target2.labour_day for labour_day in settlement_system:TARGET2 = 1 MAY;
+calendar usd_eur = settlement_system:TARGET2 & settlement_system:FEDWIRE ignore at T + 1 unless {MXN};
+calendar usd_eur_strict = settlement_system:TARGET2 & settlement_system:FEDWIRE;
+[2026-07-02] T > SPOT EURUSD ON usd_eur => 2026-07-06
+[2026-07-02] T > SPOT EURUSD ON usd_eur_strict => 2026-07-07
+[2026-07-02] T > SPOT USDMXN ON usd_eur => 2026-07-07
+
+# schedule extensions for rule files: ENDEND, NEAREST, MODPRECEDING, POSTPONE, NEXT HOLIDAY, BD ON ... IN, time zones
+rule us.independence_day for independence_day in country:US = 4 JUL {SAT - 1D, SUN + 1D};
+rule br.carnival for carnival in country:BR = [16 FEB : 20 FEB];
+[2026-02-27] T + 1M ENDEND ON country:US => 2026-03-31
+[2026-02-10] T + 1M ENDEND ON country:US => 2026-03-10
+[2026-11-05] T > NEAREST MON => 2026-11-02
+[2026-11-01] T > MODPRECEDING => 2026-11-02
+[2026-02-16] T > POSTPONE FOLLOWING ON country:BR MAX 3D => 2026-02-19
+[2026-02-16] T > POSTPONE FOLLOWING ON country:BR MAX 30D => 2026-02-23
+[2026-02-16] T > POSTPONE FOLLOWING ON country:BR MAX 2D > POSTPONE FOLLOWING ON country:BR MAX 2D => 2026-02-20
+[2026-02-16] T > POSTPONE FOLLOWING ON country:BR MAX 2D > POSTPONE FOLLOWING ON country:BR MAX 2D CUMULATIVE => 2026-02-18
+[2026-01-01] T > NEXT HOLIDAY ON country:BR => 2026-02-16
+[2026-02-01] T > 2ND BD ON country:BR IN MONTH => 2026-02-03
+[2026-01-01] EQUINOX MAR "Asia/Tokyo", EQUINOX MAR UTC+9 => 2026-03-20, 2026-03-20
+
+# alternatives: exactly one of them happens
+rule sa.eid for eid_al_fitr in country:SA = ONE OF { 1 RAMADAN + 29D AS ramadan_29, 1 RAMADAN + 30D AS ramadan_30 };
+rule ae.eid for eid_al_fitr in country:AE
+  = ONE OF { [1 RAMADAN + 29D : 1 RAMADAN + 31D] AS ramadan_29, [1 RAMADAN + 29D : 1 RAMADAN + 32D] AS ramadan_30 };
+rule xsau.eid for eid_al_fitr in exchange:XSAU = ONE OF { 1 SHAWWAL AS uq, 1 SHAWWAL + 1D AS late };
+country:SA 2026 => 2026-03-19 ramadan_29, 2026-03-20 ramadan_30
+country:AE 2026 => 2026-03-19 ramadan_29, 2026-03-19 ramadan_30, 2026-03-20 ramadan_29, 2026-03-20 ramadan_30, 2026-03-21 ramadan_29, 2026-03-21 ramadan_30, 2026-03-22 ramadan_30
+country:SA 2030 => 2030-02-03 ramadan_29, 2030-02-04 ramadan_30
+country:SA 2031 => 2031-01-24 ramadan_29, 2031-01-25 ramadan_30
+exchange:XSAU 2027 => 2027-03-09 uq, 2027-03-10 late
+
+# errors
+rule a for x in country:XX = @b;
+rule b for y in country:XX = @a;
+country:XX 2026 => error
+
+rule a for x in country:XX = @missing;
+country:XX 2026 => error
+
+rule a for x in country:XX valid from 2020-01-01 = 1 JAN;
+rule a for x in country:XX = 2 JAN;
+country:XX 2026 => error
+
+rule a for x in country:XX = 1 JAN BY SIGHTING;
+country:XX 2026 => error
+
+rule a for x in country:XX = 1 JAN IF EVERY 6M FROM 2000;
+country:XX 2026 => error
+
+rule a.b for x in country:SA = ONE OF { 1 RAMADAN AS a, 2 RAMADAN AS a };
+country:SA 2026 => error
+
+rule in.diwali for diwali in country:IN = HINDU diwali;
+country:IN 2026 => error
+
+rule fed.fomc for fomc_decision in central_bank:FED = ANNOUNCED BY fed_fomc_calendar ELSE 3 THU MAR;
+central_bank:FED 2026 => error

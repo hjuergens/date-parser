@@ -1,4 +1,5 @@
-"""Evaluates rule files (rules.py): declarations, the extensions of the schedule language and the set-level passes."""
+"""Evaluates rule files (rules.py) where the result is more than dates: attributes, announcements, the host API.
+The dates are checked by the shared cases of examples/rules.txt (test_rule_cases.py)."""
 from datetime import date
 
 import pytest
@@ -67,54 +68,12 @@ def book():
         "ae.eid": [date(2026, 3, 20), date(2026, 3, 21), date(2026, 3, 22)], "sa.eid": [date(2028, 2, 27)]})
 
 
-def dates(book, scope, year, rule=None):
-    return [o.date for o in book.holidays(scope, year) if rule is None or o.rule == rule]
-
-
-@pytest.mark.parametrize("scope, year, rule, expected", [
-    ("country:JP", 2026, "jp.citizens", [date(2026, 9, 22)]),        # between Respect for the Aged Day and the equinox
-    ("country:JP", 2026, "jp.substitute", [date(2026, 5, 6)]),       # 3 May is a Sunday, 4 and 5 May are holidays
-    ("country:JP", 2026, "jp.autumn_equinox", [date(2026, 9, 23)]),
-    ("country:GB", 2021, None, [date(2021, 12, 27), date(2021, 12, 28)]),   # Christmas on Saturday
-    ("country:GB", 2022, "gb.christmas_day", [date(2022, 12, 27)]),         # Christmas on Sunday, Boxing Day stays
-    ("country:GB", 2022, "gb.boxing_day", [date(2022, 12, 26)]),
-    ("region:US-DC", 2013, "us.inauguration_day", [date(2013, 1, 21)]),
-    ("region:US-DC", 2025, "us.inauguration_day", [date(2025, 1, 20)]),
-    ("region:US-DC", 2026, "us.inauguration_day", []),
-    ("region:US-DC", 2026, "us.independence_day", [date(2026, 7, 3)]),     # a national rule in the region
-    ("country:US", 2025, "us.inauguration_day", []),
-    ("country:MX", 2018, None, [date(2018, 12, 1)]),
-    ("country:MX", 2024, None, [date(2024, 10, 1)]),
-    ("country:MX", 2025, None, []),
-    ("country:CO", 2026, None, [date(2026, 5, 18)]),
-    ("country:AR", 2026, None, [date(2026, 6, 15)]),
-    ("country:AR", 2016, None, []),
-    ("country:CL", 2018, None, [date(2018, 9, 17)]),
-    ("country:CL", 2024, None, [date(2024, 9, 20)]),
-    ("country:ZA", 2025, "za.sunday", [date(2025, 4, 28)]),
-    ("country:ZA", 2026, "za.sunday", []),
-    ("region:AU-NSW", 2026, None, [date(2026, 4, 27)]),
-    ("region:AU-VIC", 2026, None, []),
-    ("country:GR", 2026, None, [date(2026, 4, 13)]),
-])
-def test_holidays(book, scope, year, rule, expected):
-    assert dates(book, scope, year, rule) == expected
-
-
 def test_occurrence_carries_kind_session_precision_and_citations(book):
     zahav = book.holidays("country:IL", 2026)[0]
     assert (zahav.kind, zahav.session) == ("short_day", ("09:00", "14:00", "Asia/Jerusalem"))
     assert book.holidays("country:XX", 2026)[0].precision == "month"
     citation = book.holidays("country:CO", 2026)[0].citations[0]
     assert (citation.source, citation.article, citation.label) == ("Ley 51 de 1983", "1", "official")
-
-
-def test_weekend_regimes_and_kinds(book):
-    il, ae, cn = (book.calendar(s) for s in ("country:IL", "country:AE", "country:CN"))
-    assert not il.is_business_day(date(2026, 11, 13)) and il.is_business_day(date(2026, 11, 15))    # Fri, Sun
-    assert il.is_business_day(date(2026, 11, 12))           # a short day is not closed
-    assert not ae.is_business_day(date(2021, 12, 31)) and ae.is_business_day(date(2022, 1, 7))      # Fridays
-    assert cn.is_business_day(date(2026, 2, 14))            # a make-up working Saturday
 
 
 def test_announcements_and_projections(book):
@@ -126,50 +85,6 @@ def test_announcements_and_projections(book):
     assert projected[0].date == shawwal and len(projected) == 3 and all(o.projected for o in projected)
     assert [(o.date, o.projected) for o in book.holidays("country:SA", 2027)] == [(shawwal, True)]
     assert [(o.date, o.projected) for o in book.holidays("country:SA", 2028)] == [(date(2028, 2, 27), False)]
-
-
-def test_spot_on_combined_calendars(book):
-    trade = date(2026, 7, 2)        # T+1 is 3 July, the observed Independence Day
-    assert book.evaluate("fx.spot", trade) == [date(2026, 7, 6)]                  # USD ignored on T+1
-    strict = book.schedule("T > SPOT EURUSD ON usd_eur_strict")
-    assert strict(book.context(trade)) == [date(2026, 7, 7)]
-    assert book.schedule("T > SPOT USDMXN ON usd_eur")(book.context(trade)) == [date(2026, 7, 7)]   # unless MXN
-
-
-@pytest.mark.parametrize("text, base, expected", [
-    ("T + 1M ENDEND ON country:US", date(2026, 2, 27), date(2026, 3, 31)),   # the last business day of February
-    ("T + 1M ENDEND ON country:US", date(2026, 2, 10), date(2026, 3, 10)),
-    ("T > NEAREST MON", date(2026, 11, 5), date(2026, 11, 2)),
-    ("T > MODPRECEDING", date(2026, 11, 1), date(2026, 11, 2)),
-    ("T > POSTPONE FOLLOWING ON country:BR MAX 3D", date(2026, 2, 16), date(2026, 2, 19)),
-    ("T > POSTPONE FOLLOWING ON country:BR MAX 30D", date(2026, 2, 16), date(2026, 2, 23)),
-    ("T > POSTPONE FOLLOWING ON country:BR MAX 2D > POSTPONE FOLLOWING ON country:BR MAX 2D",
-     date(2026, 2, 16), date(2026, 2, 20)),
-    ("T > POSTPONE FOLLOWING ON country:BR MAX 2D > POSTPONE FOLLOWING ON country:BR MAX 2D CUMULATIVE",
-     date(2026, 2, 16), date(2026, 2, 18)),
-    ("T > NEXT HOLIDAY ON country:BR", date(2026, 1, 1), date(2026, 2, 16)),
-    ("T > 2ND BD ON country:BR IN MONTH", date(2026, 2, 1), date(2026, 2, 3)),
-    ("EQUINOX MAR \"Asia/Tokyo\", EQUINOX MAR UTC+9", date(2026, 1, 1), date(2026, 3, 20)),
-])
-def test_schedule_extensions(book, text, base, expected):
-    assert set(book.schedule(text)(book.context(base))) == {expected}
-
-
-def test_hindu_is_not_computed(book):
-    with pytest.raises(ValueError, match="HINDU"):
-        book.holidays("country:IN", 2026)
-
-
-@pytest.mark.parametrize("text, message", [
-    ("rule a for x in country:XX = @b; rule b for y in country:XX = @a;", "cyclic"),
-    ("rule a for x in country:XX = @missing;", "no rule"),
-    ("rule a for x in country:XX valid from 2020-01-01 = 1 JAN; rule a for x in country:XX = 2 JAN;", "overlap"),
-    ("rule a for x in country:XX = 1 JAN BY SIGHTING;", "Hijri"),
-    ("rule a for x in country:XX = 1 JAN IF EVERY 6M FROM 2000;", "whole years"),
-])
-def test_load_errors(text, message):
-    with pytest.raises(ValueError, match=message):
-        parse_rules(text)
 
 
 def test_announcements_are_data_and_kind_event():
@@ -188,53 +103,27 @@ rule xetr.ex_dividend for ex_dividend in exchange:XETR = @issuer.agm > NEXT BD;
     assert book.holidays("exchange:XETR", 2027) == []
 
 
-def test_announced_by_is_not_grammar():
-    with pytest.raises(Exception):
-        parse_rules("rule fed.fomc for fomc_decision in central_bank:FED = ANNOUNCED BY fed_fomc_calendar ELSE 3 THU MAR;")
-
-
-def test_one_of_gives_named_alternatives_as_projections():
+def test_one_of_dates_are_projections_unless_announced():
     book = parse_rules("""
 rule sa.eid for eid_al_fitr in country:SA = ONE OF { 1 RAMADAN + 29D AS ramadan_29, 1 RAMADAN + 30D AS ramadan_30 };
 rule ae.eid for eid_al_fitr in country:AE
   = ONE OF { [1 RAMADAN + 29D : 1 RAMADAN + 31D] AS ramadan_29, [1 RAMADAN + 29D : 1 RAMADAN + 32D] AS ramadan_30 };
 rule xsau.eid for eid_al_fitr in exchange:XSAU = ONE OF { 1 SHAWWAL AS uq, 1 SHAWWAL + 1D AS late };
 """, announcements={"xsau.eid": [date(2026, 3, 22)]})
-    sa = [(o.date, o.scenario, o.projected) for o in book.holidays("country:SA", 2026)]
-    assert sa == [(date(2026, 3, 19), "ramadan_29", True), (date(2026, 3, 20), "ramadan_30", True)]
-    ae = [(o.date, o.scenario) for o in book.holidays("country:AE", 2026)]
-    assert len(ae) == 7 and (date(2026, 3, 19), "ramadan_29") in ae and (date(2026, 3, 19), "ramadan_30") in ae
+    assert all(o.projected for o in book.holidays("country:SA", 2026))
     assert [(o.date, o.scenario) for o in book.holidays("exchange:XSAU", 2026)] == [(date(2026, 3, 22), None)]
-    assert {o.scenario for o in book.holidays("exchange:XSAU", 2027)} == {"uq", "late"}
-    # 2030 has two Ramadans: one Eid in February 2030, the other in January 2031
-    assert [o.date for o in book.holidays("country:SA", 2030) if o.scenario == "ramadan_29"] == [date(2030, 2, 3)]
-    assert [o.date for o in book.holidays("country:SA", 2031) if o.scenario == "ramadan_29"] == [date(2031, 1, 24)]
 
 
-@pytest.mark.parametrize("text, message", [
-    ("rule a.b for x in country:SA = ONE OF { 1 RAMADAN AS a, 2 RAMADAN AS a };", "names twice"),
-])
-def test_one_of_errors(text, message):
-    with pytest.raises(ValueError, match=message):
-        parse_rules(text)
-
-
-def test_single_session_time_new_kinds_and_day_condition():
+def test_single_session_time_and_new_kinds():
     book = parse_rules("""
 rule rba.decision for rba_decision in central_bank:RBA = 3 TUE MAR with kind = event, session 14:30 tz "Australia/Sydney";
 rule xnse.muhurat for muhurat_session in exchange:XNSE = 1 NOV with kind = special_session;
 rule dsmd.ramadan for ramadan_session in exchange:DSMD = 1 MAR with kind = changed_hours, session 09:30 - 13:15;
-rule zrh.s for sechselaeuten in subdivision:CH_ZRH
-  = 3 MON APR \\ {EASTER - 6D, EASTER + 1D}, EASTER - 13D IF DAY 8..14 APR, EASTER + 8D IF DAY 22..28 APR;
-rule x.first for test_day in country:XX = [1 JAN : 1M : 1 DEC] > NEXT FRI IF DAY 1..3 AND NOT DAY 1..3 MAY;
 """)
     (rba,) = book.holidays("central_bank:RBA", 2026)
     assert rba.session == ("14:30", "14:30", "Australia/Sydney")
     assert book.holidays("exchange:XNSE", 2026)[0].kind == "special_session"
     assert book.holidays("exchange:DSMD", 2026)[0].kind == "changed_hours"
-    assert [o.date for y in (2019, 2022, 2025, 2026, 2027) for o in book.holidays("subdivision:CH_ZRH", y)] == [
-        date(2019, 4, 8), date(2022, 4, 25), date(2025, 4, 28), date(2026, 4, 20), date(2027, 4, 19)]
-    assert [o.date for o in book.holidays("country:XX", 2025)] == [date(2025, 1, 3), date(2025, 10, 3)]
 
 
 def test_parse_body_for_hosts():

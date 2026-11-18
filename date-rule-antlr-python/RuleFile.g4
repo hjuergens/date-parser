@@ -1,8 +1,9 @@
 /*
  * Rule files: the schedule language of DateSchedule.g4 inside declarations with scope, validity, kind and provenance,
  * the same language as date-rule-lark's rules.lark (shared cases: examples/rules.txt). The extensions of the schedule
- * language are marked with "+". Labels are those of DateSchedule.g4 where a rule is the same, so the visitor of
- * src/antlr_schedule/rules.py reuses the methods of the schedule visitor; the declarations are evaluated by catalog.py.
+ * language are marked with "+". The same file, without actions, in date-rule-antlr-python and date-rule-antlr-java:
+ * there the visitor of src/antlr_schedule/rules.py reuses the methods of the schedule visitor (labels as in
+ * DateSchedule.g4) and catalog.py evaluates the declarations, here RuleVisitor.java and RuleCatalog.java.
  * Rules only project: announced dates are data given to the evaluator, never part of a rule.
  */
 grammar RuleFile;

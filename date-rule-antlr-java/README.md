@@ -35,6 +35,27 @@ Ordinals and sets (`> NEXT 3RD FRI`, `> NEXT {MON, FRI}`): the lexer rule `ORDIN
 
 Named events: the lexer rule `EVENT : '@' [A-Z] [A-Z0-9_]*` is one more alternative of `date` and of `anchor`; the actions call `ScheduleSemantics.event` and `eventAnchor`, and `list` evaluates an item once per date of its event.
 
+## Rule files
+
+[RuleFile.g4](src/main/antlr4/io/github/hjuergens/time/RuleFile.g4) is the same file as in
+[date-rule-antlr-python](../date-rule-antlr-python/README.md#rule-files): the schedule language inside declarations
+(`rule KEY for CLASS in SCOPES ... = ...;`, `weekend`, `calendar`), without actions.
+[RuleVisitor](src/main/java/io/github/hjuergens/time/RuleVisitor.java) builds the declarations with ScheduleSemantics and
+[RuleCatalog](src/main/java/io/github/hjuergens/time/RuleCatalog.java), the Java port of the Python `catalog.py`
+(calendars of scopes, set-level passes, ONE OF, announcements as data). Dates are `Expr`, shifts `RuleCatalog.Move`.
+The catalog's context is a ScheduleSemantics `Context` whose events map (`References`) also carries the catalog and the
+scope, which `ON` needs, so ScheduleSemantics stays unchanged but for the time zones: `EQUINOX MAR "Asia/Tokyo"` uses
+`java.time.ZoneId`.
+
+```java
+RuleCatalog catalog = RuleVisitor.parseRules("rule jp.equinox for national_holiday in country:JP = EQUINOX SEP \"Asia/Tokyo\";");
+catalog.holidays("country:JP", 2026);   // [Occurrence[date=2026-09-23, rule=jp.equinox, ...]]
+```
+
+Tests: [RuleCasesTest](src/test/java/io/github/hjuergens/time/RuleCasesTest.java) runs the shared cases of
+[examples/rules.txt](../examples/rules.txt); [RuleCatalogTest](src/test/java/io/github/hjuergens/time/RuleCatalogTest.java)
+checks attributes (kind, session, precision, citations) and announcements.
+
 ## Build and test
 
 ```
@@ -42,4 +63,5 @@ mvn -pl date-rule-antlr-java verify
 ```
 
 The `antlr4-maven-plugin` generates the lexer and parser into `target/generated-sources/antlr4`;
-[DateSchedulesTest](src/test/java/io/github/hjuergens/time/DateSchedulesTest.java) (TestNG) runs 6070 cases.
+[DateSchedulesTest](src/test/java/io/github/hjuergens/time/DateSchedulesTest.java) (TestNG) runs 6097 cases,
+[RuleCasesTest](src/test/java/io/github/hjuergens/time/RuleCasesTest.java) 59 and [RuleCatalogTest](src/test/java/io/github/hjuergens/time/RuleCatalogTest.java) 5.

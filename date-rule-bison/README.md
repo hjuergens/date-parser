@@ -33,6 +33,28 @@ Selection (`> 3RD WED IN MONTH`): `count: ORDINAL | ORDINAL LAST | LAST` with a 
 
 Named events: the hand-written scanner returns `EVENT` for `@` followed by capitals, digits and `_` (the value is the name without the sigil); `EVENT` is one more alternative of `date` and `anchor`, without conflicts.
 
+## Rule files
+
+[rulefile.y](src/main/resources/rulefile.y) reads rule files (`rule KEY for CLASS in SCOPES ... = ...;`, `weekend`,
+`calendar`), the same language as [date-rule-antlr-java's RuleFile.g4](../date-rule-antlr-java/README.md#rule-files),
+and builds the declarations for [RuleCatalog](src/main/java/io/github/hjuergens/bison/RuleCatalog.java), the evaluator
+shared by the JVM modules.
+- **The parser class is the entry point:** the generated sources exist only in the `bison` profile, so no class in
+  `src/main/java` may use them. `%define api.parser.class {RuleFiles}` names the parser after the entry point, and its
+  `%code` holds `parseRules` and `schedule`, in the subpackage `rules`.
+- **One start symbol:** `rule_file: declarations | exprs` reads a rule file or one schedule; the first token tells them
+  apart.
+- **LALR(1) without conflicts:** `-Werror=conflicts-sr` and `-Werror=conflicts-rr` hold here too.
+- **Lambdas:** an action copies `$2` and `$3` into local variables before a lambda uses them, as Bison's `$n` reads the
+  parser stack, which has moved on when the lambda runs.
+- **Lexer:** hand-written in the epilogue like the one of `schedule.y`, with maps for the keywords; a lowercase word
+  is a keyword, a word of a kind, precision or label, a scope (with `:`) or a key.
+
+```java
+RuleCatalog catalog = RuleFiles.parseRules("rule jp.equinox for national_holiday in country:JP = EQUINOX SEP \"Asia/Tokyo\";");
+catalog.holidays("country:JP", 2026);   // [Occurrence[date=2026-09-23, rule=jp.equinox, ...]]
+```
+
 ## Build and test
 
 You need the `bison` executable; **without it, the module builds empty and has no tests**.
@@ -46,4 +68,5 @@ mvn -pl date-rule-bison -Pbison -Dbison.executable=/path/to/bison verify   # bis
 
 With the profile active, `maven-antrun-plugin` runs bison in `generate-sources` and writes
 `target/generated-sources/bison/io/github/hjuergens/bison/ScheduleParser.java`. The tests in
-[src/bison-test/java](src/bison-test/java) are only compiled then (6070 TestNG tests).
+[src/bison-test/java](src/bison-test/java) are only compiled then (TestNG: 6097 schedule cases, 59 rule cases of
+[examples/rules.txt](../examples/rules.txt) and 5 tests of attributes and announcements).

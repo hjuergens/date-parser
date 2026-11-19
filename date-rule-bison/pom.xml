@@ -57,6 +57,13 @@
                                             <arg value="${project.basedir}/src/main/resources/schedule.y"/>
                                             <arg value="--output=${bison.target}/io/github/hjuergens/bison/ScheduleParser.java"/>
                                         </exec>
+                                        <mkdir dir="${bison.target}/io/github/hjuergens/bison/rules"/>
+                                        <exec executable="${bison.executable}" failonerror="true">
+                                            <arg value="-Werror=conflicts-sr"/>
+                                            <arg value="-Werror=conflicts-rr"/>
+                                            <arg value="${project.basedir}/src/main/resources/rulefile.y"/>
+                                            <arg value="--output=${bison.target}/io/github/hjuergens/bison/rules/RuleFiles.java"/>
+                                        </exec>
                                     </target>
                                 </configuration>
                                 <goals>

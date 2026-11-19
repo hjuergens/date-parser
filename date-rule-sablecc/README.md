@@ -27,6 +27,27 @@ Selection (`> 3RD WED IN MONTH`): `{select} gt count select in period_word`. Spl
 
 Named events: the token `event = '@' upper (upper | digit | '_')*` adds the alternatives `{event}` to `date` and `target`, so the evaluator gets the node classes `AEventDate` and `AEventTarget`.
 
+## Rule files
+
+[rulefile.grammar](src/main/sablecc/rulefile.grammar) reads rule files (`rule KEY for CLASS in SCOPES ... = ...;`,
+`weekend`, `calendar`), the same language as
+[date-rule-antlr-java's RuleFile.g4](../date-rule-antlr-java/README.md#rule-files). As for a schedule, SableCC only builds
+the syntax tree: [RuleFiles](src/main/java/de/juergens/schedule/rules/RuleFiles.java) walks it and builds the
+declarations for [RuleCatalog](src/main/java/de/juergens/schedule/RuleCatalog.java), the evaluator shared by the JVM
+modules. The grammar declares `Package de.juergens.schedule.rules`, so its `node`, `lexer` and `parser` packages don't
+mix with those of `schedule.grammar`.
+- **One start symbol:** `rule_file = {declarations} declaration* | {schedule} item more_item*` reads a rule file or one
+  schedule; the first token tells them apart.
+- **Names:** tokens and productions share one name space, so the keyword `ON` is the token `k_on` next to the
+  production `on`, and the words of declarations are `l_rule`, `l_for`, ...; they come before `key`, `pair` and `ccy`,
+  as the earlier token wins on a match of the same length.
+- **LALR(1) without conflicts:** SableCC expands `?` and `*` into productions of its own and stops on a conflict.
+
+```java
+RuleCatalog catalog = RuleFiles.parseRules("rule jp.equinox for national_holiday in country:JP = EQUINOX SEP \"Asia/Tokyo\";");
+catalog.holidays("country:JP", 2026);   // [Occurrence[date=2026-09-23, rule=jp.equinox, ...]]
+```
+
 ## Build and test
 
 ```
@@ -34,7 +55,8 @@ mvn -pl date-rule-sablecc verify
 ```
 
 `sablecc-maven-plugin` 2.2 (the latest release, from 2008) generates the sources into `target/generated-sources/sablecc`.
-[ScheduleEvaluatorTest](src/test/java/de/juergens/schedule/ScheduleEvaluatorTest.java) (TestNG) runs 6070 cases.
+[ScheduleEvaluatorTest](src/test/java/de/juergens/schedule/ScheduleEvaluatorTest.java) (TestNG) runs 6097 cases,
+[RuleCasesTest](src/test/java/de/juergens/schedule/RuleCasesTest.java) 59 and [RuleCatalogTest](src/test/java/de/juergens/schedule/RuleCatalogTest.java) 5.
 
 ## Status
 

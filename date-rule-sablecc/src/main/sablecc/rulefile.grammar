@@ -1,0 +1,411 @@
+/*
+	filename   : rulefile.grammar
+	description: rule files: the schedule language of schedule.grammar inside declarations with scope, validity, kind
+	             and provenance, the same language as date-rule-antlr-java's RuleFile.g4 and date-rule-lark's
+	             rules.lark (shared cases: examples/rules.txt). SableCC only builds the syntax tree; RuleFiles builds
+	             the declarations with RuleCatalog and ScheduleSemantics. One start symbol: rule_file reads
+	             declarations or one schedule (the first token tells them apart). Rules only project: announced dates
+	             are data given to the evaluator.
+*/
+
+Package de.juergens.schedule.rules;
+
+Helpers
+	digit = ['0' .. '9'];
+	upper = ['A' .. 'Z'];
+	lower = ['a' .. 'z'];
+	all = [0 .. 0xffff];
+	not_quote = [all - '"'];
+	not_eol = [all - [10 + 13]];
+
+Tokens
+	/* the words of declarations; before key: on a match of the same length the earlier token wins */
+	l_rule = 'rule';
+	l_for = 'for';
+	l_in = 'in';
+	l_except = 'except';
+	l_valid = 'valid';
+	l_from = 'from';
+	l_to = 'to';
+	l_with = 'with';
+	l_kind = 'kind';
+	l_session = 'session';
+	l_tz = 'tz';
+	l_precision = 'precision';
+	l_note = 'note';
+	l_cites = 'cites';
+	l_art = 'art';
+	l_url = 'url';
+	l_label = 'label';
+	l_weekend = 'weekend';
+	l_calendar = 'calendar';
+	l_ignore = 'ignore';
+	l_at = 'at';
+	l_unless = 'unless';
+	kind_word = 'closed' | 'non_working' | 'short_day' | 'working_day' | 'paid_no_rest' | 'tourist' | 'event'
+		| 'special_session' | 'changed_hours';
+	precision_word = 'day' | 'month';
+	label_word = 'official' | 'benchmark' | 'practice' | 'secondary';
+
+	number = digit+;
+	ordinal = digit+ ('ST' | 'ND' | 'RD' | 'TH');   /* 1ST, 2ND, 3RD, 4TH; the longer match wins over number */
+	unit = 'D' | 'W' | 'M' | 'Q' | 'H' | 'Y' | 'B' | 'F';
+	one = 'ONE';
+	of = 'OF';
+	as = 'AS';
+	imm = 'IMM';
+	spot = 'SPOT';
+	base = 'T';
+	tom = 'TOM';
+	next = 'NEXT';
+	prev = 'PREV';
+	nearest = 'NEAREST';
+	postpone = 'POSTPONE';
+	max = 'MAX';
+	cumulative = 'CUMULATIVE';
+	endend = 'ENDEND';
+	k_on = 'ON';
+	bd = 'BD';
+	fd = 'FD';
+	fix = 'FIX';
+	last = 'LAST';
+	holiday = 'HOLIDAY';
+	nonholiday = 'NONHOLIDAY';
+	holidays = 'HOLIDAYS';
+	orthodox = 'ORTHODOX';
+	hindu = 'HINDU';
+	by = 'BY';
+	method = 'UMMALQURA' | 'SIGHTING' | 'DIYANET';
+	follow = 'FOLLOW';
+	if = 'IF';
+	or = 'OR';
+	and = 'AND';
+	not = 'NOT';
+	day = 'DAY';   /* IF DAY 8..14 APR */
+	is = 'IS';
+	between = 'BETWEEN';
+	every = 'EVERY';
+	from = 'FROM';
+	in = 'IN';
+	period_word = 'WEEK' | 'MONTH' | 'QUARTER' | 'HALFYEAR' | 'YEAR';   /* the periods of a selection */
+	/* Gregorian, then Hijri (Umm al-Qura), Hebrew and Chinese months; before pair, like easter */
+	month = 'JAN' | 'FEB' | 'MAR' | 'APR' | 'MAY' | 'JUN' | 'JUL' | 'AUG' | 'SEP' | 'OCT' | 'NOV' | 'DEC'
+		| 'MUHARRAM' | 'SAFAR' | 'RABIALAWWAL' | 'RABIALTHANI' | 'JUMADAALULA' | 'JUMADAALAKHIRA' | 'RAJAB' | 'SHABAN'
+		| 'RAMADAN' | 'SHAWWAL' | 'DHULQADAH' | 'DHULHIJJAH'
+		| 'NISAN' | 'IYAR' | 'SIVAN' | 'TAMMUZ' | 'AV' | 'ELUL' | 'TISHRI' | 'HESHVAN' | 'KISLEV' | 'TEVET' | 'SHEVAT'
+		| 'ADAR' | 'ADARII'
+		| 'ZHENGYUE' | 'ERYUE' | 'SANYUE' | 'SIYUE' | 'WUYUE' | 'LIUYUE' | 'QIYUE' | 'BAYUE' | 'JIUYUE' | 'SHIYUE'
+		| 'DONGYUE' | 'LAYUE';
+	weekday = 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN';
+	roll = 'FOLLOWING' | 'PRECEDING' | 'MODFOLLOWING' | 'MODPRECEDING'
+		| 'BOW' | 'EOW' | 'BOM' | 'EOM' | 'BOQ' | 'EOQ' | 'BOH' | 'EOH' | 'BOY' | 'EOY';
+	easter = 'EASTER';
+	season = 'EQUINOX' | 'SOLSTICE';
+	solarterm = 'SOLARTERM';
+	zone = 'UTC' ('+' | '-') digit+;
+	pair = upper upper upper upper upper upper;   /* a currency pair such as EURUSD */
+	ccy = upper upper upper;                      /* a currency, only inside "unless {...}" */
+	/* a reference to a rule, an event class or an event: @za.freedom_day, @national_holiday, @FOMC */
+	event = '@' (upper | lower) (upper | lower | digit | '_')* ('.' (upper | lower | digit | '_')+)*;
+	/* a scope: country:JP, region:AU-NSW, settlement_system:TARGET2 */
+	scope = lower (lower | '_')* ':' (upper | digit) (upper | digit | '_')* ('-' (upper | digit) (upper | digit | '_')*)*;
+	/* keys, event classes and named calendars */
+	key = lower (lower | digit | '_')* ('.' lower (lower | digit | '_')*)*;
+	string = '"' not_quote* '"';
+	gt = '>';
+	l_brace = '{';
+	r_brace = '}';
+	l_paren = '(';
+	r_paren = ')';
+	plus = '+';
+	minus = '-';
+	dotdot = '..';
+	dot = '.';
+	slash = '/';
+	comma = ',';
+	colon = ':';
+	semicolon = ';';
+	eq = '=';
+	l_bracket = '[';
+	amp = '&';
+	backslash = 92;   /* \ */
+	r_bracket = ']';
+	comment = '#' not_eol*;
+	blank = (' ' | 9 | 10 | 13)+;
+
+Ignored Tokens
+	blank, comment;
+
+Productions
+	/* a rule file, or one schedule (for RuleFiles.schedule) */
+	rule_file
+		= {declarations} declaration*
+		| {schedule} item more_item*;
+
+	more_item = comma item;
+
+	/* ================= declarations ================= */
+
+	declaration
+		= {rule} l_rule [key]:name l_for [event_class]:name l_in [include]:scopes excluded? validity? eq body
+		  attributes? provenance? semicolon
+		| {weekend} l_weekend scope eq weekday_set valid_from? semicolon
+		| {calendar} l_calendar key eq calendar semicolon;
+
+	excluded = l_except scopes;
+
+	validity = l_valid valid_from? valid_to?;
+
+	valid_from = l_from iso_date;
+
+	valid_to = l_to iso_date;
+
+	/* exactly one of the alternatives will happen: ONE OF {item AS name, ...} */
+	body
+		= {one_of} one of l_brace alternative more_alternative* r_brace
+		| {exprs} item more_item*;
+
+	more_alternative = comma alternative;
+
+	alternative = item as name;
+
+	/* a key or an event class; the words of kinds, precisions and labels are tokens, so they are names here as well */
+	name
+		= {key} key
+		| {kind} kind_word
+		| {precision} precision_word
+		| {label} label_word;
+
+	scopes = scope more_scope*;
+
+	more_scope = comma scope;
+
+	attributes = l_with attribute more_attribute*;
+
+	more_attribute = comma attribute;
+
+	attribute
+		= {kind} l_kind eq kind_word
+		| {session} l_session [opens]:time closes? session_zone?
+		| {precision} l_precision eq precision_word
+		| {note} l_note string;
+
+	closes = minus time;
+
+	session_zone = l_tz string;
+
+	time = [hours]:number colon [minutes]:number;
+
+	provenance = l_cites citation more_citation*;
+
+	more_citation = comma citation;
+
+	citation = [source]:string article? url? l_label label_word;
+
+	article = l_art string;
+
+	url = l_url string;
+
+	iso_date = [year]:number [s1]:minus [month]:number [s2]:minus [day]:number;
+
+	/* ================= calendars ================= */
+
+	/* a business day in every term of "&" */
+	calendar = cal_term more_cal_term*;
+
+	more_cal_term = amp cal_term;
+
+	cal_term
+		= {scope} scope ignore?
+		| {named} key
+		| {nested} l_paren calendar r_paren;
+
+	/* USD on T+1 does not count, unless for MXN */
+	ignore = l_ignore l_at base plus number unless?;
+
+	unless = l_unless l_brace ccy more_ccy* r_brace;
+
+	more_ccy = comma ccy;
+
+	/* in an expression one term only, as "&" there is include: ON country:BR, ON usd_eur, ON (a & b) */
+	on
+		= {scope} k_on scope
+		| {named} k_on key
+		| {nested} k_on l_paren calendar r_paren;
+
+	/* ================= expressions ================= */
+
+	/* the condition applies to every date of the item; the shifts after it to the dates it keeps */
+	item
+		= {plain} expr combine* if_clause?
+		| {picked_series} pick series shift* combine* if_clause?   /* 5TH [SPOT : 1Q : ] > EOQ > ... */
+		| {picked_event} pick event shift* combine* if_clause?;
+
+	/* the n-th date after T of the item, 2ND LAST from the last one */
+	pick = ordinal last?;
+
+	if_clause = if condition shift*;
+
+	/* A & B includes the dates of B, A \ B excludes them; the shifts after it apply to the result */
+	combine
+		= {include} amp operand shift*
+		| {exclude} backslash operand shift*;
+
+	/* a date, a series or a set of dates */
+	operand
+		= {single} date
+		| {set} l_brace expr more_expr* r_brace;
+
+	more_expr = comma expr;
+
+	/* [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out */
+	series = start_bracket [first]:endpoint colon step? [last]:endpoint? end_bracket;
+
+	/* an endpoint is one date, so it can't be a series */
+	endpoint = single_date shift*;
+
+	step = period colon;
+
+	start_bracket
+		= {closed} l_bracket
+		| {open} r_bracket;
+
+	end_bracket
+		= {closed} r_bracket
+		| {open} l_bracket;
+
+	expr = date shift*;
+
+	shift
+		= {plus} plus period endend? on?
+		| {minus} minus period endend? on?
+		| {imm} gt imm
+		| {spot} gt spot pair? on?
+		| {fix} gt fix pair?
+		| {roll} gt roll on?
+		| {next} gt next ordinal? anchor
+		| {prev} gt prev ordinal? anchor
+		| {nearest} gt nearest anchor   /* ties go forward */
+		| {select} gt count select in period_word   /* > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH */
+		| {dates_in_year} gt l_brace annual more_annual* r_brace   /* > {1 FEB, 1 MAY} */
+		| {postpone} gt postpone roll on? max period cumulative?
+		| {observance} l_brace observe more_observe* r_brace;   /* {SAT - 1D, TUE WED > PREV MON} */
+
+	observe
+		= {plus} weekday+ plus period
+		| {minus} weekday+ minus period
+		| {next} weekday+ gt next anchor
+		| {prev} weekday+ gt prev anchor
+		| {nearest} weekday+ gt nearest anchor
+		| {roll} weekday+ gt roll on?;
+
+	more_observe = comma observe;
+
+	/* the n-th match in the period of the date, from its start or its end */
+	count
+		= {from_start} ordinal
+		| {from_end} ordinal last
+		| {last} last;
+
+	/* the targets of a selection; an annual date starting with LAST only in braces, as LAST also starts the count */
+	select
+		= {single} chosen
+		| {set} l_brace target more_target* r_brace;
+
+	/* NEXT {MON, FRI}: the nearest of a set */
+	anchor
+		= {single} target
+		| {set} l_brace target more_target* r_brace;
+
+	more_target = comma target;
+
+	more_annual = comma annual;
+
+	target
+		= {chosen} chosen
+		| {last} last weekday month;
+
+	chosen
+		= {weekday} weekday
+		| {bd} bd on?
+		| {fd} fd
+		| {imm} imm
+		| {annual} fixed_annual
+		| {event} event
+		| {holiday} holiday on?
+		| {nonholiday} nonholiday on?;
+
+	date
+		= {single} single_date
+		| {series} series;
+
+	/* a date that is not a series */
+	single_date
+		= {base} base
+		| {tom} tom
+		| {spot} spot pair? on?
+		| {annual} annual
+		| {event} event
+		| {iso} [year]:number [s1]:minus [month]:number [s2]:minus [day]:number
+		| {german} [day]:number [s1]:dot [month]:number [s2]:dot [year]:number
+		| {us} [month]:number [s1]:slash [day]:number [s2]:slash [year]:number;
+
+	annual
+		= {fixed} fixed_annual
+		| {last} last weekday month;
+
+	fixed_annual
+		= {month_day} number month hijri_method?
+		| {nth_weekday} number weekday month
+		| {easter} easter
+		| {orthodox_easter} orthodox easter
+		| {season} season month time_zone?
+		| {solar_term} solarterm number time_zone?
+		| {hindu} hindu key;
+
+	/* 1 SHAWWAL BY SIGHTING */
+	hijri_method
+		= {method} by method
+		| {follow} by follow scope;
+
+	/* UTC+9 or an IANA time zone such as "Asia/Tokyo" */
+	time_zone
+		= {offset} zone
+		| {name} string;
+
+	period = number unit;
+
+	/* ================= conditions ================= */
+
+	condition = cond_and more_cond_and*;
+
+	more_cond_and = or cond_and;
+
+	cond_and = cond_not more_cond_not*;
+
+	more_cond_not = and cond_not;
+
+	cond_not = not? cond_atom;
+
+	cond_atom
+		= {on_weekday} weekday_set   /* the weekday of the date itself */
+		| {on_day} day [first]:number dotdot [last]:number month?   /* DAY 8..14 APR */
+		| {is_weekday} subject is weekday_set
+		| {date_is_holiday} subject is holiday on?
+		| {is_holiday} holiday on?
+		| {between_holidays} between holidays on?   /* JP art. 3(3) */
+		| {every} every period from number   /* EVERY 4Y FROM 1965 */
+		| {nested} l_paren condition r_paren;
+
+	/* 18 SEP, EASTER + 1D */
+	subject = single_date subject_shift*;
+
+	subject_shift
+		= {plus} plus period
+		| {minus} minus period;
+
+	weekday_set
+		= {list} weekday+
+		| {set} l_brace weekday more_weekday* r_brace;
+
+	more_weekday = comma weekday;

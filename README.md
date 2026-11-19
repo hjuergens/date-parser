@@ -219,7 +219,7 @@ that isn't declared is an error, and so is an event with several dates at the en
 once per date of its event: the event's date throws until the item binds it, which needs no change to how the twelve grammars build
 expressions.
 
-All implementations are tested against the same 537 cases in [examples/schedule.txt](examples/schedule.txt),
+All implementations are tested against the same 564 cases in [examples/schedule.txt](examples/schedule.txt),
 including invalid dates and syntax errors, 2186 cases in [examples/catalog.txt](examples/catalog.txt) and 3347 in
 [examples/date-holidays.txt](examples/date-holidays.txt). Each module has a test that reads all three files.
 [examples/rules.txt](examples/rules.txt) holds 59 cases for rule files (declarations around the schedule language, see

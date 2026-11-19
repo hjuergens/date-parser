@@ -26,6 +26,33 @@ The other experiments of this module (the range-list grammar `list.pegjs` and it
 - Ordinals and sets (`> NEXT 3RD FRI`, `> NEXT {MON, FRI}`): `Counted` tries the ordinal `$([0-9]+ ("ST" / "ND" / "RD" / "TH"))` first, as `Number` in the annual date `3 FRI JAN` would take its digits; a set is `"{" Target ("," Target)* "}"`.
 - Named events: `Event = "@" $([A-Z] [A-Z0-9_]*)`, an alternative of `Date` and `Anchor`; as there is no whitespace rule inside it, `@ FOMC` is an error.
 
+## Rule files
+
+[rulefile.pegjs](rulefile.pegjs) reads rule files (`rule KEY for CLASS in SCOPES ... = ...;`, `weekend`, `calendar`), the
+same language as [date-rule-antlr-java's RuleFile.g4](../date-rule-antlr-java/README.md#rule-files), and its initializer
+holds `RuleCatalog`, the JavaScript port of the Python `catalog.py` (calendars of scopes, set-level passes, ONE OF,
+announcements as data).
+- **One parser from two grammars:** [rule-files.mjs](rule-files.mjs) generates it with
+  `peggy.generate([schedule.pegjs, rulefile.pegjs])`, so the rule grammar uses the helpers of the schedule grammar's
+  initializer (`plus`, `roll`, `take`, `values`, ...) and some of its rules (`Number`, `Period`, `Month`). The playground
+  of the site still generates its parser from `schedule.pegjs` alone.
+- **Names:** the rules of `rulefile.pegjs` carry the lowercase names of `RuleFile.g4` (`item`, `shift`, `date`); Peggy's
+  names are case-sensitive, so they don't clash with `Item`, `Shift`, `Date` of the schedule grammar. Helpers whose
+  name the schedule grammar already uses get another one (`rollConvention`, `plusShift`).
+- **Words:** `wordEnd` (`![A-Za-z0-9_]`) after every keyword, so `T` is not the start of `TOM`, `HOLIDAY` not the start
+  of `HOLIDAYS`; `period` adds it to `Period`, so `1 DEC` is no period.
+- **Context:** the catalog and the scope ride along in the context object, as `values()` copies it with `{ ...c }`; the
+  events are a `Proxy` that answers `@key` from the catalog.
+- **References:** a PEG backtracks, so the `@references` and the Hijri methods of a rule are read from `text()` of its
+  declaration, without strings and comments.
+- **Time zones:** `EQUINOX MAR "Asia/Tokyo"` takes the instant of the sun and the date there from `Intl.DateTimeFormat`.
+
+```js
+import { parseRules } from './rule-files.mjs';
+parseRules('rule jp.equinox for national_holiday in country:JP = EQUINOX SEP "Asia/Tokyo";').holidays('country:JP', 2026);
+// [{ date: { year: 2026, month: 9, day: 23 }, rule: 'jp.equinox', ... }]
+```
+
 ## Build and test
 
 ```
@@ -33,5 +60,7 @@ mise run test:peg                # Node from mise.toml, then npm ci + npm test
 npm ci && npm test               # or directly, with Node 20 or later
 ```
 
-`npm run build` writes a standalone ES module parser to `target/schedule-parser.mjs`.
-[test/schedule.test.mjs](test/schedule.test.mjs) (`node:test`) runs 6070 cases.
+`npm run build` writes standalone ES module parsers to `target/schedule-parser.mjs` and `target/rulefile-parser.mjs`.
+[test/schedule.test.mjs](test/schedule.test.mjs) (`node:test`) runs 6097 cases,
+[test/rule-cases.test.mjs](test/rule-cases.test.mjs) the 59 of [examples/rules.txt](../examples/rules.txt) and
+[test/rule-catalog.test.mjs](test/rule-catalog.test.mjs) 5 tests of attributes and announcements.

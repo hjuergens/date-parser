@@ -7,7 +7,7 @@
     "peggy": "^5.1.1"
   },
   "scripts": {
-    "build": "peggy --format es -o target/schedule-parser.mjs schedule.pegjs",
+    "build": "peggy --format es -o target/schedule-parser.mjs schedule.pegjs && peggy --format es --allowed-start-rules Schedule,ruleFile,schedule -o target/rulefile-parser.mjs schedule.pegjs rulefile.pegjs",
     "test": "node --test test/*.test.mjs"
   },
   "keywords": [

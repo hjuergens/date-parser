@@ -1,0 +1,577 @@
+/*
+ * Rule files: the schedule language of Schedule.jj inside declarations with scope, validity, kind and provenance, the
+ * same language as date-rule-antlr-java's RuleFile.g4 and date-rule-lark's rules.lark (shared cases:
+ * examples/rules.txt). The productions build the declarations with RuleCatalog and ScheduleSemantics; shifts are
+ * RuleCatalog.Move, functions of a date. A grammar file of its own, as JavaCC generates ParseException, Token, ... per
+ * grammar, so it lives in the subpackage rules. Rules only project: announced dates are data given to the evaluator.
+ */
+options {
+  LOOKAHEAD = 1;
+}
+
+PARSER_BEGIN(RuleFiles)
+
+package io.github.hjuergens.parser.rules;
+
+import java.io.StringReader;
+import java.time.LocalDate;
+import java.time.temporal.TemporalAmount;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import io.github.hjuergens.parser.RuleCatalog;
+import io.github.hjuergens.parser.RuleCatalog.CalendarSpec;
+import io.github.hjuergens.parser.RuleCatalog.Citation;
+import io.github.hjuergens.parser.RuleCatalog.Condition;
+import io.github.hjuergens.parser.RuleCatalog.Move;
+import io.github.hjuergens.parser.ScheduleSemantics;
+import io.github.hjuergens.parser.ScheduleSemantics.Anchor;
+import io.github.hjuergens.parser.ScheduleSemantics.Annual;
+import io.github.hjuergens.parser.ScheduleSemantics.Expr;
+import io.github.hjuergens.parser.ScheduleSemantics.Rule;
+
+/** Parser of rule files; the entry points are parseRules and schedule. */
+public class RuleFiles {
+
+  /** schedule(text), for RuleCatalog.schedule */
+  private static final java.util.function.Function<String, Rule> SCHEDULE = new java.util.function.Function<String, Rule>() {
+    public Rule apply(String text) {
+      return schedule(text);
+    }
+  };
+
+  /** the @references of the rule being read */
+  private Set<String> references = new LinkedHashSet<String>();
+  /** whether the rule being read has a Hijri method other than UMMALQURA */
+  private boolean estimated;
+
+  /**
+   * the rule catalog of a rule file
+   *
+   * @throws IllegalArgumentException on a syntax error, an unknown character, overlapping versions, an unknown or a
+   *         cyclic reference
+   * @throws java.time.DateTimeException on an invalid date
+   */
+  public static RuleCatalog parseRules(String text) {
+    return parseRules(text, null);
+  }
+
+  /** the same with announced dates: key -> the dates an authority published */
+  public static RuleCatalog parseRules(String text, Map<String, List<LocalDate>> announcements) {
+    try {
+      return new RuleCatalog(new RuleFiles(new StringReader(text)).RuleFile(), announcements, SCHEDULE);
+    } catch (ParseException e) {
+      throw new IllegalArgumentException(e.getMessage(), e);
+    }
+  }
+
+  /** one expression of the rule language */
+  public static Rule schedule(String text) {
+    try {
+      return new RuleFiles(new StringReader(text)).Schedule();
+    } catch (ParseException e) {
+      throw new IllegalArgumentException(e.getMessage(), e);
+    }
+  }
+
+  private String event(Token t) {
+    String name = t.image.substring(1);
+    references.add(name);
+    return name;
+  }
+
+  private static String unquote(Token t) {
+    return t == null ? null : t.image.substring(1, t.image.length() - 1);
+  }
+}
+
+PARSER_END(RuleFiles)
+
+SKIP : { " " | "\t" | "\r" | "\n" | < COMMENT : "#" (~["\n", "\r"])* > }
+
+// keywords first: on a match of the same length the token declared first wins over KEY, PAIR and CCY
+TOKEN : {
+  "rule" | "for" | "in" | "except" | "valid" | "from" | "to" | "with" | "kind" | "session" | "tz" | "precision" | "note"
+| "cites" | "art" | "url" | "label" | "weekend" | "calendar" | "ignore" | "at" | "unless"
+| "closed" | "non_working" | "short_day" | "working_day" | "paid_no_rest" | "tourist" | "event" | "special_session"
+| "changed_hours" | "day" | "month" | "official" | "benchmark" | "practice" | "secondary"
+| "ONE" | "OF" | "AS" | "T" | "TOM" | "SPOT" | "FIX" | "IMM" | "NEXT" | "PREV" | "NEAREST" | "IN" | "POSTPONE" | "MAX"
+| "CUMULATIVE" | "ENDEND" | "ON" | "LAST" | "BD" | "FD" | "HOLIDAY" | "NONHOLIDAY" | "HOLIDAYS" | "EASTER" | "ORTHODOX"
+| "EQUINOX" | "SOLSTICE" | "SOLARTERM" | "HINDU" | "BY" | "UMMALQURA" | "SIGHTING" | "DIYANET" | "FOLLOW" | "IF" | "OR"
+| "AND" | "NOT" | "DAY" | "IS" | "BETWEEN" | "EVERY" | "FROM" | ".."
+}
+
+TOKEN : {
+  < MONTH : "JAN" | "FEB" | "MAR" | "APR" | "MAY" | "JUN" | "JUL" | "AUG" | "SEP" | "OCT" | "NOV" | "DEC"
+          | "MUHARRAM" | "SAFAR" | "RABIALAWWAL" | "RABIALTHANI" | "JUMADAALULA" | "JUMADAALAKHIRA" | "RAJAB" | "SHABAN"
+          | "RAMADAN" | "SHAWWAL" | "DHULQADAH" | "DHULHIJJAH"
+          | "NISAN" | "IYAR" | "SIVAN" | "TAMMUZ" | "AV" | "ELUL" | "TISHRI" | "HESHVAN" | "KISLEV" | "TEVET" | "SHEVAT"
+          | "ADAR" | "ADARII"
+          | "ZHENGYUE" | "ERYUE" | "SANYUE" | "SIYUE" | "WUYUE" | "LIUYUE" | "QIYUE" | "BAYUE" | "JIUYUE" | "SHIYUE"
+          | "DONGYUE" | "LAYUE" >
+| < WEEKDAY : "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN" >
+| < ROLL : "FOLLOWING" | "PRECEDING" | "MODFOLLOWING" | "MODPRECEDING"
+         | "BOW" | "EOW" | "BOM" | "EOM" | "BOQ" | "EOQ" | "BOH" | "EOH" | "BOY" | "EOY" >
+| < PERIOD : "WEEK" | "MONTH" | "QUARTER" | "HALFYEAR" | "YEAR" >
+| < ZONE : "UTC" ["+", "-"] (["0"-"9"])+ >
+| < ORDINAL : (["0"-"9"])+ ("ST" | "ND" | "RD" | "TH") >
+| < NUM : (["0"-"9"])+ >
+| < UNIT : ["D", "W", "M", "Q", "H", "Y", "B", "F"] >
+  // a reference to a rule, an event class or an event: @za.freedom_day, @national_holiday, @FOMC
+| < EVENT : "@" ["A"-"Z", "a"-"z"] (["A"-"Z", "a"-"z", "0"-"9", "_"])* ("." (["A"-"Z", "a"-"z", "0"-"9", "_"])+)* >
+  // a scope: country:JP, region:AU-NSW, settlement_system:TARGET2
+| < SCOPE : ["a"-"z"] (["a"-"z", "_"])* ":" ["A"-"Z", "0"-"9"] (["A"-"Z", "0"-"9", "_"])*
+            ("-" ["A"-"Z", "0"-"9"] (["A"-"Z", "0"-"9", "_"])*)* >
+  // keys, event classes and named calendars
+| < KEY : ["a"-"z"] (["a"-"z", "0"-"9", "_"])* ("." ["a"-"z"] (["a"-"z", "0"-"9", "_"])*)* >
+| < STRING : "\"" (~["\""])* "\"" >
+| < PAIR : (["A"-"Z"]){6} >   // a currency pair such as EURUSD
+| < CCY : (["A"-"Z"]){3} >    // a currency, only inside "unless {...}"
+}
+
+// ================= start rules =================
+
+List<Object> RuleFile() :
+{ List<Object> declarations = new ArrayList<Object>(); Object d; }
+{
+  ( d = Declaration() { declarations.add(d); } )* <EOF>
+  { return declarations; }
+}
+
+Rule Schedule() :
+{ Rule rule; }
+{
+  rule = Exprs() <EOF>
+  { return rule; }
+}
+
+// ================= declarations =================
+
+Object Declaration() :
+{ String key, eventClass; List<String> include, exclude = new ArrayList<String>(); LocalDate from = null, to = null;
+  Object body; List<Map.Entry<String, Object>> attributes = new ArrayList<Map.Entry<String, Object>>();
+  List<Citation> citations = new ArrayList<Citation>(); Token t; Set<String> weekdays; LocalDate d = null;
+  CalendarSpec calendar; }
+{
+  "rule" { references = new LinkedHashSet<String>(); estimated = false; }
+  key = Name() "for" eventClass = Name() "in" include = Scopes() ( "except" exclude = Scopes() )?
+  ( "valid" ( "from" from = IsoDate() )? ( "to" to = IsoDate() )? )?
+  "=" body = Body()
+  ( "with" Attribute(attributes) ( "," Attribute(attributes) )* )?
+  ( "cites" Citation(citations) ( "," Citation(citations) )* )?
+  ";"
+  { return RuleCatalog.rule(key, eventClass, include, exclude, from, to, body, attributes, citations, references, estimated); }
+| "weekend" t = <SCOPE> "=" weekdays = WeekdaySet() ( "from" d = IsoDate() )? ";"
+  { return RuleCatalog.weekend(t.image, weekdays, d); }
+| "calendar" t = <KEY> "=" calendar = Calendar() ";"
+  { return RuleCatalog.calendarDeclaration(t.image, calendar); }
+}
+
+/** exactly one of the alternatives will happen: ONE OF {item AS name, ...} */
+Object Body() :
+{ Rule rule; List<Map.Entry<String, Rule>> alternatives = new ArrayList<Map.Entry<String, Rule>>(); }
+{
+  "ONE" "OF" "{" Alternative(alternatives) ( "," Alternative(alternatives) )* "}"
+  { return RuleCatalog.oneOf(alternatives); }
+| rule = Exprs() { return rule; }
+}
+
+void Alternative(List<Map.Entry<String, Rule>> alternatives) :
+{ Expr item; String name; List<Expr> items = new ArrayList<Expr>(); }
+{
+  item = Item() "AS" name = Name()
+  { items.add(item); alternatives.add(Map.entry(name, RuleCatalog.exprs(items))); }
+}
+
+/** a key or an event class; the words of kinds, precisions and labels are tokens, so they are names here as well */
+String Name() :
+{ Token t; }
+{
+  ( t = <KEY> | t = "closed" | t = "non_working" | t = "short_day" | t = "working_day" | t = "paid_no_rest"
+  | t = "tourist" | t = "event" | t = "special_session" | t = "changed_hours" | t = "day" | t = "month"
+  | t = "official" | t = "benchmark" | t = "practice" | t = "secondary" )
+  { return t.image; }
+}
+
+List<String> Scopes() :
+{ Token t; List<String> scopes = new ArrayList<String>(); }
+{
+  t = <SCOPE> { scopes.add(t.image); } ( "," t = <SCOPE> { scopes.add(t.image); } )*
+  { return scopes; }
+}
+
+void Attribute(List<Map.Entry<String, Object>> attributes) :
+{ Token t, tz = null; String opens, closes = null; }
+{
+  "kind" "=" ( t = "closed" | t = "non_working" | t = "short_day" | t = "working_day" | t = "paid_no_rest"
+             | t = "tourist" | t = "event" | t = "special_session" | t = "changed_hours" )
+  { attributes.add(Map.entry("kind", (Object) t.image)); }
+| "session" opens = Time() ( "-" closes = Time() )? ( "tz" tz = <STRING> )?
+  { attributes.add(RuleCatalog.session(opens, closes, unquote(tz))); }
+| "precision" "=" ( t = "day" | t = "month" ) { attributes.add(Map.entry("precision", (Object) t.image)); }
+| "note" t = <STRING> { attributes.add(Map.entry("note", (Object) unquote(t))); }
+}
+
+String Time() :
+{ int h, m; }
+{
+  h = Number() ":" m = Number() { return RuleCatalog.time(h, m); }
+}
+
+void Citation(List<Citation> citations) :
+{ Token source, article = null, url = null, label; }
+{
+  source = <STRING> ( "art" article = <STRING> )? ( "url" url = <STRING> )?
+  "label" ( label = "official" | label = "benchmark" | label = "practice" | label = "secondary" )
+  { citations.add(new Citation(unquote(source), unquote(article), unquote(url), label.image)); }
+}
+
+LocalDate IsoDate() :
+{ int y, m, d; }
+{
+  y = Number() "-" m = Number() "-" d = Number() { return LocalDate.of(y, m, d); }
+}
+
+// ================= calendars =================
+
+/** a business day in every term of "&" */
+CalendarSpec Calendar() :
+{ CalendarSpec term; List<CalendarSpec> terms = new ArrayList<CalendarSpec>(); }
+{
+  term = CalTerm() { terms.add(term); } ( "&" term = CalTerm() { terms.add(term); } )*
+  { return RuleCatalog.calendar(terms); }
+}
+
+CalendarSpec CalTerm() :
+{ Token t, c; int days = 0; Set<String> unless = new LinkedHashSet<String>(); CalendarSpec calendar; }
+{
+  t = <SCOPE>
+  // USD on T+1 does not count, unless for MXN
+  ( "ignore" "at" "T" "+" days = Number()
+    ( "unless" "{" c = <CCY> { unless.add(c.image); } ( "," c = <CCY> { unless.add(c.image); } )* "}" )? )?
+  { return new RuleCatalog.Scope(t.image, days, unless); }
+| t = <KEY> { return new RuleCatalog.Named(t.image); }
+| "(" calendar = Calendar() ")" { return calendar; }
+}
+
+/** in an expression one term only, as "&" there is include: ON country:BR, ON usd_eur, ON (a & b) */
+CalendarSpec On() :
+{ Token t; CalendarSpec calendar; }
+{
+  "ON"
+  ( t = <SCOPE> { return new RuleCatalog.Scope(t.image, 0, new LinkedHashSet<String>()); }
+  | t = <KEY> { return new RuleCatalog.Named(t.image); }
+  | "(" calendar = Calendar() ")" { return calendar; }
+  )
+}
+
+// ================= expressions =================
+
+Rule Exprs() :
+{ List<Expr> items = new ArrayList<Expr>(); Expr item; }
+{
+  item = Item() { items.add(item); } ( "," item = Item() { items.add(item); } )*
+  { return RuleCatalog.exprs(items); }
+}
+
+/** the condition applies to every date of the item; the shifts after it to the dates it keeps */
+Expr Item() :
+{ Expr d; Token o = null, e; boolean fromEnd = false, include; List<Move> moves = new ArrayList<Move>(); Move m;
+  List<Expr> operand; RuleCatalog.IfClause clause = null; }
+{
+  ( o = <ORDINAL> ( "LAST" { fromEnd = true; } )?
+    // a pick: the item starts with a series or an event, where several dates come from
+    ( d = Series() | e = <EVENT> { d = ScheduleSemantics.event(event(e)); } )
+    ( m = Shift() { moves.add(m); } )*
+    { d = RuleCatalog.shifted(d, moves); }
+  | d = Expr()
+  )
+  // A & B includes the dates of B, A \ B excludes them; the shifts after it apply to the result
+  ( ( "&" { include = true; } | "\\" { include = false; } ) operand = Operand()
+    { moves = new ArrayList<Move>(); }
+    ( m = Shift() { moves.add(m); } )*
+    { d = RuleCatalog.shifted(ScheduleSemantics.combined(d, include, operand), moves); }
+  )*
+  ( clause = IfClause() )?
+  { d = RuleCatalog.ruleItem(d, clause);
+    return o == null ? d : ScheduleSemantics.pick(ScheduleSemantics.ordinal(o.image), fromEnd, d); }
+}
+
+RuleCatalog.IfClause IfClause() :
+{ Condition c; List<Move> moves = new ArrayList<Move>(); Move m; }
+{
+  "IF" c = Condition() ( m = Shift() { moves.add(m); } )*
+  { return new RuleCatalog.IfClause(c, moves); }
+}
+
+/** a date, a series or a set of dates */
+List<Expr> Operand() :
+{ Expr d; List<Expr> exprs = new ArrayList<Expr>(); }
+{
+  ( d = Date() { exprs.add(d); }
+  | "{" d = Expr() { exprs.add(d); } ( "," d = Expr() { exprs.add(d); } )* "}"
+  )
+  { return exprs; }
+}
+
+/**
+ * [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out. After the
+ * first ":" a number starts the step (1D) or the end (3 MAR), so the step needs a lookahead of two tokens.
+ */
+Expr Series() :
+{ Expr first, last = null; TemporalAmount step = null; boolean startOut = false, endOut = false; }
+{
+  ( "[" | "]" { startOut = true; } )
+  first = Endpoint() ":"
+  ( LOOKAHEAD(2) step = Period() ":" ( last = Endpoint() )?   // none: an open series [SPOT : 1Q : ]
+  | last = Endpoint()
+  )
+  ( "]" | "[" { endOut = true; } )
+  { return ScheduleSemantics.series(first, step, last, startOut, endOut); }
+}
+
+/** an endpoint is one date, so it can't be a series */
+Expr Endpoint() :
+{ Expr d; List<Move> moves = new ArrayList<Move>(); Move m; }
+{
+  d = SingleDate() ( m = Shift() { moves.add(m); } )*
+  { return RuleCatalog.shifted(d, moves); }
+}
+
+/** shifts are applied from left to right */
+Expr Expr() :
+{ Expr d; List<Move> moves = new ArrayList<Move>(); Move m; }
+{
+  d = Date() ( m = Shift() { moves.add(m); } )*
+  { return RuleCatalog.shifted(d, moves); }
+}
+
+Move Shift() :
+{ TemporalAmount p; Token t = null, o = null, period; boolean endend = false, cumulative = false, fromEnd = false;
+  CalendarSpec on = null; Anchor a; Annual an; List<Annual> annuals = new ArrayList<Annual>();
+  List<Map.Entry<Set<String>, Move>> entries = new ArrayList<Map.Entry<Set<String>, Move>>(); }
+{
+  "+" p = Period() ( "ENDEND" { endend = true; } )? ( on = On() )? { return RuleCatalog.plus(p, 1, endend, on); }
+| "-" p = Period() ( "ENDEND" { endend = true; } )? ( on = On() )? { return RuleCatalog.plus(p, -1, endend, on); }
+| ">"
+  ( "IMM" { return RuleCatalog.nextImm(); }
+  | "SPOT" ( t = <PAIR> )? ( on = On() )? { return RuleCatalog.spot(t == null ? null : t.image, on); }
+  | "FIX" ( t = <PAIR> )? { return RuleCatalog.fix(t == null ? null : t.image); }
+  | t = <ROLL> ( on = On() )? { return RuleCatalog.rollShift(t.image, on); }
+  | "NEXT" ( o = <ORDINAL> )? a = Anchor() { return RuleCatalog.next(o == null ? 1 : ScheduleSemantics.ordinal(o.image), a); }
+  | "PREV" ( o = <ORDINAL> )? a = Anchor() { return RuleCatalog.previous(o == null ? 1 : ScheduleSemantics.ordinal(o.image), a); }
+  | "NEAREST" a = Anchor() { return RuleCatalog.nearestShift(a); }   // ties go forward
+    // > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH
+  | ( o = <ORDINAL> ( "LAST" { fromEnd = true; } )? | "LAST" { fromEnd = true; } )
+    a = Select() "IN" period = <PERIOD>
+    { return RuleCatalog.select(o == null ? 1 : ScheduleSemantics.ordinal(o.image), fromEnd, a, period.image); }
+    // > {1 FEB, 1 MAY}: the dates of the set in the year of the date
+  | "{" an = Annual() { annuals.add(an); } ( "," an = Annual() { annuals.add(an); } )* "}"
+    { return RuleCatalog.datesInYear(annuals); }
+  | "POSTPONE" t = <ROLL> ( on = On() )? "MAX" p = Period() ( "CUMULATIVE" { cumulative = true; } )?
+    { return new RuleCatalog.Postpone(t.image, on, p, cumulative); }
+  )
+  // {SAT - 1D, TUE WED > PREV MON}: the first entry for the weekday of the date moves it
+| "{" Observe(entries) ( "," Observe(entries) )* "}" { return RuleCatalog.observance(entries); }
+}
+
+void Observe(List<Map.Entry<Set<String>, Move>> entries) :
+{ Token w, t; Set<String> weekdays = new LinkedHashSet<String>(); TemporalAmount p; Anchor a; CalendarSpec on = null; }
+{
+  ( w = <WEEKDAY> { weekdays.add(w.image); } )+
+  ( "+" p = Period() { entries.add(RuleCatalog.observePlus(weekdays, p, 1)); }
+  | "-" p = Period() { entries.add(RuleCatalog.observePlus(weekdays, p, -1)); }
+  | ">"
+    ( "NEXT" a = Anchor() { entries.add(RuleCatalog.observeAnchor(weekdays, a, 1)); }
+    | "PREV" a = Anchor() { entries.add(RuleCatalog.observeAnchor(weekdays, a, -1)); }
+    | "NEAREST" a = Anchor() { entries.add(RuleCatalog.observeNearest(weekdays, a)); }
+    | t = <ROLL> ( on = On() )? { entries.add(RuleCatalog.observeRoll(weekdays, t.image, on)); }
+    )
+  )
+}
+
+/** the targets of a selection; an annual date starting with LAST only in braces, as LAST also starts the count */
+Anchor Select() :
+{ Anchor a; List<Anchor> anchors = new ArrayList<Anchor>(); }
+{
+  a = Chosen() { return a; }
+| "{" a = Target() { anchors.add(a); } ( "," a = Target() { anchors.add(a); } )* "}"
+  { return ScheduleSemantics.anyOf(anchors); }
+}
+
+/** NEXT {MON, FRI}: the nearest of a set */
+Anchor Anchor() :
+{ Anchor a; List<Anchor> anchors = new ArrayList<Anchor>(); }
+{
+  a = Target() { return a; }
+| "{" a = Target() { anchors.add(a); } ( "," a = Target() { anchors.add(a); } )* "}"
+  { return ScheduleSemantics.anyOf(anchors); }
+}
+
+Anchor Target() :
+{ Token w, m; Anchor a; }
+{
+  a = Chosen() { return a; }
+| "LAST" w = <WEEKDAY> m = <MONTH> { return ScheduleSemantics.annual(ScheduleSemantics.lastWeekday(w.image, m.image)); }
+}
+
+Anchor Chosen() :
+{ Token w, e; Annual an; CalendarSpec on = null; }
+{
+  w = <WEEKDAY> { return ScheduleSemantics.weekday(w.image); }
+| "BD" ( on = On() )? { return RuleCatalog.businessDay(on); }
+| "FD" { return ScheduleSemantics.FIXING_DAY; }
+| "IMM" { return ScheduleSemantics.IMM; }
+| an = FixedAnnual() { return ScheduleSemantics.annual(an); }
+| e = <EVENT> { return ScheduleSemantics.eventAnchor(event(e)); }
+| "HOLIDAY" ( on = On() )? { return RuleCatalog.holiday(on); }
+| "NONHOLIDAY" ( on = On() )? { return RuleCatalog.nonholiday(on); }
+}
+
+Expr Date() :
+{ Expr d; }
+{
+  ( d = SingleDate() | d = Series() )
+  { return d; }
+}
+
+/** a date that is not a series */
+Expr SingleDate() :
+{ int a, b, c; Token t = null, e; Annual an; CalendarSpec on = null; }
+{
+  "T" { return ScheduleSemantics.BASE; }   // the base date
+| "TOM" { return ScheduleSemantics.plus(ScheduleSemantics.BASE, ScheduleSemantics.period(1, "B")); }
+| "SPOT" ( t = <PAIR> )? ( on = On() )? { return RuleCatalog.spotDate(t == null ? null : t.image, on); }
+| a = Number()
+  ( "-" b = Number() "-" c = Number() { return ScheduleSemantics.literal(LocalDate.of(a, b, c)); }   // ISO
+  | "." b = Number() "." c = Number() { return ScheduleSemantics.literal(LocalDate.of(c, b, a)); }   // German
+  | "/" b = Number() "/" c = Number() { return ScheduleSemantics.literal(LocalDate.of(c, a, b)); }   // US
+  | an = AnnualTail(a) { return ScheduleSemantics.inYear(an); }
+  )
+| "LAST" t = <WEEKDAY> e = <MONTH> { return ScheduleSemantics.inYear(ScheduleSemantics.lastWeekday(t.image, e.image)); }
+| an = FixedWord() { return ScheduleSemantics.inYear(an); }
+| e = <EVENT> { return ScheduleSemantics.event(event(e)); }
+}
+
+/** dates that recur every year */
+Annual Annual() :
+{ Token w, m; Annual an; }
+{
+  an = FixedAnnual() { return an; }
+| "LAST" w = <WEEKDAY> m = <MONTH> { return ScheduleSemantics.lastWeekday(w.image, m.image); }
+}
+
+Annual FixedAnnual() :
+{ int n; Annual an; }
+{
+  n = Number() an = AnnualTail(n) { return an; }
+| an = FixedWord() { return an; }
+}
+
+/** after the number: 4 JUL, 1 SHAWWAL BY SIGHTING, 3 MON JAN */
+Annual AnnualTail(int n) :
+{ Token w, m; String method = null; }
+{
+  m = <MONTH> ( method = HijriMethod() )? { return RuleCatalog.monthDay(n, m.image, method); }
+| w = <WEEKDAY> m = <MONTH> { return ScheduleSemantics.nthWeekday(n, w.image, m.image); }
+}
+
+String HijriMethod() :
+{ Token m; }
+{
+  "BY" ( m = "UMMALQURA" | m = "SIGHTING" | m = "DIYANET" | m = "FOLLOW" <SCOPE> )
+  { if (!m.image.equals("UMMALQURA")) estimated = true; return m.image; }
+}
+
+Annual FixedWord() :
+{ Token m, k; int n; String z = null; }
+{
+  "EASTER" { return ScheduleSemantics.EASTER; }
+| "ORTHODOX" "EASTER" { return RuleCatalog.ORTHODOX_EASTER; }
+| ( k = "EQUINOX" | k = "SOLSTICE" ) m = <MONTH> ( z = Zone() )? { return RuleCatalog.season(k.image, m.image, z); }
+| "SOLARTERM" n = Number() ( z = Zone() )? { return RuleCatalog.solarTerm(n, z); }
+| "HINDU" k = <KEY> { return RuleCatalog.hindu(k.image); }
+}
+
+/** UTC+9 or an IANA time zone such as "Asia/Tokyo" */
+String Zone() :
+{ Token z; }
+{
+  z = <ZONE> { return z.image; }
+| z = <STRING> { return unquote(z); }
+}
+
+TemporalAmount Period() :
+{ int n; Token unit; }
+{
+  n = Number() unit = <UNIT>
+  { return ScheduleSemantics.period(n, unit.image); }
+}
+
+int Number() :
+{ Token t; }
+{
+  t = <NUM> { return Integer.parseInt(t.image); }
+}
+
+// ================= conditions =================
+
+Condition Condition() :
+{ Condition c; List<Condition> parts = new ArrayList<Condition>(); }
+{
+  c = CondAnd() { parts.add(c); } ( "OR" c = CondAnd() { parts.add(c); } )*
+  { return parts.size() == 1 ? parts.get(0) : RuleCatalog.anyCondition(parts); }
+}
+
+Condition CondAnd() :
+{ Condition c; List<Condition> parts = new ArrayList<Condition>(); }
+{
+  c = CondNot() { parts.add(c); } ( "AND" c = CondNot() { parts.add(c); } )*
+  { return parts.size() == 1 ? parts.get(0) : RuleCatalog.allConditions(parts); }
+}
+
+Condition CondNot() :
+{ Condition c; boolean negate = false; }
+{
+  ( "NOT" { negate = true; } )? c = CondAtom()
+  { return negate ? RuleCatalog.notCondition(c) : c; }
+}
+
+Condition CondAtom() :
+{ Set<String> weekdays; int first, last; Token m = null; Expr subject; CalendarSpec on = null; TemporalAmount p;
+  Condition c; }
+{
+  weekdays = WeekdaySet() { return RuleCatalog.onWeekday(weekdays); }   // the weekday of the date itself
+| "DAY" first = Number() ".." last = Number() ( m = <MONTH> )?   // DAY 8..14 APR
+  { return RuleCatalog.onDay(first, last, m == null ? null : m.image); }
+| subject = Subject() "IS"
+  ( weekdays = WeekdaySet() { return RuleCatalog.isWeekday(subject, weekdays); }
+  | "HOLIDAY" ( on = On() )? { return RuleCatalog.dateIsHoliday(subject, on); }
+  )
+| "HOLIDAY" ( on = On() )? { return RuleCatalog.holidayCondition(on); }
+| "BETWEEN" "HOLIDAYS" ( on = On() )? { return RuleCatalog.betweenHolidays(on); }   // JP art. 3(3)
+| "EVERY" p = Period() "FROM" first = Number() { return RuleCatalog.every(p, first); }   // EVERY 4Y FROM 1965
+| "(" c = Condition() ")" { return c; }
+}
+
+/** 18 SEP, EASTER + 1D */
+Expr Subject() :
+{ Expr d; List<Move> moves = new ArrayList<Move>(); TemporalAmount p; }
+{
+  d = SingleDate()
+  ( "+" p = Period() { moves.add(RuleCatalog.plus(p, 1, false, null)); }
+  | "-" p = Period() { moves.add(RuleCatalog.plus(p, -1, false, null)); }
+  )*
+  { return RuleCatalog.shifted(d, moves); }
+}
+
+Set<String> WeekdaySet() :
+{ Token w; Set<String> weekdays = new LinkedHashSet<String>(); }
+{
+  ( ( w = <WEEKDAY> { weekdays.add(w.image); } )+
+  | "{" w = <WEEKDAY> { weekdays.add(w.image); } ( "," w = <WEEKDAY> { weekdays.add(w.image); } )* "}"
+  )
+  { return weekdays; }
+}

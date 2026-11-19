@@ -574,6 +574,41 @@ public final class RuleCatalog {
         return (date, context) -> nearest(anchor, date, context);
     }
 
+    // the moves of the schedule language, for parsers that build moves of a date rather than expressions
+
+    /** &gt; IMM */
+    public static Move nextImm() {
+        return (date, context) -> ScheduleSemantics.nextImm(date);
+    }
+
+    /** &gt; FIX [PAIR]: the spot lag of the pair before the date, in fixing days */
+    public static Move fix(String pair) {
+        return (date, context) -> ScheduleSemantics.plusBusinessDays(date, -ScheduleSemantics.spotLag(pair), context.fixing());
+    }
+
+    /** &gt; NEXT [3RD] anchor */
+    public static Move next(int count, Anchor anchor) {
+        Anchor times = ScheduleSemantics.times(count, anchor);
+        return (date, context) -> times.from(date, 1, context);
+    }
+
+    /** &gt; PREV [3RD] anchor */
+    public static Move previous(int count, Anchor anchor) {
+        Anchor times = ScheduleSemantics.times(count, anchor);
+        return (date, context) -> times.from(date, -1, context);
+    }
+
+    /** &gt; 3RD WED IN MONTH, &gt; 2ND LAST BD IN MONTH */
+    public static Move select(int count, boolean fromEnd, Anchor anchor, String period) {
+        return (date, context) -> ScheduleSemantics.select(date, count, fromEnd, anchor, period, context);
+    }
+
+    /** &gt; {1 FEB, 1 MAY}: the dates of the set in the year of the date, one value at a time */
+    public static Move datesInYear(List<Annual> annuals) {
+        List<Annual> copy = List.copyOf(annuals);
+        return (date, context) -> ScheduleSemantics.datesInYear(ScheduleSemantics.literal(date), copy).at(context);
+    }
+
     /** {SAT - 1D, TUE WED &gt; PREV MON}: the first entry for the weekday of the date moves it */
     public static Move observance(List<Map.Entry<Set<String>, Move>> entries) {
         List<Map.Entry<Set<String>, Move>> copy = List.copyOf(entries);

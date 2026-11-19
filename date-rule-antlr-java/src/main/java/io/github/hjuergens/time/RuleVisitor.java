@@ -28,8 +28,6 @@ import io.github.hjuergens.time.RuleCatalog.Move;
 import io.github.hjuergens.time.RuleCatalog.Named;
 import io.github.hjuergens.time.RuleCatalog.Postpone;
 import io.github.hjuergens.time.RuleCatalog.Scope;
-import io.github.hjuergens.time.ScheduleSemantics.Anchor;
-import io.github.hjuergens.time.ScheduleSemantics.Annual;
 import io.github.hjuergens.time.ScheduleSemantics.Expr;
 import io.github.hjuergens.time.ScheduleSemantics.Rule;
 
@@ -383,7 +381,7 @@ public final class RuleVisitor extends RuleFileBaseVisitor<Object> {
 
     @Override
     public Object visitImm(RuleFileParser.ImmContext ctx) {
-        return (Move) (date, context) -> ScheduleSemantics.nextImm(date);
+        return RuleCatalog.nextImm();
     }
 
     @Override
@@ -393,9 +391,7 @@ public final class RuleVisitor extends RuleFileBaseVisitor<Object> {
 
     @Override
     public Object visitFix(RuleFileParser.FixContext ctx) {
-        String pair = ctx.PAIR() == null ? null : ctx.PAIR().getText();
-        return (Move) (date, context) ->
-                ScheduleSemantics.plusBusinessDays(date, -ScheduleSemantics.spotLag(pair), context.fixing());
+        return RuleCatalog.fix(ctx.PAIR() == null ? null : ctx.PAIR().getText());
     }
 
     @Override
@@ -405,14 +401,12 @@ public final class RuleVisitor extends RuleFileBaseVisitor<Object> {
 
     @Override
     public Object visitNext(RuleFileParser.NextContext ctx) {
-        Anchor anchor = ScheduleSemantics.times(count(ctx.ORDINAL()), value(ctx.anchor()));
-        return (Move) (date, context) -> anchor.from(date, 1, context);
+        return RuleCatalog.next(count(ctx.ORDINAL()), value(ctx.anchor()));
     }
 
     @Override
     public Object visitPrev(RuleFileParser.PrevContext ctx) {
-        Anchor anchor = ScheduleSemantics.times(count(ctx.ORDINAL()), value(ctx.anchor()));
-        return (Move) (date, context) -> anchor.from(date, -1, context);
+        return RuleCatalog.previous(count(ctx.ORDINAL()), value(ctx.anchor()));
     }
 
     private static int count(TerminalNode ordinal) {
@@ -427,17 +421,12 @@ public final class RuleVisitor extends RuleFileBaseVisitor<Object> {
     @Override
     public Object visitSelectIn(RuleFileParser.SelectInContext ctx) {
         RuleFileParser.CountContext count = ctx.count();
-        int n = count(count.ORDINAL());
-        boolean fromEnd = count.last != null;
-        Anchor anchor = value(ctx.select());
-        String period = ctx.PERIOD().getText();
-        return (Move) (date, context) -> ScheduleSemantics.select(date, n, fromEnd, anchor, period, context);
+        return RuleCatalog.select(count(count.ORDINAL()), count.last != null, value(ctx.select()), ctx.PERIOD().getText());
     }
 
     @Override
     public Object visitDatesInYear(RuleFileParser.DatesInYearContext ctx) {
-        List<Annual> annuals = values(ctx.annual());
-        return (Move) (date, context) -> ScheduleSemantics.datesInYear(ScheduleSemantics.literal(date), annuals).at(context);
+        return RuleCatalog.datesInYear(values(ctx.annual()));
     }
 
     @Override

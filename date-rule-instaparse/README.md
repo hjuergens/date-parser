@@ -35,12 +35,35 @@ EBNF. GLL accepts any context-free grammar, also ambiguous and left-recursive on
   errors), so the grammar is unambiguous on them.
 - instaparse is published on Clojars, so the POM adds that repository.
 
+## Rule files
+
+[rulefile.ebnf](src/main/clojure/io/github/hjuergens/instaparse/rulefile.ebnf) reads rule files (`rule KEY for CLASS in
+SCOPES ... = ...;`, `weekend`, `calendar`), the same language as
+[date-rule-antlr-java's RuleFile.g4](../date-rule-antlr-java/README.md#rule-files), and
+[rulefile.clj](src/main/clojure/io/github/hjuergens/instaparse/rulefile.clj) transforms the tree into the declarations
+of [RuleCatalog](src/main/java/io/github/hjuergens/instaparse/RuleCatalog.java), the evaluator shared by the JVM
+modules; [RuleFiles](src/main/java/io/github/hjuergens/instaparse/rules/RuleFiles.java) is the Java entry point.
+- **One start rule:** `rule-file = declarations | schedule` reads a rule file or one schedule.
+- **Comments:** the whitespace parser given to `:auto-whitespace` also takes `#` to the end of the line.
+- **References:** the transform works bottom-up, so `parse-rules` reads the `@references` and the Hijri methods of a
+  rule from its tree before transforming it.
+- **Optional parts:** they come back as maps (`{:exclude ...}`, `{:from ...}`) or as values of a type of their own
+  (a `CalendarSpec` for `ON`, `:endend`), so a transform with `& more` finds them in any order.
+- **Six-letter keywords:** `PAIR` excludes `ENDEND` and `FOLLOW` too, with the same lookahead as in `schedule.ebnf`.
+
+```java
+RuleCatalog catalog = RuleFiles.parseRules("rule jp.equinox for national_holiday in country:JP = EQUINOX SEP \"Asia/Tokyo\";");
+catalog.holidays("country:JP", 2026);   // [Occurrence[date=2026-09-23, rule=jp.equinox, ...]]
+```
+
 ## Tests
 
-[SchedulesTest](src/test/java/io/github/hjuergens/instaparse/SchedulesTest.java) runs the 6070 cases of
+[SchedulesTest](src/test/java/io/github/hjuergens/instaparse/SchedulesTest.java) runs the 6097 cases of
 [examples/schedule.txt](../examples/schedule.txt), [examples/catalog.txt](../examples/catalog.txt) and
-[examples/date-holidays.txt](../examples/date-holidays.txt) with TestNG, the same harness as in the other JVM modules
-(6070 TestNG tests).
+[examples/date-holidays.txt](../examples/date-holidays.txt) with TestNG, the same harness as in the other JVM modules;
+[RuleCasesTest](src/test/java/io/github/hjuergens/instaparse/RuleCasesTest.java) the 59 cases of
+[examples/rules.txt](../examples/rules.txt) and [RuleCatalogTest](src/test/java/io/github/hjuergens/instaparse/RuleCatalogTest.java)
+5 tests of attributes and announcements.
 
 ```
 mvn -pl date-rule-instaparse test

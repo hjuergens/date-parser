@@ -1,0 +1,212 @@
+(* Rule files: the schedule language of schedule.ebnf inside declarations with scope, validity, kind and provenance,
+   the same language as date-rule-antlr-java's RuleFile.g4 and date-rule-lark's rules.lark (shared cases:
+   examples/rules.txt). rulefile.clj transforms the tree into the declarations of RuleCatalog. One start rule reads
+   declarations or one schedule. Whitespace and comments (# to the end of the line) between tokens come from the
+   whitespace parser of rulefile.clj. Rules only project: announced dates are data given to the evaluator. *)
+
+rule-file = declarations | schedule
+declarations = declaration*
+schedule = items
+<declaration> = rule-decl | weekend-decl | calendar-decl
+
+(* ================= declarations ================= *)
+
+rule-decl = <'rule'> name <'for'> name <'in'> scopes except? validity? <'='> body attributes? provenance? <';'>
+weekend-decl = <'weekend'> SCOPE <'='> weekday-set valid-from? <';'>
+calendar-decl = <'calendar'> KEY <'='> calendar <';'>
+
+(* exactly one of the alternatives will happen: ONE OF {item AS name, ...} *)
+<body>   = one-of | items
+one-of   = <'ONE'> <'OF'> <'{'> alternative (<','> alternative)* <'}'>
+alternative = item <'AS'> name
+
+(* a key or an event class; the words of kinds, precisions and labels are names as well *)
+name     = KEY
+scopes   = SCOPE (<','> SCOPE)*
+except   = <'except'> scopes
+validity = <'valid'> valid-from? valid-to?
+valid-from = <'from'> iso-date
+valid-to = <'to'> iso-date
+iso-date = NUM <'-'> NUM <'-'> NUM
+
+attributes = <'with'> attribute (<','> attribute)*
+<attribute> = kind-attribute | session | precision-attribute | note
+kind-attribute = <'kind'> <'='> #'closed|non_working|short_day|working_day|paid_no_rest|tourist|event|special_session|changed_hours'
+session  = <'session'> time closes? session-zone?
+closes   = <'-'> time
+session-zone = <'tz'> STRING
+precision-attribute = <'precision'> <'='> #'day|month'
+note     = <'note'> STRING
+time     = NUM <':'> NUM
+
+provenance = <'cites'> citation (<','> citation)*
+citation = STRING article? url? <'label'> #'official|benchmark|practice|secondary'
+article  = <'art'> STRING
+url      = <'url'> STRING
+
+(* ================= calendars ================= *)
+
+(* a business day in every term of "&" *)
+calendar = cal-term (<'&'> cal-term)*
+<cal-term> = scope-term | named-term | <'('> calendar <')'>
+scope-term = SCOPE ignore?
+named-term = KEY
+(* USD on T+1 does not count, unless for MXN *)
+ignore   = <'ignore'> <'at'> <'T'> <'+'> NUM unless?
+unless   = <'unless'> <'{'> CCY (<','> CCY)* <'}'>
+(* in an expression one term only, as "&" there is include: ON country:BR, ON usd_eur, ON (a & b) *)
+on       = <'ON'> (on-scope | named-term | <'('> calendar <')'>)
+on-scope = SCOPE
+
+(* ================= expressions ================= *)
+
+items    = item (<','> item)*
+(* the condition applies to every date of the item; the shifts after it to the dates it keeps *)
+<item>   = plain-item | picked-item
+plain-item  = expr combine* if-clause?
+(* 5TH [SPOT : 1Q : ] > EOQ > 3RD WED IN MONTH: the item starts with a series or an event *)
+picked-item = pick (series | event) shift* combine* if-clause?
+pick     = from-start | from-end
+if-clause = <'IF'> condition shift*
+
+(* A & B includes the dates of B, A \ B excludes them; the shifts after it apply to the result *)
+<combine> = include | exclude
+include  = <'&'> operand shift*
+exclude  = <'\\'> operand shift*
+(* a date, a series or a set of dates *)
+operand  = date | <'{'> expr (<','> expr)* <'}'>
+
+(* [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out *)
+series   = (closed-start | open-start) endpoint <':'> (period <':'> endpoint? | endpoint) (closed-end | open-end)
+(* an endpoint is one date, so it can't be a series *)
+endpoint = single-date shift*
+closed-start = <'['>
+open-start   = <']'>
+closed-end   = <']'>
+open-end     = <'['>
+
+(* shifts are applied from left to right *)
+expr     = date shift*
+<shift>  = plus | minus | imm | spot | fix | roll | next | prev | nearest | select | dates-in-year | postpone | observance
+plus     = <'+'> period endend? on?
+minus    = <'-'> period endend? on?
+endend   = <'ENDEND'>
+imm      = <'>'> <'IMM'>
+spot     = <'>'> <'SPOT'> PAIR? on?
+fix      = <'>'> <'FIX'> PAIR?
+roll     = <'>'> ROLL on?
+next     = <'>'> <'NEXT'> ORDINAL? anchor
+prev     = <'>'> <'PREV'> ORDINAL? anchor
+(* ties go forward *)
+nearest  = <'>'> <'NEAREST'> anchor
+(* > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH *)
+select   = <'>'> count (chosen | any-of) <'IN'> PERIOD
+<count>  = from-start | from-end | last
+from-start = ORDINAL
+from-end = ORDINAL <'LAST'>
+last     = <'LAST'>
+(* > {1 FEB, 1 MAY}: the dates of the set in the year of the date *)
+dates-in-year = <'>'> <'{'> annual (<','> annual)* <'}'>
+postpone = <'>'> <'POSTPONE'> ROLL on? <'MAX'> period cumulative?
+cumulative = <'CUMULATIVE'>
+(* {SAT - 1D, TUE WED > PREV MON}: the first entry for the weekday of the date moves it *)
+observance = <'{'> observe (<','> observe)* <'}'>
+<observe> = observe-plus | observe-minus | observe-next | observe-prev | observe-nearest | observe-roll
+observe-plus    = weekdays <'+'> period
+observe-minus   = weekdays <'-'> period
+observe-next    = weekdays <'>'> <'NEXT'> anchor
+observe-prev    = weekdays <'>'> <'PREV'> anchor
+observe-nearest = weekdays <'>'> <'NEAREST'> anchor
+observe-roll    = weekdays <'>'> ROLL on?
+weekdays = WEEKDAY+
+
+(* NEXT {MON, FRI}: the nearest of a set *)
+<anchor> = target | any-of
+any-of   = <'{'> target (<','> target)* <'}'>
+<target> = weekday-anchor | bd-anchor | fd-anchor | imm-anchor | annual-anchor | event-anchor | holiday-anchor
+         | nonholiday-anchor
+(* the targets of a selection; an annual date starting with LAST only in braces, as LAST also starts the count *)
+<chosen> = weekday-anchor | bd-anchor | fd-anchor | imm-anchor | fixed-anchor | event-anchor | holiday-anchor
+         | nonholiday-anchor
+fixed-anchor   = fixed-annual
+weekday-anchor = WEEKDAY
+bd-anchor      = <'BD'> on?
+fd-anchor      = <'FD'>
+imm-anchor     = <'IMM'>
+annual-anchor  = annual
+event-anchor   = EVENT
+holiday-anchor = <'HOLIDAY'> on?
+nonholiday-anchor = <'NONHOLIDAY'> on?
+
+<date>   = single-date | series
+(* a date that is not a series *)
+<single-date> = base | tom | spot-date | iso | german | us | in-year | event
+base     = <'T'>
+tom      = <'TOM'>
+spot-date = <'SPOT'> PAIR? on?
+iso      = NUM <'-'> NUM <'-'> NUM
+german   = NUM <'.'> NUM <'.'> NUM
+us       = NUM <'/'> NUM <'/'> NUM
+in-year  = annual
+event    = EVENT
+
+(* dates that recur every year *)
+<annual> = fixed-annual | last-weekday
+<fixed-annual> = month-day | nth-weekday | easter | orthodox-easter | season | solar-term | hindu
+month-day    = NUM MONTH hijri-method?
+(* 1 SHAWWAL BY SIGHTING *)
+hijri-method = <'BY'> (#'UMMALQURA|SIGHTING|DIYANET' | 'FOLLOW' <SCOPE>)
+nth-weekday  = NUM WEEKDAY MONTH
+last-weekday = <'LAST'> WEEKDAY MONTH
+easter       = <'EASTER'>
+orthodox-easter = <'ORTHODOX'> <'EASTER'>
+season       = #'EQUINOX|SOLSTICE' MONTH zone?
+solar-term   = <'SOLARTERM'> NUM zone?
+hindu        = <'HINDU'> KEY
+(* UTC+9 or an IANA time zone such as "Asia/Tokyo" *)
+zone         = ZONE | STRING
+
+period   = NUM UNIT
+
+(* ================= conditions ================= *)
+
+condition = cond-and (<'OR'> cond-and)*
+cond-and = cond-not (<'AND'> cond-not)*
+cond-not = negate? cond-atom
+negate   = <'NOT'>
+<cond-atom> = on-weekday | on-day | is-weekday | date-is-holiday | is-holiday | between-holidays | every
+            | <'('> condition <')'>
+(* the weekday of the date itself *)
+on-weekday = weekday-set
+(* DAY 8..14 APR *)
+on-day   = <'DAY'> NUM <'..'> NUM MONTH?
+is-weekday = subject <'IS'> weekday-set
+date-is-holiday = subject <'IS'> <'HOLIDAY'> on?
+is-holiday = <'HOLIDAY'> on?
+(* JP art. 3(3) *)
+between-holidays = <'BETWEEN'> <'HOLIDAYS'> on?
+(* EVERY 4Y FROM 1965 *)
+every    = <'EVERY'> period <'FROM'> NUM
+(* 18 SEP, EASTER + 1D *)
+subject  = single-date (subject-plus | subject-minus)*
+subject-plus = <'+'> period
+subject-minus = <'-'> period
+weekday-set = WEEKDAY+ | <'{'> WEEKDAY (<','> WEEKDAY)* <'}'>
+
+(* ================= tokens: regexes, so there is no whitespace inside ================= *)
+
+<NUM>     = #'[0-9]+'
+<ORDINAL> = #'[0-9]+(ST|ND|RD|TH)'
+<UNIT>    = #'[DWMQHYBF]'
+<MONTH>   = #'JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC|MUHARRAM|SAFAR|RABIALAWWAL|RABIALTHANI|JUMADAALULA|JUMADAALAKHIRA|RAJAB|SHABAN|RAMADAN|SHAWWAL|DHULQADAH|DHULHIJJAH|NISAN|IYAR|SIVAN|TAMMUZ|AV|ELUL|TISHRI|HESHVAN|KISLEV|TEVET|SHEVAT|ADARII|ADAR|ZHENGYUE|ERYUE|SANYUE|SIYUE|WUYUE|LIUYUE|QIYUE|BAYUE|JIUYUE|SHIYUE|DONGYUE|LAYUE'
+<ZONE>    = #'UTC[+-][0-9]+'
+<WEEKDAY> = #'MON|TUE|WED|THU|FRI|SAT|SUN'
+<ROLL>    = #'MODFOLLOWING|MODPRECEDING|FOLLOWING|PRECEDING|BOW|EOW|BOM|EOM|BOQ|EOQ|BOH|EOH|BOY|EOY'
+<PERIOD>  = #'WEEK|MONTH|QUARTER|HALFYEAR|YEAR'
+(* without a lexer nothing reserves the six-letter keywords, so a lookahead excludes them *)
+<PAIR>    = !('EASTER' | 'ENDEND' | 'FOLLOW' | 'SHABAN' | 'TAMMUZ' | 'TISHRI' | 'KISLEV' | 'SHEVAT' | 'ADARII' | 'SANYUE' | 'LIUYUE' | 'JIUYUE' | 'SHIYUE') #'[A-Z]{6}'
+<CCY>     = #'[A-Z]{3}'
+<EVENT>   = #'@[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)*'
+<SCOPE>   = #'[a-z][a-z_]*:[A-Z0-9][A-Z0-9_]*(-[A-Z0-9][A-Z0-9_]*)*'
+<KEY>     = #'[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*'
+<STRING>  = #'"[^"]*"'

@@ -194,10 +194,19 @@ for line in (ROOT / "examples/schedule.txt").read_text(encoding="utf-8").splitli
         declarations[kind + "s"][name.strip()] = rule.strip()
 peg_context = json.dumps(declarations, indent=1).replace("</", "<\\/")
 
+# the rule files of holidays-events and their check against holidays-events' own engine (the total row of its README)
+rule_files = sorted((ROOT / "holidays-events").glob("*.rules"))
+verified = re.search(r"^\| \*\*Total\*\* \| \*\*(\d+)\*\* \| \*\*(\d+)\*\* \| \*\*(\d+)\*\* \|$",
+                     (ROOT / "holidays-events/README.md").read_text(encoding="utf-8"), re.M)
+rules_verified = (f"Compared day by day with holidays-events' own engine for 2021 to 2031, {verified[2]} of {verified[1]} rules agree."
+                  if verified else "")
+
 page = (Path(__file__).parent / "page_template.html").read_text(encoding="utf-8")
 page = (page.replace("{{TABS}}", tabs).replace("{{PANELS}}", panels).replace("{{ROWS}}", rows)
         .replace("{{CASES}}", cases).replace("{{CASE_COUNT}}", str(case_count))
         .replace("{{TOOL_COUNT}}", str(len(TOOLS))).replace("{{LANG_COUNT}}", str(len({t["lang"].split()[0] for t in TOOLS}))).replace("{{REPO}}", REPO)
+        .replace("{{RULE_FILE_COUNT}}", str(len(rule_files)))
+        .replace("{{RULES_VERIFIED}}", rules_verified)
         .replace("{{PEG_GRAMMAR}}", peg_grammar).replace("{{PEG_CONTEXT}}", peg_context))
 (ROOT / "docs").mkdir(exist_ok=True)
 (ROOT / "docs/index.html").write_text(page, encoding="utf-8")

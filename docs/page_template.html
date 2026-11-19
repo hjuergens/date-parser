@@ -465,6 +465,8 @@ ORDINAL  = NUM ("ST" | "ND" | "RD" | "TH") .  <span class="c">(* 3RD, one token 
         <p>2186 more cases come from a holiday rule catalog and from finance-date research, with the dates of that project's own engine. They showed that ICU's
           astronomical Chinese calendar, in ICU4J and in Node's <code>Intl</code>, puts Chinese New Year 2027 and 2030 a day off: the new moon falls
           within minutes of midnight in Beijing. The JVM modules and Peggy now take Chinese dates from 6tail's lunar library.
+          In the same way, the Umm al-Qura tables of the JDK and of ICU give Shawwal 1451 (2030) 30 days, the official table 29;
+          all implementations now take Hijri dates from the official table.
           3347 further cases translate the rules of <a href="https://github.com/commenthol/date-holidays">date-holidays</a>
           (data CC BY 3.0) for 207 countries and their regions, with that library's own dates; where its Hijri or Hebrew
           calendar disagrees with Umm al-Qura or the Hebrew calendar, the year is left out and counted.</p></li>
@@ -482,6 +484,38 @@ ORDINAL  = NUM ("ST" | "ND" | "RD" | "TH") .  <span class="c">(* 3RD, one token 
     <div class="case-groups">
 {{CASES}}
     </div>
+  </section>
+
+  <section aria-labelledby="rule-files">
+    <h2 id="rule-files">Rule files and holidays-events</h2>
+    <p class="lead">
+      A schedule says which dates; a rule file says whose dates they are. Its grammar wraps the schedule language in
+      declarations. It started in the Lark module as <a href="{{REPO}}date-rule-lark/src/lark_schedule/rules.lark">rules.lark</a>;
+      now all {{TOOL_COUNT}} implementations read rule files with their own tool and pass the 60 cases of
+      <a href="{{REPO}}examples/rules.txt">examples/rules.txt</a>.
+    </p>
+    <pre><code>rule xnys.juneteenth for juneteenth in exchange:XNYS valid from 2022-01-01 = 19 JUN {SAT - 1D, SUN + 1D}
+  with kind = closed
+  cites "NYSE holidays &amp; trading hours" url "https://www.nyse.com/markets/hours-calendars" label official;
+
+rule sa.eid_al_fitr for eid_al_fitr in country:SA
+  = ONE OF { 1 RAMADAN + 29D AS ramadan_29, 1 RAMADAN + 30D AS ramadan_30 }
+  with kind = closed;</code></pre>
+    <ul class="lessons">
+      <li><strong>A declaration</strong>
+        <p>A key, the event it dates, the scope whose calendar it belongs to (<code>country:GB</code>, <code>exchange:XNYS</code>,
+          <code>central_bank:FED</code>, …), an optional validity, the schedule, and attributes: the kind of day
+          (<code>closed</code>, <code>short_day</code>, <code>working_day</code>, <code>event</code>, …), a session, a precision, a note, and citations.
+          <code>@key</code> refers to the dates of another rule; business-day shifts use the calendar of the rule's scope, or <code>ON</code> another one.</p></li>
+      <li><strong>Rules only project</strong>
+        <p>Central banks and statistics offices publish their dates a year or two ahead. Those dates are data, given to the evaluator,
+          never part of a rule: they replace a rule's projection for that year, and dates that are only ever announced have no rule.
+          <code>ONE OF</code> lists alternatives of which exactly one happens, such as a moon-sighted Eid after a 29- or 30-day month.</p></li>
+      <li><strong>holidays-events</strong>
+        <p><a href="{{REPO}}holidays-events/README.md">holidays-events/</a> holds the projection rules of holidays-events, a collection of
+          market-relevant dates (exchange and payment-system holidays, central-bank decisions, statistics releases), in
+          {{RULE_FILE_COUNT}} rule files. {{RULES_VERIFIED}} The README explains how to read and run them.</p></li>
+    </ul>
   </section>
 
   <section aria-labelledby="run">

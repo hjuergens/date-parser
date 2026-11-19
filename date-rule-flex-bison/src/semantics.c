@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ast.h"
+#include "eval.h"
 #include "lunar_tables.h"
 
 /* ---- arena ---- */
@@ -68,7 +69,7 @@ void date_split(int date, int *year, int *month, int *day) {
     *year = (int) (yoe + era * 400 + (*month <= 2));
 }
 
-static int year_of(int date) {
+int year_of(int date) {
     int year, month, day;
     date_split(date, &year, &month, &day);
     return year;
@@ -127,59 +128,14 @@ static int compare(const void *a, const void *b) {
     return (x > y) - (x < y);
 }
 
+int compare_dates(const void *a, const void *b) { return compare(a, b); }
+
 /* ---- evaluation ---- */
-
-/* a node with several values that wasn't bound yet: an event, a series, a combination or dates in year */
-enum { P_EVENT, P_SERIES, P_COMBINED, P_DATES_IN_YEAR, P_LUNAR };
-
-typedef struct {
-    jmp_buf jump;
-    char *error;
-    size_t size;
-    DateList **temps;   /* freed at the end, also after an error */
-    int count, capacity;
-    struct {
-        int kind, date;          /* P_DATES_IN_YEAR: the date whose year counts */
-        const void *node;        /* the Date, Combine or Shift */
-        const Item *item;        /* P_COMBINED: the item and the number of combines before this one */
-        int before;
-    } pending;
-} Eval;
-
-/* what a rule is evaluated against; bindings are the values collect() chose for the nodes with several values, in the
- * order the evaluation reaches them, counted by cursor */
-typedef struct {
-    int has_base, base;
-    Market *market;
-    const Events *events;
-    const int *bindings;
-    int count, *cursor;
-    int limit;   /* how many elements an open series yields; set by a pick, 0 elsewhere */
-    Market *fixing;   /* the fixing calendar; NULL: Monday to Friday */
-} Ctx;
 
 /* the value of a node with several values that isn't bound */
 #define UNBOUND INT_MIN
 
-/* The holidays are cached per year. Threads may share a market: the lock guards the cache, and an entry, once added,
- * is neither moved nor changed, so its holidays can be read without the lock. */
-struct Market {
-    Schedule *rule;
-    pthread_mutex_t lock;
-    struct {
-        int year;
-        DateList holidays;  /* sorted */
-    } **years;
-    int count, capacity;
-};
-
-struct Events {
-    char **names;
-    Schedule **rules;
-    int count;
-};
-
-static _Noreturn void fail(Eval *eval, const char *format, ...) {
+_Noreturn void fail(Eval *eval, const char *format, ...) {
     va_list args;
     va_start(args, format);
     vsnprintf(eval->error, eval->size, format, args);
@@ -187,7 +143,7 @@ static _Noreturn void fail(Eval *eval, const char *format, ...) {
     longjmp(eval->jump, 1);
 }
 
-static DateList *temp(Eval *eval) {
+DateList *temp(Eval *eval) {
     if (eval->count == eval->capacity) {
         eval->capacity = eval->capacity ? 2 * eval->capacity : 8;
         eval->temps = realloc(eval->temps, eval->capacity * sizeof(DateList *));
@@ -198,18 +154,42 @@ static DateList *temp(Eval *eval) {
     return eval->temps[eval->count++] = list;
 }
 
+void own_market(Eval *eval, Market *market) {
+    if (eval->market_count == eval->market_capacity) {
+        eval->market_capacity = eval->market_capacity ? 2 * eval->market_capacity : 8;
+        eval->markets = realloc(eval->markets, eval->market_capacity * sizeof(Market *));
+        if (!eval->markets) abort();
+    }
+    eval->markets[eval->market_count++] = market;
+}
+
+/* the temporary lists and the markets of an evaluation */
+static void release(Eval *eval) {
+    for (int i = 0; i < eval->count; i++) {
+        datelist_free(eval->temps[i]);
+        free(eval->temps[i]);
+    }
+    free(eval->temps);
+    for (int i = 0; i < eval->market_count; i++) {
+        if (eval->markets[i]->release) eval->markets[i]->release(eval->markets[i]);
+        free(eval->markets[i]);
+    }
+    free(eval->markets);
+    free(eval);
+}
+
 static int make(Eval *eval, long long year, long long month, long long day) {
     if (!valid(year, month, day)) fail(eval, "not a date: %lld-%lld-%lld", year, month, day);
     return date_of((int) year, (int) month, (int) day);
 }
 
-static int add_days(Eval *eval, int date, long long days) {
+int add_days(Eval *eval, int date, long long days) {
     long long result = date + days;
     if (result < date_of(1, 1, 1) || result > date_of(9999, 12, 31)) fail(eval, "date out of range");
     return (int) result;
 }
 
-static void evaluate_into(Eval *eval, const Schedule *schedule, const Ctx *ctx, DateList *out);
+static void evaluate_into(Eval *eval, const Item *items, const Ctx *ctx, DateList *out);
 
 /* a schedule evaluated on its own, e.g. the rule of a market; its errors become errors of this evaluation */
 static DateList *nested(Eval *eval, const Schedule *schedule, const Ctx *ctx) {
@@ -239,7 +219,7 @@ static const DateList *holidays(Eval *eval, Market *market, int year) {
     const DateList *found = cached(market, year);
     pthread_mutex_unlock(&market->lock);
     if (found) return found;
-    Ctx first = { 1, make(eval, year, 1, 1), NULL, NULL, NULL, 0, NULL, 0, NULL };
+    Ctx first = { 1, make(eval, year, 1, 1), NULL, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, 0, 0 };
     DateList *dates = nested(eval, market->rule, &first);
     __typeof__(*market->years) entry = calloc(1, sizeof *entry);
     if (!entry) abort();
@@ -266,7 +246,8 @@ static const DateList *holidays(Eval *eval, Market *market, int year) {
     return found;
 }
 
-static int is_business_day(Eval *eval, Market *market, int date) {
+int is_business_day(Eval *eval, Market *market, int date) {
+    if (market && market->business) return market->business(eval, market, date);
     if (weekday_of(date) >= 5) return 0;
     if (!market) return 1;
     int year = year_of(date);
@@ -277,8 +258,20 @@ static int is_business_day(Eval *eval, Market *market, int date) {
     return 1;
 }
 
+int is_holiday(Eval *eval, Market *market, int date) {
+    if (market && market->holiday) return market->holiday(eval, market, date);
+    return weekday_of(date) < 5 && !is_business_day(eval, market, date);
+}
+
+/* the calendar of ON ...; without ON the market of the context (in a rule: its own scope) */
+static Market *market_of(Eval *eval, const Calendar *on, const Ctx *ctx, const char *pair) {
+    if (!on) return ctx->market;
+    if (!ctx->catalog) fail(eval, "ON needs a rule catalog");
+    return catalog_resolve(eval, on, ctx, pair);
+}
+
 /* count business days of the market later (earlier if negative) */
-static int plus_business_days(Eval *eval, int date, long long count, Market *market) {
+int plus_business_days(Eval *eval, int date, long long count, Market *market) {
     int step = count > 0 ? 1 : -1;
     while (count) {
         date = add_days(eval, date, step);
@@ -501,8 +494,8 @@ static double delta_t(double year) {
     return 2050 <= year && year < 2150 ? long_term - 0.5628 * (2150 - year) : long_term;
 }
 
-/* the day in the year on which the sun's apparent longitude reaches the degrees, in UTC + offset minutes */
-static int sun_at(Eval *eval, int angle, long year, int offset) {
+/* the Julian day (UT) on which the sun's apparent longitude reaches the degrees in the year */
+static double sun_universal(Eval *eval, int angle, long year) {
     double day = 79 + angle * 365.2422 / 360;   /* days after 1 January, from the March equinox on */
     if (day > 365.2422) day -= 365.2422;
     double jde = make(eval, year, 1, 1) + 2440587.5 + day;
@@ -511,8 +504,119 @@ static int sun_at(Eval *eval, int angle, long year, int offset) {
         jde += step;
         if (fabs(step) < 1e-7) break;
     }
-    double local = jde - delta_t(year + day / 365.25) / 86400 + offset / 1440.0;
+    return jde - delta_t(year + day / 365.25) / 86400;
+}
+
+/* the day in the year on which the sun's apparent longitude reaches the degrees, in UTC + offset minutes */
+static int sun_at(Eval *eval, int angle, long year, int offset) {
+    double local = sun_universal(eval, angle, year) + offset / 1440.0;
     return add_days(eval, 0, (long long) floor(local - 2440587.5));
+}
+
+/* ---- time zones (rule files): the offset of an IANA zone from the TZif file of the system's zoneinfo ---- */
+
+/* a big-endian signed integer of 4 or 8 bytes */
+static long long be(const unsigned char *p, int bytes) {
+    unsigned long long v = 0;
+    for (int i = 0; i < bytes; i++) v = v << 8 | p[i];
+    return bytes == 4 ? (long long) (int32_t) (uint32_t) v : (long long) v;
+}
+
+/* the offset east of UTC in seconds of a POSIX TZ string without daylight saving time (JST-9: +9 hours); -1 if it
+ * has daylight saving time or can't be read */
+static int posix_offset(const char *tz, long *offset) {
+    const char *p = tz;
+    if (*p == '<') { while (*p && *p != '>') p++; if (*p) p++; }
+    else while ((*p >= 'A' && *p <= 'Z') || (*p >= 'a' && *p <= 'z')) p++;
+    int sign = *p == '-' ? 1 : -1;   /* POSIX counts west: JST-9 is UTC+9 */
+    if (*p == '+' || *p == '-') p++;
+    if (*p < '0' || *p > '9') return -1;
+    long hours = strtol(p, (char **) &p, 10), minutes = 0, seconds = 0;
+    if (*p == ':') minutes = strtol(p + 1, (char **) &p, 10);
+    if (*p == ':') seconds = strtol(p + 1, (char **) &p, 10);
+    if (*p && *p != '\n') return -1;   /* a name of daylight saving time follows */
+    *offset = sign * (hours * 3600 + minutes * 60 + seconds);
+    return 0;
+}
+
+/* the offset east of UTC in seconds of the zone at the instant (seconds since 1970) */
+static long zone_offset(Eval *eval, const char *zone, double instant) {
+    const char *dir = getenv("TZDIR");
+    char path[512];
+    if (!*zone || zone[0] == '/' || strstr(zone, "..")) fail(eval, "no time zone %s", zone);
+    snprintf(path, sizeof path, "%s/%s", dir ? dir : "/usr/share/zoneinfo", zone);
+    FILE *file = fopen(path, "rb");
+    if (!file) fail(eval, "no time zone %s", zone);
+    unsigned char *data = NULL;
+    size_t size = 0, capacity = 0, n;
+    do {
+        if (size == capacity && !(data = realloc(data, capacity = capacity ? 2 * capacity : 4096))) abort();
+        n = fread(data + size, 1, capacity - size, file);
+        size += n;
+    } while (n);
+    fclose(file);
+    long offset = 0;
+    const char *problem = NULL;
+    if (size < 44 || memcmp(data, "TZif", 4)) problem = "not a TZif file";
+    else {
+        /* the data of version 1 (32-bit times), then, from version 2 on, a second header with 64-bit times */
+        const unsigned char *h = data;
+        int bytes = 4;
+        long long counts[6];
+        for (int i = 0; i < 6; i++) counts[i] = be(h + 20 + 4 * i, 4);   /* isut, isstd, leap, time, type, char */
+        if (data[4] >= '2') {
+            size_t skip = 44 + counts[3] * 5 + counts[4] * 6 + counts[5] + counts[2] * 8 + counts[1] + counts[0];
+            if (skip + 44 > size) problem = "a short TZif file";
+            else {
+                h = data + skip, bytes = 8;
+                for (int i = 0; i < 6; i++) counts[i] = be(h + 20 + 4 * i, 4);
+            }
+        }
+        size_t length = 44 + counts[3] * (bytes + 1) + counts[4] * 6 + counts[5] + counts[2] * (bytes + 4) + counts[1] + counts[0];
+        if (!problem && (h - data) + length > size) problem = "a short TZif file";
+        if (!problem) {
+            const unsigned char *times = h + 44, *indices = times + counts[3] * bytes, *types = indices + counts[3];
+            long long last = -1;
+            for (long long i = 0; i < counts[3]; i++)
+                if (be(times + i * bytes, bytes) <= instant) last = i;
+            int type = last >= 0 ? indices[last] : 0;
+            if (type >= counts[4]) problem = "a broken TZif file";
+            else offset = (long) be(types + 6 * type, 4);
+            /* after the last transition the POSIX string at the end of the file holds; read only without daylight
+               saving time, which zones of the past and the TZif files up to 2037 don't need */
+            const char *footer = (const char *) h + length;
+            if (!problem && last == counts[3] - 1 && bytes == 8 && (size_t) (footer - (const char *) data) + 1 < size
+                && *footer == '\n') {
+                char tz[128];
+                size_t k = 0;
+                while (k + 1 < sizeof tz && footer + 1 + k < (const char *) data + size && footer[1 + k] != '\n') {
+                    tz[k] = footer[1 + k];
+                    k++;
+                }
+                tz[k] = 0;
+                if (k && posix_offset(tz, &offset)) problem = "daylight saving time after the last transition";
+            }
+        }
+    }
+    free(data);
+    if (problem) fail(eval, "time zone %s: %s", zone, problem);
+    return offset;
+}
+
+/* the day on which the sun's apparent longitude reaches the degrees, in the time zone */
+static int sun_in_zone(Eval *eval, int angle, long year, const char *zone) {
+    double instant = (sun_universal(eval, angle, year) - 2440587.5) * 86400;
+    return add_days(eval, 0, (long long) floor((instant + zone_offset(eval, zone, instant)) / 86400));
+}
+
+/* Orthodox Easter Sunday: the Julian computus (Meeus), converted to the Gregorian calendar */
+static int orthodox_easter(Eval *eval, long year) {
+    long a = year % 4, b = year % 7, c = year % 19;
+    long d = (19 * c + 15) % 30, e = (2 * a + 4 * b - d + 34) % 7;
+    long month = (d + e + 114) / 31, day = (d + e + 114) % 31;
+    long k = (14 - month) / 12, y = year + 4800 - k, m = month + 12 * k - 3;
+    long jdn = day + 1 + (153 * m + 2) / 5 + 365 * y + y / 4 - 32083;
+    return add_days(eval, 0, jdn - 2440588);
 }
 
 /* an annual date in the year */
@@ -539,11 +643,16 @@ static int annual_in(Eval *eval, const Annual *annual, long year) {
     case SUN_AT: {
         int index = annual->month == 2 ? 0 : annual->month == 5 ? 1 : annual->month == 8 ? 2 : annual->month == 11 ? 3 : -1;
         if (index < 0 || (index % 2 == 0) != annual->equinox) fail(eval, "no equinox or solstice in that month");
-        return sun_at(eval, 90 * index, year, annual->offset);
+        return annual->zone ? sun_in_zone(eval, 90 * index, year, annual->zone) : sun_at(eval, 90 * index, year, annual->offset);
     }
     case SOLAR_TERM:
         if (annual->n < 1 || annual->n > 24) fail(eval, "no solar term %ld", annual->n);
-        return sun_at(eval, (int) (annual->n + 20) % 24 * 15, year, annual->offset);
+        return annual->zone ? sun_in_zone(eval, (int) (annual->n + 20) % 24 * 15, year, annual->zone)
+                            : sun_at(eval, (int) (annual->n + 20) % 24 * 15, year, annual->offset);
+    case ORTHODOX_EASTER:
+        return orthodox_easter(eval, year);
+    case HINDU_DAY:
+        fail(eval, "HINDU %s: no Hindu calendar in this implementation", annual->zone);
     }
     fail(eval, "unknown annual date");
 }
@@ -552,9 +661,15 @@ static int annual_in(Eval *eval, const Annual *annual, long year) {
 
 /* the dates of the event in the year: its rule evaluated with the first of January as base date */
 static DateList *occurrences(Eval *eval, const char *name, int year, const Ctx *ctx) {
+    if (ctx->catalog) {   /* rule files: @key reads the rules of the catalog */
+        DateList *all = catalog_references(eval, ctx, name, year), *kept = temp(eval);
+        for (int j = 0; j < all->count; j++)
+            if (year_of(all->dates[j]) == year) datelist_push(kept, all->dates[j]);
+        return kept;
+    }
     for (int i = 0; ctx->events && i < ctx->events->count; i++) {
         if (strcmp(ctx->events->names[i], name)) continue;
-        Ctx first = { 1, make(eval, year, 1, 1), ctx->market, ctx->events, NULL, 0, NULL, 0, ctx->fixing };
+        Ctx first = { 1, make(eval, year, 1, 1), ctx->market, ctx->events, NULL, 0, NULL, 0, ctx->fixing, NULL, NULL, 0, 0 };
         DateList *all = nested(eval, ctx->events->rules[i], &first), *kept = temp(eval);
         for (int j = 0; j < all->count; j++)
             if (year_of(all->dates[j]) == year) datelist_push(kept, all->dates[j]);
@@ -573,7 +688,15 @@ static int find(Eval *eval, const Anchor *anchor, int date, int direction, const
         return add_days(eval, date, direction * (days ? days : 7));
     }
     case AT_BUSINESS_DAY:
-        return plus_business_days(eval, date, direction, ctx->market);
+        return plus_business_days(eval, date, direction, market_of(eval, anchor->on, ctx, NULL));
+    case AT_HOLIDAY: case AT_NONHOLIDAY: {   /* rule files: the next (previous) day that is (isn't) a holiday */
+        Market *market = market_of(eval, anchor->on, ctx, NULL);
+        for (int i = 0; i < 3700; i++) {
+            date = add_days(eval, date, direction);
+            if (is_holiday(eval, market, date) == (anchor->kind == AT_HOLIDAY)) return date;
+        }
+        fail(eval, "no such day within 3700 days");
+    }
     case AT_FIXING_DAY:
         return plus_business_days(eval, date, direction, ctx->fixing);
     case AT_IMM:
@@ -620,6 +743,10 @@ static int roll(Eval *eval, int date, int convention, Market *market) {
         int following = roll(eval, date, FOLLOWING, market);
         return month_of(following) == month ? following : roll(eval, date, PRECEDING, market);
     }
+    case MODPRECEDING: {   /* rule files: preceding unless that leaves the month */
+        int preceding = roll(eval, date, PRECEDING, market);
+        return month_of(preceding) == month ? preceding : roll(eval, date, FOLLOWING, market);
+    }
     case BOW: return date - weekday_of(date);
     case EOW: return date + 6 - weekday_of(date);
     case BOM: return date_of(year, month, 1);
@@ -662,7 +789,7 @@ static int date_at(Eval *eval, const Date *date, const Ctx *ctx) {
     switch (date->kind) {
     case D_BASE: return base(eval, ctx);
     case D_TOM: return plus_business_days(eval, base(eval, ctx), 1, ctx->market);
-    case D_SPOT: return spot(eval, base(eval, ctx), date->pair, ctx->market);
+    case D_SPOT: return spot(eval, base(eval, ctx), date->pair, market_of(eval, date->on, ctx, date->pair));
     case D_FIXED: return date->fixed;
     case D_ANNUAL:   /* a lunar date can fall twice in the year: a node with several values */
         if (date->annual.kind == MONTH_DAY && date->annual.month >= HIJRI) return take(eval, ctx, P_LUNAR, date, 0, NULL, 0);
@@ -673,16 +800,45 @@ static int date_at(Eval *eval, const Date *date, const Ctx *ctx) {
     fail(eval, "unknown date");
 }
 
-/* each shift applies to everything on its left */
+/* the last business day of the month of the date */
+static int last_business_day(Eval *eval, int date, Market *market) {
+    return roll(eval, roll(eval, date, EOM, market), PRECEDING, market);
+}
+
+/* rule files: + 1M ENDEND keeps the last business day of a month at the last one of the target month */
+static int plus_on(Eval *eval, int date, const Shift *s, int sign, const Ctx *ctx) {
+    Market *market = market_of(eval, s->on, ctx, NULL);
+    int moved = plus(eval, date, s->period, sign, market, ctx->fixing);
+    return s->endend && date == last_business_day(eval, date, market) ? last_business_day(eval, moved, market) : moved;
+}
+
+/* rule files: > NEAREST: the nearer of the next and the previous match; ties go forward */
+static int nearest(Eval *eval, const Anchor *anchor, int date, const Ctx *ctx) {
+    int after = find(eval, anchor, date, 1, ctx), before = find(eval, anchor, date, -1, ctx);
+    return after - date <= date - before ? after : before;
+}
+
+/* each shift applies to everything on its left; > POSTPONE ... MAX limits from the date before it, with CUMULATIVE
+ * from the date before the first postponement */
 static int shifted(Eval *eval, const Shift *shifts, int date, const Ctx *ctx) {
+    int origin = UNBOUND;
     for (const Shift *s = shifts; s && date != UNBOUND; s = s->next) {
         switch (s->kind) {
-        case S_PLUS: date = plus(eval, date, s->period, 1, ctx->market, ctx->fixing); break;
-        case S_MINUS: date = plus(eval, date, s->period, -1, ctx->market, ctx->fixing); break;
+        case S_PLUS: date = plus_on(eval, date, s, 1, ctx); break;
+        case S_MINUS: date = plus_on(eval, date, s, -1, ctx); break;
         case S_FIX: date = plus_business_days(eval, date, -spot_lag(s->pair), ctx->fixing); break;
         case S_IMM: date = imm(eval, date, 1); break;
-        case S_SPOT: date = spot(eval, date, s->pair, ctx->market); break;
-        case S_ROLL: date = roll(eval, date, s->roll, ctx->market); break;
+        case S_SPOT: date = spot(eval, date, s->pair, market_of(eval, s->on, ctx, s->pair)); break;
+        case S_ROLL: date = roll(eval, date, s->roll, market_of(eval, s->on, ctx, NULL)); break;
+        case S_NEAREST: date = nearest(eval, s->anchor, date, ctx); break;
+        case S_POSTPONE: {
+            if (origin == UNBOUND) origin = date;
+            int from = s->cumulative ? origin : date;
+            int target = roll(eval, date, s->roll, market_of(eval, s->on, ctx, NULL));
+            int bound = plus(eval, from, s->period, target > date ? 1 : -1, ctx->market, NULL);
+            date = target > date ? (target < bound ? target : bound) : (target > bound ? target : bound);
+            break;
+        }
         case S_NEXT: case S_PREV:
             /* NEXT 3RD FRI: the anchor found count times, each time from the one before */
             if (s->count < 1) fail(eval, "count must be positive: %ld", s->count);
@@ -691,10 +847,11 @@ static int shifted(Eval *eval, const Shift *shifts, int date, const Ctx *ctx) {
         case S_SELECT: date = select_in(eval, s, date, ctx); break;
         case S_DATES_IN_YEAR: date = take(eval, ctx, P_DATES_IN_YEAR, s, date, NULL, 0); break;
         case S_OBSERVANCE:
-            /* {SAT - 1D, SUN + 1D}: the first item for the weekday of the date applies, items don't chain */
+            /* {SAT - 1D, SUN + 1D}: the first item for the weekday of the date applies, items don't chain; in rule
+               files an item has several weekdays and may move to a target (TUE WED > PREV MON) */
             for (const Observe *o = s->observes; o; o = o->next)
-                if (o->weekday == weekday_of(date)) {
-                    date = plus(eval, date, o->period, o->sign, ctx->market, ctx->fixing);
+                if (o->weekdays ? o->weekdays >> weekday_of(date) & 1 : o->weekday == weekday_of(date)) {
+                    date = o->move ? shifted(eval, o->move, date, ctx) : plus(eval, date, o->period, o->sign, ctx->market, ctx->fixing);
                     break;
                 }
             break;
@@ -719,16 +876,15 @@ static int item_at(Eval *eval, const Item *item, int upto, const Ctx *ctx) {
 
 static int single(Eval *eval, const Expr *expr, const Ctx *ctx);
 static void collect(Eval *eval, const Item *item, int upto, const Expr *expr, const Ctx *ctx, const int *bindings,
-                    int count, int weekdays, DateList *out);
-static void distinct(DateList *dates);
+                    int count, const Item *filter, DateList *out);
 
 /* [first : step : last]: first + k * step for k = 0, 1, ... while not after last, without the endpoints left out */
 static DateList *elements(Eval *eval, const Date *series, const Ctx *ctx) {
     DateList *dates = temp(eval);
     if (series->last) {   /* one range per occurrence: [@E - 3D : @E + 1D] */
         DateList *firsts = temp(eval), *lasts = temp(eval);
-        collect(eval, NULL, 0, series->first, ctx, NULL, 0, 0, firsts);
-        collect(eval, NULL, 0, series->last, ctx, NULL, 0, 0, lasts);
+        collect(eval, NULL, 0, series->first, ctx, NULL, 0, NULL, firsts);
+        collect(eval, NULL, 0, series->last, ctx, NULL, 0, NULL, lasts);
         if (firsts->count > 1 && firsts->count == lasts->count) {
             for (int i = 0; i < firsts->count; i++) {
                 int a = firsts->dates[i], b = lasts->dates[i];
@@ -763,7 +919,35 @@ static DateList *elements(Eval *eval, const Date *series, const Ctx *ctx) {
 }
 
 static void collect(Eval *eval, const Item *item, int upto, const Expr *expr, const Ctx *ctx, const int *bindings,
-                    int count, int weekdays, DateList *out);
+                    int count, const Item *filter, DateList *out);
+
+static int keeps(Eval *eval, int condition, int date);
+
+/* rule files: whether the date meets the condition of IF */
+static int holds(Eval *eval, const Condition *c, int date, const Ctx *ctx) {
+    switch (c->kind) {
+    case C_ANY:
+        for (const Condition *p = c->parts; p; p = p->next)
+            if (holds(eval, p, date, ctx)) return 1;
+        return 0;
+    case C_ALL:
+        for (const Condition *p = c->parts; p; p = p->next)
+            if (!holds(eval, p, date, ctx)) return 0;
+        return 1;
+    case C_NOT: return !holds(eval, c->parts, date, ctx);
+    case C_WEEKDAY: return c->weekdays >> weekday_of(date) & 1;
+    case C_DAY: return keeps(eval, DAY_CONDITION(c->first, c->last, c->month), date);
+    case C_IS_WEEKDAY: return c->weekdays >> weekday_of(single(eval, c->subject, ctx)) & 1;
+    case C_IS_HOLIDAY: return is_holiday(eval, market_of(eval, c->on, ctx, NULL), date);
+    case C_DATE_IS_HOLIDAY: return is_holiday(eval, market_of(eval, c->on, ctx, NULL), single(eval, c->subject, ctx));
+    case C_BETWEEN_HOLIDAYS: {
+        Market *market = market_of(eval, c->on, ctx, NULL);
+        return is_holiday(eval, market, add_days(eval, date, -1)) && is_holiday(eval, market, add_days(eval, date, 1));
+    }
+    case C_EVERY: return year_of(date) >= c->last && (year_of(date) - c->last) % c->first == 0;
+    }
+    fail(eval, "unknown condition");
+}
 
 /* IF: the weekdays of the date (a bit each), or DAY_CONDITION: its day of the month (of that Gregorian month) */
 static int keeps(Eval *eval, int condition, int date) {
@@ -778,7 +962,7 @@ static int keeps(Eval *eval, int condition, int date) {
 }
 
 /* sorted and without duplicates */
-static void distinct(DateList *dates) {
+void distinct(DateList *dates) {
     if (!dates->count) return;
     qsort(dates->dates, dates->count, sizeof(int), compare);
     int n = 1;
@@ -808,8 +992,8 @@ static DateList *pending_dates(Eval *eval, const Ctx *ctx) {
     } else {
         const Combine *combine = node;
         DateList *right = temp(eval);
-        collect(eval, item, before, NULL, ctx, NULL, 0, 0, dates);
-        for (const Operand *o = combine->operands; o; o = o->next) collect(eval, NULL, 0, o->expr, ctx, NULL, 0, 0, right);
+        collect(eval, item, before, NULL, ctx, NULL, 0, NULL, dates);
+        for (const Operand *o = combine->operands; o; o = o->next) collect(eval, NULL, 0, o->expr, ctx, NULL, 0, NULL, right);
         distinct(right);
         if (combine->include) {
             for (int i = 0; i < right->count; i++) datelist_push(dates, right->dates[i]);
@@ -827,13 +1011,19 @@ static DateList *pending_dates(Eval *eval, const Ctx *ctx) {
 /* the dates of an item with its first `upto` combines (or of an expression): one, or one per combination of the values
  * of its nodes with several values, bound one after the other; IF drops dates */
 static void collect(Eval *eval, const Item *item, int upto, const Expr *expr, const Ctx *ctx, const int *bindings,
-                    int count, int weekdays, DateList *out) {
+                    int count, const Item *filter, DateList *out) {
     int cursor = 0;
     Ctx bound = *ctx;
     bound.bindings = bindings, bound.count = count, bound.cursor = &cursor;
     int date = item ? item_at(eval, item, upto, &bound) : expr_at(eval, expr, &bound);
     if (date != UNBOUND) {
-        if (keeps(eval, weekdays, date)) datelist_push(out, date);
+        if (filter && !keeps(eval, filter->weekdays, date)) return;
+        if (filter && filter->condition) {   /* rule files: IF condition, then the shifts after it */
+            if (!holds(eval, filter->condition, date, &bound)) return;
+            date = shifted(eval, filter->if_shifts, date, &bound);
+            if (date == UNBOUND) fail(eval, "a date with several values after IF");
+        }
+        datelist_push(out, date);
         return;
     }
     DateList *found = pending_dates(eval, ctx), *more = temp(eval);
@@ -841,14 +1031,14 @@ static void collect(Eval *eval, const Item *item, int upto, const Expr *expr, co
     datelist_push(more, 0);
     for (int i = 0; i < found->count; i++) {
         more->dates[count] = found->dates[i];
-        collect(eval, item, upto, expr, ctx, more->dates, count + 1, weekdays, out);
+        collect(eval, item, upto, expr, ctx, more->dates, count + 1, filter, out);
     }
 }
 
 /* the date of an expression that must have exactly one, such as the end of a range */
 static int single(Eval *eval, const Expr *expr, const Ctx *ctx) {
     DateList *dates = temp(eval);
-    collect(eval, NULL, 0, expr, ctx, NULL, 0, 0, dates);
+    collect(eval, NULL, 0, expr, ctx, NULL, 0, NULL, dates);
     if (dates->count != 1) fail(eval, "%d dates where one is needed", dates->count);
     return dates->dates[0];
 }
@@ -863,7 +1053,7 @@ static int pick(Eval *eval, const Item *item, int combines, const Ctx *ctx) {
         Ctx limited = *ctx;
         limited.limit = item->from_end ? 0 : LIMITS[l];
         DateList *dates = temp(eval), *hits = temp(eval);
-        collect(eval, item, combines, NULL, &limited, NULL, 0, item->weekdays, dates);
+        collect(eval, item, combines, NULL, &limited, NULL, 0, item, dates);
         for (int i = 0; i < dates->count; i++)
             if (dates->dates[i] > t) datelist_push(hits, dates->dates[i]);
         if (hits->count >= item->pick) return hits->dates[item->from_end ? hits->count - item->pick : item->pick - 1];
@@ -871,16 +1061,16 @@ static int pick(Eval *eval, const Item *item, int combines, const Ctx *ctx) {
     fail(eval, "no %ld. date after the base date", item->pick);
 }
 
-static void evaluate_into(Eval *eval, const Schedule *schedule, const Ctx *ctx, DateList *out) {
-    for (const Item *item = schedule->items; item; item = item->next) {
+static void evaluate_into(Eval *eval, const Item *items, const Ctx *ctx, DateList *out) {
+    for (const Item *item = items; item; item = item->next) {
         int combines = 0;
         for (const Combine *c = item->combines; c; c = c->next) combines++;
         if (item->has_pick) datelist_push(out, pick(eval, item, combines, ctx));
-        else collect(eval, item, combines, NULL, ctx, NULL, 0, item->weekdays, out);
+        else collect(eval, item, combines, NULL, ctx, NULL, 0, item, out);
     }
 }
 
-int schedule_evaluate(const Schedule *schedule, const Context *context, DateList *out, char *error, size_t size) {
+int evaluate_items(const Item *items, const Ctx *ctx, DateList *out, char *error, size_t size) {
     Eval *eval = calloc(1, sizeof(Eval));
     if (!eval) abort();
     eval->error = error, eval->size = size;
@@ -890,16 +1080,16 @@ int schedule_evaluate(const Schedule *schedule, const Context *context, DateList
         datelist_free(out);
         status = -1;
     } else {
-        Ctx ctx = { context->has_base, context->base, context->market, context->events, NULL, 0, NULL, 0, context->fixing };
-        evaluate_into(eval, schedule, &ctx, out);
+        evaluate_into(eval, items, ctx, out);
     }
-    for (int i = 0; i < eval->count; i++) {
-        datelist_free(eval->temps[i]);
-        free(eval->temps[i]);
-    }
-    free(eval->temps);
-    free(eval);
+    release(eval);
     return status;
+}
+
+int schedule_evaluate(const Schedule *schedule, const Context *context, DateList *out, char *error, size_t size) {
+    Ctx ctx = { context->has_base, context->base, context->market, context->events, NULL, 0, NULL, 0, context->fixing,
+                NULL, NULL, 0, 0 };
+    return evaluate_items(schedule->items, &ctx, out, error, size);
 }
 
 /* ---- markets and events ---- */

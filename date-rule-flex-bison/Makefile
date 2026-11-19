@@ -5,9 +5,10 @@ CFLAGS ?= -O2
 WARNINGS = -std=c11 -D_DEFAULT_SOURCE -Wall -Wextra -Werror
 EXAMPLES = ../examples/schedule.txt ../examples/catalog.txt ../examples/date-holidays.txt
 
-LIBRARY = build/parser.o build/scanner.o build/parse.o build/semantics.o
+LIBRARY = build/parser.o build/scanner.o build/parse.o build/semantics.o build/rulefile.o build/rulefile_scanner.o build/catalog.o
+RULES = ../examples/rules.txt
 
-all: build/schedule build/run_cases build/libschedule.a
+all: build/schedule build/run_cases build/run_rule_cases build/rule_catalog_test build/libschedule.a
 
 build/parser.c build/parser.h: src/parser.y
 	@mkdir -p build
@@ -17,28 +18,51 @@ build/scanner.c build/scanner.h: src/scanner.l
 	@mkdir -p build
 	flex --header-file=build/scanner.h -o build/scanner.c $<
 
+# rule files: a parser and a scanner of their own, with the prefix rf
+build/rulefile.c build/rulefile.h: src/rulefile.y
+	@mkdir -p build
+	bison -Werror=conflicts-sr -Werror=conflicts-rr --defines=build/rulefile.h -o build/rulefile.c $<
+
+build/rulefile_scanner.c build/rulefile_scanner.h: src/rulefile.l build/rulefile.h
+	@mkdir -p build
+	flex --header-file=build/rulefile_scanner.h -o build/rulefile_scanner.c $<
+
 # generated code: the warnings of flex's skeleton are not ours
 build/parser.o: build/parser.c src/ast.h
 	$(CC) $(CFLAGS) -std=c11 -D_DEFAULT_SOURCE -Isrc -Ibuild -c -o $@ $<
 build/scanner.o: build/scanner.c build/parser.h src/ast.h
 	$(CC) $(CFLAGS) -std=c11 -D_DEFAULT_SOURCE -Isrc -Ibuild -c -o $@ $<
 
+build/rulefile.o: build/rulefile.c src/ast.h src/catalog.h
+	$(CC) $(CFLAGS) -std=c11 -D_DEFAULT_SOURCE -Isrc -Ibuild -c -o $@ $<
+build/rulefile_scanner.o: build/rulefile_scanner.c build/rulefile.h src/ast.h src/catalog.h
+	$(CC) $(CFLAGS) -std=c11 -D_DEFAULT_SOURCE -Isrc -Ibuild -c -o $@ $<
+
+build/catalog.o: src/catalog.c src/catalog.h src/eval.h src/ast.h build/rulefile.h build/rulefile_scanner.h
+	$(CC) $(CFLAGS) $(WARNINGS) -Isrc -Ibuild -c -o $@ $<
+
 build/parse.o: src/parse.c build/parser.h build/scanner.h src/ast.h
 	$(CC) $(CFLAGS) $(WARNINGS) -Isrc -Ibuild -c -o $@ $<
-build/semantics.o: src/semantics.c src/ast.h src/lunar_tables.h
+build/semantics.o: src/semantics.c src/ast.h src/eval.h src/catalog.h src/lunar_tables.h
 	$(CC) $(CFLAGS) $(WARNINGS) -Isrc -c -o $@ $<
 
 build/schedule: src/main.c $(LIBRARY)
 	$(CC) $(CFLAGS) $(WARNINGS) -Isrc -o $@ $^ -lm
 build/run_cases: test/run_cases.c test/spec.c $(LIBRARY)
 	$(CC) $(CFLAGS) $(WARNINGS) -Isrc -Itest -o $@ $^ -lm
+build/run_rule_cases: test/run_rule_cases.c $(LIBRARY)
+	$(CC) $(CFLAGS) $(WARNINGS) -Isrc -o $@ $^ -lm
+build/rule_catalog_test: test/rule_catalog_test.c $(LIBRARY)
+	$(CC) $(CFLAGS) $(WARNINGS) -Isrc -o $@ $^ -lm
 
 # the library the Go binding links
 build/libschedule.a: $(LIBRARY)
 	ar rcs $@ $^
 
-test: build/run_cases
+test: build/run_cases build/run_rule_cases build/rule_catalog_test
 	build/run_cases $(EXAMPLES)
+	build/run_rule_cases $(RULES)
+	build/rule_catalog_test
 
 test-go: build/libschedule.a
 	cd go && go vet -unsafeptr=false ./... && go test ./...   # SWIG's wrapper converts uintptr to unsafe.Pointer

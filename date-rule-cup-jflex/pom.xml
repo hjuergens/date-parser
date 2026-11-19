@@ -83,6 +83,20 @@
                             <symbolsInterface>false</symbolsInterface>
                         </configuration>
                     </execution>
+                    <!-- src/main/cup/rulefile.cup -> RuleFileSym.java and RuleFileParser.java (subpackage rules) -->
+                    <execution>
+                        <id>rulefile</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <cupDefinition>src/main/cup/rulefile.cup</cupDefinition>
+                            <packageName>io.github.hjuergens.schedule.rules</packageName>
+                            <className>RuleFileParser</className>
+                            <symbolsName>RuleFileSym</symbolsName>
+                            <symbolsInterface>false</symbolsInterface>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <!-- JFlex: src/main/jflex/schedule.jflex -> ScheduleLexer.java -->
@@ -109,6 +123,7 @@
                 <configuration>
                     <sourceFileExcludes>
                         <sourceFileExclude>**/ScheduleSym.java</sourceFileExclude>
+                        <sourceFileExclude>**/RuleFileSym.java</sourceFileExclude>
                     </sourceFileExcludes>
                 </configuration>
             </plugin>

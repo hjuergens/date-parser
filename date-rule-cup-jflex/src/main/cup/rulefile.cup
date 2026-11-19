@@ -1,0 +1,477 @@
+/*
+ * Rule files: the schedule language of schedule.cup inside declarations with scope, validity, kind and provenance, the
+ * same language as date-rule-antlr-java's RuleFile.g4 and date-rule-lark's rules.lark (shared cases:
+ * examples/rules.txt). LALR(1), lists left recursive. The actions build the declarations with RuleCatalog and
+ * ScheduleSemantics; shifts are RuleCatalog.Move, functions of a date. CUP has one start symbol: rule_file reads
+ * declarations or one schedule (the first token tells them apart), RuleFiles checks which one it got. CUP takes no
+ * comma inside a type of a non terminal, so lists of pairs are ArrayList<Object>. Rules only project: announced dates
+ * are data given to the evaluator.
+ */
+package io.github.hjuergens.schedule.rules;
+
+import java.time.LocalDate;
+import java.time.temporal.TemporalAmount;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.UnaryOperator;
+import io.github.hjuergens.schedule.RuleCatalog;
+import io.github.hjuergens.schedule.RuleCatalog.CalendarSpec;
+import io.github.hjuergens.schedule.RuleCatalog.Citation;
+import io.github.hjuergens.schedule.RuleCatalog.Condition;
+import io.github.hjuergens.schedule.RuleCatalog.IfClause;
+import io.github.hjuergens.schedule.RuleCatalog.Move;
+import io.github.hjuergens.schedule.ScheduleSemantics;
+import io.github.hjuergens.schedule.ScheduleSemantics.Anchor;
+import io.github.hjuergens.schedule.ScheduleSemantics.Annual;
+import io.github.hjuergens.schedule.ScheduleSemantics.Expr;
+import io.github.hjuergens.schedule.ScheduleSemantics.Rule;
+
+action code {:
+    /** the @references of the rule being read; reset when its declaration is reduced */
+    Set<String> references = new LinkedHashSet<>();
+    /** whether the rule being read has a Hijri method other than UMMALQURA */
+    boolean estimated;
+
+    String event(String name) {
+        references.add(name);
+        return name;
+    }
+
+    /** the combines of an item applied to its expression, then IF and the pick (0: none, negative: from the end) */
+    static Expr item(Expr expr, List<UnaryOperator<Expr>> combines, IfClause clause, int pick) {
+        Expr d = expr;
+        for (UnaryOperator<Expr> c : combines) d = c.apply(d);
+        d = RuleCatalog.ruleItem(d, clause);
+        return pick == 0 ? d : ScheduleSemantics.pick(Math.abs(pick), pick < 0, d);
+    }
+
+    @SuppressWarnings("unchecked")
+    static <T> List<T> cast(List<Object> list) {
+        return (List<T>) (List<?>) list;
+    }
+:};
+
+terminal            L_RULE, L_FOR, L_IN, L_EXCEPT, L_VALID, L_FROM, L_TO, L_WITH, L_KIND, L_SESSION, L_TZ, L_PRECISION;
+terminal            L_NOTE, L_CITES, L_ART, L_URL, L_LABEL, L_WEEKEND, L_CALENDAR, L_IGNORE, L_AT, L_UNLESS;
+terminal String     KIND_WORD, PRECISION_WORD, LABEL_WORD;
+terminal            ONE, OF, AS, BASE, TOM, SPOT, FIX, IMM, NEXT, PREV, NEAREST, IN, POSTPONE, MAX, CUMULATIVE, ENDEND;
+terminal            ON, LAST, BD, FD, HOLIDAY, NONHOLIDAY, HOLIDAYS, EASTER, ORTHODOX, SOLARTERM, HINDU, BY, FOLLOW;
+terminal            IF, OR, AND, NOT, DAY, IS, BETWEEN, EVERY, FROM;
+terminal            PLUS, MINUS, GT, LBRACE, RBRACE, LPAREN, RPAREN, LBRACKET, RBRACKET, COMMA, COLON, SEMI, EQ;
+terminal            AMP, BACKSLASH, DOT, DOTDOT, SLASH;
+terminal Integer    NUM;
+terminal String     ORDINAL, UNIT, MONTH, WEEKDAY, ROLL, PERIOD, ZONE, PAIR, CCY, EVENT, SCOPE, KEY, STRING, SEASON, METHOD;
+
+non terminal Object                          rule_file, declaration, body, alternative, attribute, observe;
+non terminal ArrayList<Object>               declarations, alternatives, attributes, attributes_opt, observes;
+non terminal String                          name, time, closes_opt, tz_opt, article_opt, url_opt, method_opt, zone_opt;
+non terminal String                          pair_opt, month_opt;
+non terminal ArrayList<String>               scopes, except_opt;
+non terminal ArrayList<LocalDate>            validity;
+non terminal LocalDate                       iso_date, from_opt, to_opt;
+non terminal ArrayList<Citation>             citations, citations_opt;
+non terminal Citation                        citation;
+non terminal CalendarSpec                    calendar, cal_term, on, on_opt;
+non terminal LinkedHashSet<String>           ccys, weekday_set, weekday_list, weekday_commas;
+non terminal ArrayList<Expr>                 exprs, operand, operand_exprs;
+non terminal Expr                            item, expr, date, series, endpoint, single_date, subject;
+non terminal Integer                         pick, count;
+non terminal ArrayList<Move>                 moves;
+non terminal Move                            move;
+non terminal UnaryOperator<Expr>             combine;
+non terminal ArrayList<UnaryOperator<Expr>>  combines;
+non terminal IfClause                        if_opt;
+non terminal Condition                       condition, cond_and, cond_not, cond_atom;
+non terminal Anchor                          anchor, target, select, chosen;
+non terminal ArrayList<Anchor>               targets;
+non terminal Annual                          annual, fixed_annual;
+non terminal ArrayList<Annual>               annuals;
+non terminal TemporalAmount                  period;
+non terminal Boolean                         endend_opt, cumulative_opt, start_out, end_out;
+
+start with rule_file;
+
+/* a rule file, or one schedule (for RuleFiles.schedule) */
+rule_file ::= declarations:ds           {: RESULT = ds; :}
+            | exprs:es                  {: RESULT = RuleCatalog.exprs(es); :}
+            ;
+
+declarations ::=                        {: RESULT = new ArrayList<>(); :}
+               | declarations:ds declaration:d {: ds.add(d); RESULT = ds; :}
+               ;
+
+/* ================= declarations ================= */
+
+declaration ::= L_RULE name:k L_FOR name:c L_IN scopes:inc except_opt:exc validity:v EQ body:b attributes_opt:a
+                citations_opt:cs SEMI
+                {: RESULT = RuleCatalog.rule(k, c, inc, exc, v.get(0), v.get(1), b, cast(a), cs, references, estimated);
+                   references = new LinkedHashSet<>();
+                   estimated = false; :}
+              | L_WEEKEND SCOPE:s EQ weekday_set:w from_opt:d SEMI
+                {: RESULT = RuleCatalog.weekend(s, w, d); :}
+              | L_CALENDAR KEY:k EQ calendar:c SEMI
+                {: RESULT = RuleCatalog.calendarDeclaration(k, c); :}
+              ;
+
+/* exactly one of the alternatives will happen: ONE OF {item AS name, ...} */
+body ::= ONE OF LBRACE alternatives:list RBRACE {: RESULT = RuleCatalog.oneOf(cast(list)); :}
+       | exprs:es                       {: RESULT = RuleCatalog.exprs(es); :}
+       ;
+
+alternatives ::= alternative:a          {: RESULT = new ArrayList<>(); RESULT.add(a); :}
+               | alternatives:list COMMA alternative:a {: list.add(a); RESULT = list; :}
+               ;
+
+alternative ::= item:i AS name:n        {: RESULT = Map.entry(n, RuleCatalog.exprs(List.of(i))); :}
+              ;
+
+/* a key or an event class; the words of kinds, precisions and labels are tokens, so they are names here as well */
+name ::= KEY:k                          {: RESULT = k; :}
+       | KIND_WORD:k                    {: RESULT = k; :}
+       | PRECISION_WORD:k               {: RESULT = k; :}
+       | LABEL_WORD:k                   {: RESULT = k; :}
+       ;
+
+scopes ::= SCOPE:s                      {: RESULT = new ArrayList<>(); RESULT.add(s); :}
+         | scopes:list COMMA SCOPE:s    {: list.add(s); RESULT = list; :}
+         ;
+
+except_opt ::=                          {: RESULT = new ArrayList<>(); :}
+             | L_EXCEPT scopes:list     {: RESULT = list; :}
+             ;
+
+validity ::=                            {: RESULT = new ArrayList<>(); RESULT.add(null); RESULT.add(null); :}
+           | L_VALID from_opt:f to_opt:t {: RESULT = new ArrayList<>(); RESULT.add(f); RESULT.add(t); :}
+           ;
+
+from_opt ::=                            {: RESULT = null; :}
+           | L_FROM iso_date:d          {: RESULT = d; :}
+           ;
+
+to_opt ::=                              {: RESULT = null; :}
+         | L_TO iso_date:d              {: RESULT = d; :}
+         ;
+
+iso_date ::= NUM:y MINUS NUM:m MINUS NUM:d {: RESULT = LocalDate.of(y, m, d); :}
+           ;
+
+attributes_opt ::=                      {: RESULT = new ArrayList<>(); :}
+                 | L_WITH attributes:list {: RESULT = list; :}
+                 ;
+
+attributes ::= attribute:a              {: RESULT = new ArrayList<>(); RESULT.add(a); :}
+             | attributes:list COMMA attribute:a {: list.add(a); RESULT = list; :}
+             ;
+
+attribute ::= L_KIND EQ KIND_WORD:k     {: RESULT = Map.entry("kind", (Object) k); :}
+            | L_SESSION time:o closes_opt:c tz_opt:z {: RESULT = RuleCatalog.session(o, c, z); :}
+            | L_PRECISION EQ PRECISION_WORD:p {: RESULT = Map.entry("precision", (Object) p); :}
+            | L_NOTE STRING:s           {: RESULT = Map.entry("note", (Object) s); :}
+            ;
+
+time ::= NUM:h COLON NUM:m              {: RESULT = RuleCatalog.time(h, m); :}
+       ;
+
+closes_opt ::=                          {: RESULT = null; :}
+             | MINUS time:t             {: RESULT = t; :}
+             ;
+
+tz_opt ::=                              {: RESULT = null; :}
+         | L_TZ STRING:s                {: RESULT = s; :}
+         ;
+
+citations_opt ::=                       {: RESULT = new ArrayList<>(); :}
+                | L_CITES citations:list {: RESULT = list; :}
+                ;
+
+citations ::= citation:c                {: RESULT = new ArrayList<>(); RESULT.add(c); :}
+            | citations:list COMMA citation:c {: list.add(c); RESULT = list; :}
+            ;
+
+citation ::= STRING:s article_opt:a url_opt:u L_LABEL LABEL_WORD:l {: RESULT = new Citation(s, a, u, l); :}
+           ;
+
+article_opt ::=                         {: RESULT = null; :}
+              | L_ART STRING:s          {: RESULT = s; :}
+              ;
+
+url_opt ::=                             {: RESULT = null; :}
+          | L_URL STRING:s              {: RESULT = s; :}
+          ;
+
+/* ================= calendars ================= */
+
+/* a business day in every term of "&" */
+calendar ::= cal_term:t                 {: RESULT = RuleCatalog.calendar(List.of(t)); :}
+           | calendar:c AMP cal_term:t
+             {: List<CalendarSpec> terms = new ArrayList<>(c instanceof RuleCatalog.Combined combined ? combined.terms() : List.of(c));
+                terms.add(t);
+                RESULT = RuleCatalog.calendar(terms); :}
+           ;
+
+/* USD on T+1 does not count, unless for MXN */
+cal_term ::= SCOPE:s                    {: RESULT = new RuleCatalog.Scope(s, 0, Set.of()); :}
+           | SCOPE:s L_IGNORE L_AT BASE PLUS NUM:n {: RESULT = new RuleCatalog.Scope(s, n, Set.of()); :}
+           | SCOPE:s L_IGNORE L_AT BASE PLUS NUM:n L_UNLESS LBRACE ccys:c RBRACE {: RESULT = new RuleCatalog.Scope(s, n, c); :}
+           | KEY:k                      {: RESULT = new RuleCatalog.Named(k); :}
+           | LPAREN calendar:c RPAREN   {: RESULT = c; :}
+           ;
+
+ccys ::= CCY:c                          {: RESULT = new LinkedHashSet<>(); RESULT.add(c); :}
+       | ccys:set COMMA CCY:c           {: set.add(c); RESULT = set; :}
+       ;
+
+/* in an expression one term only, as "&" there is include: ON country:BR, ON usd_eur, ON (a & b) */
+on ::= ON SCOPE:s                       {: RESULT = new RuleCatalog.Scope(s, 0, Set.of()); :}
+     | ON KEY:k                         {: RESULT = new RuleCatalog.Named(k); :}
+     | ON LPAREN calendar:c RPAREN      {: RESULT = c; :}
+     ;
+
+on_opt ::=                              {: RESULT = null; :}
+         | on:c                         {: RESULT = c; :}
+         ;
+
+/* ================= expressions ================= */
+
+exprs ::= item:e                        {: RESULT = new ArrayList<>(); RESULT.add(e); :}
+        | exprs:list COMMA item:e       {: list.add(e); RESULT = list; :}
+        ;
+
+/* the condition applies to every date of the item; the shifts after it to the dates it keeps. A pick starts with a
+   series or an event, where several dates come from */
+item ::= expr:e combines:cs if_opt:c    {: RESULT = item(e, cs, c, 0); :}
+       | pick:n series:s moves:ms combines:cs if_opt:c {: RESULT = item(RuleCatalog.shifted(s, ms), cs, c, n); :}
+       | pick:n EVENT:name moves:ms combines:cs if_opt:c
+                                        {: RESULT = item(RuleCatalog.shifted(ScheduleSemantics.event(event(name)), ms), cs, c, n); :}
+       ;
+
+/* 5TH ...: the 5th date after T of the item; 2ND LAST from the last one, a negative count */
+pick ::= ORDINAL:o                      {: RESULT = ScheduleSemantics.ordinal(o); :}
+       | ORDINAL:o LAST                 {: RESULT = -ScheduleSemantics.ordinal(o); :}
+       ;
+
+if_opt ::=                              {: RESULT = null; :}
+         | IF condition:c moves:ms      {: RESULT = new IfClause(c, ms); :}
+         ;
+
+/* A & B includes the dates of B, A \ B excludes them; the shifts after it apply to the result */
+combines ::=                            {: RESULT = new ArrayList<>(); :}
+           | combines:list combine:c    {: list.add(c); RESULT = list; :}
+           ;
+
+combine ::= AMP operand:o moves:ms      {: RESULT = e -> RuleCatalog.shifted(ScheduleSemantics.combined(e, true, o), ms); :}
+          | BACKSLASH operand:o moves:ms {: RESULT = e -> RuleCatalog.shifted(ScheduleSemantics.combined(e, false, o), ms); :}
+          ;
+
+/* a date, a series or a set of dates */
+operand ::= date:d                      {: RESULT = new ArrayList<>(); RESULT.add(d); :}
+          | LBRACE operand_exprs:list RBRACE {: RESULT = list; :}
+          ;
+
+operand_exprs ::= expr:e                {: RESULT = new ArrayList<>(); RESULT.add(e); :}
+                | operand_exprs:list COMMA expr:e {: list.add(e); RESULT = list; :}
+                ;
+
+/* shifts are applied from left to right */
+expr ::= date:d moves:ms                {: RESULT = RuleCatalog.shifted(d, ms); :}
+       ;
+
+moves ::=                               {: RESULT = new ArrayList<>(); :}
+        | moves:list move:m             {: list.add(m); RESULT = list; :}
+        ;
+
+/* [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out */
+series ::= start_out:s endpoint:first COLON period:step COLON endpoint:last end_out:e
+                {: RESULT = ScheduleSemantics.series(first, step, last, s, e); :}
+         | start_out:s endpoint:first COLON period:step COLON end_out:e   /* an open series [SPOT : 1Q : ] */
+                {: RESULT = ScheduleSemantics.series(first, step, null, s, e); :}
+         | start_out:s endpoint:first COLON endpoint:last end_out:e
+                {: RESULT = ScheduleSemantics.series(first, null, last, s, e); :}
+         ;
+
+/* an endpoint is one date, so it can't be a series */
+endpoint ::= single_date:d moves:ms     {: RESULT = RuleCatalog.shifted(d, ms); :}
+           ;
+
+start_out ::= LBRACKET                  {: RESULT = false; :}
+            | RBRACKET                  {: RESULT = true; :}
+            ;
+
+end_out ::= RBRACKET                    {: RESULT = false; :}
+          | LBRACKET                    {: RESULT = true; :}
+          ;
+
+move ::= PLUS period:p endend_opt:x on_opt:c  {: RESULT = RuleCatalog.plus(p, 1, x, c); :}
+       | MINUS period:p endend_opt:x on_opt:c {: RESULT = RuleCatalog.plus(p, -1, x, c); :}
+       | GT IMM                         {: RESULT = RuleCatalog.nextImm(); :}
+       | GT SPOT pair_opt:p on_opt:c    {: RESULT = RuleCatalog.spot(p, c); :}
+       | GT FIX pair_opt:p              {: RESULT = RuleCatalog.fix(p); :}
+       | GT ROLL:r on_opt:c             {: RESULT = RuleCatalog.rollShift(r, c); :}
+       | GT NEXT anchor:a               {: RESULT = RuleCatalog.next(1, a); :}
+       | GT NEXT ORDINAL:o anchor:a     {: RESULT = RuleCatalog.next(ScheduleSemantics.ordinal(o), a); :}
+       | GT PREV anchor:a               {: RESULT = RuleCatalog.previous(1, a); :}
+       | GT PREV ORDINAL:o anchor:a     {: RESULT = RuleCatalog.previous(ScheduleSemantics.ordinal(o), a); :}
+       | GT NEAREST anchor:a            {: RESULT = RuleCatalog.nearestShift(a); :}   /* ties go forward */
+         /* > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH */
+       | GT count:n select:a IN PERIOD:p {: RESULT = RuleCatalog.select(Math.abs(n), n < 0, a, p); :}
+         /* > {1 FEB, 1 MAY}: the dates of the set in the year of the date */
+       | GT LBRACE annuals:list RBRACE  {: RESULT = RuleCatalog.datesInYear(list); :}
+       | GT POSTPONE ROLL:r on_opt:c MAX period:p cumulative_opt:x {: RESULT = new RuleCatalog.Postpone(r, c, p, x); :}
+         /* {SAT - 1D, TUE WED > PREV MON}: the first entry for the weekday of the date moves it */
+       | LBRACE observes:list RBRACE    {: RESULT = RuleCatalog.observance(cast(list)); :}
+       ;
+
+endend_opt ::=                          {: RESULT = false; :}
+             | ENDEND                   {: RESULT = true; :}
+             ;
+
+cumulative_opt ::=                      {: RESULT = false; :}
+                 | CUMULATIVE           {: RESULT = true; :}
+                 ;
+
+pair_opt ::=                            {: RESULT = null; :}
+           | PAIR:p                     {: RESULT = p; :}
+           ;
+
+observes ::= observe:o                  {: RESULT = new ArrayList<>(); RESULT.add(o); :}
+           | observes:list COMMA observe:o {: list.add(o); RESULT = list; :}
+           ;
+
+observe ::= weekday_list:w PLUS period:p {: RESULT = RuleCatalog.observePlus(w, p, 1); :}
+          | weekday_list:w MINUS period:p {: RESULT = RuleCatalog.observePlus(w, p, -1); :}
+          | weekday_list:w GT NEXT anchor:a {: RESULT = RuleCatalog.observeAnchor(w, a, 1); :}
+          | weekday_list:w GT PREV anchor:a {: RESULT = RuleCatalog.observeAnchor(w, a, -1); :}
+          | weekday_list:w GT NEAREST anchor:a {: RESULT = RuleCatalog.observeNearest(w, a); :}
+          | weekday_list:w GT ROLL:r on_opt:c {: RESULT = RuleCatalog.observeRoll(w, r, c); :}
+          ;
+
+annuals ::= annual:a                    {: RESULT = new ArrayList<>(); RESULT.add(a); :}
+          | annuals:list COMMA annual:a {: list.add(a); RESULT = list; :}
+          ;
+
+/* counting from the end is a negative count */
+count ::= ORDINAL:o                     {: RESULT = ScheduleSemantics.ordinal(o); :}
+        | ORDINAL:o LAST                {: RESULT = -ScheduleSemantics.ordinal(o); :}
+        | LAST                          {: RESULT = -1; :}
+        ;
+
+/* the targets of a selection; an annual date starting with LAST only in braces, as LAST also starts the count */
+select ::= chosen:a                     {: RESULT = a; :}
+         | LBRACE targets:list RBRACE   {: RESULT = ScheduleSemantics.anyOf(list); :}
+         ;
+
+/* NEXT {MON, FRI}: the nearest of a set */
+anchor ::= target:a                     {: RESULT = a; :}
+         | LBRACE targets:list RBRACE   {: RESULT = ScheduleSemantics.anyOf(list); :}
+         ;
+
+targets ::= target:a                    {: RESULT = new ArrayList<>(); RESULT.add(a); :}
+          | targets:list COMMA target:a {: list.add(a); RESULT = list; :}
+          ;
+
+target ::= chosen:a                     {: RESULT = a; :}
+         | LAST WEEKDAY:w MONTH:m       {: RESULT = ScheduleSemantics.annual(ScheduleSemantics.lastWeekday(w, m)); :}
+         ;
+
+chosen ::= WEEKDAY:w                    {: RESULT = ScheduleSemantics.weekday(w); :}
+         | BD on_opt:c                  {: RESULT = RuleCatalog.businessDay(c); :}
+         | FD                           {: RESULT = ScheduleSemantics.FIXING_DAY; :}
+         | IMM                          {: RESULT = ScheduleSemantics.IMM; :}
+         | fixed_annual:a               {: RESULT = ScheduleSemantics.annual(a); :}
+         | EVENT:n                      {: RESULT = ScheduleSemantics.eventAnchor(event(n)); :}
+         | HOLIDAY on_opt:c             {: RESULT = RuleCatalog.holiday(c); :}
+         | NONHOLIDAY on_opt:c          {: RESULT = RuleCatalog.nonholiday(c); :}
+         ;
+
+date ::= single_date:d                  {: RESULT = d; :}
+       | series:s                       {: RESULT = s; :}
+       ;
+
+/* a date that is not a series */
+single_date ::= BASE                    {: RESULT = ScheduleSemantics.BASE; :}   /* T */
+       | TOM                            {: RESULT = ScheduleSemantics.plus(ScheduleSemantics.BASE, ScheduleSemantics.period(1, "B")); :}
+       | SPOT pair_opt:p on_opt:c       {: RESULT = RuleCatalog.spotDate(p, c); :}
+       | annual:a                       {: RESULT = ScheduleSemantics.inYear(a); :}
+       | EVENT:n                        {: RESULT = ScheduleSemantics.event(event(n)); :}
+       | NUM:y MINUS NUM:m MINUS NUM:d  {: RESULT = ScheduleSemantics.literal(LocalDate.of(y, m, d)); :}   /* ISO */
+       | NUM:d DOT NUM:m DOT NUM:y      {: RESULT = ScheduleSemantics.literal(LocalDate.of(y, m, d)); :}   /* German */
+       | NUM:m SLASH NUM:d SLASH NUM:y  {: RESULT = ScheduleSemantics.literal(LocalDate.of(y, m, d)); :}   /* US */
+       ;
+
+/* dates that recur every year */
+annual ::= fixed_annual:a               {: RESULT = a; :}
+         | LAST WEEKDAY:w MONTH:m       {: RESULT = ScheduleSemantics.lastWeekday(w, m); :}
+         ;
+
+fixed_annual ::= NUM:d MONTH:m method_opt:x {: RESULT = RuleCatalog.monthDay(d, m, x); :}
+         | NUM:n WEEKDAY:w MONTH:m      {: RESULT = ScheduleSemantics.nthWeekday(n, w, m); :}
+         | EASTER                       {: RESULT = ScheduleSemantics.EASTER; :}
+         | ORTHODOX EASTER              {: RESULT = RuleCatalog.ORTHODOX_EASTER; :}
+         | SEASON:k MONTH:m zone_opt:z  {: RESULT = RuleCatalog.season(k, m, z); :}
+         | SOLARTERM NUM:n zone_opt:z   {: RESULT = RuleCatalog.solarTerm(n, z); :}
+         | HINDU KEY:k                  {: RESULT = RuleCatalog.hindu(k); :}
+         ;
+
+/* 1 SHAWWAL BY SIGHTING: a method other than UMMALQURA marks the rule's dates as projections */
+method_opt ::=                          {: RESULT = null; :}
+             | BY METHOD:m              {: RESULT = m; if (!m.equals("UMMALQURA")) estimated = true; :}
+             | BY FOLLOW SCOPE          {: RESULT = "FOLLOW"; estimated = true; :}
+             ;
+
+/* UTC unless a zone follows: UTC+9 or an IANA time zone such as "Asia/Tokyo" */
+zone_opt ::=                            {: RESULT = null; :}
+           | ZONE:z                     {: RESULT = z; :}
+           | STRING:z                   {: RESULT = z; :}
+           ;
+
+period ::= NUM:n UNIT:u                 {: RESULT = ScheduleSemantics.period(n, u); :}
+         ;
+
+/* ================= conditions ================= */
+
+condition ::= cond_and:c                {: RESULT = c; :}
+            | condition:a OR cond_and:b {: RESULT = RuleCatalog.anyCondition(List.of(a, b)); :}
+            ;
+
+cond_and ::= cond_not:c                 {: RESULT = c; :}
+           | cond_and:a AND cond_not:b  {: RESULT = RuleCatalog.allConditions(List.of(a, b)); :}
+           ;
+
+cond_not ::= cond_atom:c                {: RESULT = c; :}
+           | NOT cond_atom:c            {: RESULT = RuleCatalog.notCondition(c); :}
+           ;
+
+cond_atom ::= weekday_set:w             {: RESULT = RuleCatalog.onWeekday(w); :}   /* the weekday of the date itself */
+            | DAY NUM:a DOTDOT NUM:b month_opt:m {: RESULT = RuleCatalog.onDay(a, b, m); :}   /* DAY 8..14 APR */
+            | subject:s IS weekday_set:w {: RESULT = RuleCatalog.isWeekday(s, w); :}
+            | subject:s IS HOLIDAY on_opt:c {: RESULT = RuleCatalog.dateIsHoliday(s, c); :}
+            | HOLIDAY on_opt:c          {: RESULT = RuleCatalog.holidayCondition(c); :}
+            | BETWEEN HOLIDAYS on_opt:c {: RESULT = RuleCatalog.betweenHolidays(c); :}   /* JP art. 3(3) */
+            | EVERY period:p FROM NUM:n {: RESULT = RuleCatalog.every(p, n); :}   /* EVERY 4Y FROM 1965 */
+            | LPAREN condition:c RPAREN {: RESULT = c; :}
+            ;
+
+month_opt ::=                           {: RESULT = null; :}
+            | MONTH:m                   {: RESULT = m; :}
+            ;
+
+/* 18 SEP, EASTER + 1D */
+subject ::= single_date:d               {: RESULT = d; :}
+          | subject:s PLUS period:p     {: RESULT = RuleCatalog.shifted(s, List.of(RuleCatalog.plus(p, 1, false, null))); :}
+          | subject:s MINUS period:p    {: RESULT = RuleCatalog.shifted(s, List.of(RuleCatalog.plus(p, -1, false, null))); :}
+          ;
+
+weekday_set ::= weekday_list:w          {: RESULT = w; :}
+              | LBRACE weekday_commas:w RBRACE {: RESULT = w; :}
+              ;
+
+weekday_list ::= WEEKDAY:w              {: RESULT = new LinkedHashSet<>(); RESULT.add(w); :}
+               | weekday_list:set WEEKDAY:w {: set.add(w); RESULT = set; :}
+               ;
+
+weekday_commas ::= WEEKDAY:w            {: RESULT = new LinkedHashSet<>(); RESULT.add(w); :}
+                 | weekday_commas:set COMMA WEEKDAY:w {: set.add(w); RESULT = set; :}
+                 ;

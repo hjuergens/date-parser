@@ -23,6 +23,28 @@ The other experiments of this module (the Pascal lexer) are parked in
 - Selection (`> 3RD WED IN MONTH`): `count ::= ORDINAL | ORDINAL LAST | LAST` returns a negative count from the end; `select ::= chosen | LBRACE targets RBRACE` keeps `LAST MON MAY` in braces, so `LAST` can only be the count there. No conflicts.
 - Named events: the JFlex rule `"@" [A-Z] [A-Z0-9_]*` returns `EVENT` with the name as value; in CUP it is one more alternative of `date` and `anchor`.
 
+## Rule files
+
+[rulefile.cup](src/main/cup/rulefile.cup) and [rulefile.jflex](src/main/jflex/rulefile.jflex) read rule files
+(`rule KEY for CLASS in SCOPES ... = ...;`, `weekend`, `calendar`), the same language as
+[date-rule-antlr-java's RuleFile.g4](../date-rule-antlr-java/README.md#rule-files), and build the declarations for
+[RuleCatalog](src/main/java/io/github/hjuergens/schedule/RuleCatalog.java), the evaluator shared by the JVM modules.
+A second execution of the CUP plugin generates `RuleFileParser` and `RuleFileSym` into the subpackage `rules`, where
+[RuleFiles](src/main/java/io/github/hjuergens/schedule/rules/RuleFiles.java) is the entry point.
+- **One start symbol:** `rule_file ::= declarations | exprs` reads a rule file or one schedule; the first token tells
+  them apart (the empty `declarations` is reduced only before `rule`, `weekend`, `calendar` or the end).
+- **LALR(1) without conflicts:** lists are left recursive, and the optional parts (`ENDEND`, `ON ...`, a pair, a zone)
+  are empty productions, which a lookahead of one token decides.
+- **Types:** CUP takes no comma inside the type of a non terminal, so the lists of pairs (attributes, ONE OF
+  alternatives, observance entries) are `ArrayList<Object>` and cast in the actions.
+- **Lexer:** the keywords, also the lowercase ones (`rule`, `for`, `in`, ...), come before `KEY`, `PAIR` and `CCY`;
+  JFlex takes the earlier rule on a match of the same length.
+
+```java
+RuleCatalog catalog = RuleFiles.parseRules("rule jp.equinox for national_holiday in country:JP = EQUINOX SEP \"Asia/Tokyo\";");
+catalog.holidays("country:JP", 2026);   // [Occurrence[date=2026-09-23, rule=jp.equinox, ...]]
+```
+
 ## Build and test
 
 ```
@@ -31,4 +53,5 @@ mvn -pl date-rule-cup-jflex verify
 
 - `com.github.vbmacher:cup-maven-plugin` (CUP 11b) generates into `target/generated-sources/cup`.
 - `de.jflex:jflex-maven-plugin` (JFlex 1.9) generates into `target/generated-sources/jflex`.
-- [SchedulesTest](src/test/java/io/github/hjuergens/schedule/SchedulesTest.java) (TestNG) runs 6070 cases.
+- [SchedulesTest](src/test/java/io/github/hjuergens/schedule/SchedulesTest.java) (TestNG) runs 6097 cases,
+  [RuleCasesTest](src/test/java/io/github/hjuergens/schedule/RuleCasesTest.java) 59 and [RuleCatalogTest](src/test/java/io/github/hjuergens/schedule/RuleCatalogTest.java) 5.

@@ -21,7 +21,7 @@ The other experiments of this module (the range-list grammar `list.pegjs` and it
 - Holiday rules and rolling: `"TOM"` must come before `"T"` in `Date`, and the pair is `!"EASTER" $[A-Z]|6|`; without a lexer
   nothing else would reserve the keyword. About 80 more lines of JavaScript compute annual dates, Easter and the roll conventions.
 - Lunar months and conditional dates: Lunar month names (`1 SHAWWAL`, `10 TISHRI`, `1 ZHENGYUE`) are more alternatives of `Month` (ordered choice: `"ADARII"`
-  before `"ADAR"`). Hijri and Hebrew dates come from `Intl`; Chinese ones from lunar-javascript, which a parser generated in memory
+  before `"ADAR"`). Hijri dates come from the official Umm al-Qura table (`UMM_AL_QURA`, as in Java; `Intl`'s own table differs in 2030), Hebrew ones from `Intl`; Chinese ones from lunar-javascript, which a parser generated in memory
   can't import, so `parse(text, { Solar })` passes it in as an option. `Item` adds `24 DEC IF MON TUE WED THU`.
 - Ordinals and sets (`> NEXT 3RD FRI`, `> NEXT {MON, FRI}`): `Counted` tries the ordinal `$([0-9]+ ("ST" / "ND" / "RD" / "TH"))` first, as `Number` in the annual date `3 FRI JAN` would take its digits; a set is `"{" Target ("," Target)* "}"`.
 - Named events: `Event = "@" $([A-Z] [A-Z0-9_]*)`, an alternative of `Date` and `Anchor`; as there is no whitespace rule inside it, `@ FOMC` is an error.

@@ -130,6 +130,8 @@ country:AE 2026 => 2026-03-19 ramadan_29, 2026-03-19 ramadan_30, 2026-03-20 rama
 country:SA 2030 => 2030-02-03 ramadan_29, 2030-02-04 ramadan_30
 country:SA 2031 => 2031-01-24 ramadan_29, 2031-01-25 ramadan_30
 exchange:XSAU 2027 => 2027-03-09 uq, 2027-03-10 late
+# Shawwal 1451 has 29 days in the official Umm al-Qura table (the JDK and ICU tables give it 30)
+[2030-01-01] 1 DHULQADAH => 2030-03-05
 
 # errors
 rule a for x in country:XX = @b;

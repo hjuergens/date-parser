@@ -4,7 +4,7 @@ The [shared schedule example](../README.md#shared-example-schedule) in C, with a
 scanner and a [GNU Bison](https://www.gnu.org/software/bison/) parser (C skeleton, LALR(1)). Both are reentrant, so
 nothing is global. It is tested against all three spec files: [schedule.txt](../examples/schedule.txt),
 [catalog.txt](../examples/catalog.txt) and [date-holidays.txt](../examples/date-holidays.txt), 6097 cases, and it reads
-[rule files](#rule-files), tested against the 59 cases of [rules.txt](../examples/rules.txt).
+[rule files](#rule-files), tested against the 60 cases of [rules.txt](../examples/rules.txt).
 A [Go binding](#go-via-swig), generated with [SWIG](https://www.swig.org/), runs the same cases from Go.
 
 ## Files
@@ -65,8 +65,10 @@ data).
   `rule` keyword, as the lookahead after its `;` is never one of them.
 - **Time zones:** `EQUINOX MAR "Asia/Tokyo"` reads the zone's TZif file from `/usr/share/zoneinfo` (or `$TZDIR`); after
   the last transition of the file only zones without daylight saving time are read, else it is an error.
-- **Hijri dates:** the tables of `lunar_tables.h` come from the same library as Lark's, so C and Lark agree on
-  every rule of holidays-events, also in 2030, where Java's own Umm al-Qura data differ by a day.
+- **Hijri dates:** the tables of `lunar_tables.h` come from the same library as Lark's: the official Umm al-Qura table,
+  1343 to 1500 AH. The Java, Scala and Peggy modules use the same table, printed by
+  [scripts/umm_al_qura.py](scripts/umm_al_qura.py); the JDK's and ICU's own tables give Shawwal 1451 (2030) 30 days
+  instead of 29.
 
 ```c
 char error[256];

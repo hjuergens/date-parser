@@ -227,21 +227,61 @@
     Adar: 'ADAR', 'Adar II': 'ADARII', Nisan: 'NISAN', Iyar: 'IYAR', Sivan: 'SIVAN', Tamuz: 'TAMMUZ', Av: 'AV', Elul: 'ELUL' };
   const formats = {};
 
-  // the month and day of a date in the calendar of the given month: Hijri (Umm al-Qura) and Hebrew from Intl,
-  // Chinese from lunar-javascript (Intl's astronomical Chinese calendar misses some new moons close to midnight)
+  // 1 Muharram 1343, where the official Umm al-Qura table of hijridate starts
+  const UMM_AL_QURA_START = Date.UTC(1924, 7, 1) / 86400000;
+  // the first day (days since 1970-01-01) of every month of the official Umm al-Qura table, 1343 to 1500 AH, and the
+  // day after the last; Intl's own table differs in some months (Shawwal 1451 has 29 days, not 30). The digits are the
+  // month lengths minus 28, printed by date-rule-flex-bison/scripts/umm_al_qura.py, eight years per line.
+  const UMM_AL_QURA = [...(
+      '212212220222112121212121212131202212112212211221112212212211212121221130212121222032121211212212' +
+      '212121112212212121212121212212122112121212212121212121212212112121221121212121212122221211211221' +
+      '222121121121212121212122212121212121212121212121212121212122212121202221212121212122212121212121' +
+      '212121212121212121212122212121221221212121212121212112121222121212112122121212121212212121221122' +
+      '212121211221121122212121211212122122212121212121121212121212212121212121212212112121212212211212' +
+      '121221212121212121212121212211212221221121212122112121212122122121212121212121212122212121221211' +
+      '212121212122112121212122212111212122212121211221212212112121212221211212121221212121212121221212' +
+      '121212121221221211212122121212112121222121211212122212121121122122212112112212212121212121212212' +
+      '121212121212212121211212212212121121212221212112121221221211211221222121121122122122112112122212' +
+      '121211212212212121211212212122121211212122212121121212212212121121222212112111222212211211122212' +
+      '212121121212212212112121212212122121121212212212112121221221211211222122121121122122122112121212' +
+      '122121212112122212121211212212212121121212212211212121212212121212121212212211212112212221121121' +
+      '212221212112121222121211212122122121121212122121212121212122121221121212122212112112122212211211' +
+      '212221212121121221221212112121221221212112121221221211212121222121121212122211212121122212121212' +
+      '112212122121211212122212121121122122212112112212221211211221221212121122121221212121212121212212' +
+      '121121221221212112121222121211211222212121121212212212112121212212121212112212212211211221212221' +
+      '121121221221212121121221212212112121221221211212121222121121121222122112112122122211211212212212' +
+      '121121212212122112121212122122121121212212212112112212221211211221221221121122121222112121212122' +
+      '121212112122122121211212122212121121212212212112121212212122112121212212211212112212221121121212' +
+      '221212112121222121211212122122112121212122121212121212121221221121121222')].reduce((starts, digit) => (starts.push(starts.at(-1) + 28 + Number(digit)), starts), [UMM_AL_QURA_START]);
+
+  // the Hijri month (1 to 12) and day of a date in the official Umm al-Qura table; an error outside 1343 to 1500 AH
+  function hijri(d) {
+    const day = Date.UTC(d.year, d.month - 1, d.day) / 86400000;
+    let low = 0, high = UMM_AL_QURA.length - 1;   // the month is the last start <= day
+    if (day < UMM_AL_QURA[low] || day >= UMM_AL_QURA[high]) {
+      throw new RangeError(`no Umm al-Qura date for ${d.year}-${d.month}-${d.day}`);
+    }
+    while (high - low > 1) {
+      const middle = (low + high) >> 1;
+      if (UMM_AL_QURA[middle] <= day) low = middle; else high = middle;
+    }
+    return { month: HIJRI[low % 12], day: day - UMM_AL_QURA[low] + 1 };
+  }
+
+  // the month and day of a date in the calendar of the given month: Hijri from the official Umm al-Qura table, Hebrew
+  // from Intl, Chinese from lunar-javascript (Intl's astronomical Chinese calendar misses some new moons close to
+  // midnight)
   function lunarMonthDay(d, like, Solar) {
+    if (HIJRI.includes(like)) return hijri(d);
     if (CHINESE.includes(like)) {
       if (!Solar) throw new Error('Chinese months need the parse option Solar (lunar-javascript)');
       const lunar = Solar.fromYmd(d.year, d.month, d.day).getLunar();
       return { month: CHINESE[lunar.getMonth() - 1], day: lunar.getDay() };   // a leap month is negative: no name
     }
-    const calendar = HIJRI.includes(like) ? 'islamic-umalqura' : 'hebrew';
-    formats[calendar] ??= new Intl.DateTimeFormat(`en-u-ca-${calendar}`,
-      { timeZone: 'UTC', month: calendar === 'hebrew' ? 'long' : 'numeric', day: 'numeric' });
-    const parts = Object.fromEntries(formats[calendar].formatToParts(new Date(Date.UTC(d.year, d.month - 1, d.day)))
+    formats.hebrew ??= new Intl.DateTimeFormat('en-u-ca-hebrew', { timeZone: 'UTC', month: 'long', day: 'numeric' });
+    const parts = Object.fromEntries(formats.hebrew.formatToParts(new Date(Date.UTC(d.year, d.month - 1, d.day)))
       .map((part) => [part.type, part.value]));
-    const month = calendar === 'hebrew' ? INTL_HEBREW[parts.month] : HIJRI[Number(parts.month) - 1];
-    return { month, day: Number(parts.day) };
+    return { month: INTL_HEBREW[parts.month], day: Number(parts.day) };
   }
 
   // the day of a lunar month in the Gregorian year, where one date is needed (an anchor); an error if it occurs twice

@@ -3,8 +3,6 @@ package io.github.hjuergens.bison;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.Period;
-import java.time.chrono.HijrahDate;
-import java.time.temporal.ChronoField;
 import java.time.temporal.JulianFields;
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAdjusters;
@@ -12,6 +10,7 @@ import java.time.temporal.TemporalAmount;
 import java.time.temporal.TemporalUnit;
 import java.time.temporal.UnsupportedTemporalTypeException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -354,6 +353,55 @@ public final class ScheduleSemantics {
         return year -> LocalDate.of(year, month(month), day);
     }
 
+    /** 1 Muharram 1343, where the official Umm al-Qura table of hijridate starts */
+    private static final LocalDate UMM_AL_QURA_START = LocalDate.of(1924, 8, 1);
+
+    /**
+     * the first day (epoch day) of every month of the official Umm al-Qura table, 1343 to 1500 AH, and the day after
+     * the last; the JDK's own table differs in some months (Shawwal 1451 has 29 days, not 30). The digits are the month
+     * lengths minus 28, printed by date-rule-flex-bison/scripts/umm_al_qura.py, eight years per line.
+     */
+    private static final long[] UMM_AL_QURA;
+
+    static {
+        String lengths = String.join("",
+                "212212220222112121212121212131202212112212211221112212212211212121221130212121222032121211212212",
+                "212121112212212121212121212212122112121212212121212121212212112121221121212121212122221211211221",
+                "222121121121212121212122212121212121212121212121212121212122212121202221212121212122212121212121",
+                "212121212121212121212122212121221221212121212121212112121222121212112122121212121212212121221122",
+                "212121211221121122212121211212122122212121212121121212121212212121212121212212112121212212211212",
+                "121221212121212121212121212211212221221121212122112121212122122121212121212121212122212121221211",
+                "212121212122112121212122212111212122212121211221212212112121212221211212121221212121212121221212",
+                "121212121221221211212122121212112121222121211212122212121121122122212112112212212121212121212212",
+                "121212121212212121211212212212121121212221212112121221221211211221222121121122122122112112122212",
+                "121211212212212121211212212122121211212122212121121212212212121121222212112111222212211211122212",
+                "212121121212212212112121212212122121121212212212112121221221211211222122121121122122122112121212",
+                "122121212112122212121211212212212121121212212211212121212212121212121212212211212112212221121121",
+                "212221212112121222121211212122122121121212122121212121212122121221121212122212112112122212211211",
+                "212221212121121221221212112121221221212112121221221211212121222121121212122211212121122212121212",
+                "112212122121211212122212121121122122212112112212221211211221221212121122121221212121212121212212",
+                "121121221221212112121222121211211222212121121212212212112121212212121212112212212211211221212221",
+                "121121221221212121121221212212112121221221211212121222121121121222122112112122122211211212212212",
+                "121121212212122112121212122122121121212212212112112212221211211221221221121122121222112121212122",
+                "121212112122122121211212122212121121212212212112121212212122112121212212211212112212221121121212",
+                "221212112121222121211212122122112121212122121212121212121221221121121222");
+        UMM_AL_QURA = new long[lengths.length() + 1];
+        UMM_AL_QURA[0] = UMM_AL_QURA_START.toEpochDay();
+        for (int i = 0; i < lengths.length(); i++) {
+            UMM_AL_QURA[i + 1] = UMM_AL_QURA[i] + 28 + lengths.charAt(i) - '0';
+        }
+    }
+
+    /** the Hijri month (1 to 12) and day of the date in the official Umm al-Qura table; an error outside 1343 to 1500 AH */
+    public static int[] hijri(LocalDate date) {
+        int i = Arrays.binarySearch(UMM_AL_QURA, date.toEpochDay());
+        i = i < 0 ? -i - 2 : i;
+        if (i < 0 || i >= UMM_AL_QURA.length - 1) {
+            throw new java.time.DateTimeException("no Umm al-Qura date for " + date);
+        }
+        return new int[] { i % 12 + 1, (int) (date.toEpochDay() - UMM_AL_QURA[i]) + 1 };
+    }
+
     /** "day month year" -> the dates lunar() found: the search converts every day of the year, so it runs once */
     private static final Map<String, List<LocalDate>> LUNAR_DATES = new java.util.concurrent.ConcurrentHashMap<>();
 
@@ -397,7 +445,7 @@ public final class ScheduleSemantics {
     /** the name of the month of the date in the calendar of the given month name; "" for a Chinese leap month */
     private static String lunarMonth(LocalDate date, String like, Calendar hebrew) {
         if (HIJRI.contains(like)) {
-            return HIJRI.get(HijrahDate.from(date).get(ChronoField.MONTH_OF_YEAR) - 1);
+            return HIJRI.get(hijri(date)[0] - 1);
         }
         if (CHINESE.contains(like)) {
             int month = chinese(date).getMonth();   // negative for a leap month
@@ -412,7 +460,7 @@ public final class ScheduleSemantics {
 
     private static int dayOfMonth(LocalDate date, String like, Calendar hebrew) {
         if (HIJRI.contains(like)) {
-            return HijrahDate.from(date).get(ChronoField.DAY_OF_MONTH);
+            return hijri(date)[1];
         }
         return CHINESE.contains(like) ? chinese(date).getDay() : hebrew.get(Calendar.DAY_OF_MONTH);
     }

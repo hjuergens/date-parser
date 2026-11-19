@@ -1,7 +1,6 @@
 package de.juergens.text
 
-import java.time.chrono.HijrahDate
-import java.time.temporal.{ChronoField, JulianFields, Temporal, TemporalAdjusters, TemporalAmount, TemporalUnit, UnsupportedTemporalTypeException}
+import java.time.temporal.{JulianFields, Temporal, TemporalAdjusters, TemporalAmount, TemporalUnit, UnsupportedTemporalTypeException}
 import java.time.{DateTimeException, DayOfWeek, LocalDate, Period}
 
 import com.ibm.icu.util.{Calendar, HebrewCalendar}
@@ -436,8 +435,8 @@ object ScheduleParsers {
     val calendar: Calendar = new HebrewCalendar()
     def monthDay(date: LocalDate): (String, Int) =
       if (hijri.contains(month)) {
-        val h = HijrahDate.from(date)
-        (hijri(h.get(ChronoField.MONTH_OF_YEAR) - 1), h.get(ChronoField.DAY_OF_MONTH))
+        val Array(m, d) = ScheduleSemantics.hijri(date)   // the official Umm al-Qura table (the JDK's differs)
+        (hijri(m - 1), d)
       } else if (chinese.contains(month)) {
         // 6tail's lunar: ICU's astronomical Chinese calendar misses some new moons close to midnight
         val lunar = Solar.fromYmd(date.getYear, date.getMonthValue, date.getDayOfMonth).getLunar

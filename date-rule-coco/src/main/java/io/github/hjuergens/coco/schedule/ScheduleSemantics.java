@@ -469,6 +469,27 @@ public final class ScheduleSemantics {
         };
     }
 
+    /** the same in a time zone such as Asia/Tokyo, with its daylight saving time */
+    public static Annual season(String kind, String month, java.time.ZoneId zone) {
+        int index = List.of("MAR", "JUN", "SEP", "DEC").indexOf(month);
+        return year -> {
+            if (index < 0 || (index % 2 == 0) != kind.equals("EQUINOX")) {
+                throw new java.time.DateTimeException("no " + kind + " in " + month);
+            }
+            return sunAt(90 * index, year, zone);
+        };
+    }
+
+    /** the same in a time zone such as Asia/Shanghai */
+    public static Annual solarTerm(int term, java.time.ZoneId zone) {
+        return year -> {
+            if (term < 1 || term > 24) {
+                throw new java.time.DateTimeException("no solar term " + term);
+            }
+            return sunAt((term + 20) % 24 * 15, year, zone);
+        };
+    }
+
     /** UTC+9, UTC-4: the offset in minutes */
     public static int zone(String text) {
         return Integer.parseInt(text.substring(3)) * 60;
@@ -532,6 +553,17 @@ public final class ScheduleSemantics {
 
     /** the day in the year on which the sun's apparent longitude reaches the degrees, in UTC + offset minutes */
     private static LocalDate sunAt(int degrees, int year, int offset) {
+        return LocalDate.ofEpochDay((long) Math.floor(sunUniversal(degrees, year) + offset / 1440.0 - 2440587.5));
+    }
+
+    /** the same in a time zone */
+    private static LocalDate sunAt(int degrees, int year, java.time.ZoneId zone) {
+        double days = sunUniversal(degrees, year) - 2440587.5;
+        return java.time.Instant.ofEpochMilli(Math.round(days * 86400000)).atZone(zone).toLocalDate();
+    }
+
+    /** the Julian day (UT) on which the sun's apparent longitude reaches the degrees in the year */
+    private static double sunUniversal(int degrees, int year) {
         double day = 79 + degrees * 365.2422 / 360;  // days after 1 January, from the March equinox on
         if (day > 365.2422) {
             day -= 365.2422;
@@ -544,8 +576,7 @@ public final class ScheduleSemantics {
                 break;
             }
         }
-        double local = jde - deltaT(year + day / 365.25) / 86400 + offset / 1440.0;
-        return LocalDate.ofEpochDay((long) Math.floor(local - 2440587.5));
+        return jde - deltaT(year + day / 365.25) / 86400;
     }
 
     /** what > NEXT and > PREV look for: the first match strictly after (direction 1) or before (-1) a date */

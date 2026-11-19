@@ -1,0 +1,512 @@
+/*
+ * Rule files: the schedule language of Schedule.atg inside declarations with scope, validity, kind and provenance, the
+ * same language as date-rule-antlr-java's RuleFile.g4 and date-rule-lark's rules.lark (shared cases:
+ * examples/rules.txt). The actions build the declarations with RuleCatalog and ScheduleSemantics; shifts are
+ * RuleCatalog.Move, functions of a date. Coco/R has one start symbol: RuleFile reads declarations or one schedule (the
+ * first token tells them apart), RuleFiles checks which one it got. Generated into the subpackage rules, as Coco/R
+ * names its classes Parser, Scanner, Errors in every grammar. Rules only project: announced dates are data.
+ */
+import java.time.LocalDate;
+import java.time.temporal.TemporalAmount;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import io.github.hjuergens.coco.schedule.RuleCatalog;
+import io.github.hjuergens.coco.schedule.RuleCatalog.CalendarSpec;
+import io.github.hjuergens.coco.schedule.RuleCatalog.Citation;
+import io.github.hjuergens.coco.schedule.RuleCatalog.Condition;
+import io.github.hjuergens.coco.schedule.RuleCatalog.IfClause;
+import io.github.hjuergens.coco.schedule.RuleCatalog.Move;
+import io.github.hjuergens.coco.schedule.ScheduleSemantics;
+import io.github.hjuergens.coco.schedule.ScheduleSemantics.Anchor;
+import io.github.hjuergens.coco.schedule.ScheduleSemantics.Annual;
+import io.github.hjuergens.coco.schedule.ScheduleSemantics.Expr;
+import io.github.hjuergens.coco.schedule.ScheduleSemantics.Rule;
+
+COMPILER RuleFile
+
+  /** the declarations of a rule file */
+  public final List<Object> declarations = new ArrayList<>();
+  /** the schedule, when the text was one; null for a rule file */
+  public Rule schedule;
+
+  /** the @references of the rule being read */
+  private Set<String> references = new LinkedHashSet<>();
+  /** whether the rule being read has a Hijri method other than UMMALQURA */
+  private boolean estimated;
+
+  // [a : 1D : b] or [a : b]: after the first ":" a number starts the step (1D) or the end (3 MAR); LL(1) can't tell, so
+  // this resolver looks at the token after the number
+  private boolean isStep() {
+    scanner.ResetPeek();
+    Token next = scanner.Peek();
+    return la.kind == _number && next.val.length() == 1 && "DWMQHYBF".contains(next.val);
+  }
+
+  private String event(String token) {
+    String name = token.substring(1);
+    references.add(name);
+    return name;
+  }
+
+  private static String unquote(String token) {
+    return token == null ? null : token.substring(1, token.length() - 1);
+  }
+
+  private static int ordinal(String token) {
+    return ScheduleSemantics.ordinal(token);
+  }
+
+CHARACTERS
+  digit = "0123456789".
+  upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".
+  lower = "abcdefghijklmnopqrstuvwxyz".
+  sign = "+-".
+  noQuote = ANY - '"'.
+
+TOKENS
+  number = digit {digit}.
+  ordinal = digit {digit} ( "ST" | "ND" | "RD" | "TH" ).   /* 1ST, 2ND, 3RD, 4TH */
+  pair = upper upper upper upper upper upper.               /* EURUSD; six-letter keywords are literals of it */
+  ccy = upper upper upper.                                  /* a currency, only inside "unless {...}" */
+  event = '@' (upper | lower) { upper | lower | digit | '_' } { '.' (upper | lower | digit | '_') { upper | lower | digit | '_' } }.
+  zone = "UTC" sign digit { digit }.
+  scope = lower { lower | '_' } ':' (upper | digit) { upper | digit | '_' } { '-' (upper | digit) { upper | digit | '_' } }.
+  key = lower { lower | digit | '_' } { '.' lower { lower | digit | '_' } }.   /* the lowercase keywords are literals of it */
+  string = '"' { noQuote } '"'.
+
+COMMENTS FROM "#" TO '\n'
+
+IGNORE '\t' + '\r' + '\n'
+
+PRODUCTIONS
+
+  /* a rule file, or one schedule (for RuleFiles.schedule) */
+  RuleFile                                (. Rule r; .)
+  = { Declaration }
+    [ Exprs<out r>                        (. schedule = r; .)
+    ]
+  .
+
+  /* ================= declarations ================= */
+
+  Declaration                             (. String key, eventClass, s; List<String> include, exclude = new ArrayList<>();
+                                             LocalDate from = null, to = null; Object body; Set<String> weekdays;
+                                             LocalDate d = null; CalendarSpec calendar;
+                                             List<Map.Entry<String, Object>> attributes = new ArrayList<>();
+                                             List<Citation> citations = new ArrayList<>(); .)
+  = "rule"                                (. references = new LinkedHashSet<>(); estimated = false; .)
+    Name<out key> "for" Name<out eventClass> "in" Scopes<out include>
+    [ "except" Scopes<out exclude> ]
+    [ "valid" [ "from" IsoDate<out from> ] [ "to" IsoDate<out to> ] ]
+    "=" Body<out body>
+    [ "with" Attribute<attributes> { "," Attribute<attributes> } ]
+    [ "cites" Citation<citations> { "," Citation<citations> } ]
+    ";"                                   (. declarations.add(RuleCatalog.rule(key, eventClass, include, exclude, from, to, body,
+                                                 attributes, citations, references, estimated)); .)
+  | "weekend" scope                       (. s = t.val; .)
+    "=" WeekdaySet<out weekdays> [ "from" IsoDate<out d> ] ";"
+                                          (. declarations.add(RuleCatalog.weekend(s, weekdays, d)); .)
+  | "calendar" key                        (. s = t.val; .)
+    "=" Calendar<out calendar> ";"        (. declarations.add(RuleCatalog.calendarDeclaration(s, calendar)); .)
+  .
+
+  /* exactly one of the alternatives will happen: ONE OF {item AS name, ...} */
+  Body<out Object body>                   (. Rule r; List<Map.Entry<String, Rule>> alternatives = new ArrayList<>(); body = null; .)
+  = "ONE" "OF" "{" Alternative<alternatives> { "," Alternative<alternatives> } "}"
+                                          (. body = RuleCatalog.oneOf(alternatives); .)
+  | Exprs<out r>                          (. body = r; .)
+  .
+
+  Alternative<. List<Map.Entry<String, Rule>> alternatives .>   (. Expr item; String name; .)
+  = Item<out item> "AS" Name<out name>    (. alternatives.add(Map.entry(name, RuleCatalog.exprs(List.of(item)))); .)
+  .
+
+  /* a key or an event class; the words of kinds, precisions and labels are literals, so they are names here as well */
+  Name<out String name>
+  = ( key | "closed" | "non_working" | "short_day" | "working_day" | "paid_no_rest" | "tourist" | "event"
+    | "special_session" | "changed_hours" | "day" | "month" | "official" | "benchmark" | "practice" | "secondary" )
+                                          (. name = t.val; .)
+  .
+
+  Scopes<. out List<String> scopes .>     (. scopes = new ArrayList<>(); .)
+  = scope                                 (. scopes.add(t.val); .)
+    { "," scope                           (. scopes.add(t.val); .)
+    }
+  .
+
+  Attribute<. List<Map.Entry<String, Object>> attributes .>   (. String opens, closes = null, tz = null; .)
+  = "kind" "="
+    ( "closed" | "non_working" | "short_day" | "working_day" | "paid_no_rest" | "tourist" | "event" | "special_session"
+    | "changed_hours" )                   (. attributes.add(Map.entry("kind", (Object) t.val)); .)
+  | "session" Time<out opens> [ "-" Time<out closes> ] [ "tz" string (. tz = unquote(t.val); .)
+    ]                                     (. attributes.add(RuleCatalog.session(opens, closes, tz)); .)
+  | "precision" "=" ( "day" | "month" )   (. attributes.add(Map.entry("precision", (Object) t.val)); .)
+  | "note" string                         (. attributes.add(Map.entry("note", (Object) unquote(t.val))); .)
+  .
+
+  Time<out String time>                   (. int h, m; .)
+  = Number<out h> ":" Number<out m>       (. time = RuleCatalog.time(h, m); .)
+  .
+
+  Citation<. List<Citation> citations .>  (. String source, article = null, url = null; .)
+  = string                                (. source = unquote(t.val); .)
+    [ "art" string                        (. article = unquote(t.val); .)
+    ]
+    [ "url" string                        (. url = unquote(t.val); .)
+    ]
+    "label" ( "official" | "benchmark" | "practice" | "secondary" )
+                                          (. citations.add(new Citation(source, article, url, t.val)); .)
+  .
+
+  IsoDate<out LocalDate d>                (. int y, m, day; .)
+  = Number<out y> "-" Number<out m> "-" Number<out day>   (. d = LocalDate.of(y, m, day); .)
+  .
+
+  /* ================= calendars ================= */
+
+  /* a business day in every term of "&" */
+  Calendar<out CalendarSpec calendar>     (. CalendarSpec term; List<CalendarSpec> terms = new ArrayList<>(); .)
+  = CalTerm<out term>                     (. terms.add(term); .)
+    { "&" CalTerm<out term>               (. terms.add(term); .)
+    }                                     (. calendar = RuleCatalog.calendar(terms); .)
+  .
+
+  CalTerm<out CalendarSpec calendar>      (. String s; int days = 0; Set<String> unless = new LinkedHashSet<>(); calendar = null; .)
+  = scope                                 (. s = t.val; .)
+    [ "ignore" "at" "T" "+" Number<out days>   /* USD on T+1 does not count, unless for MXN */
+      [ "unless" "{" ccy                  (. unless.add(t.val); .)
+        { "," ccy                         (. unless.add(t.val); .)
+        } "}" ]
+    ]                                     (. calendar = new RuleCatalog.Scope(s, days, unless); .)
+  | key                                   (. calendar = new RuleCatalog.Named(t.val); .)
+  | "(" Calendar<out calendar> ")"
+  .
+
+  /* in an expression one term only, as "&" there is include: ON country:BR, ON usd_eur, ON (a & b) */
+  On<out CalendarSpec calendar>           (. calendar = null; .)
+  = "ON"
+    ( scope                               (. calendar = new RuleCatalog.Scope(t.val, 0, Set.of()); .)
+    | key                                 (. calendar = new RuleCatalog.Named(t.val); .)
+    | "(" Calendar<out calendar> ")"
+    )
+  .
+
+  /* ================= expressions ================= */
+
+  Exprs<out Rule rule>                    (. Expr item; List<Expr> items = new ArrayList<>(); .)
+  = Item<out item>                        (. items.add(item); .)
+    { "," Item<out item>                  (. items.add(item); .)
+    }                                     (. rule = RuleCatalog.exprs(items); .)
+  .
+
+  /* the condition applies to every date of the item; the shifts after it to the dates it keeps */
+  Item<out Expr d>                        (. int pick = 0; boolean fromEnd = false, include = true; Move m;
+                                             List<Move> moves = new ArrayList<>(); List<Expr> operand;
+                                             IfClause clause = null; d = ScheduleSemantics.BASE; .)
+  = ( ordinal                             (. pick = ordinal(t.val); .)
+      [ "LAST"                            (. fromEnd = true; .)
+      ]
+      ( Series<out d>                     /* the item starts with a series or an event, where several dates come from */
+      | event                             (. d = ScheduleSemantics.event(event(t.val)); .)
+      )
+      { Shift<out m>                      (. moves.add(m); .)
+      }                                   (. d = RuleCatalog.shifted(d, moves); .)
+    | Expr<out d>
+    )
+    /* A & B includes the dates of B, A \\ B excludes them; the shifts after it apply to the result */
+    { ( "&"                               (. include = true; .)
+      | "\\"                              (. include = false; .)
+      ) Operand<out operand>              (. moves = new ArrayList<>(); .)
+      { Shift<out m>                      (. moves.add(m); .)
+      }                                   (. d = RuleCatalog.shifted(ScheduleSemantics.combined(d, include, operand), moves); .)
+    }
+    [ IfClause<out clause> ]              (. d = RuleCatalog.ruleItem(d, clause);
+                                             if (pick != 0) d = ScheduleSemantics.pick(pick, fromEnd, d); .)
+  .
+
+  IfClause<out IfClause clause>           (. Condition c; Move m; List<Move> moves = new ArrayList<>(); .)
+  = "IF" Condition<out c>
+    { Shift<out m>                        (. moves.add(m); .)
+    }                                     (. clause = new IfClause(c, moves); .)
+  .
+
+  /* a date, a series or a set of dates */
+  Operand<. out List<Expr> exprs .>       (. Expr d; exprs = new ArrayList<>(); .)
+  = Date<out d>                           (. exprs.add(d); .)
+  | "{" Expr<out d>                       (. exprs.add(d); .)
+    { "," Expr<out d>                     (. exprs.add(d); .)
+    } "}"
+  .
+
+  /* [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out */
+  Series<out Expr d>                      (. Expr first, last = null; TemporalAmount step = null;
+                                             boolean startOut = false, endOut = false; .)
+  = ( "[" | "]"                           (. startOut = true; .)
+    ) Endpoint<out first> ":"
+    ( IF(isStep()) Period<out step> ":"
+      [ Endpoint<out last> ]              /* none: an open series [SPOT : 1Q : ] */
+    | Endpoint<out last>
+    )
+    ( "]" | "["                           (. endOut = true; .)
+    )                                     (. d = ScheduleSemantics.series(first, step, last, startOut, endOut); .)
+  .
+
+  /* an endpoint is one date, so it can't be a series */
+  Endpoint<out Expr d>                    (. Move m; List<Move> moves = new ArrayList<>(); .)
+  = SingleDate<out d>
+    { Shift<out m>                        (. moves.add(m); .)
+    }                                     (. d = RuleCatalog.shifted(d, moves); .)
+  .
+
+  /* shifts are applied from left to right */
+  Expr<out Expr d>                        (. Move m; List<Move> moves = new ArrayList<>(); .)
+  = Date<out d>
+    { Shift<out m>                        (. moves.add(m); .)
+    }                                     (. d = RuleCatalog.shifted(d, moves); .)
+  .
+
+  Shift<out Move m>                       (. TemporalAmount p; String code = null; boolean endend = false, cumulative = false;
+                                             CalendarSpec on = null; Anchor a; Annual an; int n = 1; m = null;
+                                             List<Annual> annuals = new ArrayList<>();
+                                             List<Map.Entry<Set<String>, Move>> entries = new ArrayList<>(); .)
+  = "+" Period<out p> [ "ENDEND"          (. endend = true; .)
+    ] [ On<out on> ]                      (. m = RuleCatalog.plus(p, 1, endend, on); .)
+  | "-" Period<out p> [ "ENDEND"          (. endend = true; .)
+    ] [ On<out on> ]                      (. m = RuleCatalog.plus(p, -1, endend, on); .)
+  | ">"
+    ( "IMM"                               (. m = RuleCatalog.nextImm(); .)
+    | "SPOT" [ pair                       (. code = t.val; .)
+      ] [ On<out on> ]                    (. m = RuleCatalog.spot(code, on); .)
+    | "FIX" [ pair                        (. code = t.val; .)
+      ]                                   (. m = RuleCatalog.fix(code); .)
+    | Roll<out code> [ On<out on> ]       (. m = RuleCatalog.rollShift(code, on); .)
+    | "NEXT" [ ordinal                    (. n = ordinal(t.val); .)
+      ] Anchor<out a>                     (. m = RuleCatalog.next(n, a); .)
+    | "PREV" [ ordinal                    (. n = ordinal(t.val); .)
+      ] Anchor<out a>                     (. m = RuleCatalog.previous(n, a); .)
+    | "NEAREST" Anchor<out a>             (. m = RuleCatalog.nearestShift(a); .)   /* ties go forward */
+    | Count<out n> Select<out a>          /* > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH */
+      "IN" PeriodWord<out code>           (. m = RuleCatalog.select(Math.abs(n), n < 0, a, code); .)
+    | "{" Annual<out an>                  (. annuals.add(an); .)   /* > {1 FEB, 1 MAY}: the dates of the set in the year */
+      { "," Annual<out an>                (. annuals.add(an); .)
+      } "}"                               (. m = RuleCatalog.datesInYear(annuals); .)
+    | "POSTPONE" Roll<out code> [ On<out on> ] "MAX" Period<out p> [ "CUMULATIVE" (. cumulative = true; .)
+      ]                                   (. m = new RuleCatalog.Postpone(code, on, p, cumulative); .)
+    )
+  | "{" Observe<entries>                  /* {SAT - 1D, TUE WED > PREV MON}: the first entry for the weekday moves it */
+    { "," Observe<entries> }
+    "}"                                   (. m = RuleCatalog.observance(entries); .)
+  .
+
+  Observe<. List<Map.Entry<Set<String>, Move>> entries .>
+                                          (. String w, code; Set<String> weekdays = new LinkedHashSet<>(); TemporalAmount p;
+                                             Anchor a; CalendarSpec on = null; .)
+  = Weekday<out w>                        (. weekdays.add(w); .)
+    { Weekday<out w>                      (. weekdays.add(w); .)
+    }
+    ( "+" Period<out p>                   (. entries.add(RuleCatalog.observePlus(weekdays, p, 1)); .)
+    | "-" Period<out p>                   (. entries.add(RuleCatalog.observePlus(weekdays, p, -1)); .)
+    | ">"
+      ( "NEXT" Anchor<out a>              (. entries.add(RuleCatalog.observeAnchor(weekdays, a, 1)); .)
+      | "PREV" Anchor<out a>              (. entries.add(RuleCatalog.observeAnchor(weekdays, a, -1)); .)
+      | "NEAREST" Anchor<out a>           (. entries.add(RuleCatalog.observeNearest(weekdays, a)); .)
+      | Roll<out code> [ On<out on> ]     (. entries.add(RuleCatalog.observeRoll(weekdays, code, on)); .)
+      )
+    )
+  .
+
+  Roll<out String code>
+  = ( "FOLLOWING" | "PRECEDING" | "MODFOLLOWING" | "MODPRECEDING" | "BOW" | "EOW" | "BOM" | "EOM" | "BOQ" | "EOQ"
+    | "BOH" | "EOH" | "BOY" | "EOY" )     (. code = t.val; .)
+  .
+
+  /* counting from the end is a negative count, as a production has only one out attribute */
+  Count<out int n>                        (. n = 1; .)
+  = ordinal                               (. n = ordinal(t.val); .)
+    [ "LAST"                              (. n = -n; .)
+    ]
+  | "LAST"                                (. n = -1; .)
+  .
+
+  /* WEEK is Monday to Sunday */
+  PeriodWord<out String code>
+  = ( "WEEK" | "MONTH" | "QUARTER" | "HALFYEAR" | "YEAR" ) (. code = t.val; .)
+  .
+
+  /* the targets of a selection; an annual date starting with LAST only in braces, as LAST also starts the count */
+  Select<out Anchor a>                    (. List<Anchor> anchors = new ArrayList<>(); a = null; .)
+  = Chosen<out a>
+  | "{" Target<out a>                     (. anchors.add(a); .)
+    { "," Target<out a>                   (. anchors.add(a); .)
+    } "}"                                 (. a = ScheduleSemantics.anyOf(anchors); .)
+  .
+
+  /* NEXT {MON, FRI}: the nearest of a set */
+  Anchor<out Anchor a>                    (. List<Anchor> anchors = new ArrayList<>(); a = null; .)
+  = Target<out a>
+  | "{" Target<out a>                     (. anchors.add(a); .)
+    { "," Target<out a>                   (. anchors.add(a); .)
+    } "}"                                 (. a = ScheduleSemantics.anyOf(anchors); .)
+  .
+
+  Target<out Anchor a>                    (. String w, m; a = null; .)
+  = Chosen<out a>
+  | "LAST" Weekday<out w> Month<out m>    (. a = ScheduleSemantics.annual(ScheduleSemantics.lastWeekday(w, m)); .)
+  .
+
+  Chosen<out Anchor a>                    (. String w; Annual an; CalendarSpec on = null; a = null; .)
+  = Weekday<out w>                        (. a = ScheduleSemantics.weekday(w); .)
+  | "BD" [ On<out on> ]                   (. a = RuleCatalog.businessDay(on); .)
+  | "FD"                                  (. a = ScheduleSemantics.FIXING_DAY; .)
+  | "IMM"                                 (. a = ScheduleSemantics.IMM; .)
+  | FixedAnnual<out an>                   (. a = ScheduleSemantics.annual(an); .)
+  | event                                 (. a = ScheduleSemantics.eventAnchor(event(t.val)); .)
+  | "HOLIDAY" [ On<out on> ]              (. a = RuleCatalog.holiday(on); .)
+  | "NONHOLIDAY" [ On<out on> ]           (. a = RuleCatalog.nonholiday(on); .)
+  .
+
+  Date<out Expr d>                        (. d = null; .)
+  = SingleDate<out d>
+  | Series<out d>
+  .
+
+  /* a date that is not a series */
+  SingleDate<out Expr d>                  (. int a, b, c; String code = null, w, m; Annual an; CalendarSpec on = null;
+                                             d = ScheduleSemantics.BASE; .)
+  = "T"                                   /* the base date */
+  | "TOM"                                 (. d = ScheduleSemantics.plus(d, ScheduleSemantics.period(1, "B")); .)
+  | "SPOT" [ pair                         (. code = t.val; .)
+    ] [ On<out on> ]                      (. d = RuleCatalog.spotDate(code, on); .)
+  | Number<out a>
+    ( "-" Number<out b> "-" Number<out c> (. d = ScheduleSemantics.literal(LocalDate.of(a, b, c)); .)
+    | "." Number<out b> "." Number<out c> (. d = ScheduleSemantics.literal(LocalDate.of(c, b, a)); .)
+    | "/" Number<out b> "/" Number<out c> (. d = ScheduleSemantics.literal(LocalDate.of(c, a, b)); .)
+    | AnnualTail<out an, a>               (. d = ScheduleSemantics.inYear(an); .)
+    )
+  | "LAST" Weekday<out w> Month<out m>    (. d = ScheduleSemantics.inYear(ScheduleSemantics.lastWeekday(w, m)); .)
+  | FixedWord<out an>                     (. d = ScheduleSemantics.inYear(an); .)
+  | event                                 (. d = ScheduleSemantics.event(event(t.val)); .)
+  .
+
+  /* dates that recur every year */
+  Annual<out Annual an>                   (. String w, m; an = null; .)
+  = FixedAnnual<out an>
+  | "LAST" Weekday<out w> Month<out m>    (. an = ScheduleSemantics.lastWeekday(w, m); .)
+  .
+
+  FixedAnnual<out Annual an>              (. int n; an = null; .)
+  = Number<out n> AnnualTail<out an, n>
+  | FixedWord<out an>
+  .
+
+  /* after the number: 4 JUL, 1 SHAWWAL BY SIGHTING, 3 MON JAN */
+  AnnualTail<out Annual an, int n>        (. String w, m, method = null; an = null; .)
+  = Month<out m> [ HijriMethod<out method> ]   (. an = RuleCatalog.monthDay(n, m, method); .)
+  | Weekday<out w> Month<out m>           (. an = ScheduleSemantics.nthWeekday(n, w, m); .)
+  .
+
+  HijriMethod<out String method>          (. method = null; .)
+  = "BY"
+    ( "UMMALQURA"                         (. method = t.val; .)
+    | "SIGHTING"                          (. method = t.val; .)
+    | "DIYANET"                           (. method = t.val; .)
+    | "FOLLOW"                            (. method = t.val; .)
+      scope
+    )                                     (. if (!method.equals("UMMALQURA")) estimated = true; .)
+  .
+
+  FixedWord<out Annual an>                (. String m, k; int n; String z = null; an = null; .)
+  = "EASTER"                              (. an = ScheduleSemantics.EASTER; .)
+  | "ORTHODOX" "EASTER"                   (. an = RuleCatalog.ORTHODOX_EASTER; .)
+  | ( "EQUINOX" | "SOLSTICE" )            (. k = t.val; .)
+    Month<out m> [ Zone<out z> ]          (. an = RuleCatalog.season(k, m, z); .)
+  | "SOLARTERM" Number<out n> [ Zone<out z> ]   (. an = RuleCatalog.solarTerm(n, z); .)
+  | "HINDU" key                           (. an = RuleCatalog.hindu(t.val); .)
+  .
+
+  /* UTC+9 or an IANA time zone such as "Asia/Tokyo" */
+  Zone<out String z>                      (. z = null; .)
+  = zone                                  (. z = t.val; .)
+  | string                                (. z = unquote(t.val); .)
+  .
+
+  /* Gregorian, then Hijri (Umm al-Qura), Hebrew and Chinese months */
+  Month<out String m>
+  = ( "JAN" | "FEB" | "MAR" | "APR" | "MAY" | "JUN" | "JUL" | "AUG" | "SEP" | "OCT" | "NOV" | "DEC"
+    | "MUHARRAM" | "SAFAR" | "RABIALAWWAL" | "RABIALTHANI" | "JUMADAALULA" | "JUMADAALAKHIRA" | "RAJAB" | "SHABAN"
+    | "RAMADAN" | "SHAWWAL" | "DHULQADAH" | "DHULHIJJAH"
+    | "NISAN" | "IYAR" | "SIVAN" | "TAMMUZ" | "AV" | "ELUL" | "TISHRI" | "HESHVAN" | "KISLEV" | "TEVET" | "SHEVAT"
+    | "ADAR" | "ADARII"
+    | "ZHENGYUE" | "ERYUE" | "SANYUE" | "SIYUE" | "WUYUE" | "LIUYUE" | "QIYUE" | "BAYUE" | "JIUYUE" | "SHIYUE"
+    | "DONGYUE" | "LAYUE" )
+                                          (. m = t.val; .)
+  .
+
+  Weekday<out String w>
+  = ( "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN" ) (. w = t.val; .)
+  .
+
+  Period<out TemporalAmount p>            (. int n; .)
+  = Number<out n>
+    ( "D" | "W" | "M" | "Q" | "H" | "Y" | "B" | "F" )   (. p = ScheduleSemantics.period(n, t.val); .)
+  .
+
+  Number<out int n>
+  = number                                (. n = Integer.parseInt(t.val); .)
+  .
+
+  /* ================= conditions ================= */
+
+  Condition<out Condition c>              (. List<Condition> parts = new ArrayList<>(); .)
+  = CondAnd<out c>                        (. parts.add(c); .)
+    { "OR" CondAnd<out c>                 (. parts.add(c); .)
+    }                                     (. c = parts.size() == 1 ? parts.get(0) : RuleCatalog.anyCondition(parts); .)
+  .
+
+  CondAnd<out Condition c>                (. List<Condition> parts = new ArrayList<>(); .)
+  = CondNot<out c>                        (. parts.add(c); .)
+    { "AND" CondNot<out c>                (. parts.add(c); .)
+    }                                     (. c = parts.size() == 1 ? parts.get(0) : RuleCatalog.allConditions(parts); .)
+  .
+
+  CondNot<out Condition c>                (. boolean negate = false; .)
+  = [ "NOT"                               (. negate = true; .)
+    ] CondAtom<out c>                     (. if (negate) c = RuleCatalog.notCondition(c); .)
+  .
+
+  CondAtom<out Condition c>               (. Set<String> weekdays; int first, last; String m = null; Expr subject;
+                                             CalendarSpec on = null; TemporalAmount p; c = null; .)
+  = WeekdaySet<out weekdays>              (. c = RuleCatalog.onWeekday(weekdays); .)   /* the weekday of the date itself */
+  | "DAY" Number<out first> ".." Number<out last> [ Month<out m> ]   /* DAY 8..14 APR */
+                                          (. c = RuleCatalog.onDay(first, last, m); .)
+  | Subject<out subject> "IS"
+    ( WeekdaySet<out weekdays>            (. c = RuleCatalog.isWeekday(subject, weekdays); .)
+    | "HOLIDAY" [ On<out on> ]            (. c = RuleCatalog.dateIsHoliday(subject, on); .)
+    )
+  | "HOLIDAY" [ On<out on> ]              (. c = RuleCatalog.holidayCondition(on); .)
+  | "BETWEEN" "HOLIDAYS" [ On<out on> ]   (. c = RuleCatalog.betweenHolidays(on); .)   /* JP art. 3(3) */
+  | "EVERY" Period<out p> "FROM" Number<out first>   (. c = RuleCatalog.every(p, first); .)   /* EVERY 4Y FROM 1965 */
+  | "(" Condition<out c> ")"
+  .
+
+  /* 18 SEP, EASTER + 1D */
+  Subject<out Expr d>                     (. TemporalAmount p; List<Move> moves = new ArrayList<>(); .)
+  = SingleDate<out d>
+    { "+" Period<out p>                   (. moves.add(RuleCatalog.plus(p, 1, false, null)); .)
+    | "-" Period<out p>                   (. moves.add(RuleCatalog.plus(p, -1, false, null)); .)
+    }                                     (. d = RuleCatalog.shifted(d, moves); .)
+  .
+
+  WeekdaySet<. out Set<String> weekdays .>   (. String w; weekdays = new LinkedHashSet<>(); .)
+  = Weekday<out w>                        (. weekdays.add(w); .)
+    { Weekday<out w>                      (. weekdays.add(w); .)
+    }
+  | "{" Weekday<out w>                    (. weekdays.add(w); .)
+    { "," Weekday<out w>                  (. weekdays.add(w); .)
+    } "}"
+  .
+
+END RuleFile.

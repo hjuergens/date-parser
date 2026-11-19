@@ -65,7 +65,7 @@ country:AR 2026 => 2026-06-15
 rule co.ascension for ascension_day in country:CO = EASTER + 39D {TUE WED THU FRI SAT SUN > NEXT MON}
   cites "Ley 51 de 1983" art "1" label official;
 rule cl.bridge for national_holiday_bridge in country:CL = 17 SEP IF 18 SEP IS TUE, 20 SEP IF 19 SEP IS THU;
-rule gr.easter_monday for easter_monday in country:GR = ORTHODOX EASTER + 1D;
+rule gr.easter_monday for easter_monday in country:GR = ORTHODOX EASTER + 1D with note "Δευτέρα του Πάσχα";
 rule zrh.s for sechselaeuten in subdivision:CH_ZRH
   = 3 MON APR \ {EASTER - 6D, EASTER + 1D}, EASTER - 13D IF DAY 8..14 APR, EASTER + 8D IF DAY 22..28 APR;
 rule x.first for test_day in country:XX = [1 JAN : 1M : 1 DEC] > NEXT FRI IF DAY 1..3 AND NOT DAY 1..3 MAY;

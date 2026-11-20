@@ -250,7 +250,7 @@ object ScheduleParsers {
   trait Market {
     def isBusinessDay(date: LocalDate): Boolean
 
-    /** the FX spot date: T+1 for USD against CAD, TRY, PHP or RUB, otherwise T+2 (also without pair) */
+    /** the FX spot date: T+1, T+0 or T+2 by the pair, see Market.spotLag */
     def spot(trade: LocalDate, pair: Option[String]): LocalDate = {
       plusBusinessDays(trade, Market.spotLag(pair), this)
     }
@@ -260,8 +260,12 @@ object ScheduleParsers {
     /** Monday to Friday, no holidays */
     val Weekends: Market = _.getDayOfWeek.getValue < 6
 
-    /** the business days from trade to spot: 1 for USD against CAD, TRY, PHP or RUB, otherwise 2 (also without pair) */
-    def spotLag(pair: Option[String]): Int = if (pair.exists(_.matches("USD(CAD|TRY|PHP|RUB)|(CAD|TRY|PHP|RUB)USD"))) 1 else 2
+    /** the business days from trade to spot: 1 for USD against CAD, KZT, PHP, RUB, TRY or UZS, 0 against AZN, KGS,
+     *  MDL, MNT or UAH, otherwise 2 (also without pair; a cross takes T+2) */
+    def spotLag(pair: Option[String]): Int =
+      if (pair.exists(_.matches("USD(CAD|KZT|PHP|RUB|TRY|UZS)|(CAD|KZT|PHP|RUB|TRY|UZS)USD"))) 1
+      else if (pair.exists(_.matches("USD(AZN|KGS|MDL|MNT|UAH)|(AZN|KGS|MDL|MNT|UAH)USD"))) 0
+      else 2
 
     /** Monday to Friday except the holidays */
     def withHolidays(holidays: Set[LocalDate]): Market = date => Weekends.isBusinessDay(date) && !holidays(date)

@@ -27,13 +27,16 @@ class Market:
         return d.weekday() < 5 and d not in self.holidays
 
     def spot(self, trade, pair=None):
-        """FX spot: T+1 for USD against CAD, TRY, PHP or RUB, otherwise T+2 (also without pair)"""
+        """FX spot: T+1, T+0 or T+2 by the pair, see spot_lag"""
         return plus_business_days(trade, spot_lag(pair), self)
 
 
 def spot_lag(pair):
-    """the business days from trade to spot: 1 for USD against CAD, TRY, PHP or RUB, otherwise 2 (also without pair)"""
-    return 1 if pair and re.fullmatch(r"USD(CAD|TRY|PHP|RUB)|(CAD|TRY|PHP|RUB)USD", pair) else 2
+    """the business days from trade to spot: 1 for USD against CAD, KZT, PHP, RUB, TRY or UZS, 0 against AZN, KGS, MDL,
+    MNT or UAH, otherwise 2 (also without pair; a cross takes T+2)"""
+    if pair and re.fullmatch(r"USD(CAD|KZT|PHP|RUB|TRY|UZS)|(CAD|KZT|PHP|RUB|TRY|UZS)USD", pair):
+        return 1
+    return 0 if pair and re.fullmatch(r"USD(AZN|KGS|MDL|MNT|UAH)|(AZN|KGS|MDL|MNT|UAH)USD", pair) else 2
 
 
 def fix(value_date, pair, fixing):

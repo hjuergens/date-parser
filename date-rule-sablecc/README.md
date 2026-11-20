@@ -55,7 +55,7 @@ mvn -pl date-rule-sablecc verify
 ```
 
 `sablecc-maven-plugin` 2.2 (the latest release, from 2008) generates the sources into `target/generated-sources/sablecc`.
-[ScheduleEvaluatorTest](src/test/java/de/juergens/schedule/ScheduleEvaluatorTest.java) (TestNG) runs 6097 cases,
+[ScheduleEvaluatorTest](src/test/java/de/juergens/schedule/ScheduleEvaluatorTest.java) (TestNG) runs 6105 cases,
 [RuleCasesTest](src/test/java/de/juergens/schedule/RuleCasesTest.java) 59 and [RuleCatalogTest](src/test/java/de/juergens/schedule/RuleCatalogTest.java) 5.
 
 ## Status

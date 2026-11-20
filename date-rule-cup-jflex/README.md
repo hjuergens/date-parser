@@ -53,5 +53,5 @@ mvn -pl date-rule-cup-jflex verify
 
 - `com.github.vbmacher:cup-maven-plugin` (CUP 11b) generates into `target/generated-sources/cup`.
 - `de.jflex:jflex-maven-plugin` (JFlex 1.9) generates into `target/generated-sources/jflex`.
-- [SchedulesTest](src/test/java/io/github/hjuergens/schedule/SchedulesTest.java) (TestNG) runs 6097 cases,
+- [SchedulesTest](src/test/java/io/github/hjuergens/schedule/SchedulesTest.java) (TestNG) runs 6105 cases,
   [RuleCasesTest](src/test/java/io/github/hjuergens/schedule/RuleCasesTest.java) 59 and [RuleCatalogTest](src/test/java/io/github/hjuergens/schedule/RuleCatalogTest.java) 5.

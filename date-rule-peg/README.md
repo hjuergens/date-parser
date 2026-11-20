@@ -61,6 +61,6 @@ npm ci && npm test               # or directly, with Node 20 or later
 ```
 
 `npm run build` writes standalone ES module parsers to `target/schedule-parser.mjs` and `target/rulefile-parser.mjs`.
-[test/schedule.test.mjs](test/schedule.test.mjs) (`node:test`) runs 6097 cases,
+[test/schedule.test.mjs](test/schedule.test.mjs) (`node:test`) runs 6105 cases,
 [test/rule-cases.test.mjs](test/rule-cases.test.mjs) the 59 of [examples/rules.txt](../examples/rules.txt) and
 [test/rule-catalog.test.mjs](test/rule-catalog.test.mjs) 5 tests of attributes and announcements.

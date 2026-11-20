@@ -235,11 +235,11 @@
     <h1>Twelve parsers, one date language</h1>
     <p class="lead">
       The same small language for dates, periods and ranges, implemented with twelve parser generators and
-      parser libraries, from LL(1) to LALR(1), Earley, GLL and PEG. Every implementation passes the same 564 test cases.
+      parser libraries, from LL(1) to LALR(1), Earley, GLL and PEG. Every implementation passes the same 572 test cases.
     </p>
     <ul class="stats">
       <li><strong>12</strong><span>implementations, 6 languages</span></li>
-      <li><strong>564</strong><span>shared test cases</span></li>
+      <li><strong>572</strong><span>shared test cases</span></li>
       <li><strong>0</strong><span>grammar conflicts</span></li>
       <li><strong>1</strong><span>specification file</span></li>
     </ul>
@@ -1266,6 +1266,11 @@ observe  = WEEKDAY SIGN period
           <tr><td><code>2015-06-09 &gt; SPOT CADUSD</code></td><td><span class="date">2015-06-10</span></td></tr>
           <tr><td><code>2015-06-12 &gt; SPOT USDCAD</code></td><td><span class="date">2015-06-15</span></td></tr>
           <tr><td><code>2015-06-09&gt;SPOT USDTRY</code></td><td><span class="date">2015-06-10</span></td></tr>
+          <tr><td><code>2015-06-09 &gt; SPOT USDKZT</code></td><td><span class="date">2015-06-10</span></td></tr>
+          <tr><td><code>2015-06-12 &gt; SPOT UZSUSD</code></td><td><span class="date">2015-06-15</span></td></tr>
+          <tr><td><code>2015-06-09 &gt; SPOT USDUAH</code></td><td><span class="date">2015-06-09</span></td></tr>
+          <tr><td><code>2015-06-09 &gt; SPOT MNTUSD + 1D</code></td><td><span class="date">2015-06-10</span></td></tr>
+          <tr><td><code>2015-06-09 &gt; SPOT EURUAH</code></td><td><span class="date">2015-06-11</span></td></tr>
           <tr><td><code>2015-06-12 &gt; SPOT USDCAD &gt; SPOT</code></td><td><span class="date">2015-06-17</span></td></tr>
           <tr><td><code>2015-06-09 &gt; SPOT + 1W</code></td><td><span class="date">2015-06-18</span></td></tr>
           <tr><td><code>2015-06-09 &gt; SPOT &gt; IMM</code></td><td><span class="date">2015-06-17</span></td></tr>
@@ -1291,6 +1296,8 @@ observe  = WEEKDAY SIGN period
           <tr><td><code><span class="ctx">[2015-06-09 XTEST]</span> 2015-06-09 + 2B</code></td><td><span class="date">2015-06-12</span></td></tr>
           <tr><td><code><span class="ctx">[2015-06-09 XTEST]</span> T &gt; SPOT</code></td><td><span class="date">2015-06-12</span></td></tr>
           <tr><td><code><span class="ctx">[2015-06-09 XTEST]</span> T &gt; SPOT USDCAD</code></td><td><span class="date">2015-06-11</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09 XTEST]</span> T &gt; SPOT USDKZT</code></td><td><span class="date">2015-06-11</span></td></tr>
+          <tr><td><code><span class="ctx">[2015-06-09 XTEST]</span> T &gt; SPOT USDMDL</code></td><td><span class="date">2015-06-09</span></td></tr>
           <tr><td><code><span class="ctx">[2015-12-24 XTEST]</span> T &gt; SPOT</code></td><td><span class="date">2015-12-29</span></td></tr>
           <tr><td><code><span class="ctx">[2015-06-09 XTEST]</span> [T : 1B : T + 3B]</code></td><td><span class="date">2015-06-09</span>, <span class="date">2015-06-11</span>, <span class="date">2015-06-12</span>, <span class="date">2015-06-15</span></td></tr>
           <tr><td><code><span class="ctx">[2015-06-09 XTEST]</span> T + 1M</code></td><td><span class="date">2015-07-09</span></td></tr>
@@ -1763,6 +1770,7 @@ observe  = WEEKDAY SIGN period
           <tr><td><code><span class="ctx">[2026-04-01 XNYS XTGT]</span> T + 2B</code></td><td><span class="date">2026-04-06</span></td></tr>
           <tr><td><code><span class="ctx">[2026-04-01 XNYS XTGT]</span> T &gt; SPOT &gt; FIX</code></td><td><span class="date">2026-04-01</span></td></tr>
           <tr><td><code><span class="ctx">[2026-04-01 XNYS XTGT]</span> T &gt; SPOT USDCAD &gt; FIX USDCAD</code></td><td><span class="date">2026-04-01</span></td></tr>
+          <tr><td><code><span class="ctx">[2026-04-01 XNYS XTGT]</span> T &gt; SPOT USDKGS &gt; FIX USDKGS</code></td><td><span class="date">2026-04-01</span></td></tr>
           <tr><td><code><span class="ctx">[2026-04-07 XNYS XTGT]</span> T - 1F</code></td><td><span class="date">2026-04-02</span></td></tr>
           <tr><td><code><span class="ctx">[2026-04-02 XNYS XTGT]</span> T &gt; NEXT FD</code></td><td><span class="date">2026-04-07</span></td></tr>
           <tr><td><code><span class="ctx">[2026-04-02 XNYS]</span> T &gt; NEXT FD</code></td><td><span class="date">2026-04-03</span></td></tr>
@@ -2181,13 +2189,14 @@ docker run --rm -v "$PWD:/work" -w /work/date-rule-flex-bison date-rule-flex-bis
     return { year: t.getUTCFullYear(), month: t.getUTCMonth() + 1, day: t.getUTCDate() };
   }
 
-  // FX spot: T+1 for USD against CAD, TRY, PHP or RUB, otherwise T+2
+  // FX spot: T+1 for USD against CAD, KZT, PHP, RUB, TRY or UZS, T+0 against AZN, KGS, MDL, MNT or UAH, otherwise T+2 (a cross takes T+2)
   function spot(d, pair, market) {
     return plusBusinessDays(d, spotLag(pair), market);
   }
 
   function spotLag(pair) {
-    return /^(USD(CAD|TRY|PHP|RUB)|(CAD|TRY|PHP|RUB)USD)$/.test(pair) ? 1 : 2;
+    if (/^(USD(CAD|KZT|PHP|RUB|TRY|UZS)|(CAD|KZT|PHP|RUB|TRY|UZS)USD)$/.test(pair)) return 1;
+    return /^(USD(AZN|KGS|MDL|MNT|UAH)|(AZN|KGS|MDL|MNT|UAH)USD)$/.test(pair) ? 0 : 2;
   }
 
   // > FIX [PAIR]: the fixing date of a value date, the spot lag of the pair before it in fixing days

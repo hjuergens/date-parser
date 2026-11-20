@@ -63,5 +63,5 @@ mvn -pl date-rule-antlr-java verify
 ```
 
 The `antlr4-maven-plugin` generates the lexer and parser into `target/generated-sources/antlr4`;
-[DateSchedulesTest](src/test/java/io/github/hjuergens/time/DateSchedulesTest.java) (TestNG) runs 6097 cases,
+[DateSchedulesTest](src/test/java/io/github/hjuergens/time/DateSchedulesTest.java) (TestNG) runs 6105 cases,
 [RuleCasesTest](src/test/java/io/github/hjuergens/time/RuleCasesTest.java) 59 and [RuleCatalogTest](src/test/java/io/github/hjuergens/time/RuleCatalogTest.java) 5.

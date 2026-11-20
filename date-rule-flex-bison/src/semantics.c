@@ -295,17 +295,21 @@ static int plus(Eval *eval, int date, Period period, int sign, Market *market, M
     return add_days(eval, clamped, sign * period.days);
 }
 
-/* the business days from trade to spot: 1 for USD against CAD, TRY, PHP or RUB, otherwise 2 (also without pair) */
+/* the business days from trade to spot: 1 for USD against CAD, KZT, PHP, RUB, TRY or UZS, 0 against AZN, KGS, MDL,
+ * MNT or UAH, otherwise 2 (also without pair; a cross takes T+2) */
 static int spot_lag(const char *pair) {
-    static const char *const T_PLUS_ONE[] = { "CAD", "TRY", "PHP", "RUB" };
-    int one = 0;
-    for (int i = 0; pair && i < 4; i++)
-        one |= (!strncmp(pair, "USD", 3) && !strcmp(pair + 3, T_PLUS_ONE[i]))
-            || (!strncmp(pair, T_PLUS_ONE[i], 3) && !strcmp(pair + 3, "USD"));
-    return one ? 1 : 2;
+    static const char *const T_PLUS_ONE[] = { "CAD", "KZT", "PHP", "RUB", "TRY", "UZS", NULL };
+    static const char *const T_PLUS_ZERO[] = { "AZN", "KGS", "MDL", "MNT", "UAH", NULL };
+    const char *other = !pair || strlen(pair) != 6 ? NULL
+        : !strncmp(pair, "USD", 3) ? pair + 3 : !strcmp(pair + 3, "USD") ? pair : NULL;
+    for (int i = 0; other && T_PLUS_ONE[i]; i++)
+        if (!strncmp(other, T_PLUS_ONE[i], 3)) return 1;
+    for (int i = 0; other && T_PLUS_ZERO[i]; i++)
+        if (!strncmp(other, T_PLUS_ZERO[i], 3)) return 0;
+    return 2;
 }
 
-/* FX spot: T+1 for USD against CAD, TRY, PHP or RUB, otherwise T+2 (also without pair) */
+/* FX spot: T+1, T+0 or T+2 by the pair, see spot_lag */
 static int spot(Eval *eval, int trade, const char *pair, Market *market) {
     return plus_business_days(eval, trade, spot_lag(pair), market);
 }

@@ -171,13 +171,14 @@
     return { year: t.getUTCFullYear(), month: t.getUTCMonth() + 1, day: t.getUTCDate() };
   }
 
-  // FX spot: T+1 for USD against CAD, TRY, PHP or RUB, otherwise T+2
+  // FX spot: T+1 for USD against CAD, KZT, PHP, RUB, TRY or UZS, T+0 against AZN, KGS, MDL, MNT or UAH, otherwise T+2 (a cross takes T+2)
   function spot(d, pair, market) {
     return plusBusinessDays(d, spotLag(pair), market);
   }
 
   function spotLag(pair) {
-    return /^(USD(CAD|TRY|PHP|RUB)|(CAD|TRY|PHP|RUB)USD)$/.test(pair) ? 1 : 2;
+    if (/^(USD(CAD|KZT|PHP|RUB|TRY|UZS)|(CAD|KZT|PHP|RUB|TRY|UZS)USD)$/.test(pair)) return 1;
+    return /^(USD(AZN|KGS|MDL|MNT|UAH)|(AZN|KGS|MDL|MNT|UAH)USD)$/.test(pair) ? 0 : 2;
   }
 
   // > FIX [PAIR]: the fixing date of a value date, the spot lag of the pair before it in fixing days

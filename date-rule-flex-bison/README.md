@@ -3,7 +3,7 @@
 The [shared schedule example](../README.md#shared-example-schedule) in C, with a [Flex](https://github.com/westes/flex)
 scanner and a [GNU Bison](https://www.gnu.org/software/bison/) parser (C skeleton, LALR(1)). Both are reentrant, so
 nothing is global. It is tested against all three spec files: [schedule.txt](../examples/schedule.txt),
-[catalog.txt](../examples/catalog.txt) and [date-holidays.txt](../examples/date-holidays.txt), 6097 cases, and it reads
+[catalog.txt](../examples/catalog.txt) and [date-holidays.txt](../examples/date-holidays.txt), 6105 cases, and it reads
 [rule files](#rule-files), tested against the 72 cases of [rules.txt](../examples/rules.txt).
 A [Go binding](#go-via-swig), generated with [SWIG](https://www.swig.org/), runs the same cases from Go.
 
@@ -110,7 +110,7 @@ dates, err := rule.Evaluate(schedule.Context{Base: &base})   // [2025-06-27 00:0
 
 `NewMarket(rule)` and `(*Events).Add(name, rule)` take the rule over, as in C. A market caches holidays behind a lock, so
 rules, markets, events and contexts can be shared between goroutines; only `Add` and `Close` must not run while others
-use them. `make test-go` builds `build/libschedule.a` and runs `go vet` and `go test`: 6097 subtests over the
+use them. `make test-go` builds `build/libschedule.a` and runs `go vet` and `go test`: 6105 subtests over the
 spec files, as in [schedule_test.go](go/schedule_test.go), plus an ownership test and the example above. You need Go 1.24
 or newer and SWIG 4; the Dockerfile has both.
 

@@ -56,7 +56,7 @@ catalog.holidays("country:JP", 2026)   // [Occurrence[date=2026-09-23, rule=jp.e
 mvn -pl date-rule-combinators verify
 ```
 
-[ScheduleParsersSuite](src/test/scala/de/juergens/text/ScheduleParsersSuite.scala) (ScalaTest) runs 6097 cases,
+[ScheduleParsersSuite](src/test/scala/de/juergens/text/ScheduleParsersSuite.scala) (ScalaTest) runs 6105 cases,
 [RuleCasesSuite](src/test/scala/de/juergens/text/rules/RuleCasesSuite.scala) the 59 of [examples/rules.txt](../examples/rules.txt)
 and [RuleCatalogSuite](src/test/scala/de/juergens/text/rules/RuleCatalogSuite.scala) 5 tests of attributes and announcements;
 [SeasonTest](src/test/scala/de/juergens/time/SeasonTest.scala) (JUnit 4) checks the equinoxes and solstices.

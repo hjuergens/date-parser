@@ -58,7 +58,7 @@ catalog.holidays("country:JP", 2026);   // [Occurrence[date=2026-09-23, rule=jp.
 
 ## Tests
 
-[SchedulesTest](src/test/java/io/github/hjuergens/instaparse/SchedulesTest.java) runs the 6097 cases of
+[SchedulesTest](src/test/java/io/github/hjuergens/instaparse/SchedulesTest.java) runs the 6105 cases of
 [examples/schedule.txt](../examples/schedule.txt), [examples/catalog.txt](../examples/catalog.txt) and
 [examples/date-holidays.txt](../examples/date-holidays.txt) with TestNG, the same harness as in the other JVM modules;
 [RuleCasesTest](src/test/java/io/github/hjuergens/instaparse/RuleCasesTest.java) the 72 cases of

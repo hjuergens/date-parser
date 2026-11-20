@@ -38,15 +38,21 @@ public final class ScheduleSemantics {
 
         boolean isBusinessDay(LocalDate date);
 
-        /** the FX spot date: T+1 for USD against CAD, TRY, PHP or RUB, otherwise T+2 (also without pair) */
+        /** the FX spot date: T+1, T+0 or T+2 by the pair, see spotLag */
         default LocalDate spot(LocalDate trade, String pair) {
             return plusBusinessDays(trade, spotLag(pair), this);
         }
     }
 
-    /** the business days from trade to spot: 1 for USD against CAD, TRY, PHP or RUB, otherwise 2 (also without pair) */
+    /**
+     * the business days from trade to spot: 1 for USD against CAD, KZT, PHP, RUB, TRY or UZS, 0 against AZN, KGS, MDL,
+     * MNT or UAH, otherwise 2 (also without pair; a cross takes T+2)
+     */
     public static int spotLag(String pair) {
-        return pair != null && pair.matches("USD(CAD|TRY|PHP|RUB)|(CAD|TRY|PHP|RUB)USD") ? 1 : 2;
+        if (pair != null && pair.matches("USD(CAD|KZT|PHP|RUB|TRY|UZS)|(CAD|KZT|PHP|RUB|TRY|UZS)USD")) {
+            return 1;
+        }
+        return pair != null && pair.matches("USD(AZN|KGS|MDL|MNT|UAH)|(AZN|KGS|MDL|MNT|UAH)USD") ? 0 : 2;
     }
 
     /** the default market: Monday to Friday, no holidays */

@@ -52,7 +52,7 @@ mvn -pl date-rule-coco verify
 The bundled [Coco.jar](Coco.jar) (version of 2011-04-19) runs through `maven-antrun-plugin` in `generate-sources`.
 It uses the frame files [Parser.frame](Parser.frame) and [Scanner.frame](Scanner.frame) from the module root
 and writes `Parser`, `Scanner`, and `Errors` to `target/generated-sources/coco/io/github/hjuergens/coco/schedule`.
-[SchedulesTest](src/test/java/io/github/hjuergens/coco/schedule/SchedulesTest.java) (TestNG) runs 6097 cases,
+[SchedulesTest](src/test/java/io/github/hjuergens/coco/schedule/SchedulesTest.java) (TestNG) runs 6105 cases,
 [RuleCasesTest](src/test/java/io/github/hjuergens/coco/schedule/RuleCasesTest.java) 59 and [RuleCatalogTest](src/test/java/io/github/hjuergens/coco/schedule/RuleCatalogTest.java) 5.
 
 ## Status

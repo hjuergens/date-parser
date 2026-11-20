@@ -148,8 +148,8 @@ with several values, so the shifts after it apply to each element.
 `<` for "previous", which would suggest that `>` is "next" and leave `< EOM` or `< SPOT` without a meaning; backwards is
 `> PREV` (`T > PREV 2ND MON`, `T > PREV IMM`) or `-` a period.
 `> IMM` moves to the next IMM date strictly after the date (QuantLib's `IMM::nextDate` convention), so `2015-06-17 > IMM` is `2015-09-16`.
-`> SPOT` moves to the FX spot date: `+ 1B` for USD against CAD, TRY, PHP or RUB, `+ 2B` for every other pair
-or without a pair.
+`> SPOT` moves to the FX spot date: `+ 1B` for USD against CAD, KZT, PHP, RUB, TRY or UZS, the trade date itself for
+USD against AZN, KGS, MDL, MNT or UAH, `+ 2B` for every other pair (a cross such as EURUAH too) or without a pair.
 A second calendar, the *fixing calendar*, comes with the context too (Monday to Friday without one): `F` counts its
 business days, `FD` is one of them, and `> FIX` moves from a value date to its fixing date, as many fixing days back as
 spot is ahead (`> FIX USDCAD`: one), so `T > SPOT > FIX` is `T` when both calendars are open.
@@ -219,7 +219,7 @@ that isn't declared is an error, and so is an event with several dates at the en
 once per date of its event: the event's date throws until the item binds it, which needs no change to how the twelve grammars build
 expressions.
 
-All implementations are tested against the same 564 cases in [examples/schedule.txt](examples/schedule.txt),
+All implementations are tested against the same 572 cases in [examples/schedule.txt](examples/schedule.txt),
 including invalid dates and syntax errors, 2186 cases in [examples/catalog.txt](examples/catalog.txt) and 3347 in
 [examples/date-holidays.txt](examples/date-holidays.txt). Each module has a test that reads all three files.
 [examples/rules.txt](examples/rules.txt) holds 72 cases for rule files (declarations around the schedule language, see

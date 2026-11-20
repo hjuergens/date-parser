@@ -215,9 +215,10 @@ rule fed.fomc_decision for fomc_decision in central_bank:FED
   cites "FOMC meeting calendar" url "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm" label official;
 
 # FOMC minutes: the minutes of each meeting are released three weeks (21 days) after its rate decision, so a
-# Wednesday decision gives a Wednesday release. Follows every FOMC decision, announced or projected.
+# Wednesday decision gives a Wednesday release, at 2:00 pm Eastern time (the session). Follows every FOMC decision,
+# announced or projected.
 rule fed.fomc_minutes for fomc_minutes in central_bank:FED = @fed.fomc_decision + 21D
-  with kind = event
+  with kind = event, session 14:00 tz "America/New_York"
   cites "FOMC meeting calendar" url "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm" label official;
 
 # Fed communications blackout: the period around each FOMC meeting in which Fed officials do not speak in public

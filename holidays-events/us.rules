@@ -197,7 +197,7 @@ rule fed.christmas_day for christmas_day in central_bank:FED = 25 DEC {SUN + 1D}
   with kind = closed
   cites "Federal Reserve K.8 holidays" url "https://www.federalreserve.gov/aboutthefed/k8.htm" label official;
 
-# --- Monetary policy: the Federal Open Market Committee (FOMC) meets eight times a year; the source for all three
+# --- Monetary policy: the Federal Open Market Committee (FOMC) meets eight times a year; the source for all four
 # --- rules below is the Fed's FOMC meeting calendar (source fed_fomc_calendar).
 
 # FOMC rate decision: the day the FOMC announces its decision on the federal funds rate (the last day of a
@@ -219,6 +219,12 @@ rule fed.fomc_decision for fomc_decision in central_bank:FED
 # announced or projected.
 rule fed.fomc_minutes for fomc_minutes in central_bank:FED = @fed.fomc_decision + 21D
   with kind = event, session 14:00 tz "America/New_York"
+  cites "FOMC meeting calendar" url "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm" label official;
+
+# FOMC press conference: the Chair's press conference on the day of every FOMC decision, announced or projected, at
+# 2:30 pm Eastern time (the session), half an hour after the statement.
+rule fed.fomc_press_conference for fomc_press_conference in central_bank:FED = @fed.fomc_decision
+  with kind = event, session 14:30 tz "America/New_York"
   cites "FOMC meeting calendar" url "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm" label official;
 
 # Fed communications blackout: the period around each FOMC meeting in which Fed officials do not speak in public

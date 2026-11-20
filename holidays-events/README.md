@@ -232,7 +232,7 @@ are the catalog's own remarks, including switch dates still to be verified (Oman
 
 | File | Covers | Rules |
 |---|---|---|
-| `us.rules` | NYSE holidays and early closes, Federal Reserve holidays (K.8), US bond market (SIFMA), FOMC decisions and minutes, Fed blackout, BLS jobs report, New York Fed consumer expectations survey | 40 |
+| `us.rules` | NYSE holidays and early closes, Federal Reserve holidays (K.8), US bond market (SIFMA), FOMC decisions, minutes and press conferences, Fed blackout, BLS jobs report, New York Fed consumer expectations survey | 41 |
 | `uk_ch.rules` | Bank holidays of England and Wales (most also apply in Northern Ireland), Bank of England decisions, UK CPI (ONS), SIX Swiss Exchange, Swiss payment systems SIC and euroSIC, Swiss National Bank | 41 |
 | `apac_other.rules` | Rate decisions of 11 Asia-Pacific central banks, China's Spring Festival, Yom Kippur at Tel Aviv, MSCI quarterly reviews, BOJ-NET and RITS closing days | 23 (24 declarations) |
 | `de_ez.rules` | TARGET2 (euro payment system), Bundesbank, Xetra, German nationwide and regional holidays, Eurex quarterly expiry | 30 |
@@ -243,7 +243,7 @@ are the catalog's own remarks, including switch dates still to be verified (Oman
 | `ca.rules` | Closing days of Lynx, Canada's large-value payment system | 10 |
 | `ru_cis.rules` | Russian non-working holidays, Bank of Russia key-rate meetings | 9 |
 | `weekends.rules` | Weekend regimes that are not Saturday-Sunday | 0 (31 weekend lines) |
-| **Total** | | **187** |
+| **Total** | | **188** |
 
 The 42 events whose dates are only ever announced have no rule; each has a comment with its key and source.
 
@@ -326,6 +326,8 @@ scenario names of the moon-sighting rules included.
 | `br.rules`, `ca.rules` | 26 | 26 | 0 |
 | `ru_cis.rules` | 9 | 9 | 0 |
 | **Total** | **187** | **187** | **0** |
+
+`fed.fomc_press_conference`, added later, is not in the comparison; its dates are those of `fed.fomc_decision`.
 
 Equivalent but indirect forms (both engines agree, the comments explain them):
 

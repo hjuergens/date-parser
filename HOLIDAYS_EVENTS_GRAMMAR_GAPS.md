@@ -61,7 +61,7 @@ This document identifies which features of the Lark schedule grammar (in `date-r
 | Select in series | `shift: ">" count selection "IN" PERIOD -> select` | ❌ NOT USED | Not used |
 | Dates in year | `shift: ">" "{" annual ("," annual)* "}" -> dates_in_year` | ❌ NOT USED | Not used |
 
-**Note:** EOM, FOLLOWING, PRECEDING, MODFOLLOWING, MODPRECEDING are used.
+**Note:** EOM, FOLLOWING and PRECEDING are used; MODFOLLOWING and MODPRECEDING are not.
 
 ### 5. Conditions
 
@@ -148,7 +148,7 @@ All findings were verified by searching through all `*.rules` files in the `holi
 
 To verify these findings, run:
 ```bash
-cd /home/juergens/workspace/date-parser/holidays-events
+cd holidays-events
 grep -r "calendar\|HINDU\|ORTHODOX\|POSTPONE\|NEAREST\|BOW\|EOW" *.rules
 # Should return no results (except in comments)
 ```

@@ -98,25 +98,27 @@ The holidays-events rules **do use** the following major features:
 ✅ Conditions: `IF DAY NUM..NUM [MONTH]`, `IF weekday_set`
 ✅ References: `@key`
 ✅ ON scope: `> PRECEDING ON scope`
-✅ Set operations: `operand & operand` (intersection)
+✅ Exclude: `date \ {date, ...}` (`zrh.sechselaeuten`); include (`&`, a union) is not used
 ✅ Label: `official`
 
 ## Files Analyzed
 
-All `*.rules` files in `/home/juergens/workspace/date-parser/holidays-events/`:
-- `apac_other.rules` (34 rules)
-- `br.rules` (13 rules)
+All `*.rules` files in [holidays-events/](holidays-events/):
+- `apac_other.rules` (23 rules)
+- `br.rules` (16 rules)
 - `ca.rules` (10 rules)
 - `cz.rules` (1 rule)
-- `de_ez.rules` (31 rules)
-- `gcc.rules` (17 rules)
-- `issuers.rules` (18 rules)
-- `ru_cis.rules` (11 rules)
-- `uk_ch.rules` (40 rules)
-- `us.rules` (45 rules)
+- `de_ez.rules` (30 rules)
+- `gcc.rules` (11 rules)
+- `issuers.rules` (6 rules)
+- `ru_cis.rules` (9 rules)
+- `uk_ch.rules` (41 rules)
+- `us.rules` (41 rules)
 - `weekends.rules` (31 weekend lines)
 
-**Total: 220+ rules analyzed**
+**Total: 188 rules** (190 declarations: two rules have a second version), as in the table of
+[holidays-events/README.md](holidays-events/README.md). 187 of them were compared day by day for 2021 to 2031 with
+holidays-events' own engine and all agree; `fed.fomc_press_conference` came later.
 
 ## Conclusion
 

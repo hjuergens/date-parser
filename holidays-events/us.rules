@@ -206,10 +206,12 @@ rule fed.christmas_day for christmas_day in central_bank:FED = 25 DEC {SUN + 1D}
 # in the Fed's own dates and are projected: the January, March and July decisions fall on the Wednesday on or after
 # 26 January, 16 March and 26 July (January and July hit in every year 2014-2027, March in 13 of 14 years, 2017
 # missed). The other five meetings move from year to year and have no projection: they appear only once announced.
+# The statement is released at 2:00 pm Eastern time (the session).
 # "25 JAN > NEXT WED" is the first Wednesday strictly after 25 January, i.e. on or after 26 January.
 rule fed.fomc_decision for fomc_decision in central_bank:FED
   = 25 JAN > NEXT WED, 15 MAR > NEXT WED, 25 JUL > NEXT WED
-  with kind = event, note "schedule for the next year published mid-year; January, March and July projected"
+  with kind = event, session 14:00 tz "America/New_York",
+    note "schedule for the next year published mid-year; January, March and July projected"
   cites "FOMC meeting calendar" url "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm" label official;
 
 # FOMC minutes: the minutes of each meeting are released three weeks (21 days) after its rate decision, so a

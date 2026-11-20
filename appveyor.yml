@@ -1,0 +1,21 @@
+image: Visual Studio 2022
+
+cache:
+  - C:\Users\appveyor\.m2\repository
+
+build_script:
+  - ps: |
+      choco install temurin17 maven --yes --no-progress
+      if ($LASTEXITCODE -ne 0) { throw "Failed to install Java 17 and Maven" }
+
+      $env:JAVA_HOME = [Environment]::GetEnvironmentVariable("JAVA_HOME", "Machine")
+      $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" +
+        [Environment]::GetEnvironmentVariable("Path", "User")
+
+      java -version
+      if ($LASTEXITCODE -ne 0) { throw "Java is not available on PATH" }
+
+      mvn -B verify
+      if ($LASTEXITCODE -ne 0) { $host.SetShouldExit($LASTEXITCODE) }
+
+test: off

@@ -1,9 +1,13 @@
 # date-parser: twelve parsers, one language
 
+[![AppVeyor build status](https://ci.appveyor.com/api/projects/status/github/hjuergens/date-parser?svg=true)](https://ci.appveyor.com/project/hjuergens/date-parser)
+
 The same date-schedule language implemented with **ANTLR 4 (Java and Python targets), JavaCC, GNU Bison (Java and C, with Flex),
 JFlex + CUP, SableCC, Coco/R, Peggy (PEG), Lark (Earley and LALR), instaparse (GLL, Clojure) and Scala parser combinators**, all
 tested against one shared set of cases. It is a hands-on comparison of LL, LALR, Earley, GLL, PEG and combinator parsing in Java,
 Scala, JavaScript, Python, Clojure and C.
+
+AppVeyor runs the Maven reactor on Windows with Java 17; [`mise run test`](mise.toml) runs the full cross-language suite.
 
 **[See the side-by-side comparison →](https://hjuergens.github.io/date-parser/)**
 

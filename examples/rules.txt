@@ -105,6 +105,32 @@ calendar usd_eur_strict = settlement_system:TARGET2 & settlement_system:FEDWIRE;
 [2026-07-02] T > SPOT EURUSD ON usd_eur_strict => 2026-07-07
 [2026-07-02] T > SPOT USDMXN ON usd_eur => 2026-07-07
 
+# FX value dates: USD on T + 1 counts for ARS, BRL, CLP and MXN; Israel's own holiday on T + 1 does not delay spot
+rule fedwire.independence_day for independence_day in settlement_system:FEDWIRE = 4 JUL {SAT - 1D, SUN + 1D};
+rule zahav.yom_kippur for yom_kippur in settlement_system:ZAHAV = 10 TISHRI;
+calendar usd_latam = country:BR & settlement_system:FEDWIRE ignore at T + 1 unless {ARS, BRL, CLP, MXN};
+calendar usd_ils = settlement_system:ZAHAV ignore at T + 1 & settlement_system:FEDWIRE;
+calendar usd_ils_strict = settlement_system:ZAHAV & settlement_system:FEDWIRE;
+[2026-07-02] T > SPOT USDBRL ON usd_latam => 2026-07-07
+[2026-07-02] T > SPOT USDCLP ON usd_latam => 2026-07-07
+[2026-07-02] T > SPOT USDARS ON usd_latam => 2026-07-07
+[2026-07-02] T > SPOT USDZAR ON usd_latam => 2026-07-06
+[2026-09-18] T > SPOT USDILS ON usd_ils => 2026-09-22
+[2026-09-18] T > SPOT USDILS ON usd_ils_strict => 2026-09-23
+
+# NDF (EMTA templates): valuation on the preceding business day in all valuation centres, an unscheduled holiday
+# defers it at most 14 days, settlement two business days later in New York; an overnight rate published on the next
+# fixing day
+rule br.all_souls_day for all_souls_day in country:BR = 2 NOV;
+rule fed.veterans_day for veterans_day in central_bank:FED = 11 NOV {SUN + 1D};
+rule us_bond.good_friday for good_friday in segment:US_BOND = EASTER - 2D;
+calendar brl_ndf = country:BR & central_bank:FED;
+[2026-11-02] T > PRECEDING ON brl_ndf => 2026-10-30
+[2026-11-02] T > PRECEDING ON brl_ndf + 2B ON central_bank:FED => 2026-11-03
+[2026-11-11] T > POSTPONE FOLLOWING ON brl_ndf MAX 14D => 2026-11-12
+[2026-11-11] T > POSTPONE FOLLOWING ON brl_ndf MAX 14D + 2B ON central_bank:FED => 2026-11-16
+[2026-04-02] T + 1B ON segment:US_BOND => 2026-04-06
+
 # schedule extensions for rule files: ENDEND, NEAREST, MODPRECEDING, POSTPONE, NEXT HOLIDAY, BD ON ... IN, time zones
 rule us.independence_day for independence_day in country:US = 4 JUL {SAT - 1D, SUN + 1D};
 rule br.carnival for carnival in country:BR = [16 FEB : 20 FEB];
@@ -119,6 +145,13 @@ rule br.carnival for carnival in country:BR = [16 FEB : 20 FEB];
 [2026-01-01] T > NEXT HOLIDAY ON country:BR => 2026-02-16
 [2026-02-01] T > 2ND BD ON country:BR IN MONTH => 2026-02-03
 [2026-01-01] EQUINOX MAR "Asia/Tokyo", EQUINOX MAR UTC+9 => 2026-03-20, 2026-03-20
+
+# a rule on the days of another: the FOMC press conference on every decision day, at its own time
+rule fed.fomc_decision for fomc_decision in central_bank:FED = 25 JAN > NEXT WED, 15 MAR > NEXT WED, 25 JUL > NEXT WED
+  with kind = event, session 14:00 tz "America/New_York";
+rule fed.fomc_press_conference for fomc_press_conference in central_bank:FED = @fed.fomc_decision
+  with kind = event, session 14:30 tz "America/New_York";
+central_bank:FED 2027 => 2027-01-27, 2027-01-27, 2027-03-17, 2027-03-17, 2027-07-28, 2027-07-28
 
 # alternatives: exactly one of them happens
 rule sa.eid for eid_al_fitr in country:SA = ONE OF { 1 RAMADAN + 29D AS ramadan_29, 1 RAMADAN + 30D AS ramadan_30 };

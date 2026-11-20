@@ -240,12 +240,12 @@ are the catalog's own remarks, including switch dates still to be verified (Oman
 | `gcc.rules` | Islamic holidays and national days of Saudi Arabia and the UAE, Gulf central-bank decisions following the Fed | 11 (12 declarations) |
 | `issuers.rules` | AGMs with a pattern (Lufthansa, LVMH) and ex-dividend days of four listed companies | 6 |
 | `br.rules` | Days on which Brazil's central bank publishes no PTAX dollar fixing | 16 |
-| `ca.rules` | Closing days of Lynx, Canada's large-value payment system | 10 |
+| `ca.rules` | Closing days of Lynx, Canada's large-value payment system; Bank of Canada rate announcements (announced only) | 10 |
 | `ru_cis.rules` | Russian non-working holidays, Bank of Russia key-rate meetings | 9 |
 | `weekends.rules` | Weekend regimes that are not Saturday-Sunday | 0 (31 weekend lines) |
 | **Total** | | **188** |
 
-The 42 events whose dates are only ever announced have no rule; each has a comment with its key and source.
+The 43 events whose dates are only ever announced have no rule; each has a comment with its key and source.
 
 Some files refer to rules in others (`@fed.fomc_decision` from `us.rules` is used in `apac_other.rules` and
 `gcc.rules`; `msci.rebalance` needs the NYSE holidays; the ex-dividend rules need the Xetra calendar), so load
@@ -328,6 +328,12 @@ scenario names of the moon-sighting rules included.
 | **Total** | **187** | **187** | **0** |
 
 `fed.fomc_press_conference`, added later, is not in the comparison; its dates are those of `fed.fomc_decision`.
+
+Checked again on 2026-11-20 against the catalog of 2026-11-19: the 184 rules with dates in 2021 to 2031 agree day
+by day (the other three wait for an announced AGM); the only rule here without one there is the press conference.
+The catalog had added one announced-only event since (`boc.rate_announcement`, now in `ca.rules`) and new sources
+for the two Ramadan sessions. The weekends of Bahrain and of Zahav (Israel's RTGS), also new there, are not in
+`weekends.rules`, which only lists scopes these files use.
 
 Equivalent but indirect forms (both engines agree, the comments explain them):
 

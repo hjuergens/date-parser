@@ -195,18 +195,18 @@ rule cbuae.rate_decision for cbuae_rate_decision in central_bank:CBUAE = @fed.fo
 
 # =====================================================================================================================
 # Ramadan trading hours: exchange:DSMD (Qatar Stock Exchange) and exchange:XCAI (Egyptian Exchange)
-# Each exchange announces its Ramadan session once a year in a circular (source gcc_exchange_circulars, "DFM / ADX /
-# QSE / Boursa Kuwait / EGX circulars", one source for several exchanges' circulars; it has no single URL). The catalog
-# models this as one session change per year and gives the hours the exchanges usually set. The event class is
-# "session change", the kind "changed_hours" (the exchange is open, with other hours than usual), with the expected
-# Ramadan session. No projection: the days (the month of Ramadan, by moon sighting) appear only once the
-# circular is entered.
+# Each exchange announces its Ramadan session once a year (sources qse_notices, the QSE news page, and egx_holidays,
+# the Egyptian Exchange's own announcements). The catalog models this as one session change per year and gives the
+# hours the exchanges usually set. The event class is "session change", the kind "changed_hours" (the exchange is
+# open, with other hours than usual), with the expected Ramadan session. No projection: the days (the month of
+# Ramadan, by moon sighting) appear only once the announcement is entered.
 # =====================================================================================================================
 
-# Qatar Stock Exchange, Ramadan session: expected 09:30 to 13:15 Doha time, announced each year by circular.
-# No rule: the dates are only announced (gcc_exchange_circulars); they are data for the evaluator, under the key
+# Qatar Stock Exchange, Ramadan session: expected 09:30 to 13:15 Doha time, announced on the QSE news page a day or
+# two before Ramadan; in 2026 the trading period stayed unchanged (09:30 to 13:15), only office hours were shortened.
+# No rule: the dates are only announced (qse_notices); they are data for the evaluator, under the key
 # dsmd.ramadan_session.
 
-# Egyptian Exchange, Ramadan session: expected 10:00 to 13:30 Cairo time, announced each year by circular.
-# No rule: the dates are only announced (gcc_exchange_circulars); they are data for the evaluator, under the key
+# Egyptian Exchange, Ramadan session: expected 10:00 to 13:30 Cairo time, announced each year by the exchange.
+# No rule: the dates are only announced (egx_holidays); they are data for the evaluator, under the key
 # xcai.ramadan_session.

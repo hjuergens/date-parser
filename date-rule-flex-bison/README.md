@@ -4,7 +4,7 @@ The [shared schedule example](../README.md#shared-example-schedule) in C, with a
 scanner and a [GNU Bison](https://www.gnu.org/software/bison/) parser (C skeleton, LALR(1)). Both are reentrant, so
 nothing is global. It is tested against all three spec files: [schedule.txt](../examples/schedule.txt),
 [catalog.txt](../examples/catalog.txt) and [date-holidays.txt](../examples/date-holidays.txt), 6097 cases, and it reads
-[rule files](#rule-files), tested against the 60 cases of [rules.txt](../examples/rules.txt).
+[rule files](#rule-files), tested against the 72 cases of [rules.txt](../examples/rules.txt).
 A [Go binding](#go-via-swig), generated with [SWIG](https://www.swig.org/), runs the same cases from Go.
 
 ## Files

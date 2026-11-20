@@ -15,6 +15,7 @@
 # Weekends: Lynx has the weekend Saturday and Sunday (see weekends.rules).
 #
 # Scopes used in this file:
+#   central_bank:BOC        Bank of Canada; only an announced event, no rule.
 #   settlement_system:LYNX  Lynx (CAD RTGS, Payments Canada): the settlement system for large Canadian-dollar
 #                           payments, operated by Payments Canada; part of Canada (country:CA); time zone
 #                           America/Toronto.
@@ -104,3 +105,13 @@ rule lynx.christmas_day for christmas_day in settlement_system:LYNX = 25 DEC {SA
 rule lynx.boxing_day for boxing_day in settlement_system:LYNX = 26 DEC {SAT + 2D, SUN + 2D}
   with kind = closed
   cites "Payments Canada system closure schedule (Lynx, ACSS)" url "https://www.payments.ca/system-closure-schedule" label official;
+
+# =====================================================================================================================
+# central_bank:BOC - Bank of Canada (the catalog keeps it in us.yaml, with the other North American rules)
+# Who sets it: the Bank of Canada, in its schedule of policy rate announcements (source boc_rate_schedule).
+# =====================================================================================================================
+
+# Bank of Canada policy rate announcement: eight a year. Next year's dates come by press release in the summer; the
+# policy rate page lists the current and the next year. No projection: no dates until announced.
+# No rule: the dates are only announced (boc_rate_schedule); they are data for the evaluator, under the key
+# boc.rate_announcement.

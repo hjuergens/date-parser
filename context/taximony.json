@@ -1,0 +1,400 @@
+{
+  "metadata": {
+    "name": "date-parser Project Taxonomy",
+    "version": "1.0",
+    "created": "2026-11-20",
+    "author": "Vibe Assistant",
+    "description": "Comprehensive taxonomy, axes, and dimensions framework for the date-parser project"
+  },
+  
+  "taxonomy": {
+    "root": {
+      "name": "date-parser",
+      "description": "Root of the project",
+      "children": {
+        "Core System": {
+          "description": "Primary project deliverables and infrastructure",
+          "children": {
+            "Parser Implementations": {
+              "description": "Individual parser implementations",
+              "children": {
+                "Production Implementations": {
+                  "description": "Actively maintained",
+                  "implementations": [
+                    {
+                      "id": "date-rule-antlr-java",
+                      "name": "ANTLR 4 (Java)",
+                      "language": "Java",
+                      "algorithm": "ALL(*)",
+                      "maturity": "Production",
+                      "feature_coverage": "Full",
+                      "primary_use": "General parsing"
+                    },
+                    {
+                      "id": "date-rule-antlr-python",
+                      "name": "ANTLR 4 (Python)",
+                      "language": "Python",
+                      "algorithm": "ALL(*)",
+                      "maturity": "Production",
+                      "feature_coverage": "Full",
+                      "primary_use": "Python ecosystem"
+                    },
+                    {
+                      "id": "date-rule-lark",
+                      "name": "Lark",
+                      "language": "Python",
+                      "algorithm": "Earley/LALR(1)",
+                      "maturity": "Production",
+                      "feature_coverage": "Full+",
+                      "primary_use": "Holidays-events (PRIMARY)"
+                    },
+                    {
+                      "id": "date-rule-combinators",
+                      "name": "Scala Combinators",
+                      "language": "Scala",
+                      "algorithm": "Recursive Descent",
+                      "maturity": "Production",
+                      "feature_coverage": "Full",
+                      "primary_use": "Functional approach"
+                    },
+                    {
+                      "id": "date-rule-flex-bison",
+                      "name": "Flex + Bison",
+                      "language": "C",
+                      "algorithm": "LALR(1)",
+                      "maturity": "Production",
+                      "feature_coverage": "Full",
+                      "primary_use": "C integration"
+                    },
+                    {
+                      "id": "date-rule-sablecc",
+                      "name": "SableCC",
+                      "language": "Java",
+                      "algorithm": "LALR(1)",
+                      "maturity": "Production",
+                      "feature_coverage": "Full",
+                      "primary_use": "Java"
+                    }
+                  ]
+                },
+                "Secondary Implementations": {
+                  "description": "Maintained but less active",
+                  "implementations": [
+                    {
+                      "id": "date-rule-bison",
+                      "name": "Bison",
+                      "language": "Java",
+                      "algorithm": "LALR(1)",
+                      "maturity": "Secondary",
+                      "feature_coverage": "Near-Full"
+                    },
+                    {
+                      "id": "date-rule-cup-jflex",
+                      "name": "CUP + JFlex",
+                      "language": "Java",
+                      "algorithm": "LALR(1)",
+                      "maturity": "Secondary",
+                      "feature_coverage": "Near-Full"
+                    },
+                    {
+                      "id": "date-rule-javacc",
+                      "name": "JavaCC",
+                      "language": "Java",
+                      "algorithm": "LL(k)",
+                      "maturity": "Secondary",
+                      "feature_coverage": "Near-Full"
+                    },
+                    {
+                      "id": "date-rule-coco",
+                      "name": "Coco/R",
+                      "language": "Java",
+                      "algorithm": "LL(1)",
+                      "maturity": "Secondary",
+                      "feature_coverage": "Near-Full"
+                    }
+                  ]
+                }
+              }
+            },
+            "Runtime & Infrastructure": {
+              "description": "Shared runtime libraries and infrastructure",
+              "children": {
+                "date-rule-runtime": {
+                  "description": "Shared runtime libraries"
+                },
+                "docs": {
+                  "description": "Documentation generation"
+                }
+              }
+            },
+            "Domain Applications": {
+              "description": "Domain-specific applications",
+              "children": {
+                "holidays-events": {
+                  "description": "Market-relevant date rules",
+                  "rule_count": 229,
+                  "validation": "2021-2031",
+                  "agreement_rate": "100%"
+                }
+              }
+            }
+          }
+        },
+        "Supporting Assets": {
+          "description": "Supporting files and resources",
+          "children": {
+            "Examples & Test Data": {
+              "children": {
+                "examples/schedule.txt": {
+                  "cases": 537,
+                  "description": "Shared test cases"
+                },
+                "examples/catalog.txt": {
+                  "cases": 2186,
+                  "description": "Holiday rule catalog"
+                },
+                "examples/date-holidays.txt": {
+                  "cases": 3347,
+                  "description": "Date holiday rules"
+                }
+              }
+            },
+            "Experiments": {
+              "description": "Legacy/Exploratory implementations",
+              "count": 12
+            },
+            "Scripts & Utilities": {
+              "children": {
+                "scripts/catalog_cases.py": {
+                  "description": "Generate test cases from holidays-events"
+                },
+                "scripts/date-holidays/": {
+                  "description": "Date holiday generation"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  
+  "axes": {
+    "Parser Technology": {
+      "description": "How the parser is implemented",
+      "categories": {
+        "Parser Generator": {
+          "description": "Tools that generate parsers from grammar specs",
+          "implementations": ["ANTLR-Java", "ANTLR-Python", "Bison", "CUP-JFlex", "JavaCC", "SableCC", "Coco/R"],
+          "count": 7
+        },
+        "Parser Library": {
+          "description": "Pre-built parser libraries",
+          "implementations": ["Lark", "Instaparse", "Peggy"],
+          "count": 3
+        },
+        "Combinator Parsers": {
+          "description": "Functional parser combinators",
+          "implementations": ["Combinators"],
+          "count": 1
+        }
+      }
+    },
+    "Language/Platform": {
+      "description": "Programming language and platform",
+      "categories": {
+        "Java": {
+          "implementations": ["ANTLR-Java", "Bison", "CUP-JFlex", "JavaCC", "SableCC", "Coco/R"],
+          "count": 6
+        },
+        "Python": {
+          "implementations": ["ANTLR-Python", "Lark"],
+          "count": 2
+        },
+        "C": {
+          "implementations": ["Flex+Bison"],
+          "count": 1
+        },
+        "Clojure": {
+          "implementations": ["Instaparse"],
+          "count": 1
+        },
+        "JavaScript": {
+          "implementations": ["Peggy"],
+          "count": 1
+        },
+        "Scala": {
+          "implementations": ["Combinators"],
+          "count": 1
+        }
+      }
+    },
+    "Parsing Algorithm": {
+      "description": "The parsing algorithm used",
+      "categories": {
+        "ALL(*)": {
+          "description": "Adaptive LL",
+          "complexity": "Linear",
+          "implementations": ["ANTLR-Java", "ANTLR-Python"]
+        },
+        "LALR(1)": {
+          "description": "Lookahead LR",
+          "complexity": "Linear",
+          "implementations": ["Bison", "CUP", "SableCC", "Flex+Bison"]
+        },
+        "LL(k)": {
+          "description": "LL with k lookahead",
+          "complexity": "Linear",
+          "implementations": ["JavaCC"]
+        },
+        "LL(1)": {
+          "description": "LL with 1 lookahead",
+          "complexity": "Linear",
+          "implementations": ["Coco/R"]
+        },
+        "GLL": {
+          "description": "Generalized LL",
+          "complexity": "Any CFG",
+          "implementations": ["Instaparse"]
+        },
+        "PEG": {
+          "description": "Parsing Expression Grammar",
+          "complexity": "Linear",
+          "implementations": ["Peggy"]
+        },
+        "Earley": {
+          "description": "Earley algorithm",
+          "complexity": "O(n³) worst case",
+          "implementations": ["Lark (option)"]
+        },
+        "Recursive Descent": {
+          "description": "Hand-written recursive descent",
+          "complexity": "Linear",
+          "implementations": ["Combinators"]
+        }
+      }
+    },
+    "Maturity Level": {
+      "description": "Development and maintenance status",
+      "categories": {
+        "Production": {
+          "description": "Actively maintained, tested, documented",
+          "implementations": ["ANTLR-Java", "ANTLR-Python", "Lark", "Combinators", "Flex+Bison", "SableCC"],
+          "count": 6,
+          "color": "green"
+        },
+        "Secondary": {
+          "description": "Maintained but less active",
+          "implementations": ["Bison", "CUP-JFlex", "JavaCC", "Coco/R"],
+          "count": 4,
+          "color": "yellow"
+        },
+        "Experimental": {
+          "description": "Proof of concept, research",
+          "implementations": ["All in date-rule-experiments/"],
+          "count": 12,
+          "color": "orange"
+        }
+      }
+    }
+  },
+  
+  "dimensions": {
+    "Grammar Capabilities": {
+      "description": "Features supported by each implementation",
+      "features": [
+        {"name": "Fixed Dates", "examples": ["25 DEC", "1 JAN"], "implementations": ["All"]},
+        {"name": "Relative Dates", "examples": ["EASTER - 2D", "EASTER + 39D"], "implementations": ["All"]},
+        {"name": "Nth Weekday", "examples": ["3 MON JAN", "LAST MON MAY"], "implementations": ["All"]},
+        {"name": "Series/Ranges", "examples": ["[2 DEC : 3 DEC]", "[7 JAN : 1M : 7 DEC]"], "implementations": ["All"]},
+        {"name": "Shifts", "examples": ["> PRECEDING", "> FOLLOWING", "+ 1D"], "implementations": ["All"]},
+        {"name": "Observance Shifts", "examples": ["{SAT - 1D, SUN + 1D}"], "implementations": ["All"]},
+        {"name": "Conditions", "examples": ["IF DAY 8..14 APR"], "implementations": ["Lark", "ANTLR-Java", "ANTLR-Python", "Combinators", "Flex+Bison"]},
+        {"name": "References", "examples": ["@rule.key"], "implementations": ["All"]},
+        {"name": "ONE OF", "examples": ["ONE OF { expr AS name, ... }"], "implementations": ["Lark", "ANTLR-Java", "ANTLR-Python"]},
+        {"name": "ANNOUNCED BY", "examples": ["ANNOUNCED BY source"], "implementations": ["Lark", "ANTLR-Java", "ANTLR-Python"]},
+        {"name": "Lunar Calendars", "examples": ["1 RAMADAN", "1 ZHENGYUE"], "implementations": ["Lark", "ANTLR-Java", "ANTLR-Python"]},
+        {"name": "Calendar Declarations", "examples": ["calendar KEY = ..."], "implementations": ["Lark", "ANTLR-Java", "ANTLR-Python"]}
+      ]
+    },
+    "Testing": {
+      "description": "Testing infrastructure and results",
+      "metrics": {
+        "total_test_cases": 6070,
+        "test_files": [
+          {"name": "examples/schedule.txt", "cases": 537},
+          {"name": "examples/catalog.txt", "cases": 2186},
+          {"name": "examples/date-holidays.txt", "cases": 3347}
+        ],
+        "validation": {
+          "rules_tested": 229,
+          "years": "2021-2031",
+          "agreement_rate": "100%",
+          "differences": 0
+        }
+      }
+    },
+    "Performance": {
+      "description": "Performance characteristics",
+      "categories": {
+        "Linear": {"complexity": "O(n)", "space": "O(n)", "implementations": "Most"},
+        "Quadratic": {"complexity": "O(n²)", "space": "O(n)", "implementations": "Some backtracking"},
+        "Cubic": {"complexity": "O(n³)", "space": "O(n²)", "implementations": "Earley with ambiguous grammars"}
+      }
+    }
+  },
+  
+  "recommendations": {
+    "for_users": {
+      "primary_choices": {
+        "Holidays-Events Rules": {
+          "recommended": ["Lark", "ANTLR-Java", "ANTLR-Python"],
+          "notes": "Full support for all 229 rules, validated 2021-2031"
+        },
+        "Financial Applications": {
+          "recommended": ["Lark", "ANTLR-Java"],
+          "notes": "Business day calculations, roll conventions"
+        },
+        "Java Integration": {
+          "recommended": ["ANTLR-Java", "Bison", "CUP-JFlex", "SableCC"],
+          "notes": "Multiple Java-based options"
+        },
+        "Python Integration": {
+          "recommended": ["Lark", "ANTLR-Python"],
+          "notes": "Lark is native Python"
+        },
+        "C Integration": {
+          "recommended": ["Flex+Bison"],
+          "notes": "Only C option"
+        },
+        "Functional Style": {
+          "recommended": ["Combinators"],
+          "notes": "Scala-only functional approach"
+        },
+        "Clojure": {
+          "recommended": ["Instaparse"],
+          "notes": "Clojure-only"
+        }
+      }
+    },
+    "for_developers": {
+      "maintenance": {
+        "focus": "5 production implementations (Lark, ANTLR-Java, ANTLR-Python, Combinators, Flex+Bison)",
+        "archive": "Consider archiving experimental implementations",
+        "testing": "Ensure all implementations pass shared test suites"
+      }
+    }
+  },
+  
+  "summary": {
+    "total_implementations": 21,
+    "production": 6,
+    "secondary": 4,
+    "experimental": 12,
+    "languages": 7,
+    "test_cases": 6070,
+    "holidays_events_rules": 229,
+    "validation_years": 12,
+    "validation_agreement": "100%"
+  }
+}

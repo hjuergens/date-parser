@@ -132,8 +132,7 @@ calendar brl_ndf = country:BR & central_bank:FED;
 [2026-04-02] T + 1B ON segment:US_BOND => 2026-04-06
 
 # RFR publication: the rate for a fixing day is published on the next fixing day (T + 1), on the administrator's
-# calendar; the times are approximate (SOFR ~12:10 UTC, ESTR ~06:10, SONIA ~09:05, SARON ~05:15, TONA ~05:08,
-# CORRA ~13:10)
+# calendar
 rule us_bond.thanksgiving for thanksgiving in segment:US_BOND = 4 THU NOV;
 rule target2.labour_day for labour_day in settlement_system:TARGET2 = 1 MAY;
 rule gb.early_may_bank_holiday for early_may_bank_holiday in country:GB = 1 MON MAY;

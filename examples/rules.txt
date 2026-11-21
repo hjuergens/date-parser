@@ -131,6 +131,29 @@ calendar brl_ndf = country:BR & central_bank:FED;
 [2026-11-11] T > POSTPONE FOLLOWING ON brl_ndf MAX 14D + 2B ON central_bank:FED => 2026-11-16
 [2026-04-02] T + 1B ON segment:US_BOND => 2026-04-06
 
+# RFR publication: the rate for a fixing day is published on the next fixing day (T + 1), on the administrator's
+# calendar; the times are approximate (SOFR ~12:10 UTC, ESTR ~06:10, SONIA ~09:05, SARON ~05:15, TONA ~05:08,
+# CORRA ~13:10)
+rule us_bond.thanksgiving for thanksgiving in segment:US_BOND = 4 THU NOV;
+rule target2.labour_day for labour_day in settlement_system:TARGET2 = 1 MAY;
+rule gb.early_may_bank_holiday for early_may_bank_holiday in country:GB = 1 MON MAY;
+rule sic.ascension_day for ascension_day in settlement_system:SIC = EASTER + 39D;
+rule bojnet.dec_31 for jp_bank_new_year_holidays in settlement_system:BOJNET = 31 DEC;
+rule bojnet.jan_3 for jp_bank_holiday_jan_3 in settlement_system:BOJNET = 3 JAN;
+rule lynx.victoria_day for victoria_day in settlement_system:LYNX = 25 MAY > PREV MON;
+calendar sofr_fixing = segment:US_BOND;
+calendar estr_fixing = settlement_system:TARGET2;
+calendar sonia_fixing = country:GB;
+calendar saron_fixing = settlement_system:SIC;
+calendar tona_fixing = settlement_system:BOJNET;
+calendar corra_fixing = settlement_system:LYNX;
+[2026-11-25] T + 1B ON sofr_fixing => 2026-11-27
+[2026-04-30] T + 1B ON estr_fixing => 2026-05-04
+[2026-05-01] T + 1B ON sonia_fixing => 2026-05-05
+[2026-05-13] T + 1B ON saron_fixing => 2026-05-15
+[2027-12-30] T + 1B ON tona_fixing => 2028-01-04
+[2026-05-15] T + 1B ON corra_fixing => 2026-05-19
+
 # schedule extensions for rule files: ENDEND, NEAREST, MODPRECEDING, POSTPONE, NEXT HOLIDAY, BD ON ... IN, time zones
 rule us.independence_day for independence_day in country:US = 4 JUL {SAT - 1D, SUN + 1D};
 rule br.carnival for carnival in country:BR = [16 FEB : 20 FEB];

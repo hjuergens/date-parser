@@ -55,7 +55,7 @@ uv run pytest
 - Ordinals and sets (`> NEXT 3RD FRI`, `> NEXT {MON, FRI}`): the lexer rule `ORDINAL : [0-9]+ ('ST' | 'ND' | 'RD' | 'TH')` wins over `NUM` by the longer match; `'NEXT' ORDINAL? anchor`, and `anchor` is `# singleAnchor` or `# anyOf`.
 - Selection (`> 3RD WED IN MONTH`): the alternative label can't be `# select`, the name of a rule (error 124), so it is `# selectIn`.
 - Series (`[a : step : b]`): the target renames labels that shadow a Python builtin (`open` becomes `open_`), as it did with the old rule `range`, so the brackets are labelled `left` and `right`.
-- Named events: the lexer rule `EVENT : '@' [A-Z] [A-Z0-9_]*` is one more alternative of `date` (`# event`) and `anchor` (`# eventAnchor`); shifts now receive the whole context, as `> NEXT @FOMC` needs the events.
+- Named events: the lexer rule `EVENT : '@' [A-Za-z] [A-Za-z0-9_]* ('.' [A-Za-z0-9_]+)*` is one more alternative of `date` (`# event`) and `anchor` (`# eventAnchor`); shifts now receive the whole context, as `> NEXT @FOMC` needs the events.
 
 ## Rule files
 

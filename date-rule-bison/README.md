@@ -31,7 +31,7 @@ keyword test; `item` and `weekdays` add `24 DEC IF MON TUE WED THU`, left recurs
 Ordinals and sets (`> NEXT 3RD FRI`, `> NEXT {MON, FRI}`): the scanner returns `ORDINAL` when `ST`, `ND`, `RD` or `TH` follow the digits; `counted: anchor | ORDINAL anchor` and `anchor: target | '{' targets '}'` add no conflicts.
 Selection (`> 3RD WED IN MONTH`): `count: ORDINAL | ORDINAL LAST | LAST` with a negative count from the end, and `select: chosen | '{' targets '}'`; the scanner returns `IN` and `PERIOD`. No conflicts.
 
-Named events: the hand-written scanner returns `EVENT` for `@` followed by capitals, digits and `_` (the value is the name without the sigil); `EVENT` is one more alternative of `date` and `anchor`, without conflicts.
+Named events: the hand-written scanner returns `EVENT` for `@` followed by a letter, then letters, digits and `_`, in parts joined by single dots (the value is the name without the sigil); `EVENT` is one more alternative of `date` and `anchor`, without conflicts.
 
 ## Rule files
 

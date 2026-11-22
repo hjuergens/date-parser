@@ -26,7 +26,7 @@ and the pair pattern `(?!EASTER|TISHRI|…)[A-Z]{6}` excludes the six-letter key
 Lunar month names extend the `month` regex, where `ADARII` must come before `ADAR`: a regex alternation takes the first match.
 Ordinals and sets (`> NEXT 3RD FRI`, `> NEXT {MON, FRI}`): `counted = opt(ordinal) ~ anchor`, where `ordinal` is the regex `[0-9]+(ST|ND|RD|TH)` and fails (`>>` with `failure`) when the suffix doesn't fit the number; a set is `"{" ~> rep1sep(target, ",") <~ "}"`.
 
-Named events: `eventName` is the regex `@[A-Z][A-Z0-9_]*`, tried first in `date` and last in `anchor`; a regex token can't contain the whitespace that `RegexParsers` skips, so `@ FOMC` is an error as with the lexers.
+Named events: `eventName` is the regex `@[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)*`, tried first in `date` and last in `anchor`; a regex token can't contain the whitespace that `RegexParsers` skips, so `@ FOMC` is an error as with the lexers.
 
 ## Rule files
 

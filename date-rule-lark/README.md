@@ -56,7 +56,7 @@ for what isn't dates (attributes, announcements, the API for hosts).
 - Lunar months and conditional dates: Lunar month names (`1 SHAWWAL`, `10 TISHRI`, `1 ZHENGYUE`) are more alternatives of `MONTH`, and the pair pattern excludes the six-letter
   ones (`TISHRI`, …) as well. `item: expr ("IF" WEEKDAY+)?` keeps a date only on these weekdays.
 - Ordinals and sets (`> NEXT 3RD FRI`, `> NEXT {MON, FRI}`): the terminal `ORDINAL.2: /[0-9]+(ST|ND|RD|TH)/` has a higher priority than `NUM`, as Lark's lexer doesn't take the longest match among regexes; `">" "NEXT" [ORDINAL] anchor` and `?anchor: target | "{" target ("," target)* "}"` run as LALR(1) without conflicts.
-- Named events: the terminal `EVENT: /@[A-Z][A-Z0-9_]*/` is one more alternative of `date` and `anchor`; shifts receive the whole context, as `> NEXT @FOMC` needs the events.
+- Named events: the terminal `EVENT: /@[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)*/` is one more alternative of `date` and `anchor`; shifts receive the whole context, as `> NEXT @FOMC` needs the events.
 
 ## Rule files
 

@@ -21,7 +21,7 @@ The other experiments of this module (the Pascal lexer) are parked in
   `item` and `weekdays` add `24 DEC IF MON TUE WED THU`, without conflicts.
 - Ordinals and sets (`> NEXT 3RD FRI`, `> NEXT {MON, FRI}`): the JFlex rule `[0-9]+ ("ST" | "ND" | "RD" | "TH")` returns `ORDINAL` (the longest match beats `NUM`), and CUP has `counted ::= anchor | ORDINAL anchor`, `anchor ::= target | LBRACE targets RBRACE`, without conflicts.
 - Selection (`> 3RD WED IN MONTH`): `count ::= ORDINAL | ORDINAL LAST | LAST` returns a negative count from the end; `select ::= chosen | LBRACE targets RBRACE` keeps `LAST MON MAY` in braces, so `LAST` can only be the count there. No conflicts.
-- Named events: the JFlex rule `"@" [A-Z] [A-Z0-9_]*` returns `EVENT` with the name as value; in CUP it is one more alternative of `date` and `anchor`.
+- Named events: the JFlex rule `"@" [A-Za-z] [A-Za-z0-9_]* ("." [A-Za-z0-9_]+)*` returns `EVENT` with the name as value; in CUP it is one more alternative of `date` and `anchor`.
 
 ## Rule files
 

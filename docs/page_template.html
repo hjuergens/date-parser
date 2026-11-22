@@ -318,7 +318,7 @@ MONTH    = "JAN" | … | "DEC"           <span class="c">(* Gregorian *)</span>
          | "MUHARRAM" | … | "DHULHIJJAH"  <span class="c">(* Hijri *)</span>
          | "NISAN" | … | "ADARII"     <span class="c">(* Hebrew  *)</span>
          | "ZHENGYUE" | … | "LAYUE" . <span class="c">(* Chinese *)</span>
-EVENT    = "@" UPPER { UPPER | DIGIT | "_" } .  <span class="c">(* @FOMC *)</span>
+EVENT    = "@" LETTER { LETTER | DIGIT | "_" } { "." ( LETTER | DIGIT | "_" ) { LETTER | DIGIT | "_" } } .  <span class="c">(* @FOMC, @fed.fomc_decision *)</span>
 ZONE     = "UTC" ("+" | "-") NUM .     <span class="c">(* UTC+9, one token *)</span>
 ORDINAL  = NUM ("ST" | "ND" | "RD" | "TH") .  <span class="c">(* 3RD, one token *)</span></code></pre>
     </div>

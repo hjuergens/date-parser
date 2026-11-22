@@ -23,7 +23,7 @@ The other experiments of this module (the Dates grammar for three date notations
   `TISHRI` become keywords of `pair` like `EASTER`. `Item` adds `[ "IF" Weekday { Weekday } ]` to a list item, still LL(1).
 - Ordinals and sets (`> NEXT 3RD FRI`, `> NEXT {MON, FRI}`): the token `ordinal = digit {digit} ( "ST" | "ND" | "RD" | "TH" )` keeps the count apart from the number that starts `3 FRI JAN`, so the grammar stays LL(1) without factoring; the scanner takes the longer match. Coco/R allows only one `out` attribute, so the count is folded into the anchor (`ScheduleSemantics.times`), and a set is `"{" Target { "," Target } "}"`.
 - Selection (`> 3RD WED IN MONTH`, `> 2ND LAST BD IN MONTH`): `Count` has only its one `out` attribute, so counting from the end is a negative count (0 is an error anyway). An annual date starting with `LAST` is only allowed in braces (`Select = Chosen | "{" Target … "}"`), as `LAST` also starts the count; the LL(1) check stays clean.
-- Named events: the token `event = '@' upper { upper | digit | '_' }` starts with a character no other token starts with, so the grammar stays LL(1).
+- Named events: the token `event = '@' (upper | lower) { upper | lower | digit | '_' } { '.' (upper | lower | digit | '_') { upper | lower | digit | '_' } }` starts with a character no other token starts with, so the grammar stays LL(1).
 
 ## Rule files
 

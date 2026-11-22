@@ -23,7 +23,7 @@ Lunar month names (`1 SHAWWAL`, `10 TISHRI`, `1 ZHENGYUE`) are more alternatives
 differ only in their base date).
 Ordinals and sets (`> NEXT 3RD FRI`, `> NEXT {MON, FRI}`): `< ORDINAL : (["0"-"9"])+ ("ST" | "ND" | "RD" | "TH") >` is longer than `NUM` on the same input, so the token manager decides and `Counted()` needs no lookahead; a set is `"{" Target() ( "," Target() )* "}"`.
 
-Named events: the token `< EVENT : "@" ["A"-"Z"] (["A"-"Z", "0"-"9", "_"])* >` is one more choice in `Date()` and `Anchor()`; no lookahead is needed, as no other token starts with `@`.
+Named events: the token `< EVENT : "@" ["A"-"Z", "a"-"z"] (["A"-"Z", "a"-"z", "0"-"9", "_"])* ("." (["A"-"Z", "a"-"z", "0"-"9", "_"])+)* >` is one more choice in `Date()` and `Anchor()`; no lookahead is needed, as no other token starts with `@`.
 
 ## Rule files
 

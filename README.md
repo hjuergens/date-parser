@@ -218,8 +218,11 @@ nests selectors (`wednesday(3) of month(3) of quarter(2) of sp`), translate into
 **Named events** bring dates that an authority announces, such as FOMC decisions or AGMs, into the language as data, the way a
 market brings its holidays: the context maps a name to a rule, and `@FOMC` is every date of that event in the year of the base date,
 each shifted by the rest of the expression (`@FOMC + 21D`, `@FOMC + 1B`, `@FOMC IF WED`). `T > NEXT @FOMC` and `T > PREV @FOMC`
-move to the next or previous one. An event's rule is any schedule, so `event THANKSGIVING = 4 THU NOV` names a rule as well. A name
-that isn't declared is an error, and so is an event with several dates at the end of a range. The implementations evaluate an item
+move to the next or previous one. An event's rule is any schedule, so `event THANKSGIVING = 4 THU NOV` names a rule as well.
+The language has no built-in events: FOMC, THANKSGIVING and NEWYEAR exist in the shared cases only because the cases
+declare them. A date that follows from a fixed market convention is a keyword instead and needs no data: `IMM`, the
+third Wednesday of March, June, September and December (`T > IMM`).
+A name that isn't declared is an error, and so is an event with several dates at the end of a range. The implementations evaluate an item
 once per date of its event: the event's date throws until the item binds it, which needs no change to how the twelve grammars build
 expressions.
 

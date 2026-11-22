@@ -24,7 +24,7 @@ The other experiments of this module (the range-list grammar `list.pegjs` and it
   before `"ADAR"`). Hijri dates come from the official Umm al-Qura table (`UMM_AL_QURA`, as in Java; `Intl`'s own table differs in 2030), Hebrew ones from `Intl`; Chinese ones from lunar-javascript, which a parser generated in memory
   can't import, so `parse(text, { Solar })` passes it in as an option. `Item` adds `24 DEC IF MON TUE WED THU`.
 - Ordinals and sets (`> NEXT 3RD FRI`, `> NEXT {MON, FRI}`): `Counted` tries the ordinal `$([0-9]+ ("ST" / "ND" / "RD" / "TH"))` first, as `Number` in the annual date `3 FRI JAN` would take its digits; a set is `"{" Target ("," Target)* "}"`.
-- Named events: `Event = "@" $([A-Z] [A-Z0-9_]*)`, an alternative of `Date` and `Anchor`; as there is no whitespace rule inside it, `@ FOMC` is an error.
+- Named events: `Event = "@" $([A-Za-z] [A-Za-z0-9_]* ("." [A-Za-z0-9_]+)*)`, an alternative of `Date` and `Anchor`; as there is no whitespace rule inside it, `@ FOMC` is an error.
 
 ## Rule files
 

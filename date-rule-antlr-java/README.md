@@ -33,7 +33,7 @@ Lunar month names (`1 SHAWWAL`, `10 TISHRI`, `1 ZHENGYUE`) are more alternatives
 for the same reason; `item` adds `'IF' (w+=WEEKDAY)+` to a list item (`24 DEC IF MON TUE WED THU`).
 Ordinals and sets (`> NEXT 3RD FRI`, `> NEXT {MON, FRI}`): the lexer rule `ORDINAL : [0-9]+ ('ST' | 'ND' | 'RD' | 'TH')` wins over `NUM` by the longer match; the count is a rule of its own, `ordinal returns [int n = 1] : (ORDINAL)? ;`, like `spot`, so a label in the loop of `expr` doesn't keep the count of an earlier shift, and `anchor` is a `target` or `'{' target (',' target)* '}'`.
 
-Named events: the lexer rule `EVENT : '@' [A-Z] [A-Z0-9_]*` is one more alternative of `date` and of `anchor`; the actions call `ScheduleSemantics.event` and `eventAnchor`, and `list` evaluates an item once per date of its event.
+Named events: the lexer rule `EVENT : '@' [A-Za-z] [A-Za-z0-9_]* ('.' [A-Za-z0-9_]+)*` is one more alternative of `date` and of `anchor`; the actions call `ScheduleSemantics.event` and `eventAnchor`, and `list` evaluates an item once per date of its event.
 
 ## Rule files
 

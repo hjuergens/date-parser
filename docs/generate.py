@@ -48,7 +48,7 @@ TOOLS = [
          pitfall="Java actions can't be generated into Python, so the grammar is copied without them. An alternative label may not repeat a rule's name, so <code>&gt; 3RD WED IN MONTH</code> is <code># selectIn</code>, not <code># select</code>."),
     dict(id="combinators", name="Scala combinators", kind="Recursive descent with backtracking", lang="Scala 2.13",
          file="date-rule-combinators/src/main/scala/de/juergens/text/ScheduleParsers.scala",
-         snippet=lambda f: between(f, r"def date:", r"def period:") + "\n\n" + between(f, r"def expr:", r"^  }$", True),
+         snippet=lambda f: between(f, r"def date:", r"def period:") + "\n\n" + between(f, r"def shift:", r"^  }$", True),
          values="<code>^^</code> functions, <code>foldLeft</code> over the shifts",
          errors="<code>NoSuccess</code> result, turned into an exception",
          pitfall="None: the grammar is ordinary Scala code, there is no generator step."),

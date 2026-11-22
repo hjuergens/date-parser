@@ -499,6 +499,23 @@ def singleDate: Parser[Context =&gt; LocalDate] = eventName ^^ event | &quot;TOM
   | (&quot;/&quot; ~&gt; number) ~ (&quot;/&quot; ~&gt; number) ^^ { case d ~ y =&gt; (m: Int) =&gt; LocalDate.of(y, m, d) }  <span class="c">// US</span>
   ) ^^ { case first ~ toDate =&gt; val date = toDate(first); (_: Context) =&gt; date }
 
+def shift: Parser[(LocalDate, Context) =&gt; LocalDate] =
+  (&quot;+&quot; ~&gt; period ^^ (p =&gt; (d: LocalDate, c: Context) =&gt; plus(d, p, 1, c.market, c.fixing))
+  | &quot;-&quot; ~&gt; period ^^ (p =&gt; (d: LocalDate, c: Context) =&gt; plus(d, p, -1, c.market, c.fixing))
+  | &quot;&gt;&quot; ~ &quot;IMM&quot; ^^^ ((d: LocalDate, _: Context) =&gt; nextImm(d))
+  | &quot;&gt;&quot; ~ &quot;SPOT&quot; ~&gt; opt(pair) ^^ (p =&gt; (d: LocalDate, c: Context) =&gt; c.market.spot(d, p))
+  | &quot;&gt;&quot; ~ &quot;FIX&quot; ~&gt; opt(pair) ^^ (p =&gt; (d: LocalDate, c: Context) =&gt; plusBusinessDays(d, -Market.spotLag(p), c.fixing))
+  | &quot;&gt;&quot; ~&gt; &quot;MODFOLLOWING|FOLLOWING|PRECEDING|BOW|EOW|BOM|EOM|BOQ|EOQ|BOH|EOH|BOY|EOY&quot;.r ^^ (r =&gt; (d: LocalDate, c: Context) =&gt; roll(d, r, c.market))
+  | &quot;&gt;&quot; ~&gt; selection
+  | &quot;&gt;&quot; ~ &quot;{&quot; ~&gt; rep1sep(annual, &quot;,&quot;) &lt;~ &quot;}&quot; ^^ (annuals =&gt; (d: LocalDate, c: Context) =&gt;
+      <span class="c">// &gt; {1 FEB, 1 MAY}: the dates of the set in the year of the date</span>
+      take(c, _ =&gt; annuals.map(_(d.getYear)).distinct.sortWith(_.isBefore(_))))
+  | &quot;&gt;&quot; ~ &quot;NEXT&quot; ~&gt; counted ^^ (a =&gt; (d: LocalDate, c: Context) =&gt; a(d, 1, c))
+  | &quot;&gt;&quot; ~ &quot;PREV&quot; ~&gt; counted ^^ (a =&gt; (d: LocalDate, c: Context) =&gt; a(d, -1, c))
+  | &quot;{&quot; ~&gt; rep1sep(observe, &quot;,&quot;) &lt;~ &quot;}&quot; ^^ (shifts =&gt; (d: LocalDate, c: Context) =&gt;
+      shifts.find(_._1 == d.getDayOfWeek).fold(d) { case (_, p, sign) =&gt; plus(d, p, sign, c.market, c.fixing) }))
+
+<span class="c">/** shifts are applied from left to right */</span>
 def expr: Parser[Context =&gt; LocalDate] = date ~ rep(shift) ^^ {
   case start ~ shifts =&gt; (c: Context) =&gt; shifts.foldLeft(start(c))((d, f) =&gt; f(d, c))
 }</code></pre>

@@ -441,6 +441,7 @@ locals [List&lt;Annual&gt; annuals = new ArrayList&lt;&gt;()]
       )* &#x27;}&#x27;                        { $value = ScheduleSemantics.datesInYear($before, $annuals); }
     | observance                    { $value = ScheduleSemantics.observe($before, $observance.shifts); }
     ;</code></pre>
+      <p class="note">Series are skipped in this excerpt.</p>
       <p class="pitfall"><strong>Pitfall.</strong> <code>$start</code> is reserved (the rule's first token), so the range labels are <code>first</code>/<code>last</code>.</p>
     </div>
     <div role="tabpanel" id="panel-antlr-python" aria-labelledby="tab-antlr-python" hidden>
@@ -477,6 +478,7 @@ def visitSpot(self, ctx):
 def visitRoll(self, ctx):
     convention = ctx.ROLL().getText()
     return lambda d, context: semantics.roll(d, convention, context.market)</code></pre>
+      <p class="note">Series are skipped in this excerpt.</p>
       <p class="pitfall"><strong>Pitfall.</strong> Java actions can't be generated into Python, so the grammar is copied without them. An alternative label may not repeat a rule's name, so <code>&gt; 3RD WED IN MONTH</code> is <code># selectIn</code>, not <code># select</code>.</p>
     </div>
     <div role="tabpanel" id="panel-combinators" aria-labelledby="tab-combinators" hidden>
@@ -519,6 +521,7 @@ def shift: Parser[(LocalDate, Context) =&gt; LocalDate] =
 def expr: Parser[Context =&gt; LocalDate] = date ~ rep(shift) ^^ {
   case start ~ shifts =&gt; (c: Context) =&gt; shifts.foldLeft(start(c))((d, f) =&gt; f(d, c))
 }</code></pre>
+      <p class="note">Series are skipped in this excerpt.</p>
       <p class="pitfall"><strong>Pitfall.</strong> None: the grammar is ordinary Scala code, there is no generator step.</p>
     </div>
     <div role="tabpanel" id="panel-coco" aria-labelledby="tab-coco" hidden>
@@ -871,6 +874,7 @@ annuals: annual                 { $$ = anchor(parse, AT_ANNUAL); $$-&gt;annual =
 pair: %empty                    { $$ = NULL; }
     | PAIR
     ;</code></pre>
+      <p class="note">Series are skipped in this excerpt.</p>
       <p class="pitfall"><strong>Pitfall.</strong> Token names become C enumerators in <code>parser.h</code>: a token <code>SEASON</code> and an enumerator <code>SEASON</code> of the tree can't both exist.</p>
     </div>
     <div role="tabpanel" id="panel-peg" aria-labelledby="tab-peg" hidden>
@@ -900,6 +904,7 @@ Shift
   / &quot;{&quot; _ head:Observe tail:(_ &quot;,&quot; _ @Observe)* _ &quot;}&quot; {
       return (d, c) =&gt; observe(d, [head, ...tail], c.market, c.fixing);
     }</code></pre>
+      <p class="note">Series are skipped in this excerpt.</p>
       <p class="pitfall"><strong>Pitfall.</strong> Peggy provides <code>range()</code> in actions, which silently shadows a helper of the same name.</p>
     </div>
     <div role="tabpanel" id="panel-lark" aria-labelledby="tab-lark" hidden>
@@ -1008,6 +1013,7 @@ observance = &lt;&#x27;{&#x27;&gt; observe (&lt;&#x27;,&#x27;&gt; observe)* &lt;
 observe  = WEEKDAY SIGN period
 
 <span class="c">(* NEXT {MON, FRI}: the nearest of a set *)</span></code></pre>
+      <p class="note">Series are skipped in this excerpt.</p>
       <p class="pitfall"><strong>Pitfall.</strong> Scannerless with <code>:auto-whitespace</code>: whitespace may come between any two tokens, so a name like <code>@FOMC</code> must be a single regex to keep <code>@ FOMC</code> out.</p>
     </div>
     </div>

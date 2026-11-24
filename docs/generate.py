@@ -34,19 +34,19 @@ def code(text):
 
 
 TOOLS = [
-    dict(id="antlr-java", name="ANTLR 4 · Java", kind="ALL(*) · adaptive LL", lang="Java",
+    dict(id="antlr-java", skipped=True, name="ANTLR 4 · Java", kind="ALL(*) · adaptive LL", lang="Java",
          file="date-rule-antlr-java/src/main/antlr4/io/github/hjuergens/time/DateSchedule.g4",
          snippet=lambda f: between(f, r"^// periods are applied", r"^// \{SAT"),
          values="Actions with <code>returns […]</code> attributes",
          errors="Throwing error listener plus <code>BailErrorStrategy</code>",
          pitfall="<code>$start</code> is reserved (the rule's first token), so the range labels are <code>first</code>/<code>last</code>."),
-    dict(id="antlr-python", name="ANTLR 4 · Python", kind="ALL(*) · adaptive LL", lang="Python",
+    dict(id="antlr-python", skipped=True, name="ANTLR 4 · Python", kind="ALL(*) · adaptive LL", lang="Python",
          file="date-rule-antlr-python/src/antlr_schedule/__init__.py",
          snippet=lambda f: between(f, r"# shifts are applied", r"def visitNext"),
          values="Visitor over the parse tree; the grammar has no actions",
          errors="Error listener on lexer and parser that raises",
          pitfall="Java actions can't be generated into Python, so the grammar is copied without them. An alternative label may not repeat a rule's name, so <code>&gt; 3RD WED IN MONTH</code> is <code># selectIn</code>, not <code># select</code>."),
-    dict(id="combinators", name="Scala combinators", kind="Recursive descent with backtracking", lang="Scala 2.13",
+    dict(id="combinators", skipped=True, name="Scala combinators", kind="Recursive descent with backtracking", lang="Scala 2.13",
          file="date-rule-combinators/src/main/scala/de/juergens/text/ScheduleParsers.scala",
          snippet=lambda f: between(f, r"def date:", r"def period:") + "\n\n" + between(f, r"def shift:", r"^  }$", True),
          values="<code>^^</code> functions, <code>foldLeft</code> over the shifts",
@@ -82,13 +82,13 @@ TOOLS = [
          values="<code>{ … }</code> actions, left-recursive rules",
          errors="<code>parse()</code> returns <code>false</code>",
          pitfall="In Bison's Java skeleton <code>$$</code> is a plain <code>Object</code>; only <code>$1</code>…<code>$n</code> are typed."),
-    dict(id="flex-bison", name="Flex + Bison · C", kind="LALR(1)", lang="C",
+    dict(id="flex-bison", skipped=True, name="Flex + Bison · C", kind="LALR(1)", lang="C",
          file="date-rule-flex-bison/src/parser.y",
          snippet=lambda f: between(f, r"^/\* shifts are applied", r"^/\* \{SAT"),
          values="<code>{ … }</code> actions build a syntax tree, which a C evaluator walks with the context",
          errors="<code>yyparse()</code> returns non-zero; the scanner returns <code>YYerror</code> with its own message",
          pitfall="Token names become C enumerators in <code>parser.h</code>: a token <code>SEASON</code> and an enumerator <code>SEASON</code> of the tree can't both exist."),
-    dict(id="peg", name="Peggy", kind="PEG · ordered choice", lang="JavaScript",
+    dict(id="peg", skipped=True, name="Peggy", kind="PEG · ordered choice", lang="JavaScript",
          file="date-rule-peg/schedule.pegjs",
          snippet=lambda f: between(f, r"^// periods are applied", r"^Observe$"),
          values="Action blocks; date arithmetic written by hand",
@@ -100,7 +100,7 @@ TOOLS = [
          values="<code>Transformer</code>, one method per rule alias",
          errors="<code>UnexpectedInput</code>; <code>VisitError</code> wraps exceptions of the transformer",
          pitfall="In LALR mode the contextual lexer only tries tokens the parser can accept next, so <code>&gt;SPOTUSDCAD</code> parses; ANTLR's lexer reads <code>SPOTUS</code> as a pair and rejects it."),
-    dict(id="instaparse", name="instaparse", kind="GLL · any context-free grammar", lang="Clojure",
+    dict(id="instaparse", skipped=True, name="instaparse", kind="GLL · any context-free grammar", lang="Clojure",
          file="date-rule-instaparse/src/main/clojure/io/github/hjuergens/instaparse/schedule.ebnf",
          snippet=lambda f: between(f, r"^\(\* shifts are applied", r"^<anchor>"),
          values="<code>insta/transform</code>, one function per tag, calling the shared Java helper",
@@ -164,7 +164,7 @@ panels = "\n".join(f'''    <div role="tabpanel" id="panel-{t["id"]}" aria-labell
         <a href="{REPO}{t["file"]}">{html.escape(Path(t["file"]).name)} ↗</a>
       </div>
       <pre><code>{code(t["snippet"](t["file"]))}</code></pre>
-      <p class="pitfall"><strong>Pitfall.</strong> {t["pitfall"]}</p>
+{'      <p class="note">Series are skipped in this excerpt.</p>' + chr(10) if t.get("skipped") else ""}      <p class="pitfall"><strong>Pitfall.</strong> {t["pitfall"]}</p>
     </div>''' for i, t in enumerate(TOOLS))
 
 rows = "\n".join(f'''        <tr>

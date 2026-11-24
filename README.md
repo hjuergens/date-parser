@@ -1,11 +1,11 @@
-# date-parser: twelve parsers, one language
+# date-parser: thirteen parsers, one language
 
 [![AppVeyor build status](https://ci.appveyor.com/api/projects/status/github/hjuergens/date-parser?svg=true)](https://ci.appveyor.com/project/hjuergens/date-parser)
 
 The same date-schedule language implemented with **ANTLR 4 (Java and Python targets), JavaCC, GNU Bison (Java and C, with Flex),
-JFlex + CUP, SableCC, Coco/R, Peggy (PEG), Lark (Earley and LALR), instaparse (GLL, Clojure) and Scala parser combinators**, all
-tested against one shared set of cases. It is a hands-on comparison of LL, LALR, Earley, GLL, PEG and combinator parsing in Java,
-Scala, JavaScript, Python, Clojure and C.
+JFlex + CUP, SableCC, Coco/R, Peggy (PEG), pest (PEG, Rust), Lark (Earley and LALR), instaparse (GLL, Clojure) and Scala parser
+combinators**, all tested against one shared set of cases. It is a hands-on comparison of LL, LALR, Earley, GLL, PEG and combinator
+parsing in Java, Scala, JavaScript, Rust, Python, Clojure and C.
 
 AppVeyor runs the Maven reactor on Windows with Java 17; [`mise run test`](mise.toml) runs the full cross-language suite.
 
@@ -31,6 +31,7 @@ Planned additions are in [TODO.md](docs/TODO.md).
 | [date-rule-bison](date-rule-bison/README.md) | GNU Bison 3 (Java skeleton) | LALR(1) | Java | The shared example. **Requires `bison`**; the module is empty without it | 6070 TestNG |
 | [date-rule-flex-bison](date-rule-flex-bison/README.md) | Flex 2.6 + GNU Bison 3.8 (C skeleton) | LALR(1) | C11, Go via SWIG | The shared example; reentrant scanner and pure parser, the actions build a syntax tree that a C evaluator walks. A SWIG binding runs it from Go. Builds in Docker | 6070 cases + 6070 Go subtests |
 | [date-rule-peg](date-rule-peg/README.md) | Peggy (PEG.js successor) | PEG (packrat) | JavaScript | The shared example; also runs in the browser playground of the site | 6070 `node:test` |
+| [date-rule-pest](date-rule-pest/README.md) | pest 2.9 | PEG (ordered choice) | Rust | The shared example and rule files: two grammars built into one syntax tree, which an interpreter evaluates | 6206 cases in `cargo test` |
 | [date-rule-lark](date-rule-lark/README.md) | Lark 1.3 | Earley and LALR(1), one grammar | Python | The shared example, every case with both algorithms | 12140 pytest |
 | [date-rule-antlr-python](date-rule-antlr-python/README.md) | ANTLR 4.13, Python target | ALL(*) (adaptive LL) | Python | The shared example; grammar without actions, plus a visitor | 6070 pytest |
 | [date-rule-instaparse](date-rule-instaparse/README.md) | instaparse 1.5 | GLL (any context-free grammar) | Clojure 1.12 | The shared example; EBNF grammar read at run time, `insta/transform` onto the shared Java helper | 6070 TestNG |
@@ -46,12 +47,12 @@ atomically and reloaded when it is saved, in Java and without HotSwap or JVMTI.
 [ASM](https://asm.ow2.io/): one class per rule, loaded by a class loader of its own, so a replaced rule is unloaded with
 its loader (6070 TestNG).
 
-Each module also implements the [shared schedule example](#shared-example-schedule), so all twelve implementations
+Each module also implements the [shared schedule example](#shared-example-schedule), so all thirteen implementations
 can be compared on the same language. Each module README has a section on how its tool handles it.
 
 ## Shared example: schedule
 
-> A visual version of this comparison, with the rules of all twelve implementations side by side, is at [hjuergens.github.io/date-parser](https://hjuergens.github.io/date-parser/)
+> A visual version of this comparison, with the rules of all thirteen implementations side by side, is at [hjuergens.github.io/date-parser](https://hjuergens.github.io/date-parser/)
 > (source: [docs/index.html](docs/index.html), served by GitHub Pages from `/docs`; regenerate it with `python3 docs/generate.py`).
 > Its playground runs the Peggy parser in the browser and draws the syntax tree of each input; the tree comes from Peggy's
 > tracer, so the grammar needs no change for it, and its bracket notation can be pasted into a syntax tree generator.
@@ -223,14 +224,14 @@ The language has no built-in events: FOMC, THANKSGIVING and NEWYEAR exist in the
 declare them. A date that follows from a fixed market convention is a keyword instead and needs no data: `IMM`, the
 third Wednesday of March, June, September and December (`T > IMM`).
 A name that isn't declared is an error, and so is an event with several dates at the end of a range. The implementations evaluate an item
-once per date of its event: the event's date throws until the item binds it, which needs no change to how the twelve grammars build
+once per date of its event: the event's date throws until the item binds it, which needs no change to how the thirteen grammars build
 expressions.
 
 All implementations are tested against the same 572 cases in [examples/schedule.txt](examples/schedule.txt),
 including invalid dates and syntax errors, 2186 cases in [examples/catalog.txt](examples/catalog.txt) and 3347 in
 [examples/date-holidays.txt](examples/date-holidays.txt). Each module has a test that reads all three files.
 [examples/rules.txt](examples/rules.txt) holds 78 cases for rule files (declarations around the schedule language, see
-[date-rule-lark](date-rule-lark/README.md#rule-files)); all twelve implementations run them. The section "MaturityRule" of the first file
+[date-rule-lark](date-rule-lark/README.md#rule-files)); all thirteen implementations run them. The section "MaturityRule" of the first file
 translates the rules of another maturity rule language (`next(wednesday(3) of every(march)) of today`, the IMM and
 quarter-boundary rules, the DOL series and the common patterns) into this one, each with the original as a comment. The second one is generated by [scripts/catalog_cases.py](scripts/catalog_cases.py) from the holiday rule catalog of the
 holidays-events project: every rule the language can express (88 of 151) is translated into a schedule and evaluated for 2020 to 2030,

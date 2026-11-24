@@ -8,10 +8,11 @@ node = "24.22.2"
 python = "3.13.18"
 uv = "0.13.5"
 go = "1.26.10"
+rust = "1.97.1"
 
 [tasks.test]
 description = "Test all modules (the tasks below run in parallel)"
-depends = ["test:jvm", "test:peg", "test:lark", "test:antlr-python", "test:flex-bison", "test:flex-bison-go"]
+depends = ["test:jvm", "test:peg", "test:pest", "test:lark", "test:antlr-python", "test:flex-bison", "test:flex-bison-go"]
 
 [tasks."test:jvm"]
 description = "Java and Scala modules; date-rule-bison only if /usr/bin/bison exists"
@@ -21,6 +22,11 @@ run = "mvn -B verify"
 description = "Peggy (JavaScript)"
 dir = "{{config_root}}/date-rule-peg"
 run = ["npm ci --no-audit --no-fund", "npm test"]
+
+[tasks."test:pest"]
+description = "pest (Rust)"
+dir = "{{config_root}}/date-rule-pest"
+run = "cargo test --release"
 
 [tasks."test:lark"]
 description = "Lark (Python), Earley and LALR"

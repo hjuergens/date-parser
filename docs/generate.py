@@ -94,6 +94,12 @@ TOOLS = [
          values="Action blocks; date arithmetic written by hand",
          errors="<code>SyntaxError</code> with expected tokens",
          pitfall="Peggy provides <code>range()</code> in actions, which silently shadows a helper of the same name."),
+    dict(id="pest", skipped=True, name="pest", kind="PEG · ordered choice", lang="Rust",
+         file="date-rule-pest/src/schedule.pest",
+         snippet=lambda f: between(f, r"^// shifts are applied", r"^// NEXT \{MON, FRI\}"),
+         values="Pairs copied into a syntax tree (<code>ast.rs</code>), which a separate interpreter evaluates",
+         errors="<code>pest::error::Error</code> with the expected rules; evaluation returns a <code>Result</code>",
+         pitfall="Without a <code>WHITESPACE</code> rule <code>~</code> skips nothing; with one it skips everywhere, also inside <code>2015-06-09</code> unless the token is atomic, so whitespace is an explicit silent rule <code>ws</code>, as <code>_</code> in Peggy."),
     dict(id="lark", name="Lark", kind="Earley and LALR(1), one grammar", lang="Python",
          file="date-rule-lark/src/lark_schedule/schedule.lark",
          snippet=lambda f: between(f, r"^// shifts are applied", r"^NUM:"),
@@ -109,10 +115,10 @@ TOOLS = [
 ]
 
 LINES = {"antlr-java": "99", "combinators": "215", "coco": "132", "javacc": "143", "sablecc": "88 + 131",
-         "cup": "75 + 59", "bison": "198", "flex-bison": "160 + 94", "peg": "275", "lark": "47 + 89", "antlr-python": "67 + 104",
+         "cup": "75 + 59", "bison": "198", "flex-bison": "160 + 94", "peg": "275", "pest": "93 + 425", "lark": "47 + 89", "antlr-python": "67 + 104",
          "instaparse": "44 + 48"}
 LINE_NOTES = {"sablecc": "grammar + evaluator", "cup": "parser + lexer", "bison": "incl. hand-written scanner", "flex-bison": "parser + scanner",
-              "peg": "incl. date arithmetic", "lark": "grammar + transformer", "antlr-python": "grammar + visitor",
+              "peg": "incl. date arithmetic", "pest": "grammar + builder", "lark": "grammar + transformer", "antlr-python": "grammar + visitor",
               "instaparse": "grammar + transform"}
 
 # shared test cases, grouped by the comment headers of schedule.txt: a header is a comment block after a blank line,

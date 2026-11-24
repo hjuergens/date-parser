@@ -1,0 +1,255 @@
+// Rule files: the schedule language inside declarations with scope, validity, kind and provenance, as drafted for the
+// rule catalog of holidays-events (docs/rule-grammar.md, O-74); a PEG like rulefile.pegjs (date-rule-peg).
+// Two start rules: rule_file (declarations) and rule_schedule (one expression list, for catalog.schedule()).
+// The nodes have the names of schedule.pest where they mean the same, so one builder (tree.rs) reads both grammars.
+// Keywords end at a word boundary (word_end), so T is not the start of TOM, OR not the start of ORTHODOX.
+
+rule_file = { SOI ~ ws ~ (declaration ~ ws)* ~ EOI }
+rule_schedule = { SOI ~ ws ~ exprs ~ ws ~ EOI }
+
+// ================= declarations =================
+
+declaration = _{ rule_decl | weekend_decl | calendar_decl }
+
+rule_decl = {
+    "rule" ~ word_end ~ ws ~ name ~ ws ~ "for" ~ word_end ~ ws ~ name ~ ws ~ "in" ~ word_end ~ ws ~ scopes
+    ~ (ws ~ except_scopes)? ~ (ws ~ validity)? ~ ws ~ "=" ~ ws ~ (one_of | exprs) ~ (ws ~ attributes)?
+    ~ (ws ~ provenance)? ~ ws ~ ";"
+}
+// exactly one of the alternatives will happen (a moon sighting decides); each gives projected dates under its name
+one_of = { "ONE" ~ word_end ~ ws ~ "OF" ~ word_end ~ ws ~ "{" ~ ws ~ alternative ~ (ws ~ "," ~ ws ~ alternative)* ~ ws ~ "}" }
+alternative = { item_any ~ ws ~ "AS" ~ word_end ~ ws ~ name }
+scopes = { scope ~ (ws ~ "," ~ ws ~ scope)* }
+except_scopes = { "except" ~ word_end ~ ws ~ scope ~ (ws ~ "," ~ ws ~ scope)* }
+validity = { "valid" ~ word_end ~ (ws ~ valid_from)? ~ (ws ~ valid_to)? }
+valid_from = { "from" ~ word_end ~ ws ~ iso_date }
+valid_to = { "to" ~ word_end ~ ws ~ iso_date }
+iso_date = { num ~ ws ~ "-" ~ ws ~ num ~ ws ~ "-" ~ ws ~ num }
+
+weekend_decl = { "weekend" ~ word_end ~ ws ~ scope ~ ws ~ "=" ~ ws ~ weekday_set ~ (ws ~ valid_from)? ~ ws ~ ";" }
+calendar_decl = { "calendar" ~ word_end ~ ws ~ name ~ ws ~ "=" ~ ws ~ calendar ~ ws ~ ";" }
+
+attributes = { "with" ~ word_end ~ ws ~ attribute ~ (ws ~ "," ~ ws ~ attribute)* }
+attribute = _{ kind_attribute | session | precision_attribute | note }
+// event: a dated event (a decision, a release) that leaves the day as it is; special_session: a short session on a day
+// that stays closed; changed_hours: the market is open with other hours
+kind_attribute = { "kind" ~ word_end ~ ws ~ "=" ~ ws ~ kind }
+kind = @{
+    ("closed" | "non_working" | "short_day" | "working_day" | "paid_no_rest" | "tourist" | "event" | "special_session"
+    | "changed_hours") ~ word_end
+}
+// session 09:30 - 13:00, or a single time such as a release: session 14:30
+session = { "session" ~ word_end ~ ws ~ time ~ (ws ~ "-" ~ ws ~ time)? ~ (ws ~ "tz" ~ word_end ~ ws ~ string)? }
+time = { num ~ ws ~ ":" ~ ws ~ num }
+precision_attribute = { "precision" ~ word_end ~ ws ~ "=" ~ ws ~ precision }
+precision = @{ ("day" | "month") ~ word_end }
+note = { "note" ~ word_end ~ ws ~ string }
+
+provenance = { "cites" ~ word_end ~ ws ~ citation ~ (ws ~ "," ~ ws ~ citation)* }
+citation = {
+    string ~ (ws ~ "art" ~ word_end ~ ws ~ string)? ~ (ws ~ "url" ~ word_end ~ ws ~ string)? ~ ws ~ "label" ~ word_end
+    ~ ws ~ label
+}
+label = @{ ("official" | "benchmark" | "practice" | "secondary") ~ word_end }
+
+// a key or an event class
+name = @{ ASCII_ALPHA_LOWER ~ (ASCII_ALPHA_LOWER | ASCII_DIGIT | "_")* ~ ("." ~ ASCII_ALPHA_LOWER ~ (ASCII_ALPHA_LOWER | ASCII_DIGIT | "_")*)* }
+// country:JP, region:AU-NSW, settlement_system:TARGET2
+scope = @{
+    ASCII_ALPHA_LOWER ~ (ASCII_ALPHA_LOWER | "_")* ~ ":" ~ (ASCII_ALPHA_UPPER | ASCII_DIGIT) ~ (ASCII_ALPHA_UPPER | ASCII_DIGIT | "_")*
+    ~ ("-" ~ (ASCII_ALPHA_UPPER | ASCII_DIGIT) ~ (ASCII_ALPHA_UPPER | ASCII_DIGIT | "_")*)*
+}
+// the text without the quotes
+string = ${ "\"" ~ string_text ~ "\"" }
+string_text = @{ (!"\"" ~ ANY)* }
+
+// ================= calendars =================
+
+// a business day in every term of "&"; the scope before the name, which would take its first word
+calendar = { cal_term ~ (ws ~ "&" ~ ws ~ cal_term)* }
+cal_term = _{ cal_scope | cal_named | "(" ~ ws ~ calendar ~ ws ~ ")" }
+cal_scope = { scope ~ (ws ~ ignore)? }
+cal_named = { name }
+// USD on T+1 does not count, unless for ARS, BRL, CLP, MXN
+ignore = {
+    "ignore" ~ word_end ~ ws ~ "at" ~ word_end ~ ws ~ "T" ~ word_end ~ ws ~ "+" ~ ws ~ num
+    ~ (ws ~ "unless" ~ word_end ~ ws ~ "{" ~ ws ~ ccy ~ (ws ~ "," ~ ws ~ ccy)* ~ ws ~ "}")?
+}
+ccy = @{ ASCII_ALPHA_UPPER{3} ~ !ASCII_ALPHA_UPPER }
+
+// in an expression one term only, as "&" there is include: ON country:BR, ON usd_eur, ON (a & b)
+on = { "ON" ~ word_end ~ ws ~ (on_scope | cal_named | "(" ~ ws ~ calendar ~ ws ~ ")") }
+on_scope = { scope }
+
+// ================= expressions =================
+
+exprs = { item_any ~ (ws ~ "," ~ ws ~ item_any)* }
+
+item_any = _{ picked_item | item }
+
+// the condition applies to every date of the item, the shifts after it to the dates it keeps
+item = { expr ~ (ws ~ combine)* ~ (ws ~ if_clause)? }
+
+// 5TH [SPOT : 1Q : ] > EOQ, 2ND LAST: the item starts with a series or an event, where several dates come from
+picked_item = { ordinal ~ (ws ~ last_word)? ~ ws ~ (series | event) ~ (ws ~ shift)* ~ (ws ~ combine)* ~ (ws ~ if_clause)? }
+last_word = @{ "LAST" ~ word_end }
+
+if_clause = { "IF" ~ word_end ~ ws ~ condition ~ (ws ~ shift)* }
+
+// A & B includes the dates of B, A \ B excludes them; the shifts after it apply to the result
+combine = { (op_include | op_exclude) ~ ws ~ (operand_set | date) ~ (ws ~ shift)* }
+op_include = { "&" }
+op_exclude = { "\\" }
+operand_set = { "{" ~ ws ~ expr ~ (ws ~ "," ~ ws ~ expr)* ~ ws ~ "}" }
+
+// [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out
+series = {
+    (start_in | start_out) ~ ws ~ endpoint ~ ws ~ ":" ~ ws ~ (period ~ ws ~ ":" ~ ws ~ endpoint? | endpoint) ~ ws
+    ~ (end_in | end_out)
+}
+start_in = { "[" }
+start_out = { "]" }
+end_in = { "]" }
+end_out = { "[" }
+
+// an endpoint is one date, so it can't be a series
+endpoint = { single_date ~ (ws ~ shift)* }
+
+// shifts are applied from left to right
+expr = { date ~ (ws ~ shift)* }
+
+date = _{ series | single_date }
+
+shift = _{
+    shift_plus | shift_minus | shift_imm | shift_spot | shift_fix | shift_next | shift_prev | shift_nearest
+  | shift_postpone | shift_roll | shift_select | shift_dates_in_year | shift_observance
+}
+shift_plus = { "+" ~ ws ~ period ~ (ws ~ endend)? ~ (ws ~ on)? }
+shift_minus = { "-" ~ ws ~ period ~ (ws ~ endend)? ~ (ws ~ on)? }
+endend = @{ "ENDEND" ~ word_end }
+shift_imm = { ">" ~ ws ~ "IMM" ~ word_end }
+shift_spot = { ">" ~ ws ~ "SPOT" ~ word_end ~ (ws ~ pair)? ~ (ws ~ on)? }
+shift_fix = { ">" ~ ws ~ "FIX" ~ word_end ~ (ws ~ pair)? }
+shift_next = { ">" ~ ws ~ "NEXT" ~ word_end ~ ws ~ (ordinal ~ ws)? ~ anchor }
+shift_prev = { ">" ~ ws ~ "PREV" ~ word_end ~ ws ~ (ordinal ~ ws)? ~ anchor }
+// ties go forward
+shift_nearest = { ">" ~ ws ~ "NEAREST" ~ word_end ~ ws ~ anchor }
+// rolled, but at most the period from the date (with CUMULATIVE from the date before the first postponement)
+shift_postpone = {
+    ">" ~ ws ~ "POSTPONE" ~ word_end ~ ws ~ roll_word ~ (ws ~ on)? ~ ws ~ "MAX" ~ word_end ~ ws ~ period ~ (ws ~ cumulative)?
+}
+cumulative = @{ "CUMULATIVE" ~ word_end }
+shift_roll = { ">" ~ ws ~ roll_word ~ (ws ~ on)? }
+// > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH
+shift_select = { ">" ~ ws ~ (count_from | count_last) ~ ws ~ (any_of | chosen) ~ ws ~ "IN" ~ word_end ~ ws ~ period_kind }
+count_from = { ordinal ~ (ws ~ last_word)? }
+count_last = @{ "LAST" ~ word_end }
+// > {1 FEB, 1 MAY}: the dates of the set in the year of the date
+shift_dates_in_year = { ">" ~ ws ~ "{" ~ ws ~ annual ~ (ws ~ "," ~ ws ~ annual)* ~ ws ~ "}" }
+// {SAT - 1D, TUE WED > PREV MON}: the first entry for the weekday of the date moves it
+shift_observance = { "{" ~ ws ~ observe ~ (ws ~ "," ~ ws ~ observe)* ~ ws ~ "}" }
+observe = { weekday ~ (ws ~ weekday)* ~ ws ~ (move_plus | move_minus | move_next | move_prev | move_nearest | move_roll) }
+move_plus = { "+" ~ ws ~ period }
+move_minus = { "-" ~ ws ~ period }
+move_next = { ">" ~ ws ~ "NEXT" ~ word_end ~ ws ~ anchor }
+move_prev = { ">" ~ ws ~ "PREV" ~ word_end ~ ws ~ anchor }
+move_nearest = { ">" ~ ws ~ "NEAREST" ~ word_end ~ ws ~ anchor }
+move_roll = { ">" ~ ws ~ roll_word ~ (ws ~ on)? }
+
+roll_word = @{
+    ("MODFOLLOWING" | "MODPRECEDING" | "FOLLOWING" | "PRECEDING" | "BOW" | "EOW" | "BOM" | "EOM" | "BOQ" | "EOQ" | "BOH"
+    | "EOH" | "BOY" | "EOY") ~ word_end
+}
+
+// NEXT {MON, FRI}: the nearest of a set; an annual date starting with LAST only in braces, as LAST also starts the count
+anchor = _{ any_of | target }
+any_of = { "{" ~ ws ~ target ~ (ws ~ "," ~ ws ~ target)* ~ ws ~ "}" }
+target = _{ chosen | last_weekday }
+chosen = _{ weekday | anchor_bd | anchor_fd | anchor_imm | fixed_annual | event | anchor_holiday | anchor_nonholiday }
+anchor_bd = { "BD" ~ word_end ~ (ws ~ on)? }
+anchor_fd = { "FD" ~ word_end }
+anchor_imm = { "IMM" ~ word_end }
+anchor_holiday = { "HOLIDAY" ~ word_end ~ (ws ~ on)? }
+anchor_nonholiday = { "NONHOLIDAY" ~ word_end ~ (ws ~ on)? }
+
+// a date that is not a series; the dates that start with a number before the annual dates, which also do
+single_date = _{ tom | base | spot_date | iso | german | us | annual | event }
+tom = { "TOM" ~ word_end }
+base = { "T" ~ word_end }
+spot_date = { "SPOT" ~ word_end ~ (ws ~ pair)? ~ (ws ~ on)? }
+iso = { num ~ ws ~ "-" ~ ws ~ num ~ ws ~ "-" ~ ws ~ num }
+german = { num ~ ws ~ "." ~ ws ~ num ~ ws ~ "." ~ ws ~ num }
+us = { num ~ ws ~ "/" ~ ws ~ num ~ ws ~ "/" ~ ws ~ num }
+
+// dates that recur every year
+annual = _{ fixed_annual | last_weekday }
+last_weekday = { "LAST" ~ word_end ~ ws ~ weekday ~ ws ~ month }
+fixed_annual = _{ month_day | nth_weekday | easter | orthodox_easter | season | solar_term | hindu }
+month_day = { num ~ ws ~ month ~ (ws ~ hijri_method)? }
+nth_weekday = { num ~ ws ~ weekday ~ ws ~ month }
+easter = { "EASTER" ~ word_end }
+orthodox_easter = { "ORTHODOX" ~ word_end ~ ws ~ "EASTER" ~ word_end }
+season = { season_kind ~ ws ~ month ~ (ws ~ (zone_offset | string))? }
+season_kind = @{ ("EQUINOX" | "SOLSTICE") ~ word_end }
+solar_term = { "SOLARTERM" ~ word_end ~ ws ~ num ~ (ws ~ (zone_offset | string))? }
+hindu = { "HINDU" ~ word_end ~ ws ~ name }
+// 1 SHAWWAL BY SIGHTING
+hijri_method = { "BY" ~ word_end ~ ws ~ (method_word | method_follow) }
+method_word = @{ ("UMMALQURA" | "SIGHTING" | "DIYANET") ~ word_end }
+method_follow = { "FOLLOW" ~ word_end ~ ws ~ scope }
+// UTC+9; an IANA time zone such as "Asia/Tokyo" is a string
+zone_offset = @{ "UTC" ~ ("+" | "-") ~ ASCII_DIGIT+ }
+
+// ================= conditions =================
+
+condition = { cond_and ~ (ws ~ "OR" ~ word_end ~ ws ~ cond_and)* }
+cond_and = { cond_not ~ (ws ~ "AND" ~ word_end ~ ws ~ cond_not)* }
+cond_not = { (not_word ~ ws)? ~ cond_atom }
+not_word = @{ "NOT" ~ word_end }
+cond_atom = _{
+    cond_day | cond_between | cond_every | cond_holiday | "(" ~ ws ~ condition ~ ws ~ ")" | cond_subject | cond_weekday
+}
+// DAY 8..14 APR: the day of the month
+cond_day = { "DAY" ~ word_end ~ ws ~ num ~ ws ~ ".." ~ ws ~ num ~ (ws ~ month)? }
+// JP art. 3(3)
+cond_between = { "BETWEEN" ~ word_end ~ ws ~ "HOLIDAYS" ~ word_end ~ (ws ~ on)? }
+// EVERY 4Y FROM 1965
+cond_every = { "EVERY" ~ word_end ~ ws ~ period ~ ws ~ "FROM" ~ word_end ~ ws ~ num }
+cond_holiday = { "HOLIDAY" ~ word_end ~ (ws ~ on)? }
+// 18 SEP IS TUE, EASTER + 1D IS HOLIDAY
+cond_subject = { subject ~ ws ~ "IS" ~ word_end ~ ws ~ (is_holiday | weekday_set) }
+is_holiday = { "HOLIDAY" ~ word_end ~ (ws ~ on)? }
+// the weekday of the date itself
+cond_weekday = { weekday_set }
+subject = { single_date ~ (ws ~ (move_plus | move_minus))* }
+weekday_set = { "{" ~ ws ~ weekday ~ (ws ~ "," ~ ws ~ weekday)* ~ ws ~ "}" | weekday ~ (ws ~ weekday)* }
+
+// ================= lexical =================
+
+month = @{
+    ("JAN" | "FEB" | "MAR" | "APR" | "MAY" | "JUN" | "JUL" | "AUG" | "SEP" | "OCT" | "NOV" | "DEC"
+    | "MUHARRAM" | "SAFAR" | "RABIALAWWAL" | "RABIALTHANI" | "JUMADAALULA" | "JUMADAALAKHIRA" | "RAJAB" | "SHABAN"
+    | "RAMADAN" | "SHAWWAL" | "DHULQADAH" | "DHULHIJJAH"
+    | "NISAN" | "IYAR" | "SIVAN" | "TAMMUZ" | "AV" | "ELUL" | "TISHRI" | "HESHVAN" | "KISLEV" | "TEVET" | "SHEVAT"
+    | "ADARII" | "ADAR"
+    | "ZHENGYUE" | "ERYUE" | "SANYUE" | "SIYUE" | "WUYUE" | "LIUYUE" | "QIYUE" | "BAYUE" | "JIUYUE" | "SHIYUE"
+    | "DONGYUE" | "LAYUE") ~ word_end
+}
+event = @{ "@" ~ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* ~ ("." ~ (ASCII_ALPHANUMERIC | "_")+)* }
+weekday = @{ ("MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN") ~ word_end }
+period_kind = @{ ("WEEK" | "MONTH" | "QUARTER" | "HALFYEAR" | "YEAR") ~ word_end }
+// without a lexer nothing reserves the six-letter keywords, so they're excluded here
+pair = @{
+    !("EASTER" | "ENDEND" | "FOLLOW" | "SHABAN" | "TAMMUZ" | "TISHRI" | "KISLEV" | "SHEVAT" | "ADARII" | "SANYUE"
+    | "LIUYUE" | "JIUYUE" | "SHIYUE") ~ ASCII_ALPHA_UPPER{6} ~ !ASCII_ALPHA_UPPER
+}
+// with a word boundary, unlike schedule.pest, so 1 DEC is no period
+period = { num ~ ws ~ unit ~ word_end }
+unit = @{ "D" | "W" | "M" | "Q" | "H" | "Y" | "B" | "F" }
+ordinal = @{ ASCII_DIGIT+ ~ ("ST" | "ND" | "RD" | "TH") ~ word_end }
+num = @{ ASCII_DIGIT+ }
+
+// a word ends here: no letter, digit or "_" follows
+word_end = _{ !(ASCII_ALPHANUMERIC | "_") }
+// whitespace and comments (# to the end of the line)
+ws = _{ (" " | "\t" | "\r" | "\n" | "#" ~ (!"\n" ~ ANY)*)* }

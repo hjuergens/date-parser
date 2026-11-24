@@ -1,0 +1,137 @@
+// Shared "schedule" example (see examples/schedule.txt in the project root):
+//   2015-06-09 + 3M, 09.06.2015, [2015-01-15 : 1Q : 2015-12-31]
+// A PEG like schedule.pegjs (date-rule-peg): ordered choice and no lexer, so the order of the alternatives matters,
+// and whitespace is explicit (ws). Rules that the builder reads produce nodes; the silent ones (_{ }) only group.
+// tree.rs builds the syntax tree of ast.rs from the nodes of this grammar and of rules.pest, which share the names.
+
+schedule = { SOI ~ ws ~ item_any ~ (ws ~ "," ~ ws ~ item_any)* ~ ws ~ EOI }
+
+item_any = _{ picked_item | item }
+
+// 24 DEC IF MON TUE WED THU, IF {MON, TUE}: the date only on these weekdays; IF DAY 1..3: only on these days
+item = { expr ~ (ws ~ combine)* ~ (ws ~ if_clause)? }
+
+// 5TH [SPOT : 1Q : ] > EOQ > 3RD WED IN MONTH: the 5th date after T of the item, 2ND LAST from the last one; the item
+// starts with a series or an event, where several dates come from
+picked_item = { ordinal ~ (ws ~ last_word)? ~ ws ~ (series | event) ~ (ws ~ shift)* ~ (ws ~ combine)* ~ (ws ~ if_clause)? }
+last_word = { "LAST" }
+
+// A & B includes the dates of B, A \ B excludes them; the shifts after it apply to the result
+combine = { (op_include | op_exclude) ~ ws ~ (operand_set | date) ~ (ws ~ shift)* }
+op_include = { "&" }
+op_exclude = { "\\" }
+operand_set = { "{" ~ ws ~ expr ~ (ws ~ "," ~ ws ~ expr)* ~ ws ~ "}" }
+
+if_clause = { "IF" ~ ws ~ (cond_weekday | cond_day) }
+cond_weekday = { weekday_set }
+// IF DAY 8..14 APR: the day of the month (of that month)
+cond_day = { "DAY" ~ ws ~ num ~ ws ~ ".." ~ ws ~ num ~ (ws ~ month)? }
+weekday_set = { "{" ~ ws ~ weekday ~ (ws ~ "," ~ ws ~ weekday)* ~ ws ~ "}" | weekday ~ (ws ~ weekday)* }
+
+// [a : step : b], every day without a step; "]" at the start or "[" at the end leaves that endpoint out. A series is
+// a date with several values, like an event: the shifts after it apply to each element
+series = {
+    (start_in | start_out) ~ ws ~ endpoint ~ ws ~ ":" ~ ws ~ (period ~ ws ~ ":" ~ ws ~ endpoint? | endpoint) ~ ws
+    ~ (end_in | end_out)
+}
+start_in = { "[" }
+start_out = { "]" }
+end_in = { "]" }
+end_out = { "[" }
+
+// an endpoint is one date, so it can't be a series: after the last ":" a "]" closes an open series [SPOT : 1Q : ]
+endpoint = { single_date ~ (ws ~ shift)* }
+
+// shifts are applied from left to right
+expr = { date ~ (ws ~ shift)* }
+
+date = _{ series | single_date }
+
+shift = _{
+    shift_plus | shift_minus | shift_imm | shift_spot | shift_fix | shift_roll | shift_next | shift_prev
+  | shift_dates_in_year | shift_select | shift_observance
+}
+shift_plus = { "+" ~ ws ~ period }
+shift_minus = { "-" ~ ws ~ period }
+shift_imm = { ">" ~ ws ~ "IMM" }
+shift_spot = { ">" ~ ws ~ "SPOT" ~ (ws ~ pair)? }
+// the fixing date of a value date
+shift_fix = { ">" ~ ws ~ "FIX" ~ (ws ~ pair)? }
+shift_roll = { ">" ~ ws ~ roll_word }
+// NEXT 3RD FRI: the third Friday; the ordinal first, as the number of 3 FRI JAN would take its digits
+shift_next = { ">" ~ ws ~ "NEXT" ~ ws ~ (ordinal ~ ws)? ~ anchor }
+shift_prev = { ">" ~ ws ~ "PREV" ~ ws ~ (ordinal ~ ws)? ~ anchor }
+// > {1 FEB, 1 MAY}: the dates of the set in the year of the date
+shift_dates_in_year = { ">" ~ ws ~ "{" ~ ws ~ annual ~ (ws ~ "," ~ ws ~ annual)* ~ ws ~ "}" }
+// > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH: the n-th match in the period of the date, from its start or its end
+shift_select = { ">" ~ ws ~ (count_from | count_last) ~ ws ~ (any_of | chosen) ~ ws ~ "IN" ~ ws ~ period_kind }
+count_from = { ordinal ~ (ws ~ last_word)? }
+count_last = { "LAST" }
+// {SAT - 1D, SUN + 1D}: the first entry for the weekday of the date moves it
+shift_observance = { "{" ~ ws ~ observe ~ (ws ~ "," ~ ws ~ observe)* ~ ws ~ "}" }
+observe = { weekday ~ ws ~ (move_plus | move_minus) }
+move_plus = { "+" ~ ws ~ period }
+move_minus = { "-" ~ ws ~ period }
+
+// NEXT {MON, FRI}: the nearest of a set; an annual date starting with LAST only in braces, as LAST also starts the count
+anchor = _{ any_of | target }
+any_of = { "{" ~ ws ~ target ~ (ws ~ "," ~ ws ~ target)* ~ ws ~ "}" }
+target = _{ chosen | last_weekday }
+chosen = _{ weekday | anchor_bd | anchor_fd | anchor_imm | fixed_annual | event }
+anchor_bd = { "BD" }
+anchor_fd = { "FD" }
+anchor_imm = { "IMM" }
+
+// a date that is not a series; TOM before T, as there is no lexer
+single_date = _{ tom | base | spot_date | iso | german | us | annual | event }
+tom = { "TOM" }
+base = { "T" }
+spot_date = { "SPOT" ~ (ws ~ pair)? }
+iso = { num ~ ws ~ "-" ~ ws ~ num ~ ws ~ "-" ~ ws ~ num }
+german = { num ~ ws ~ "." ~ ws ~ num ~ ws ~ "." ~ ws ~ num }
+us = { num ~ ws ~ "/" ~ ws ~ num ~ ws ~ "/" ~ ws ~ num }
+
+// dates that recur every year, evaluated in the year of the base date
+annual = _{ fixed_annual | last_weekday }
+last_weekday = { "LAST" ~ ws ~ weekday ~ ws ~ month }
+fixed_annual = _{ month_day | nth_weekday | easter | season | solar_term }
+month_day = { num ~ ws ~ month }
+nth_weekday = { num ~ ws ~ weekday ~ ws ~ month }
+easter = { "EASTER" }
+// EQUINOX MAR, SOLSTICE DEC UTC+9: UTC unless an offset follows
+season = { season_kind ~ ws ~ month ~ (ws ~ zone_offset)? }
+season_kind = @{ "EQUINOX" | "SOLSTICE" }
+solar_term = { "SOLARTERM" ~ ws ~ num ~ (ws ~ zone_offset)? }
+zone_offset = @{ "UTC" ~ ("+" | "-") ~ ASCII_DIGIT+ }
+
+// Gregorian, then Hijri (Umm al-Qura), Hebrew and Chinese months; ordered choice, so ADARII before ADAR
+month = @{
+    "JAN" | "FEB" | "MAR" | "APR" | "MAY" | "JUN" | "JUL" | "AUG" | "SEP" | "OCT" | "NOV" | "DEC"
+  | "MUHARRAM" | "SAFAR" | "RABIALAWWAL" | "RABIALTHANI" | "JUMADAALULA" | "JUMADAALAKHIRA" | "RAJAB" | "SHABAN"
+  | "RAMADAN" | "SHAWWAL" | "DHULQADAH" | "DHULHIJJAH"
+  | "NISAN" | "IYAR" | "SIVAN" | "TAMMUZ" | "AV" | "ELUL" | "TISHRI" | "HESHVAN" | "KISLEV" | "TEVET" | "SHEVAT"
+  | "ADARII" | "ADAR"
+  | "ZHENGYUE" | "ERYUE" | "SANYUE" | "SIYUE" | "WUYUE" | "LIUYUE" | "QIYUE" | "BAYUE" | "JIUYUE" | "SHIYUE"
+  | "DONGYUE" | "LAYUE"
+}
+// a named event such as @FOMC; the sigil keeps names apart from keywords and pairs
+event = @{ "@" ~ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* ~ ("." ~ (ASCII_ALPHANUMERIC | "_")+)* }
+weekday = @{ "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN" }
+roll_word = @{
+    "FOLLOWING" | "PRECEDING" | "MODFOLLOWING" | "BOW" | "EOW" | "BOM" | "EOM" | "BOQ" | "EOQ" | "BOH" | "EOH" | "BOY"
+  | "EOY"
+}
+// the periods of a selection; WEEK is Monday to Sunday
+period_kind = @{ "WEEK" | "MONTH" | "QUARTER" | "HALFYEAR" | "YEAR" }
+// currency pair such as EURUSD; without a lexer nothing reserves the six-letter keywords, so they're excluded here
+pair = @{
+    !("EASTER" | "SHABAN" | "TAMMUZ" | "TISHRI" | "KISLEV" | "SHEVAT" | "ADARII" | "SANYUE" | "LIUYUE" | "JIUYUE"
+    | "SHIYUE") ~ ASCII_ALPHA_UPPER{6}
+}
+period = { num ~ ws ~ unit }
+unit = @{ "D" | "W" | "M" | "Q" | "H" | "Y" | "B" | "F" }
+// 1ST, 2ND, 3RD, 4TH; the suffix must fit the number (checked by the builder)
+ordinal = @{ ASCII_DIGIT+ ~ ("ST" | "ND" | "RD" | "TH") }
+num = @{ ASCII_DIGIT+ }
+
+ws = _{ (" " | "\t" | "\r" | "\n")* }

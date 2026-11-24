@@ -353,10 +353,10 @@ Found while translating (2026-11-14) and closed on 2026-11-16:
   happens, each under its name; it replaces `BY SIGHTING` in the five Gulf rules.
 - **Hijri month length:** not needed any more; the alternatives count from the Umm al-Qura start of the previous
   month (`1 RAMADAN + 29D`, `+ 30D`).
-- **A lunar date twice in a Gregorian year** gives both dates instead of an error (all twelve implementations).
+- **A lunar date twice in a Gregorian year** gives both dates instead of an error (all thirteen implementations).
 - **Ranges from each occurrence:** `[@e > PREV 2ND SAT : @e + 1D]` pairs both ends per occurrence of `@e`
-  (all twelve implementations); `fed.blackout` is one range per FOMC decision.
-- **Day of the month:** `IF DAY 1..3`, `IF DAY 8..14 APR` (all twelve implementations); Zurich's Sechseläuten uses it.
+  (all thirteen implementations); `fed.blackout` is one range per FOMC decision.
+- **Day of the month:** `IF DAY 1..3`, `IF DAY 8..14 APR` (all thirteen implementations); Zurich's Sechseläuten uses it.
 - **Monthly series with a weekday shift:** this already worked (`[16 JAN : 1M : 16 DEC] - 1D > NEXT WED`, `ons.cpi`).
 - **A single time of day:** `session 14:30` (rule files).
 - **Kinds:** `special_session` (a short session on a day that stays closed, the NSE's Muhurat session) and

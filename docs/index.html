@@ -3,24 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Twelve Parsers, One Language</title>
-<meta name="description" content="The same small date language implemented with ANTLR (Java and Python), Scala parser combinators, Coco/R, JavaCC, SableCC, JFlex + CUP, GNU Bison (Java and C with Flex), Peggy, Lark and instaparse (Clojure), tested against one shared set of cases.">
+<title>Thirteen Parsers, One Language</title>
+<meta name="description" content="The same small date language implemented with ANTLR (Java and Python), Scala parser combinators, Coco/R, JavaCC, SableCC, JFlex + CUP, GNU Bison (Java and C with Flex), Peggy, pest (Rust), Lark and instaparse (Clojure), tested against one shared set of cases.">
 <link rel="canonical" href="https://hjuergens.github.io/date-parser/">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Twelve Parsers, One Language">
-<meta property="og:description" content="ANTLR, JavaCC, Bison, Flex + Bison in C, JFlex + CUP, SableCC, Coco/R, Peggy, Lark, instaparse and Scala parser combinators implement the same date language, side by side.">
+<meta property="og:title" content="Thirteen Parsers, One Language">
+<meta property="og:description" content="ANTLR, JavaCC, Bison, Flex + Bison in C, JFlex + CUP, SableCC, Coco/R, Peggy, pest, Lark, instaparse and Scala parser combinators implement the same date language, side by side.">
 <meta property="og:url" content="https://hjuergens.github.io/date-parser/">
 <meta name="twitter:card" content="summary">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "SoftwareSourceCode",
-  "name": "date-parser: twelve parsers, one language",
-  "description": "One date-schedule language implemented with ANTLR (Java and Python), JavaCC, GNU Bison (Java and C with Flex), JFlex + CUP, SableCC, Coco/R, Peggy, Lark, instaparse and Scala parser combinators, tested against one shared set of cases.",
+  "name": "date-parser: thirteen parsers, one language",
+  "description": "One date-schedule language implemented with ANTLR (Java and Python), JavaCC, GNU Bison (Java and C with Flex), JFlex + CUP, SableCC, Coco/R, Peggy, pest (Rust), Lark, instaparse and Scala parser combinators, tested against one shared set of cases.",
   "url": "https://hjuergens.github.io/date-parser/",
   "codeRepository": "https://github.com/hjuergens/date-parser",
   "programmingLanguage": ["Java", "Scala", "JavaScript", "Python", "Clojure"],
-  "keywords": "parser generator, ANTLR, JavaCC, Bison, Flex, C, JFlex, CUP, SableCC, Coco/R, PEG, Peggy, Lark, Earley, instaparse, GLL, Clojure, parser combinators, grammar, LL, LALR",
+  "keywords": "parser generator, ANTLR, JavaCC, Bison, Flex, C, JFlex, CUP, SableCC, Coco/R, PEG, Peggy, pest, Rust, Lark, Earley, instaparse, GLL, Clojure, parser combinators, grammar, LL, LALR",
   "license": "https://www.apache.org/licenses/LICENSE-2.0"
 }
 </script>
@@ -232,13 +232,13 @@
 <main>
   <header>
     <p class="eyebrow">date-parser · parser technology comparison</p>
-    <h1>Twelve parsers, one date language</h1>
+    <h1>Thirteen parsers, one date language</h1>
     <p class="lead">
-      The same small language for dates, periods and ranges, implemented with twelve parser generators and
+      The same small language for dates, periods and ranges, implemented with thirteen parser generators and
       parser libraries, from LL(1) to LALR(1), Earley, GLL and PEG. Every implementation passes the same 572 test cases.
     </p>
     <ul class="stats">
-      <li><strong>12</strong><span>implementations, 6 languages</span></li>
+      <li><strong>13</strong><span>implementations, 7 languages</span></li>
       <li><strong>572</strong><span>shared test cases</span></li>
       <li><strong>0</strong><span>grammar conflicts</span></li>
       <li><strong>1</strong><span>specification file</span></li>
@@ -407,6 +407,7 @@ ORDINAL  = NUM ("ST" | "ND" | "RD" | "TH") .  <span class="c">(* 3RD, one token 
       <button role="tab" id="tab-bison" aria-controls="panel-bison" aria-selected="false" tabindex="-1">GNU Bison</button>
       <button role="tab" id="tab-flex-bison" aria-controls="panel-flex-bison" aria-selected="false" tabindex="-1">Flex + Bison · C</button>
       <button role="tab" id="tab-peg" aria-controls="panel-peg" aria-selected="false" tabindex="-1">Peggy</button>
+      <button role="tab" id="tab-pest" aria-controls="panel-pest" aria-selected="false" tabindex="-1">pest</button>
       <button role="tab" id="tab-lark" aria-controls="panel-lark" aria-selected="false" tabindex="-1">Lark</button>
       <button role="tab" id="tab-instaparse" aria-controls="panel-instaparse" aria-selected="false" tabindex="-1">instaparse</button>
       </div>
@@ -907,6 +908,44 @@ Shift
       <p class="note">Series are skipped in this excerpt.</p>
       <p class="pitfall"><strong>Pitfall.</strong> Peggy provides <code>range()</code> in actions, which silently shadows a helper of the same name.</p>
     </div>
+    <div role="tabpanel" id="panel-pest" aria-labelledby="tab-pest" hidden>
+      <div class="panel-head">
+        <span class="kind">PEG · ordered choice</span><span class="lang">Rust</span>
+        <a href="https://github.com/hjuergens/date-parser/blob/main/date-rule-pest/src/schedule.pest">schedule.pest ↗</a>
+      </div>
+      <pre><code><span class="c">// shifts are applied from left to right</span>
+expr = { date ~ (ws ~ shift)* }
+
+date = _{ series | single_date }
+
+shift = _{
+    shift_plus | shift_minus | shift_imm | shift_spot | shift_fix | shift_roll | shift_next | shift_prev
+  | shift_dates_in_year | shift_select | shift_observance
+}
+shift_plus = { &quot;+&quot; ~ ws ~ period }
+shift_minus = { &quot;-&quot; ~ ws ~ period }
+shift_imm = { &quot;&gt;&quot; ~ ws ~ &quot;IMM&quot; }
+shift_spot = { &quot;&gt;&quot; ~ ws ~ &quot;SPOT&quot; ~ (ws ~ pair)? }
+<span class="c">// the fixing date of a value date</span>
+shift_fix = { &quot;&gt;&quot; ~ ws ~ &quot;FIX&quot; ~ (ws ~ pair)? }
+shift_roll = { &quot;&gt;&quot; ~ ws ~ roll_word }
+<span class="c">// NEXT 3RD FRI: the third Friday; the ordinal first, as the number of 3 FRI JAN would take its digits</span>
+shift_next = { &quot;&gt;&quot; ~ ws ~ &quot;NEXT&quot; ~ ws ~ (ordinal ~ ws)? ~ anchor }
+shift_prev = { &quot;&gt;&quot; ~ ws ~ &quot;PREV&quot; ~ ws ~ (ordinal ~ ws)? ~ anchor }
+<span class="c">// &gt; {1 FEB, 1 MAY}: the dates of the set in the year of the date</span>
+shift_dates_in_year = { &quot;&gt;&quot; ~ ws ~ &quot;{&quot; ~ ws ~ annual ~ (ws ~ &quot;,&quot; ~ ws ~ annual)* ~ ws ~ &quot;}&quot; }
+<span class="c">// &gt; 3RD WED IN MONTH, &gt; 2ND LAST BD IN MONTH: the n-th match in the period of the date, from its start or its end</span>
+shift_select = { &quot;&gt;&quot; ~ ws ~ (count_from | count_last) ~ ws ~ (any_of | chosen) ~ ws ~ &quot;IN&quot; ~ ws ~ period_kind }
+count_from = { ordinal ~ (ws ~ last_word)? }
+count_last = { &quot;LAST&quot; }
+<span class="c">// {SAT - 1D, SUN + 1D}: the first entry for the weekday of the date moves it</span>
+shift_observance = { &quot;{&quot; ~ ws ~ observe ~ (ws ~ &quot;,&quot; ~ ws ~ observe)* ~ ws ~ &quot;}&quot; }
+observe = { weekday ~ ws ~ (move_plus | move_minus) }
+move_plus = { &quot;+&quot; ~ ws ~ period }
+move_minus = { &quot;-&quot; ~ ws ~ period }</code></pre>
+      <p class="note">Series are skipped in this excerpt.</p>
+      <p class="pitfall"><strong>Pitfall.</strong> Without a <code>WHITESPACE</code> rule <code>~</code> skips nothing; with one it skips everywhere, also inside <code>2015-06-09</code> unless the token is atomic, so whitespace is an explicit silent rule <code>ws</code>, as <code>_</code> in Peggy.</p>
+    </div>
     <div role="tabpanel" id="panel-lark" aria-labelledby="tab-lark" hidden>
       <div class="panel-head">
         <span class="kind">Earley and LALR(1), one grammar</span><span class="lang">Python</span>
@@ -1099,6 +1138,13 @@ observe  = WEEKDAY SIGN period
           <td><code>SyntaxError</code> with expected tokens</td>
         </tr>
         <tr>
+          <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/main/date-rule-pest/src/schedule.pest">pest</a></th>
+          <td>PEG · ordered choice</td>
+          <td class="num">93 + 425<small>grammar + builder</small></td>
+          <td>Pairs copied into a syntax tree (<code>ast.rs</code>), which a separate interpreter evaluates</td>
+          <td><code>pest::error::Error</code> with the expected rules; evaluation returns a <code>Result</code></td>
+        </tr>
+        <tr>
           <th scope="row"><a href="https://github.com/hjuergens/date-parser/blob/main/date-rule-lark/src/lark_schedule/schedule.lark">Lark</a></th>
           <td>Earley and LALR(1), one grammar</td>
           <td class="num">47 + 89<small>grammar + transformer</small></td>
@@ -1146,12 +1192,12 @@ observe  = WEEKDAY SIGN period
           uses the same rules without actions and a visitor, which would work for every ANTLR target.</p></li>
       <li><strong>A lexer may or may not know the parser's state.</strong>
         <p><code>&gt;SPOTUSDCAD</code> without a space: ANTLR, Coco/R, JavaCC, JFlex and SableCC read <code>SPOTUS</code> as a currency pair and fail.
-          Peggy, instaparse and the Scala combinators have no lexer, and Lark's contextual lexer only tries the tokens the parser expects; all four accept it.</p></li>
+          Peggy, pest, instaparse and the Scala combinators have no lexer, and Lark's contextual lexer only tries the tokens the parser expects; all five accept it.</p></li>
       <li><strong>Six capitals: keyword or currency pair?</strong>
         <p><code>EASTER</code> has six capital letters, like <code>EURUSD</code>. The tools with a lexer decide by order:
           ANTLR's implicit keywords come first, JFlex, JavaCC and SableCC take the rule declared first, Coco/R checks its keyword table,
           and both Bison scanners (hand-written in Java, Flex in C) test the keywords before the length. Without a lexer, or with a contextual one,
-          the pattern itself must exclude the keyword (<code>!"EASTER"</code> in Peggy, <code>!('EASTER' | …)</code> in instaparse, <code>(?!EASTER)</code> in Scala and Lark),
+          the pattern itself must exclude the keyword (<code>!"EASTER"</code> in Peggy and pest, <code>!('EASTER' | …)</code> in instaparse, <code>(?!EASTER)</code> in Scala and Lark),
           otherwise <code>T &gt; SPOT EASTER</code> would read a pair. Lunar month names such as <code>TISHRI</code> joined the list.
           Event names avoid the race altogether: the sigil in <code>@EASTER</code> makes it a name in every tool.</p></li>
       <li><strong>Several dates from one expression, without touching the expression rules.</strong>
@@ -1176,7 +1222,7 @@ observe  = WEEKDAY SIGN period
     <h2 id="cases">The shared test cases</h2>
     <p class="lead">
       From <a href="https://github.com/hjuergens/date-parser/blob/main/examples/schedule.txt">examples/schedule.txt</a>. Each module has a test that reads this file,
-      so adding a line here tests all twelve implementations. They also read 2186 cases in
+      so adding a line here tests all thirteen implementations. They also read 2186 cases in
       <a href="https://github.com/hjuergens/date-parser/blob/main/examples/catalog.txt">examples/catalog.txt</a>, generated from a holiday rule catalog, and 3347 in
       <a href="https://github.com/hjuergens/date-parser/blob/main/examples/date-holidays.txt">examples/date-holidays.txt</a>, generated from date-holidays (neither listed here).
     </p>
@@ -1966,7 +2012,7 @@ observe  = WEEKDAY SIGN period
     <p class="lead">
       A schedule says which dates; a rule file says whose dates they are. Its grammar wraps the schedule language in
       declarations. It started in the Lark module as <a href="https://github.com/hjuergens/date-parser/blob/main/date-rule-lark/src/lark_schedule/rules.lark">rules.lark</a>;
-      now all 12 implementations read rule files with their own tool and pass the 78 cases of
+      now all 13 implementations read rule files with their own tool and pass the 78 cases of
       <a href="https://github.com/hjuergens/date-parser/blob/main/examples/rules.txt">examples/rules.txt</a>.
     </p>
     <pre><code>rule xnys.juneteenth for juneteenth in exchange:XNYS valid from 2022-01-01 = 19 JUN {SAT - 1D, SUN + 1D}
@@ -1996,13 +2042,14 @@ rule sa.eid_al_fitr for eid_al_fitr in country:SA
   <section aria-labelledby="run">
     <h2 id="run">Run it yourself</h2>
     <p class="lead">You need JDK 17 and Maven 3.9. Bison is optional: without it the Bison module builds empty. The Peggy module downloads its own Node.js.
-      The C module needs a compiler, Flex and Bison, or Docker.</p>
+      The C module needs a compiler, Flex and Bison, or Docker; the Rust module needs Cargo.</p>
     <pre><code>git clone https://github.com/hjuergens/date-parser.git
 cd date-parser
 mvn clean verify                      <span class="c"># all modules</span>
 mvn -pl date-rule-coco test           <span class="c"># one module</span>
 docker build -t date-rule-flex-bison date-rule-flex-bison
-docker run --rm -v "$PWD:/work" -w /work/date-rule-flex-bison date-rule-flex-bison make test   <span class="c"># C</span></code></pre>
+docker run --rm -v "$PWD:/work" -w /work/date-rule-flex-bison date-rule-flex-bison make test   <span class="c"># C</span>
+cargo test --manifest-path date-rule-pest/Cargo.toml   <span class="c"># Rust</span></code></pre>
   </section>
 </main>
 

@@ -327,6 +327,8 @@ scenario names of the moon-sighting rules included.
 | `ru_cis.rules` | 9 | 9 | 0 |
 | **Total** | **187** | **187** | **0** |
 
+A rule with several versions counts once (`cn.chinese_new_year`, `ae.eid_al_fitr`).
+
 `fed.fomc_press_conference`, added later, is not in the comparison; its dates are those of `fed.fomc_decision`.
 
 Checked again on 2026-11-20 against the catalog of 2026-11-19: the 184 rules with dates in 2021 to 2031 agree day

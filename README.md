@@ -16,7 +16,7 @@ term structures such as `[3M,4M,6M]x(4M:1M:9M)`, date shifts such as `>Q` ("firs
 natural-language rules such as "three days after next sunday".
 
 Each `date-rule-*` module implements a grammar with a different technology. The modules are independent of each other.
-Planned additions are in [TODO.md](TODO.md).
+Planned additions are in [TODO.md](docs/TODO.md).
 
 ## Modules
 

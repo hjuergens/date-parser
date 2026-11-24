@@ -1,9 +1,9 @@
 # A guide to the schedule language
 
 This guide introduces the date language of this project step by step. The complete grammar is the EBNF in the
-[README](README.md#shared-example-schedule); the spec file [examples/schedule.txt](examples/schedule.txt) holds 537
+[README](README.md#shared-example-schedule); the spec file [examples/schedule.txt](../examples/schedule.txt) holds 537
 cases with their expected dates. All twelve implementations pass all of them, so none of them is a subset: any of
-them can serve as a reference, and the ANTLR grammar [DateSchedule.g4](date-rule-antlr-java/src/main/antlr4/io/github/hjuergens/time/DateSchedule.g4)
+them can serve as a reference, and the ANTLR grammar [DateSchedule.g4](../date-rule-antlr-java/src/main/antlr4/io/github/hjuergens/time/DateSchedule.g4)
 is the one with the most comments.
 
 ## The idea in three sentences
@@ -149,6 +149,6 @@ them, so each moves to the end of its month: 2026-11-30, 2027-02-28, 2027-05-31,
 ## Next
 
 - The complete grammar: the EBNF in the [README](README.md#shared-example-schedule).
-- Every rule with its expected dates: [examples/schedule.txt](examples/schedule.txt).
+- Every rule with its expected dates: [examples/schedule.txt](../examples/schedule.txt).
 - The twelve implementations side by side and the playground: <https://hjuergens.github.io/date-parser/>.
-- Changing rules while an application runs: [date-rule-runtime](date-rule-runtime/README.md).
+- Changing rules while an application runs: [date-rule-runtime](../date-rule-runtime/README.md).

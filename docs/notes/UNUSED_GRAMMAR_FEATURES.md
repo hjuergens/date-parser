@@ -103,7 +103,7 @@ The holidays-events rules **do use** the following major features:
 
 ## Files Analyzed
 
-All `*.rules` files in [holidays-events/](holidays-events/):
+All `*.rules` files in [holidays-events/](../../holidays-events/):
 - `apac_other.rules` (23 rules)
 - `br.rules` (16 rules)
 - `ca.rules` (10 rules)
@@ -117,7 +117,7 @@ All `*.rules` files in [holidays-events/](holidays-events/):
 - `weekends.rules` (31 weekend lines)
 
 **Total: 188 rules** (190 declarations: two rules have a second version), as in the table of
-[holidays-events/README.md](holidays-events/README.md). 187 of them were compared day by day for 2021 to 2031 with
+[holidays-events/README.md](../../holidays-events/README.md). 187 of them were compared day by day for 2021 to 2031 with
 holidays-events' own engine and all agree; `fed.fomc_press_conference` came later.
 
 ## Conclusion

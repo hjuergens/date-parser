@@ -245,6 +245,10 @@ are the catalog's own remarks, including switch dates still to be verified (Oman
 | `weekends.rules` | Weekend regimes that are not Saturday-Sunday | 0 (31 weekend lines) |
 | **Total** | | **188** |
 
+By kind, 152 rules are closing days (`closed`), 31 are events and 5 are early closes (`short_day`). By scope, 47
+belong to central banks (26 closing days, 21 events such as rate decisions), 43 to settlement systems, 36 to
+exchanges, 34 to countries, 11 to segments, 9 to subdivisions, 6 to issuers and 2 to statistics offices.
+
 The 43 events whose dates are only ever announced have no rule; each has a comment with its key and source.
 
 Some files refer to rules in others (`@fed.fomc_decision` from `us.rules` is used in `apac_other.rules` and

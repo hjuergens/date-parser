@@ -118,8 +118,8 @@ FIXINGS = [
     ("TONA", "settlement_system:BOJNET", ["settlement_system:BOJNET"]),
     ("CORRA", "settlement_system:LYNX", ["settlement_system:LYNX"]),
     ("PTAX (USD/BRL)", "central_bank:BCB", ["central_bank:BCB"]),
-    ("BRL NDF valuation", "country:BR & central_bank:FED, preceding business day, postponed at most 14 days",
-     ["country:BR", "central_bank:FED"]),
+    ("BRL NDF valuation", "central_bank:BCB (PTAX days), preceding business day, postponed at most 14 days",
+     ["central_bank:BCB"]),
     ("LPR (China)", "event", ["central_bank:PBOC"]),
 ]
 FIX_COLUMNS = {"Fixing": 20, "Calendar": 40, **COLUMNS}
@@ -131,17 +131,6 @@ count = 0
 for fixing, calendar, scopes in FIXINGS:
     for scope in scopes:
         stype, code = scope.split(":")
-        if scope == "country:BR":
-            # derived: the PTAX days (br.rules) are the federal holidays plus Carnival Monday and Tuesday and
-            # Corpus Christi, so the federal holidays are the PTAX rules without those three
-            for r in sorted((r for r in rows if r["Key"].endswith(":BCB") and r["Kind"] == "closed"
-                             and r["Key"].split(":")[0] not in ("carnival_monday", "carnival_tuesday", "corpus_christi")),
-                            key=lambda r: r["Key"]):
-                d = dict(r, Key=r["Key"].replace(":BCB", ":BR"), **{"Scope type": "country"})
-                d["Description"] = f"Derived from the PTAX rule {r['Rule key']} (a federal holiday). {r['Description']}"
-                ws.append([fixing, calendar] + [d[c] for c in COLUMNS])
-                count += 1
-            continue
         if not any(r["Scope type"] == stype and r["Key"].endswith(":" + code) for r in rows):
             ws.append([fixing, calendar, "", "", "", f"No rules for {scope} in holidays-events yet.", stype])
             count += 1

@@ -2012,7 +2012,7 @@ observe  = WEEKDAY SIGN period
     <p class="lead">
       A schedule says which dates; a rule file says whose dates they are. Its grammar wraps the schedule language in
       declarations. It started in the Lark module as <a href="https://github.com/hjuergens/date-parser/blob/main/date-rule-lark/src/lark_schedule/rules.lark">rules.lark</a>;
-      now all 13 implementations read rule files with their own tool and pass the 80 cases of
+      now all 13 implementations read rule files with their own tool and pass the 86 cases of
       <a href="https://github.com/hjuergens/date-parser/blob/main/examples/rules.txt">examples/rules.txt</a>.
     </p>
     <pre><code>rule xnys.juneteenth for juneteenth in exchange:XNYS valid from 2022-01-01 = 19 JUN {SAT - 1D, SUN + 1D}

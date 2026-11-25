@@ -172,6 +172,18 @@ rule br.carnival for carnival in country:BR = [16 FEB : 20 FEB];
 [2026-02-01] T > 2ND BD ON country:BR IN MONTH => 2026-02-03
 [2026-01-01] EQUINOX MAR "Asia/Tokyo", EQUINOX MAR UTC+9 => 2026-03-20, 2026-03-20
 
+# FRN convention (Eurodollar): each date is a whole number of months after the date before it, rolled modified
+# following; without that day in the month it is the last business day, and once a date was the last business day of
+# its month all later ones are too (ENDEND). The dates chain: one step per period, not n months from T
+rule us.juneteenth for juneteenth in country:US = 19 JUN;
+rule us.thanksgiving for thanksgiving in country:US = 4 THU NOV;
+[2025-10-30] T + 1M ENDEND ON country:US > MODFOLLOWING ON country:US => 2025-11-28
+[2026-01-29] T + 1M ENDEND ON country:US > MODFOLLOWING ON country:US => 2026-02-27
+[2026-05-19] T + 1M ENDEND ON country:US > MODFOLLOWING ON country:US => 2026-06-22
+[2026-02-27] T + 3M ENDEND ON country:US > MODFOLLOWING ON country:US => 2026-05-29
+[2025-01-30] T + 6M ENDEND ON country:US > MODFOLLOWING ON country:US => 2025-07-30
+[2025-01-30] T + 1M ENDEND ON country:US > MODFOLLOWING ON country:US + 1M ENDEND ON country:US > MODFOLLOWING ON country:US + 1M ENDEND ON country:US > MODFOLLOWING ON country:US + 1M ENDEND ON country:US > MODFOLLOWING ON country:US + 1M ENDEND ON country:US > MODFOLLOWING ON country:US + 1M ENDEND ON country:US > MODFOLLOWING ON country:US => 2025-07-31
+
 # a rule on the days of another: the FOMC press conference on every decision day, at its own time
 rule fed.fomc_decision for fomc_decision in central_bank:FED = 25 JAN > NEXT WED, 15 MAR > NEXT WED, 25 JUL > NEXT WED
   with kind = event, session 14:00 tz "America/New_York";

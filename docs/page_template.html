@@ -124,6 +124,10 @@
   .examples tr:first-child td { border-top: 0; }
   .examples td:first-child { font-family: var(--mono); font-size: 0.86rem; white-space: nowrap; }
   .examples td:last-child { color: var(--muted); font-size: 0.92rem; }
+  .examples3 { margin-top: 24px; }
+  .examples3 th { text-align: left; padding: 10px 14px; font-size: 0.85rem; font-weight: 600; border-bottom: 1px solid var(--border); }
+  .examples3 td:nth-child(2) { font-size: 0.92rem; }
+  .grammar { margin-top: 16px; }
   .note { color: var(--muted); font-size: 0.95rem; margin: 16px 0 0; }
 
   /* tabs */
@@ -248,29 +252,31 @@
   <section aria-labelledby="language">
     <h2 id="language">The language</h2>
     <p class="lead">Small enough for every tool, rich enough to show their differences: three date notations, periods, business days, IMM and FX spot dates, lists and ranges. A schedule is a rule: a function of the base date <code>T</code> and the market.</p>
-    <div class="two">
-      <table class="examples">
-        <tbody>
-          <tr><td>2015-06-09</td><td>one date (ISO)</td></tr>
-          <tr><td>09.06.2015 + 3M</td><td>2015-09-09 (German notation)</td></tr>
-          <tr><td>06/09/2015 + 1W - 2D</td><td>2015-06-14 (US notation, left to right)</td></tr>
-          <tr><td>2015-06-09, 1.1.2000 + 1Y</td><td>2015-06-09, 2001-01-01</td></tr>
-          <tr><td>[2015-01-15 : 1Q : 2015-12-31]</td><td>2015-01-15, -04-15, -07-15, -10-15</td></tr>
-          <tr><td>[2026-01-01 : 3M : 2026-12-31] &gt; EOQ &gt; 3RD WED IN MONTH</td><td>the IMM dates of 2026: shifts apply to each element</td></tr>
-          <tr><td>2015-06-12 + 1B</td><td>2015-06-15 (business days)</td></tr>
-          <tr><td>2015-06-09 + 3M &gt; IMM</td><td>2015-09-16 (next IMM date)</td></tr>
-          <tr><td>2015-06-12 &gt; SPOT USDCAD</td><td>2015-06-15 (FX spot, T+1)</td></tr>
-          <tr><td>T + 2B</td><td>two business days after the base date, in the market of the evaluation</td></tr>
-          <tr><td>24 DEC IF MON TUE WED THU</td><td>Christmas Eve from Monday to Thursday, otherwise no date</td></tr>
-          <tr><td>1 SHAWWAL, 1 ZHENGYUE</td><td>Eid al-Fitr and Chinese New Year in the year of <code>T</code></td></tr>
-          <tr><td>@FOMC + 1B</td><td>the business day after each FOMC decision of that year (a named event)</td></tr>
-          <tr><td>[T : T + 7D] \ {1 JAN, 6 JAN} &amp; 25 DEC</td><td>exclude and include: sorted, without duplicates</td></tr>
-          <tr><td>[T : 1Y : T + 2Y] &gt; {1 FEB, 1 MAY}</td><td>dates in year: 1 February and 1 May of three years</td></tr>
-          <tr><td>5TH [SPOT : 1Q : ] &gt; EOQ &gt; 3RD WED IN MONTH</td><td>pick: the 5th IMM date after <code>T</code>, from an open series</td></tr>
-          <tr><td>T &gt; 2ND LAST BD IN MONTH</td><td>the second-to-last business day in the month of <code>T</code></td></tr>
-        </tbody>
-      </table>
-      <pre><code>schedule = item { "," item } .
+    <table class="examples examples3">
+      <thead>
+        <tr><th>Schedule</th><th>Result</th><th>Use case</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>2015-06-09</td><td>2015-06-09: one date in ISO notation</td><td>a fixed settlement date taken from a confirmation</td></tr>
+        <tr><td>09.06.2015 + 3M</td><td>2015-09-09: German notation, plus three months</td><td>the maturity of a three-month deposit traded on 9 June</td></tr>
+        <tr><td>06/09/2015 + 1W - 2D</td><td>2015-06-14: US notation; one week on, then two days back, left to right</td><td>a date typed as in a US confirmation and adjusted step by step</td></tr>
+        <tr><td>2015-06-09, 1.1.2000 + 1Y</td><td>2015-06-09, 2001-01-01: a list, each item evaluated on its own</td><td>unrelated dates in one field, such as the repayments of an irregular loan</td></tr>
+        <tr><td>[2015-01-15 : 1Q : 2015-12-31]</td><td>2015-01-15, -04-15, -07-15, -10-15: a range with a step; the end is a bound, not a date</td><td>the quarterly coupon dates of a bond</td></tr>
+        <tr><td>[2026-01-01 : 3M : 2026-12-31] &gt; EOQ &gt; 3RD WED IN MONTH</td><td>2026-03-18, -06-17, -09-16, -12-16: the shifts apply to each element</td><td>the IMM dates of a year, for a futures roll calendar</td></tr>
+        <tr><td>2015-06-12 + 1B</td><td>2015-06-15: Friday plus one business day skips the weekend</td><td>next-day settlement (T+1)</td></tr>
+        <tr><td>2015-06-09 + 3M &gt; IMM</td><td>2015-09-16: three months on, then the next IMM date</td><td>the maturity of an IMM-dated three-month FX forward or FRA</td></tr>
+        <tr><td>2015-06-12 &gt; SPOT USDCAD</td><td>2015-06-15: USD/CAD settles one business day after the trade</td><td>the value date of an FX spot trade</td></tr>
+        <tr><td>T + 2B</td><td>two business days after the base date <code>T</code>, in the market of the evaluation</td><td>one rule for every trade date: the same text gives each day's settlement date</td></tr>
+        <tr><td>24 DEC IF MON TUE WED THU</td><td>Christmas Eve when it falls on Monday to Thursday, otherwise no date</td><td>an exchange that closes early on 24 December only on those weekdays</td></tr>
+        <tr><td>1 SHAWWAL, 1 ZHENGYUE</td><td>Eid al-Fitr and Chinese New Year in the year of <code>T</code></td><td>holidays from the Hijri and Chinese calendars in a Gulf or Asian market calendar</td></tr>
+        <tr><td>@FOMC + 1B</td><td>the business day after each FOMC decision of that year (a named event)</td><td>a follow-up date after each Fed rate decision</td></tr>
+        <tr><td>[T : T + 7D] \ {1 JAN, 6 JAN} &amp; 25 DEC</td><td>the days of the coming week without 1 and 6 January, plus 25 December: sorted, without duplicates</td><td>a working calendar built from a range, with holidays taken out and a special day added</td></tr>
+        <tr><td>[T : 1Y : T + 2Y] &gt; {1 FEB, 1 MAY}</td><td>1 February and 1 May of this year and the next two</td><td>dates fixed by the calendar each year, such as review or dividend dates</td></tr>
+        <tr><td>5TH [SPOT : 1Q : ] &gt; EOQ &gt; 3RD WED IN MONTH</td><td>the 5th IMM date after spot, picked from an open series</td><td>the fifth listed quarterly futures contract</td></tr>
+        <tr><td>T &gt; 2ND LAST BD IN MONTH</td><td>the second-to-last business day in the month of <code>T</code></td><td>a month-end deadline two business days before the month ends</td></tr>
+      </tbody>
+    </table>
+    <pre class="grammar"><code>schedule = item { "," item } .
 item     = expr { combine } [ condition ]
          | pick ( series | EVENT ) { move } { combine } [ condition ] .
 pick     = ORDINAL [ "LAST" ] .            <span class="c">(* the n-th date after T *)</span>
@@ -321,7 +327,6 @@ MONTH    = "JAN" | … | "DEC"           <span class="c">(* Gregorian *)</span>
 EVENT    = "@" LETTER { LETTER | DIGIT | "_" } { "." ( LETTER | DIGIT | "_" ) { LETTER | DIGIT | "_" } } .  <span class="c">(* @FOMC, @fed.fomc_decision *)</span>
 ZONE     = "UTC" ("+" | "-") NUM .     <span class="c">(* UTC+9, one token *)</span>
 ORDINAL  = NUM ("ST" | "ND" | "RD" | "TH") .  <span class="c">(* 3RD, one token *)</span></code></pre>
-    </div>
     <p class="note">
       In grammatical terms (after <a href="https://en.wikipedia.org/wiki/Grammatical_category">grammatical category</a>):
       the upper-case symbols are <em>lexical</em> categories, word classes that the lexer recognises; the lower-case rules are

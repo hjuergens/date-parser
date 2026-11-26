@@ -379,6 +379,9 @@ public final class RuleFiles {
         if (node instanceof ANearestRollShift nearest) {
             return RuleCatalog.rollShift("NEAREST", on(nearest.getOn()));
         }
+        if (node instanceof ACutoffShift cutoff) {
+            return RuleCatalog.cutoff(time(cutoff.getTime()), zone(cutoff.getTimeZone()));
+        }
         if (node instanceof ASelectShift select) {
             PCount count = select.getCount();
             int n = count instanceof AFromStartCount start ? ScheduleSemantics.ordinal(start.getOrdinal().getText())

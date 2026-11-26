@@ -101,7 +101,7 @@ TOKEN : {
 | "ONE" | "OF" | "AS" | "T" | "TOM" | "SPOT" | "FIX" | "IMM" | "NEXT" | "PREV" | "NEAREST" | "IN" | "POSTPONE" | "MAX"
 | "CUMULATIVE" | "ENDEND" | "ON" | "LAST" | "BD" | "FD" | "HOLIDAY" | "NONHOLIDAY" | "HOLIDAYS" | "EASTER" | "ORTHODOX"
 | "EQUINOX" | "SOLSTICE" | "SOLARTERM" | "HINDU" | "BY" | "UMMALQURA" | "SIGHTING" | "DIYANET" | "FOLLOW" | "IF" | "OR"
-| "AND" | "NOT" | "DAY" | "IS" | "BETWEEN" | "EVERY" | "FROM" | ".."
+| "AND" | "NOT" | "DAY" | "IS" | "BETWEEN" | "EVERY" | "FROM" | ".." | "CUTOFF"
 }
 
 TOKEN : {
@@ -351,7 +351,7 @@ Expr Expr() :
 
 Move Shift() :
 { TemporalAmount p; Token t = null, o = null, period; boolean endend = false, cumulative = false, fromEnd = false;
-  CalendarSpec on = null; Anchor a; Annual an; List<Annual> annuals = new ArrayList<Annual>();
+  CalendarSpec on = null; Anchor a; Annual an; List<Annual> annuals = new ArrayList<Annual>(); String time, zone;
   List<Map.Entry<Set<String>, Move>> entries = new ArrayList<Map.Entry<Set<String>, Move>>(); }
 {
   "+" p = Period() ( "ENDEND" { endend = true; } )? ( on = On() )? { return RuleCatalog.plus(p, 1, endend, on); }
@@ -366,6 +366,7 @@ Move Shift() :
   | "NEAREST"
     ( a = Anchor() { return RuleCatalog.nearestShift(a); }   // ties go forward
     | on = On() { return RuleCatalog.rollShift("NEAREST", on); } )   // the FpML convention
+  | "CUTOFF" time = Time() zone = Zone() { return RuleCatalog.cutoff(time, zone); }   // the trade date of a base with a time of day
     // > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH
   | ( o = <ORDINAL> ( "LAST" { fromEnd = true; } )? | "LAST" { fromEnd = true; } )
     a = Select() "IN" period = <PERIOD>

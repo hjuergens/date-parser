@@ -77,7 +77,8 @@ static void announcements_and_projections(void) {
     occurrencelist_free(&list);
     char error[512];
     DateList shawwal;
-    CHECK(!catalog_schedule(catalog, "1 SHAWWAL", date_of(2027, 1, 1), NULL, &shawwal, error, sizeof error) && shawwal.count == 1);
+    CHECK(!catalog_schedule(catalog, "1 SHAWWAL", date_of(2027, 1, 1), NULL, NULL, &shawwal, error, sizeof error)
+          && shawwal.count == 1);
     list = holidays(catalog, "country:AE", 2027);
     CHECK(list.count == 3 && list.items[0].date == shawwal.dates[0]);
     for (int i = 0; i < list.count; i++) CHECK(list.items[i].projected);

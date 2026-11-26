@@ -219,7 +219,7 @@ static const DateList *holidays(Eval *eval, Market *market, int year) {
     const DateList *found = cached(market, year);
     pthread_mutex_unlock(&market->lock);
     if (found) return found;
-    Ctx first = { 1, make(eval, year, 1, 1), NULL, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, 0, 0 };
+    Ctx first = { 1, make(eval, year, 1, 1), NULL, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, 0, 0, 0, 0 };
     DateList *dates = nested(eval, market->rule, &first);
     __typeof__(*market->years) entry = calloc(1, sizeof *entry);
     if (!entry) abort();
@@ -526,20 +526,100 @@ static long long be(const unsigned char *p, int bytes) {
     return bytes == 4 ? (long long) (int32_t) (uint32_t) v : (long long) v;
 }
 
-/* the offset east of UTC in seconds of a POSIX TZ string without daylight saving time (JST-9: +9 hours); -1 if it
- * has daylight saving time or can't be read */
-static int posix_offset(const char *tz, long *offset) {
-    const char *p = tz;
-    if (*p == '<') { while (*p && *p != '>') p++; if (*p) p++; }
-    else while ((*p >= 'A' && *p <= 'Z') || (*p >= 'a' && *p <= 'z')) p++;
-    int sign = *p == '-' ? 1 : -1;   /* POSIX counts west: JST-9 is UTC+9 */
-    if (*p == '+' || *p == '-') p++;
-    if (*p < '0' || *p > '9') return -1;
-    long hours = strtol(p, (char **) &p, 10), minutes = 0, seconds = 0;
-    if (*p == ':') minutes = strtol(p + 1, (char **) &p, 10);
-    if (*p == ':') seconds = strtol(p + 1, (char **) &p, 10);
-    if (*p && *p != '\n') return -1;   /* a name of daylight saving time follows */
-    *offset = sign * (hours * 3600 + minutes * 60 + seconds);
+/* a POSIX TZ string (the footer of a TZif file): a name in letters or in <...> */
+static const char *posix_name(const char *p) {
+    if (*p == '<') {
+        while (*p && *p != '>') p++;
+        return *p ? p + 1 : p;
+    }
+    while ((*p >= 'A' && *p <= 'Z') || (*p >= 'a' && *p <= 'z')) p++;
+    return p;
+}
+
+/* [+-]hh[:mm[:ss]] in seconds; -1 without a digit */
+static int posix_time(const char **p, long *seconds) {
+    int sign = **p == '-' ? -1 : 1;
+    if (**p == '+' || **p == '-') (*p)++;
+    if (**p < '0' || **p > '9') return -1;
+    long hours = strtol(*p, (char **) p, 10), minutes = 0, rest = 0;
+    if (**p == ':') minutes = strtol(*p + 1, (char **) p, 10);
+    if (**p == ':') rest = strtol(*p + 1, (char **) p, 10);
+    *seconds = sign * (hours * 3600 + minutes * 60 + rest);
+    return 0;
+}
+
+/* a change of a POSIX TZ string: Mm.w.d (day d, 0 Sunday, of week w, 5 the last, of month m), Jn (day n, 1 to 365,
+ * without February 29) or n (day n, 0 to 365), then /time (local, 02:00 without one) */
+typedef struct {
+    char kind;   /* 'M', 'J' or 'n' */
+    long m, w, d;
+    long time;
+} PosixChange;
+
+static int posix_change(const char **p, PosixChange *change) {
+    if (**p != ',') return -1;
+    (*p)++;
+    *change = (PosixChange) { 'n', 0, 0, 0, 7200 };
+    if (**p == 'M') {
+        change->kind = 'M';
+        change->m = strtol(*p + 1, (char **) p, 10);
+        if (**p != '.') return -1;
+        change->w = strtol(*p + 1, (char **) p, 10);
+        if (**p != '.') return -1;
+        change->d = strtol(*p + 1, (char **) p, 10);
+        if (change->m < 1 || change->m > 12 || change->w < 1 || change->w > 5 || change->d < 0 || change->d > 6)
+            return -1;
+    } else {
+        if (**p == 'J') change->kind = 'J', (*p)++;
+        if (**p < '0' || **p > '9') return -1;
+        change->d = strtol(*p, (char **) p, 10);
+        if (change->d > 365 || (change->kind == 'J' && change->d < 1)) return -1;
+    }
+    if (**p == '/' && (++*p, posix_time(p, &change->time))) return -1;
+    return 0;
+}
+
+/* the local time of the change in the year, in seconds since 1970 as if local time were UTC */
+static long long posix_local(const PosixChange *change, long year) {
+    int date;
+    if (change->kind == 'M') {
+        int first = date_of((int) year, (int) change->m, 1);
+        /* weekday_of counts from Monday, POSIX from Sunday */
+        date = first + (int) floor_mod((change->d + 6) % 7 - weekday_of(first), 7) + 7 * (int) (change->w - 1);
+        while (month_of(date) != change->m) date -= 7;   /* week 5: the last */
+    } else {
+        date = date_of((int) year, 1, 1) + (int) change->d;
+        if (change->kind == 'J' && (change->d < 60 || month_length(year, 2) == 28)) date--;
+    }
+    return date * 86400LL + change->time;
+}
+
+/* the offset east of UTC in seconds at the instant of a POSIX TZ string (EST5EDT,M3.2.0,M11.1.0: UTC-5, from the second
+ * Sunday in March 02:00 to the first Sunday in November 02:00 UTC-4; NZST-12NZDT,M9.5.0,M4.1.0/3: daylight saving
+ * time over the turn of the year); -1 if it can't be read */
+static int posix_offset(const char *tz, double instant, long *offset) {
+    const char *p = posix_name(tz);
+    long standard, daylight;
+    if (posix_time(&p, &standard)) return -1;
+    standard = -standard;   /* POSIX counts west: JST-9 is UTC+9 */
+    if (!*p || *p == '\n') {
+        *offset = standard;
+        return 0;
+    }
+    const char *name = p;
+    p = posix_name(p);
+    if (p == name) return -1;
+    if (*p == ',' || !*p) daylight = standard + 3600;
+    else if (posix_time(&p, &daylight)) return -1;
+    else daylight = -daylight;
+    PosixChange start, end;
+    if (posix_change(&p, &start) || posix_change(&p, &end) || (*p && *p != '\n')) return -1;
+    /* the changes in the year of the instant (in standard time): the start in standard, the end in daylight saving
+       time */
+    long year = year_of((int) floor((instant + standard) / 86400));
+    double from = (double) (posix_local(&start, year) - standard), to = (double) (posix_local(&end, year) - daylight);
+    int saving = from < to ? instant >= from && instant < to : instant >= from || instant < to;
+    *offset = saving ? daylight : standard;
     return 0;
 }
 
@@ -586,8 +666,7 @@ static long zone_offset(Eval *eval, const char *zone, double instant) {
             int type = last >= 0 ? indices[last] : 0;
             if (type >= counts[4]) problem = "a broken TZif file";
             else offset = (long) be(types + 6 * type, 4);
-            /* after the last transition the POSIX string at the end of the file holds; read only without daylight
-               saving time, which zones of the past and the TZif files up to 2037 don't need */
+            /* after the last transition the POSIX string at the end of the file holds (slim TZif files end early) */
             const char *footer = (const char *) h + length;
             if (!problem && last == counts[3] - 1 && bytes == 8 && (size_t) (footer - (const char *) data) + 1 < size
                 && *footer == '\n') {
@@ -598,7 +677,7 @@ static long zone_offset(Eval *eval, const char *zone, double instant) {
                     k++;
                 }
                 tz[k] = 0;
-                if (k && posix_offset(tz, &offset)) problem = "daylight saving time after the last transition";
+                if (k && posix_offset(tz, instant, &offset)) problem = "a POSIX TZ string it can't read";
             }
         }
     }
@@ -673,7 +752,8 @@ static DateList *occurrences(Eval *eval, const char *name, int year, const Ctx *
     }
     for (int i = 0; ctx->events && i < ctx->events->count; i++) {
         if (strcmp(ctx->events->names[i], name)) continue;
-        Ctx first = { 1, make(eval, year, 1, 1), ctx->market, ctx->events, NULL, 0, NULL, 0, ctx->fixing, NULL, NULL, 0, 0 };
+        Ctx first = { 1, make(eval, year, 1, 1), ctx->market, ctx->events, NULL, 0, NULL, 0, ctx->fixing, NULL, NULL, 0,
+                      0, 0, 0 };
         DateList *all = nested(eval, ctx->events->rules[i], &first), *kept = temp(eval);
         for (int j = 0; j < all->count; j++)
             if (year_of(all->dates[j]) == year) datelist_push(kept, all->dates[j]);
@@ -827,6 +907,16 @@ static int nearest(Eval *eval, const Anchor *anchor, int date, const Ctx *ctx) {
     return after - date <= date - before ? after : before;
 }
 
+/* rule files: > CUTOFF 17:00 "America/New_York": the date of the base instant in the zone, the next one from the cutoff
+ * time on */
+static int cutoff(Eval *eval, const Shift *s, const Ctx *ctx) {
+    if (!ctx->has_instant) fail(eval, "CUTOFF needs a base with a time of day");
+    double instant = (double) ctx->instant;
+    long long local = ctx->instant + (s->zone ? zone_offset(eval, s->zone, instant) : s->offset * 60LL);
+    long long day = local >= 0 ? local / 86400 : -((-local + 86399) / 86400);
+    return add_days(eval, 0, day + (local - day * 86400 >= s->cutoff * 60LL));
+}
+
 /* each shift applies to everything on its left; > POSTPONE ... MAX limits from the date before it, with CUMULATIVE
  * from the date before the first postponement */
 static int shifted(Eval *eval, const Shift *shifts, int date, const Ctx *ctx) {
@@ -840,6 +930,7 @@ static int shifted(Eval *eval, const Shift *shifts, int date, const Ctx *ctx) {
         case S_SPOT: date = spot(eval, date, s->pair, market_of(eval, s->on, ctx, s->pair)); break;
         case S_ROLL: date = roll(eval, date, s->roll, market_of(eval, s->on, ctx, NULL)); break;
         case S_NEAREST: date = nearest(eval, s->anchor, date, ctx); break;
+        case S_CUTOFF: date = cutoff(eval, s, ctx); break;
         case S_POSTPONE: {
             if (origin == UNBOUND) origin = date;
             int from = s->cumulative ? origin : date;
@@ -1097,7 +1188,7 @@ int evaluate_items(const Item *items, const Ctx *ctx, DateList *out, char *error
 
 int schedule_evaluate(const Schedule *schedule, const Context *context, DateList *out, char *error, size_t size) {
     Ctx ctx = { context->has_base, context->base, context->market, context->events, NULL, 0, NULL, 0, context->fixing,
-                NULL, NULL, 0, 0 };
+                NULL, NULL, 0, 0, 0, 0 };
     return evaluate_items(schedule->items, &ctx, out, error, size);
 }
 

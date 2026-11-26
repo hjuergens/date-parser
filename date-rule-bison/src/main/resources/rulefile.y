@@ -117,7 +117,7 @@
 %token <String> KIND_WORD "kind of day" PRECISION_WORD "day or month" LABEL_WORD "kind of source"
 /* the words of the schedule language */
 %token ONE "ONE" OF "OF" AS "AS" BASE "T" TOM "TOM" SPOT "SPOT" FIX "FIX" IMM "IMM" NEXT "NEXT" PREV "PREV"
-%token NEAREST "NEAREST" IN "IN" POSTPONE "POSTPONE" MAX "MAX" CUMULATIVE "CUMULATIVE" ENDEND "ENDEND" ON "ON"
+%token NEAREST "NEAREST" CUTOFF "CUTOFF" IN "IN" POSTPONE "POSTPONE" MAX "MAX" CUMULATIVE "CUMULATIVE" ENDEND "ENDEND" ON "ON"
 %token LAST "LAST" BD "BD" FD "FD" HOLIDAY "HOLIDAY" NONHOLIDAY "NONHOLIDAY" HOLIDAYS "HOLIDAYS" EASTER "EASTER"
 %token ORTHODOX "ORTHODOX" SOLARTERM "SOLARTERM" HINDU "HINDU" BY "BY" FOLLOW "FOLLOW" IF "IF" OR "OR" AND "AND"
 %token NOT "NOT" DAY "DAY" IS "IS" BETWEEN "BETWEEN" EVERY "EVERY" FROM "FROM" DOTDOT ".."
@@ -418,6 +418,9 @@ move:
 | '>' "PREV" ORDINAL anchor         { $$ = RuleCatalog.previous (ScheduleSemantics.ordinal ($3), $4); }
 | '>' "NEAREST" anchor              { $$ = RuleCatalog.nearestShift ($3); }   /* ties go forward */
 | '>' "NEAREST" on                  { $$ = RuleCatalog.rollShift ("NEAREST", $3); }   /* the FpML convention */
+  /* the trade date of a base with a time of day: > CUTOFF 17:00 "America/New_York", > CUTOFF 10:00 UTC+0 */
+| '>' "CUTOFF" time ZONE            { $$ = RuleCatalog.cutoff ($3, $4); }
+| '>' "CUTOFF" time STRING          { $$ = RuleCatalog.cutoff ($3, $4); }
   /* > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH */
 | '>' count select "IN" PERIOD      { $$ = RuleCatalog.select (Math.abs ($2), $2 < 0, $3, $5); }
   /* > {1 FEB, 1 MAY}: the dates of the set in the year of the date */
@@ -627,7 +630,8 @@ class RuleFileLexer implements RuleFiles.Lexer {
   private static final Map<String, Integer> UPPER = Map.ofEntries (
       Map.entry ("ONE", ONE), Map.entry ("OF", OF), Map.entry ("AS", AS), Map.entry ("T", BASE), Map.entry ("TOM", TOM),
       Map.entry ("SPOT", SPOT), Map.entry ("FIX", FIX), Map.entry ("IMM", IMM), Map.entry ("NEXT", NEXT),
-      Map.entry ("PREV", PREV), Map.entry ("NEAREST", NEAREST), Map.entry ("IN", IN), Map.entry ("POSTPONE", POSTPONE),
+      Map.entry ("PREV", PREV), Map.entry ("NEAREST", NEAREST), Map.entry ("CUTOFF", CUTOFF),
+      Map.entry ("IN", IN), Map.entry ("POSTPONE", POSTPONE),
       Map.entry ("MAX", MAX), Map.entry ("CUMULATIVE", CUMULATIVE), Map.entry ("ENDEND", ENDEND), Map.entry ("ON", ON),
       Map.entry ("LAST", LAST), Map.entry ("BD", BD), Map.entry ("FD", FD), Map.entry ("HOLIDAY", HOLIDAY),
       Map.entry ("NONHOLIDAY", NONHOLIDAY), Map.entry ("HOLIDAYS", HOLIDAYS), Map.entry ("EASTER", EASTER),

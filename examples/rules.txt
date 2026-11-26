@@ -211,6 +211,23 @@ rule us.thanksgiving for thanksgiving in country:US = 4 THU NOV;
 [2026-05-10] T > NEAREST IMM => 2026-06-17
 [2026-06-17] T > NEAREST IMM => 2026-06-17
 
+# the trade date: [date hh:mm zone] gives the base a time of day; > CUTOFF hh:mm zone takes the date in that zone, the
+# next one from the cutoff on. FX rolls at 17:00 New York, USD/PHP at 10:00 GMT, NZD at 07:00 Wellington (the next
+# date there would be a day late, so - 1D)
+rule us.thanksgiving for thanksgiving in country:US = 4 THU NOV;
+rule ph.bonifacio_day for bonifacio_day in country:PH = 30 NOV;
+calendar usd_php = country:PH & country:US;
+[2026-11-26 18:30 "America/New_York"] T > CUTOFF 17:00 "America/New_York" => 2026-11-27
+[2026-11-26 15:00 "America/New_York"] T > CUTOFF 17:00 "America/New_York" => 2026-11-26
+[2026-07-02 21:30 UTC+0] T > CUTOFF 17:00 "America/New_York" => 2026-07-03
+[2026-12-02 21:30 UTC+0] T > CUTOFF 17:00 "America/New_York" => 2026-12-02
+[2026-11-26 15:00 "America/New_York"] T > CUTOFF 07:00 "Pacific/Auckland" - 1D => 2026-11-27
+[2026-11-26 12:00 "America/New_York"] T > CUTOFF 07:00 "Pacific/Auckland" - 1D => 2026-11-26
+[2026-11-26 15:00 "America/New_York"] T > CUTOFF 10:00 UTC+0 => 2026-11-27
+[2026-11-26 04:00 "America/New_York"] T > CUTOFF 10:00 UTC+0 => 2026-11-26
+[2026-11-26 15:00 "America/New_York"] T > CUTOFF 10:00 UTC+0 + 1B ON usd_php => 2026-12-01
+[2026-11-26] T > CUTOFF 17:00 "America/New_York" => error
+
 # a rule on the days of another: the FOMC press conference on every decision day, at its own time
 rule fed.fomc_decision for fomc_decision in central_bank:FED = 25 JAN > NEXT WED, 15 MAR > NEXT WED, 25 JUL > NEXT WED
   with kind = event, session 14:00 tz "America/New_York";

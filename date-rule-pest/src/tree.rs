@@ -139,6 +139,14 @@ fn shift(node: &Node) -> R<Shift> {
         },
         "shift_nearest" => Shift::Nearest(anchor(&node.children[0])?),
         "shift_nearest_roll" => Shift::Roll(Roll::Nearest, on(node)?),
+        "shift_cutoff" => {
+            let time = node.child("time").unwrap();
+            let (hours, minutes) = (number(&time.children[0])?, number(&time.children[1])?);
+            if hours > 23 || minutes > 59 {
+                return error(format!("not a time of day: {}", time.text));
+            }
+            Shift::Cutoff { hours: hours as u32, minutes: minutes as u32, zone: zone(node)? }
+        }
         "shift_postpone" => Shift::Postpone {
             roll: roll(&node.child("roll_word").unwrap().text),
             on: on(node)?,

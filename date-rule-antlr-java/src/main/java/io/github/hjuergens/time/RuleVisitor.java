@@ -424,6 +424,11 @@ public final class RuleVisitor extends RuleFileBaseVisitor<Object> {
     }
 
     @Override
+    public Object visitCutoff(RuleFileParser.CutoffContext ctx) {
+        return RuleCatalog.cutoff(value(ctx.time()), zone(ctx.zone()));
+    }
+
+    @Override
     public Object visitSelectIn(RuleFileParser.SelectInContext ctx) {
         RuleFileParser.CountContext count = ctx.count();
         return RuleCatalog.select(count(count.ORDINAL()), count.last != null, value(ctx.select()), ctx.PERIOD().getText());

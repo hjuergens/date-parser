@@ -43,6 +43,8 @@ typedef struct {
     RuleCatalog *catalog;
     const char *scope;
     int home, shallow;
+    int has_instant;
+    long long instant;   /* rule files: the base with its time of day (seconds since 1970), for > CUTOFF */
 } Ctx;
 
 /* The holidays of a market of a rule are cached per year. Threads may share such a market: the lock guards the cache,

@@ -1,13 +1,15 @@
 /* Runs the shared cases of examples/rules.txt (the argument): blocks of declarations, each followed by its cases;
  * declarations after cases start a new block. A case is "<scope> <year> => <dates>" (the occurrences of the scope,
- * a date of a ONE OF alternative followed by its name) or "[<base>] <schedule> => <dates>"; "none" and "error" as in
- * the other spec files. Prints every failing case and a summary; the exit status is 1 if a case fails. */
+ * a date of a ONE OF alternative followed by its name) or "[<base>] <schedule> => <dates>", the base also with a
+ * time of day and a time zone, "[<base> hh:mm "America/New_York"]" or "[<base> hh:mm UTC-4]"; "none" and "error" as
+ * in the other spec files. Prints every failing case and a summary; the exit status is 1 if a case fails. */
 #ifndef _DEFAULT_SOURCE
 #define _DEFAULT_SOURCE
 #endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "catalog.h"
 
 static char *read_file(const char *path) {
@@ -21,6 +23,35 @@ static char *read_file(const char *path) {
     text[size] = 0;
     fclose(file);
     return text;
+}
+
+/* the instant (seconds since 1970) of a local date and time (minutes after midnight) at a fixed offset (UTC-4) or in an
+ * IANA time zone ("America/New_York"): the C library's mktime with TZ set to the zone; -1 if the zone is unknown */
+static int instant_of(int date, int minutes, const char *zone, long long *instant) {
+    long long local = date * 86400LL + minutes * 60LL;
+    if (!strncmp(zone, "UTC", 3)) {
+        char *end;
+        long hours = strtol(zone + 3, &end, 10);
+        if (end == zone + 3 || *end) return -1;
+        *instant = local - hours * 3600;
+        return 0;
+    }
+    size_t length = strlen(zone);
+    if (length < 3 || zone[0] != '"' || zone[length - 1] != '"') return -1;
+    char tz[256], ymd[11];
+    snprintf(tz, sizeof tz, ":%.*s", (int) (length - 2), zone + 1);
+    date_format(date, ymd);
+    struct tm tm = { 0 };
+    if (sscanf(ymd, "%d-%d-%d", &tm.tm_year, &tm.tm_mon, &tm.tm_mday) != 3) return -1;
+    tm.tm_year -= 1900, tm.tm_mon -= 1, tm.tm_hour = minutes / 60, tm.tm_min = minutes % 60, tm.tm_isdst = -1;
+    setenv("TZ", tz, 1);
+    tzset();
+    time_t t = mktime(&tm);
+    unsetenv("TZ");
+    tzset();
+    if (t == (time_t) -1) return -1;
+    *instant = (long long) t;
+    return 0;
 }
 
 static void append(char *out, size_t size, const char *text) {
@@ -39,11 +70,27 @@ static void evaluate(const char *declarations, const char *text, char *out, size
     }
     int base, year;
     char scope[256], date[11];
-    if (text[0] == '[' && strlen(text) > 13 && text[11] == ']') {   /* [base] schedule */
+    const char *close = text[0] == '[' ? strchr(text, ']') : NULL;
+    if (close && close - text >= 11 && (text[11] == ']' || text[11] == ' ') && close[1] == ' ') {
+        /* [base] schedule, [base hh:mm zone] schedule */
         memcpy(date, text + 1, 10);
         date[10] = 0;
         DateList dates;
-        if (date_parse_iso(date, &base) || catalog_schedule(catalog, text + 13, base, NULL, &dates, error, sizeof error)) {
+        long long instant;
+        int hours, minutes, at = text[11] == ' ', failed = date_parse_iso(date, &base);
+        if (!failed && at) {
+            char zone[256];
+            int length = (int) (close - text) - 18;
+            failed = length < 1 || length >= (int) sizeof zone || sscanf(text + 12, "%2d:%2d", &hours, &minutes) != 2
+                || text[17] != ' ';
+            if (!failed) {
+                memcpy(zone, text + 18, length);
+                zone[length] = 0;
+                failed = instant_of(base, hours * 60 + minutes, zone, &instant);
+            }
+        }
+        if (failed
+            || catalog_schedule(catalog, close + 2, base, NULL, at ? &instant : NULL, &dates, error, sizeof error)) {
             snprintf(out, size, "error");
         } else {
             for (int i = 0; i < dates.count; i++) {

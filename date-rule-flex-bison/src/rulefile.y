@@ -168,7 +168,7 @@ static Item *item(RuleParse *parse, Expr *expr, Combine *combines, Condition *co
 /* the words of the schedule language */
 %token TODAY "T" TOM "TOM" SPOT "SPOT" IMM "IMM" NEXT "NEXT" PREV "PREV" BD "BD" LAST "LAST" EASTER "EASTER"
 %token FD "FD" FIX "FIX" SOLARTERM "SOLARTERM" IF "IF" IN "IN" DAY "DAY"
-%token ONE "ONE" OF "OF" AS "AS" NEAREST "NEAREST" POSTPONE "POSTPONE" MAX "MAX" CUMULATIVE "CUMULATIVE"
+%token ONE "ONE" OF "OF" AS "AS" NEAREST "NEAREST" POSTPONE "POSTPONE" MAX "MAX" CUMULATIVE "CUMULATIVE" CUTOFF "CUTOFF"
 %token ENDEND "ENDEND" ON "ON" HOLIDAY "HOLIDAY" NONHOLIDAY "NONHOLIDAY" HOLIDAYS "HOLIDAYS" ORTHODOX "ORTHODOX"
 %token HINDU "HINDU" BY "BY" FOLLOW "FOLLOW" OR "OR" AND "AND" NOT "NOT" IS "IS" BETWEEN "BETWEEN" EVERY "EVERY"
 %token FROM "FROM" DOTDOT ".."
@@ -194,7 +194,7 @@ static Item *item(RuleParse *parse, Expr *expr, Combine *combines, Condition *co
 %type <anchor> anchor target targets select chosen annuals
 %type <observe> observe observes
 %type <annual> annual fixed_annual
-%type <zone> zone_opt
+%type <zone> zone zone_opt
 %type <period> period
 %type <code> weekday_set weekday_list weekday_commas start_out end_out endend_opt cumulative_opt month_opt
 
@@ -441,6 +441,15 @@ shift: '+' period endend_opt on_opt     { $$ = shift(parse, S_PLUS); $$->period 
      | '>' "PREV" ORDINAL anchor        { $$ = shift(parse, S_PREV); $$->count = $3; $$->anchor = $4; }
      | '>' "NEAREST" anchor             { $$ = shift(parse, S_NEAREST); $$->anchor = $3; }   /* ties go forward */
      | '>' "NEAREST" on                 { $$ = shift(parse, S_ROLL); $$->roll = ROLL_NEAREST; $$->on = $3; }   /* FpML */
+       /* > CUTOFF 17:00 "America/New_York": the trade date of a base with a time of day */
+     | '>' "CUTOFF" NUM ':' NUM zone
+                                        {
+                                            if ($3 > 23 || $5 > 59) FAIL("not a time of day: %ld:%02ld", $3, $5);
+                                            $$ = shift(parse, S_CUTOFF);
+                                            $$->cutoff = (int) ($3 * 60 + $5);
+                                            $$->offset = $6.offset;
+                                            $$->zone = $6.name;
+                                        }
        /* > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH */
      | '>' count select "IN" PERIOD
                                         {
@@ -565,15 +574,18 @@ method_opt: %empty                      { $$ = NULL; }
 
 /* UTC unless a zone follows: UTC+9 or an IANA time zone such as "Asia/Tokyo" */
 zone_opt: %empty                        { $$ = (ZoneSpec) { 0, NULL }; }
-        | ZONE                          { $$ = (ZoneSpec) { (int) $1, NULL }; }
-        | STRING
-            {
-                if (!strncmp($1, "UTC", 3) && ($1[3] == '+' || $1[3] == '-'))
-                    $$ = (ZoneSpec) { (int) strtol($1 + 3, NULL, 10) * 60, NULL };
-                else
-                    $$ = (ZoneSpec) { 0, $1 };
-            }
+        | zone
         ;
+
+zone: ZONE                              { $$ = (ZoneSpec) { (int) $1, NULL }; }
+    | STRING
+        {
+            if (!strncmp($1, "UTC", 3) && ($1[3] == '+' || $1[3] == '-'))
+                $$ = (ZoneSpec) { (int) strtol($1 + 3, NULL, 10) * 60, NULL };
+            else
+                $$ = (ZoneSpec) { 0, $1 };
+        }
+    ;
 
 period: NUM UNIT                        {
                                             $$ = (Period) { 0, 0, 0, 0 };

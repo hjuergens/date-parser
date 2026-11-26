@@ -148,6 +148,7 @@ shift
     | '>' 'PREV' ORDINAL? anchor                # prev
     | '>' 'NEAREST' anchor                      # nearest   // + ties go forward
     | '>' 'NEAREST' on                          # nearestRoll   // + the FpML convention, ON required
+    | '>' 'CUTOFF' time zone                    # cutoff    // + the trade date of a base with a time of day
     | '>' count select 'IN' PERIOD              # selectIn
     | '>' '{' annual (',' annual)* '}'          # datesInYear
     | '>' 'POSTPONE' ROLL on? 'MAX' period cumulative='CUMULATIVE'?   # postpone  // +

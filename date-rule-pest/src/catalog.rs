@@ -16,7 +16,7 @@ use std::cell::RefCell;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::rc::{Rc, Weak};
 
-use chrono::{Datelike, NaiveDate};
+use chrono::{DateTime, Datelike, NaiveDate, Utc};
 
 use crate::ast::*;
 use crate::semantics::{
@@ -362,14 +362,19 @@ impl Catalog {
         Ok(found)
     }
 
-    /// a context for schedule(): the base date and the calendar of the scope
-    pub fn context(&self, base: Date, scope: Option<&str>) -> Ctx {
+    /// a context for schedule(): the base date, the calendar of the scope and, for > CUTOFF, the base with its time
+    /// of day
+    pub fn context(&self, base: Date, scope: Option<&str>, instant: Option<DateTime<Utc>>) -> Ctx {
         let market: MarketRef = match scope {
             Some(s) => Rc::new(ScopeCalendar::of(self.rc(), s)),
             None => Rc::new(Weekends),
         };
         let events = References { catalog: self.rc(), scope: scope.map(String::from), home: None, shallow: false };
-        Ctx::new(Some(base)).with_market(market).with_events(Rc::new(events)).in_catalog(self.rc(), scope.map(String::from))
+        Ctx::new(Some(base))
+            .with_market(market)
+            .with_events(Rc::new(events))
+            .with_instant(instant)
+            .in_catalog(self.rc(), scope.map(String::from))
     }
 
     /// the dates of a rule with a base date, such as a trade date for spot and fixing rules
@@ -379,7 +384,7 @@ impl Catalog {
             return fail(format!("no rule {key}"));
         };
         let scope = scope.unwrap_or(&rule.include[0]);
-        let mut dates = evaluate(&rule.body, &self.context(base, Some(scope)))?;
+        let mut dates = evaluate(&rule.body, &self.context(base, Some(scope), None))?;
         dates.sort();
         Ok(dates)
     }

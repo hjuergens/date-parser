@@ -142,6 +142,9 @@ class RuleTransformer(Rules):
     def nearest(self, anchor):
         return catalog.nearest_shift(anchor)
 
+    def cutoff(self, at, zone):
+        return catalog.cutoff(at, zone)
+
     def nearest_roll(self, on):
         return catalog.roll_shift("NEAREST", on)
 

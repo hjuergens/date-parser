@@ -87,7 +87,7 @@ open-end     = <'['>
 
 (* shifts are applied from left to right *)
 expr     = date shift*
-<shift>  = plus | minus | imm | spot | fix | roll | next | prev | nearest | nearest-roll | select | dates-in-year | postpone | observance
+<shift>  = plus | minus | imm | spot | fix | roll | next | prev | nearest | nearest-roll | cutoff | select | dates-in-year | postpone | observance
 plus     = <'+'> period endend? on?
 minus    = <'-'> period endend? on?
 endend   = <'ENDEND'>
@@ -101,6 +101,8 @@ prev     = <'>'> <'PREV'> ORDINAL? anchor
 nearest  = <'>'> <'NEAREST'> anchor
 (* the FpML convention *)
 nearest-roll = <'>'> <'NEAREST'> on
+(* the trade date of a base with a time of day: > CUTOFF 17:00 "America/New_York", > CUTOFF 10:00 UTC+0 *)
+cutoff   = <'>'> <'CUTOFF'> time zone
 (* > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH *)
 select   = <'>'> count (chosen | any-of) <'IN'> PERIOD
 <count>  = from-start | from-end | last
@@ -206,7 +208,7 @@ weekday-set = WEEKDAY+ | <'{'> WEEKDAY (<','> WEEKDAY)* <'}'>
 <ROLL>    = #'MODFOLLOWING|MODPRECEDING|FOLLOWING|PRECEDING|BOW|EOW|BOM|EOM|BOQ|EOQ|BOH|EOH|BOY|EOY'
 <PERIOD>  = #'WEEK|MONTH|QUARTER|HALFYEAR|YEAR'
 (* without a lexer nothing reserves the six-letter keywords, so a lookahead excludes them *)
-<PAIR>    = !('EASTER' | 'ENDEND' | 'FOLLOW' | 'SHABAN' | 'TAMMUZ' | 'TISHRI' | 'KISLEV' | 'SHEVAT' | 'ADARII' | 'SANYUE' | 'LIUYUE' | 'JIUYUE' | 'SHIYUE') #'[A-Z]{6}'
+<PAIR>    = !('EASTER' | 'ENDEND' | 'FOLLOW' | 'CUTOFF' | 'SHABAN' | 'TAMMUZ' | 'TISHRI' | 'KISLEV' | 'SHEVAT' | 'ADARII' | 'SANYUE' | 'LIUYUE' | 'JIUYUE' | 'SHIYUE') #'[A-Z]{6}'
 <CCY>     = #'[A-Z]{3}'
 <EVENT>   = #'@[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)*'
 <SCOPE>   = #'[a-z][a-z_]*:[A-Z0-9][A-Z0-9_]*(-[A-Z0-9][A-Z0-9_]*)*'

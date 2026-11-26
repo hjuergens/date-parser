@@ -330,7 +330,7 @@ static int evaluate_body(const Item *items, const Alternative *alternatives, con
 }
 
 static Ctx rule_context(RuleCatalog *c, const char *scope, int year, int shallow, Market *market) {
-    return (Ctx) { 1, date_of(year, 1, 1), market, NULL, NULL, 0, NULL, 0, NULL, c, scope, year, shallow };
+    return (Ctx) { 1, date_of(year, 1, 1), market, NULL, NULL, 0, NULL, 0, NULL, c, scope, year, shallow, 0, 0 };
 }
 
 /* the dates of the rule evaluated in the year, valid, sorted; an announcement for the year always wins. market: NULL
@@ -707,8 +707,8 @@ void catalog_free(RuleCatalog *c) {
     free(c);
 }
 
-int catalog_schedule(RuleCatalog *c, const char *text, int base, const char *scope, DateList *out, char *error,
-                     size_t size) {
+int catalog_schedule(RuleCatalog *c, const char *text, int base, const char *scope, const long long *instant,
+                     DateList *out, char *error, size_t size) {
     *out = (DateList) { 0 };
     Schedule *schedule = parse_text(text, error, size);
     if (!schedule) return -1;
@@ -717,7 +717,8 @@ int catalog_schedule(RuleCatalog *c, const char *text, int base, const char *sco
         schedule_free(schedule);
         return -1;
     }
-    Ctx ctx = { 1, base, scope ? scope_calendar(c, scope) : NULL, NULL, NULL, 0, NULL, 0, NULL, c, scope, 0, 0 };
+    Ctx ctx = { 1, base, scope ? scope_calendar(c, scope) : NULL, NULL, NULL, 0, NULL, 0, NULL, c, scope, 0, 0,
+                instant != NULL, instant ? *instant : 0 };
     int status = evaluate_items(schedule->items, &ctx, out, error, size);
     schedule_free(schedule);
     return status;

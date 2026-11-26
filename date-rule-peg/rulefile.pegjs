@@ -188,6 +188,33 @@
     return solarTerm(term, zone ? parseInt(zone.slice(3), 10) * 60 : 0);
   }
 
+  // the local date and time of day (hh:mm) of an instant (a Date) at a fixed offset (UTC+9) or in an IANA time zone
+  function localAt(instant, zone) {
+    if (zone.startsWith('UTC')) {
+      const t = new Date(instant.getTime() + parseInt(zone.slice(3), 10) * 3600000);
+      return { date: date(t.getUTCFullYear(), t.getUTCMonth() + 1, t.getUTCDate()),
+        time: `${String(t.getUTCHours()).padStart(2, '0')}:${String(t.getUTCMinutes()).padStart(2, '0')}` };
+    }
+    const format = zoneFormats[`${zone} time`] ??= new Intl.DateTimeFormat('en-CA', { timeZone: zone, year: 'numeric',
+      month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+    const parts = Object.fromEntries(format.formatToParts(instant).map((part) => [part.type, part.value]));
+    return { date: date(Number(parts.year), Number(parts.month), Number(parts.day)),
+      time: `${parts.hour}:${parts.minute}` };
+  }
+
+  // > CUTOFF 17:00 "America/New_York": the date of the base instant (c.instant) in the zone, the next one from the
+  // cutoff on
+  function cutoff(at, zone) {
+    const [hours, minutes] = at.split(':').map(Number);
+    if (hours > 23 || minutes > 59) throw new RangeError(`not a time of day: ${at}`);
+    if (!zone.startsWith('UTC')) new Intl.DateTimeFormat('en', { timeZone: zone });   // a RangeError if unknown
+    return (d, c) => {
+      if (!c.instant) throw new Error('CUTOFF needs a base with a time of day');
+      const local = localAt(c.instant, zone);
+      return local.time >= at ? plusDays(local.date, 1) : local.date;
+    };
+  }
+
   // 1 SHAWWAL BY SIGHTING: the method only for Hijri months; all are computed with Umm al-Qura
   function hijriMonthDay(day, month, method, Solar) {
     if (method && !HIJRI.includes(month)) throw new RangeError(`BY ${method} only for Hijri months, not ${month}`);
@@ -559,10 +586,11 @@
       return distinct(dates);
     }
 
-    // a context for catalog.schedule(...): the base date and the calendar of the scope (weekends only without one)
-    context(t, scope = null) {
+    // a context for catalog.schedule(...): the base date, the calendar of the scope (weekends only without one) and,
+    // for > CUTOFF, the base with its time of day (a Date)
+    context(t, scope = null, instant = null) {
       return { base: t, market: scope ? this.calendar(scope) : WEEKENDS, events: references(this, scope),
-        fixing: WEEKENDS, catalog: this, scope };
+        fixing: WEEKENDS, catalog: this, scope, instant };
     }
 
     // one expression of the rule language, evaluated with catalog.context(base, scope)
@@ -759,6 +787,7 @@ shift
     / "PREV" wordEnd ws n:(@ordinal ws)? a:anchor { return (d, c) => times(n ?? 1, a)(d, -1, c); }
     / "NEAREST" wordEnd ws a:anchor { return nearestShift(a); }   // ties go forward
     / "NEAREST" wordEnd ws on:on { return rollShift('NEAREST', on); }   // the FpML convention
+    / "CUTOFF" wordEnd ws at:time ws z:zone { return cutoff(at, z); }   // the trade date of a base with a time of day
     / "POSTPONE" wordEnd ws r:rollWord on:(ws @on)? ws "MAX" wordEnd ws p:period cumulative:(ws "CUMULATIVE" wordEnd)? {
         return postpone(r, on, p, cumulative !== null);
       }

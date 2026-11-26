@@ -1,14 +1,15 @@
 """Runs the shared cases of examples/rules.txt: blocks of declarations, each followed by its cases."""
 import re
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 import pytest
 
+from antlr_schedule.catalog import tz
 from antlr_schedule.rules import parse_rules
 
 EXAMPLES = Path(__file__).resolve().parents[2] / "examples"
-SCHEDULE = re.compile(r"\[(\d{4}-\d{2}-\d{2})\] (.*)")      # [base] schedule
+SCHEDULE = re.compile(r"\[(\d{4}-\d{2}-\d{2})(?: (\d{2}:\d{2}) (\"[^\"]+\"|UTC[+-]\d+))?\] (.*)")   # [base [hh:mm zone]] schedule
 SCOPE = re.compile(r"(\S+) (\d{4})")                         # scope year
 
 
@@ -33,8 +34,10 @@ def blocks(file="rules.txt"):
 def evaluate(declarations, text):
     book = parse_rules(declarations)
     if m := SCHEDULE.fullmatch(text):
-        base, schedule = m.groups()
-        return [d.isoformat() for d in book.schedule(schedule)(book.context(date.fromisoformat(base)))]
+        base, at, zone, schedule = m.groups()
+        instant = datetime.fromisoformat(f"{base}T{at}").replace(tzinfo=tz(zone.strip('"'))) if at else None
+        context = book.context(date.fromisoformat(base), instant=instant)
+        return [d.isoformat() for d in book.schedule(schedule)(context)]
     scope, year = SCOPE.fullmatch(text).groups()
     return [o.date.isoformat() + (f" {o.scenario}" if o.scenario else "") for o in book.holidays(scope, int(year))]
 

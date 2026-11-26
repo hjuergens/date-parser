@@ -25,12 +25,30 @@ for (const line of readFileSync(new URL('../../examples/rules.txt', import.meta.
   declarations.push(line);
 }
 
+// the instant of a local date and time (ms since the epoch as if at UTC) at a fixed offset (UTC-4) or in an IANA zone:
+// the offset of the zone at a guess, twice
+function instantOf(local, zone) {
+  if (zone.startsWith('UTC')) return new Date(local - parseInt(zone.slice(3), 10) * 3600000);
+  const format = new Intl.DateTimeFormat('en-CA', { timeZone: zone, year: 'numeric', month: 'numeric', day: 'numeric',
+    hour: 'numeric', minute: 'numeric', second: 'numeric', hourCycle: 'h23' });
+  const offset = (t) => {
+    const p = Object.fromEntries(format.formatToParts(new Date(t)).map((part) => [part.type, Number(part.value)]));
+    return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - t;
+  };
+  let t = local - offset(local);
+  t = local - offset(t);
+  return new Date(t);
+}
+
 function evaluate(declarations, text) {
   const catalog = parseRules(declarations);
-  const schedule = text.match(/^\[(\d{4})-(\d{2})-(\d{2})\] (.*)$/);   // [base] schedule
+  // [base] schedule or [base hh:mm zone] schedule
+  const schedule = text.match(/^\[(\d{4})-(\d{2})-(\d{2})(?: (\d{2}):(\d{2}) ("[^"]+"|UTC[+-]\d+))?\] (.*)$/);
   if (schedule) {
-    const base = { year: Number(schedule[1]), month: Number(schedule[2]), day: Number(schedule[3]) };
-    return catalog.schedule(schedule[4])(catalog.context(base)).map(iso);
+    const [year, month, day] = [Number(schedule[1]), Number(schedule[2]), Number(schedule[3])];
+    const local = Date.UTC(year, month - 1, day, Number(schedule[4]), Number(schedule[5]));
+    const instant = schedule[4] ? instantOf(local, schedule[6].replaceAll('"', '')) : null;
+    return catalog.schedule(schedule[7])(catalog.context({ year, month, day }, null, instant)).map(iso);
   }
   const [, scope, year] = text.match(/^(\S+) (\d{4})$/);   // scope year
   return catalog.holidays(scope, Number(year)).map((o) => iso(o.date) + (o.scenario ? ` ${o.scenario}` : ''));

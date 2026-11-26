@@ -125,6 +125,7 @@ class RuleContext(Context):
     scope: str | None = None
     rule: str | None = None
     pair: str | None = None
+    instant: datetime | None = None   # the base with its time of day, for > CUTOFF
 
 
 def market(on, context, pair=None):
@@ -438,6 +439,26 @@ def time(hours, minutes):
     return f"{hours:02}:{minutes:02}"
 
 
+def tz(zone):
+    """a fixed offset (UTC+9) or an IANA zone ("Asia/Tokyo")"""
+    return timezone(timedelta(hours=int(zone[3:]))) if zone.startswith("UTC") else ZoneInfo(zone)
+
+
+def cutoff(at, zone):
+    """> CUTOFF 17:00 "America/New_York": the date of the base instant in the zone, the next one from the cutoff on"""
+    hours, minutes = map(int, at.split(":"))
+    if hours > 23 or minutes > 59:
+        raise ValueError(f"not a time of day: {at}")
+    zone_info = tz(zone)
+
+    def shift(d, context):
+        if getattr(context, "instant", None) is None:
+            raise ValueError("CUTOFF needs a base with a time of day")
+        local = context.instant.astimezone(zone_info)
+        return local.date() + timedelta(days=1) if local.strftime("%H:%M") >= at else local.date()
+    return shift
+
+
 def apply_shifts(d, shifts, context):
     """the shifts from left to right; a postponement is limited from the date before it (CUMULATIVE: before the first
     postponement)"""
@@ -714,10 +735,11 @@ class RuleCatalog:
             dates.update(self._state(in_scope, year, shallow).get(rule, ((), False))[0])
         return sorted(dates)
 
-    def context(self, base, scope=None):
-        """a context for catalog.schedule(...): the base date and the calendar of the scope"""
+    def context(self, base, scope=None, instant=None):
+        """a context for catalog.schedule(...): the base date, the calendar of the scope and, for > CUTOFF, the base
+        with its time of day (an aware datetime)"""
         return RuleContext(base=base, market=ScopeCalendar(self, scope) if scope else semantics.WEEKENDS,
-                           events=References(self, scope), catalog=self, scope=scope)
+                           events=References(self, scope), catalog=self, scope=scope, instant=instant)
 
     def evaluate(self, key, base, scope=None):
         """the dates of a rule with a base date, such as a trade date for spot and fixing rules"""

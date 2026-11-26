@@ -270,7 +270,7 @@ PRODUCTIONS
 
   Shift<out Move m>                       (. TemporalAmount p; String code = null; boolean endend = false, cumulative = false;
                                              CalendarSpec on = null; Anchor a; Annual an; int n = 1; m = null;
-                                             List<Annual> annuals = new ArrayList<>();
+                                             List<Annual> annuals = new ArrayList<>(); String at, z;
                                              List<Map.Entry<Set<String>, Move>> entries = new ArrayList<>(); .)
   = "+" Period<out p> [ "ENDEND"          (. endend = true; .)
     ] [ On<out on> ]                      (. m = RuleCatalog.plus(p, 1, endend, on); .)
@@ -291,6 +291,7 @@ PRODUCTIONS
       ( Anchor<out a>                     (. m = RuleCatalog.nearestShift(a); .)   /* ties go forward */
       | On<out on>                        (. m = RuleCatalog.rollShift("NEAREST", on); .)   /* the FpML convention */
       )
+    | "CUTOFF" Time<out at> Zone<out z>   (. m = RuleCatalog.cutoff(at, z); .)   /* the trade date of a base with a time of day */
     | Count<out n> Select<out a>          /* > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH */
       "IN" PeriodWord<out code>           (. m = RuleCatalog.select(Math.abs(n), n < 0, a, code); .)
     | "{" Annual<out an>                  (. annuals.add(an); .)   /* > {1 FEB, 1 MAY}: the dates of the set in the year */

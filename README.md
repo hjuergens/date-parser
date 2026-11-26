@@ -22,19 +22,19 @@ Planned additions are in [TODO.md](docs/TODO.md).
 
 | Module | Technology | Parser type | Language | What works | Tests |
 |---|---|---|---|---|---|
-| [date-rule-antlr-java](date-rule-antlr-java/README.md) | ANTLR 4.13 | ALL(*) (adaptive LL) | Java | The shared example with actions; its `ScheduleSemantics` is the one the other JVM modules copy, and [date-rule-runtime](date-rule-runtime/README.md) builds on it | 6207 TestNG |
-| [date-rule-combinators](date-rule-combinators/README.md) | Scala parser combinators 2.x | Recursive descent with backtracking | Scala 2.13, `java.time` | The shared example, scannerless | 6207 ScalaTest + 4 JUnit |
-| [date-rule-coco](date-rule-coco/README.md) | Coco/R | LL(1) | Java | The shared example, LL(1) without warnings | 6207 TestNG |
-| [date-rule-javacc](date-rule-javacc/README.md) | JavaCC (ParserGeneratorCC) | LL(k) | Java | The shared example | 6207 JUnit |
-| [date-rule-sablecc](date-rule-sablecc/README.md) | SableCC 2 | LALR(1) with typed AST | Java | The shared example; the grammar only builds the tree, an evaluator walks it | 6207 TestNG |
-| [date-rule-cup-jflex](date-rule-cup-jflex/README.md) | JFlex 1.9 + CUP 11b | LALR(1) | Java | The shared example | 6207 TestNG |
-| [date-rule-bison](date-rule-bison/README.md) | GNU Bison 3 (Java skeleton) | LALR(1) | Java | The shared example. **Requires `bison`**; the module is empty without it | 6207 TestNG |
-| [date-rule-flex-bison](date-rule-flex-bison/README.md) | Flex 2.6 + GNU Bison 3.8 (C skeleton) | LALR(1) | C11, Go via SWIG | The shared example; reentrant scanner and pure parser, the actions build a syntax tree that a C evaluator walks. A SWIG binding runs it from Go. Builds in Docker | 6207 cases + 6105 Go subtests |
-| [date-rule-peg](date-rule-peg/README.md) | Peggy (PEG.js successor) | PEG (packrat) | JavaScript | The shared example; also runs in the browser playground of the site | 6207 `node:test` |
-| [date-rule-pest](date-rule-pest/README.md) | pest 2.9 | PEG (ordered choice) | Rust | The shared example and rule files: two grammars built into one syntax tree, which an interpreter evaluates | 6230 cases in `cargo test` |
-| [date-rule-lark](date-rule-lark/README.md) | Lark 1.3 | Earley and LALR(1), one grammar | Python | The shared example, every case with both algorithms | 12312 pytest |
-| [date-rule-antlr-python](date-rule-antlr-python/README.md) | ANTLR 4.13, Python target | ALL(*) (adaptive LL) | Python | The shared example; grammar without actions, plus a visitor | 6207 pytest |
-| [date-rule-instaparse](date-rule-instaparse/README.md) | instaparse 1.5 | GLL (any context-free grammar) | Clojure 1.12 | The shared example; EBNF grammar read at run time, `insta/transform` onto the shared Java helper | 6207 TestNG |
+| [date-rule-antlr-java](date-rule-antlr-java/README.md) | ANTLR 4.13 | ALL(*) (adaptive LL) | Java | The shared example with actions; its `ScheduleSemantics` is the one the other JVM modules copy, and [date-rule-runtime](date-rule-runtime/README.md) builds on it | 6217 TestNG |
+| [date-rule-combinators](date-rule-combinators/README.md) | Scala parser combinators 2.x | Recursive descent with backtracking | Scala 2.13, `java.time` | The shared example, scannerless | 6217 ScalaTest + 4 JUnit |
+| [date-rule-coco](date-rule-coco/README.md) | Coco/R | LL(1) | Java | The shared example, LL(1) without warnings | 6217 TestNG |
+| [date-rule-javacc](date-rule-javacc/README.md) | JavaCC (ParserGeneratorCC) | LL(k) | Java | The shared example | 6217 JUnit |
+| [date-rule-sablecc](date-rule-sablecc/README.md) | SableCC 2 | LALR(1) with typed AST | Java | The shared example; the grammar only builds the tree, an evaluator walks it | 6217 TestNG |
+| [date-rule-cup-jflex](date-rule-cup-jflex/README.md) | JFlex 1.9 + CUP 11b | LALR(1) | Java | The shared example | 6217 TestNG |
+| [date-rule-bison](date-rule-bison/README.md) | GNU Bison 3 (Java skeleton) | LALR(1) | Java | The shared example. **Requires `bison`**; the module is empty without it | 6217 TestNG |
+| [date-rule-flex-bison](date-rule-flex-bison/README.md) | Flex 2.6 + GNU Bison 3.8 (C skeleton) | LALR(1) | C11, Go via SWIG | The shared example; reentrant scanner and pure parser, the actions build a syntax tree that a C evaluator walks. A SWIG binding runs it from Go. Builds in Docker | 6217 cases + 6105 Go subtests |
+| [date-rule-peg](date-rule-peg/README.md) | Peggy (PEG.js successor) | PEG (packrat) | JavaScript | The shared example; also runs in the browser playground of the site | 6217 `node:test` |
+| [date-rule-pest](date-rule-pest/README.md) | pest 2.9 | PEG (ordered choice) | Rust | The shared example and rule files: two grammars built into one syntax tree, which an interpreter evaluates | 6240 cases in `cargo test` |
+| [date-rule-lark](date-rule-lark/README.md) | Lark 1.3 | Earley and LALR(1), one grammar | Python | The shared example, every case with both algorithms | 12322 pytest |
+| [date-rule-antlr-python](date-rule-antlr-python/README.md) | ANTLR 4.13, Python target | ALL(*) (adaptive LL) | Python | The shared example; grammar without actions, plus a visitor | 6217 pytest |
+| [date-rule-instaparse](date-rule-instaparse/README.md) | instaparse 1.5 | GLL (any context-free grammar) | Clojure 1.12 | The shared example; EBNF grammar read at run time, `insta/transform` onto the shared Java helper | 6217 TestNG |
 
 The modules hold only the shared example. Earlier experiments (Joda-Time periods and term structures in ANTLR,
 natural-language rules with Scala combinators, a Pascal lexer, a calculator, brace matching, arithmetic, range lists,
@@ -232,7 +232,7 @@ expressions.
 All implementations are tested against the same 572 cases in [examples/schedule.txt](examples/schedule.txt),
 including invalid dates and syntax errors, 2186 cases in [examples/catalog.txt](examples/catalog.txt) and 3347 in
 [examples/date-holidays.txt](examples/date-holidays.txt). Each module has a test that reads all three files.
-[examples/rules.txt](examples/rules.txt) holds 102 cases for rule files (declarations around the schedule language, see
+[examples/rules.txt](examples/rules.txt) holds 112 cases for rule files (declarations around the schedule language, see
 [date-rule-lark](date-rule-lark/README.md#rule-files)); all thirteen implementations run them. The section "MaturityRule" of the first file
 translates the rules of another maturity rule language (`next(wednesday(3) of every(march)) of today`, the IMM and
 quarter-boundary rules, the DOL series and the common patterns) into this one, each with the original as a comment. The second one is generated by [scripts/catalog_cases.py](scripts/catalog_cases.py) from the holiday rule catalog of the

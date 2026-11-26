@@ -12,7 +12,7 @@ use std::collections::{BTreeSet, HashMap};
 use std::fmt;
 use std::rc::Rc;
 
-use chrono::{Datelike, NaiveDate};
+use chrono::{DateTime, Datelike, FixedOffset, NaiveDate, NaiveDateTime, Timelike, Utc};
 
 use crate::ast::*;
 use crate::calendars;
@@ -224,6 +224,8 @@ pub struct Ctx {
     limit: Option<usize>,
     pub(crate) catalog: Option<Rc<Catalog>>,
     pub(crate) scope: Option<String>,
+    /// the base with its time of day, for > CUTOFF
+    pub instant: Option<DateTime<Utc>>,
 }
 
 impl Ctx {
@@ -239,6 +241,7 @@ impl Ctx {
             limit: None,
             catalog: None,
             scope: None,
+            instant: None,
         }
     }
 
@@ -254,6 +257,11 @@ impl Ctx {
 
     pub fn with_fixing(mut self, fixing: MarketRef) -> Ctx {
         self.fixing = fixing;
+        self
+    }
+
+    pub fn with_instant(mut self, instant: Option<DateTime<Utc>>) -> Ctx {
+        self.instant = instant;
         self
     }
 
@@ -527,6 +535,7 @@ fn shift(s: &Shift, d: Date, c: &Ctx) -> R<Date> {
             Ok(d)
         }
         Shift::Nearest(anchor) => nearest(anchor, d, c),
+        Shift::Cutoff { hours, minutes, zone } => cutoff(*hours, *minutes, zone, c),
         Shift::Select { count, from_end, anchor, period } => select(anchor, *count, *from_end, *period, d, c),
         // > {1 FEB, 1 MAY}: the dates of the set in the year of the date, sorted; one value at a time
         Shift::DatesInYear(annuals) => take(c, || {
@@ -777,6 +786,31 @@ pub fn next_day(mut d: Date, direction: i64, test: impl Fn(Date) -> R<bool>) -> 
         }
     }
     fail(format!("no such day within 3700 days of {d}"))
+}
+
+/// the local date and time of an instant at a fixed offset (minutes east of UTC) or in an IANA zone
+fn local_time(instant: DateTime<Utc>, zone: &Zone) -> R<NaiveDateTime> {
+    match zone {
+        Zone::Offset(minutes) => match FixedOffset::east_opt(*minutes as i32 * 60) {
+            Some(offset) => Ok(instant.with_timezone(&offset).naive_local()),
+            None => fail(format!("no time zone UTC{:+}", minutes / 60)),
+        },
+        Zone::Iana(name) => match name.parse::<chrono_tz::Tz>() {
+            Ok(tz) => Ok(instant.with_timezone(&tz).naive_local()),
+            Err(_) => fail(format!("no time zone {name}")),
+        },
+    }
+}
+
+/// > CUTOFF hh:mm zone: the date of the base instant in the zone, the next one from the cutoff time on
+fn cutoff(hours: u32, minutes: u32, zone: &Zone, c: &Ctx) -> R<Date> {
+    let Some(instant) = c.instant else { return fail("CUTOFF needs a base with a time of day") };
+    let local = local_time(instant, zone)?;
+    if (local.hour(), local.minute()) >= (hours, minutes) {
+        add_days(local.date(), 1)
+    } else {
+        Ok(local.date())
+    }
 }
 
 /// the date itself if it matches, else the nearer of the next and the previous match; ties go forward

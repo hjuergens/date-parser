@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 use std::fs;
 
-use chrono::NaiveDate;
+use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime, TimeZone, Utc};
 use pest_schedule::{parse_rules, Error};
 
 const RULES: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../examples/rules.txt");
@@ -32,12 +32,34 @@ fn blocks() -> Vec<(String, Vec<(String, String)>)> {
     out
 }
 
-/// [base] schedule, or scope year
+/// the instant of a local date and time at a fixed offset (UTC-4) or in an IANA zone ("America/New_York")
+fn instant(local: NaiveDateTime, zone: &str) -> DateTime<Utc> {
+    match zone.strip_prefix("UTC") {
+        Some(hours) => {
+            let offset = FixedOffset::east_opt(hours.parse::<i32>().unwrap() * 3600).unwrap();
+            offset.from_local_datetime(&local).single().unwrap().with_timezone(&Utc)
+        }
+        None => {
+            let tz = zone.trim_matches('"').parse::<chrono_tz::Tz>().unwrap();
+            tz.from_local_datetime(&local).earliest().unwrap().with_timezone(&Utc)
+        }
+    }
+}
+
+/// [base] schedule, [base hh:mm zone] schedule, or scope year
 fn evaluate(declarations: &str, text: &str) -> Result<Vec<String>, Error> {
     let book = parse_rules(declarations, HashMap::new())?;
     if let Some((base, schedule)) = text.strip_prefix('[').and_then(|t| t.split_once("] ")) {
-        let base = NaiveDate::parse_from_str(base, "%Y-%m-%d").unwrap();
-        let dates = book.schedule(schedule)?.eval(&book.context(base, None))?;
+        let mut parts = base.splitn(3, ' ');
+        let date = NaiveDate::parse_from_str(parts.next().unwrap(), "%Y-%m-%d").unwrap();
+        let at = match (parts.next(), parts.next()) {
+            (Some(time), Some(zone)) => {
+                let local = NaiveDateTime::parse_from_str(&format!("{date} {time}"), "%Y-%m-%d %H:%M").unwrap();
+                Some(instant(local, zone))
+            }
+            _ => None,
+        };
+        let dates = book.schedule(schedule)?.eval(&book.context(date, None, at))?;
         return Ok(dates.iter().map(|d| d.to_string()).collect());
     }
     let (scope, year) = text.split_once(' ').unwrap();

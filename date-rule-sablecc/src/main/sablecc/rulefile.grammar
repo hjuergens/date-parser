@@ -60,6 +60,7 @@ Tokens
 	next = 'NEXT';
 	prev = 'PREV';
 	nearest = 'NEAREST';
+	cutoff = 'CUTOFF';   /* before pair, which matches six capitals too */
 	postpone = 'POSTPONE';
 	max = 'MAX';
 	cumulative = 'CUMULATIVE';
@@ -287,6 +288,7 @@ Productions
 		| {prev} gt prev ordinal? anchor
 		| {nearest} gt nearest anchor   /* ties go forward */
 		| {nearest_roll} gt nearest on   /* the FpML convention */
+		| {cutoff} gt cutoff time time_zone   /* the trade date of a base with a time of day */
 		| {select} gt count select in period_word   /* > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH */
 		| {dates_in_year} gt l_brace annual more_annual* r_brace   /* > {1 FEB, 1 MAY} */
 		| {postpone} gt postpone roll on? max period cumulative?

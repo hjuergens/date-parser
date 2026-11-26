@@ -49,9 +49,9 @@ void catalog_free(RuleCatalog *catalog);
 int catalog_holidays(RuleCatalog *catalog, const char *scope, int year, OccurrenceList *out, char *error, size_t size);
 
 /* 0 and the dates of one expression of the rule language with T = base on the calendar of the scope (NULL: Monday to
- * Friday), or -1 and the message */
-int catalog_schedule(RuleCatalog *catalog, const char *text, int base, const char *scope, DateList *out, char *error,
-                     size_t size);
+ * Friday) and, for > CUTOFF, the base with its time of day (seconds since 1970; NULL: none), or -1 and the message */
+int catalog_schedule(RuleCatalog *catalog, const char *text, int base, const char *scope, const long long *instant,
+                     DateList *out, char *error, size_t size);
 
 void occurrencelist_free(OccurrenceList *list);
 

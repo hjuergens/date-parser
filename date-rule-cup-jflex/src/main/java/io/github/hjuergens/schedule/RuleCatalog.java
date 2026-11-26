@@ -2,8 +2,11 @@ package io.github.hjuergens.schedule;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.Period;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAmount;
 import java.util.AbstractMap;
@@ -354,19 +357,26 @@ public final class RuleCatalog {
     /**
      * the events of a rule's context: @key, the dates of a rule (by key), of the rules of an event class or of a key
      * with announced dates only, in the year of the base date; during the evaluation of a year (home) other years are
-     * read shallow, or not at all from a shallow evaluation. They carry the catalog and the scope of the context.
+     * read shallow, or not at all from a shallow evaluation. They carry the catalog and the scope of the context and, for
+     * &gt; CUTOFF, the base with its time of day (null without one).
      */
     static final class References extends AbstractMap<String, Rule> {
         private final RuleCatalog catalog;
         private final String scope;
         private final Integer home;
         private final boolean shallow;
+        private final ZonedDateTime instant;   // the base with its time of day, for > CUTOFF
 
         References(RuleCatalog catalog, String scope, Integer home, boolean shallow) {
+            this(catalog, scope, home, shallow, null);
+        }
+
+        References(RuleCatalog catalog, String scope, Integer home, boolean shallow, ZonedDateTime instant) {
             this.catalog = catalog;
             this.scope = scope;
             this.home = home;
             this.shallow = shallow;
+            this.instant = instant;
         }
 
         @Override
@@ -581,6 +591,25 @@ public final class RuleCatalog {
 
     public static Move nearestShift(Anchor anchor) {
         return (date, context) -> nearest(anchor, date, context);
+    }
+
+    /** &gt; CUTOFF 17:00 "America/New_York": the date of the base instant in the zone, the next one from the cutoff on */
+    public static Move cutoff(String time, String zone) {
+        String[] parts = time.split(":");
+        int hours = Integer.parseInt(parts[0]), minutes = Integer.parseInt(parts[1]);
+        if (hours > 23 || minutes > 59) {
+            throw new IllegalArgumentException("not a time of day: " + time);
+        }
+        LocalTime at = LocalTime.of(hours, minutes);
+        ZoneId zoneId = zone.startsWith("UTC") ? ZoneOffset.ofHours(Integer.parseInt(zone.substring(3))) : ZoneId.of(zone);
+        return (date, context) -> {
+            if (!(context.events() instanceof References references) || references.instant == null) {
+                throw new IllegalArgumentException("CUTOFF needs a base with a time of day");
+            }
+            ZonedDateTime local = references.instant.withZoneSameInstant(zoneId);
+            LocalTime now = local.toLocalTime().truncatedTo(ChronoUnit.MINUTES);
+            return now.isBefore(at) ? local.toLocalDate() : local.toLocalDate().plusDays(1);
+        };
     }
 
     // the moves of the schedule language, for parsers that build moves of a date rather than expressions
@@ -1041,7 +1070,13 @@ public final class RuleCatalog {
 
     /** a context for schedule(...): the base date and the calendar of the scope (weekends only without one) */
     public Context context(LocalDate base, String scope) {
-        return new Context(base, scope != null ? calendar(scope) : ScheduleSemantics.WEEKENDS, new References(this, scope, null, false));
+        return context(base, scope, null);
+    }
+
+    /** a context for schedule(...) whose base has a time of day, for &gt; CUTOFF (null: none) */
+    public Context context(LocalDate base, String scope, ZonedDateTime instant) {
+        return new Context(base, scope != null ? calendar(scope) : ScheduleSemantics.WEEKENDS,
+                new References(this, scope, null, false, instant));
     }
 
     /** the dates of a rule with a base date, such as a trade date for spot and fixing rules */

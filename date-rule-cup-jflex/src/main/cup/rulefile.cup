@@ -57,7 +57,7 @@ action code {:
 terminal            L_RULE, L_FOR, L_IN, L_EXCEPT, L_VALID, L_FROM, L_TO, L_WITH, L_KIND, L_SESSION, L_TZ, L_PRECISION;
 terminal            L_NOTE, L_CITES, L_ART, L_URL, L_LABEL, L_WEEKEND, L_CALENDAR, L_IGNORE, L_AT, L_UNLESS;
 terminal String     KIND_WORD, PRECISION_WORD, LABEL_WORD;
-terminal            ONE, OF, AS, BASE, TOM, SPOT, FIX, IMM, NEXT, PREV, NEAREST, IN, POSTPONE, MAX, CUMULATIVE, ENDEND;
+terminal            ONE, OF, AS, BASE, TOM, SPOT, FIX, IMM, NEXT, PREV, NEAREST, CUTOFF, IN, POSTPONE, MAX, CUMULATIVE, ENDEND;
 terminal            ON, LAST, BD, FD, HOLIDAY, NONHOLIDAY, HOLIDAYS, EASTER, ORTHODOX, SOLARTERM, HINDU, BY, FOLLOW;
 terminal            IF, OR, AND, NOT, DAY, IS, BETWEEN, EVERY, FROM;
 terminal            PLUS, MINUS, GT, LBRACE, RBRACE, LPAREN, RPAREN, LBRACKET, RBRACKET, COMMA, COLON, SEMI, EQ;
@@ -316,6 +316,9 @@ move ::= PLUS period:p endend_opt:x on_opt:c  {: RESULT = RuleCatalog.plus(p, 1,
        | GT PREV ORDINAL:o anchor:a     {: RESULT = RuleCatalog.previous(ScheduleSemantics.ordinal(o), a); :}
        | GT NEAREST anchor:a            {: RESULT = RuleCatalog.nearestShift(a); :}   /* ties go forward */
        | GT NEAREST on:c                {: RESULT = RuleCatalog.rollShift("NEAREST", c); :}   /* the FpML convention */
+         /* the trade date of a base with a time of day: > CUTOFF 17:00 "America/New_York", > CUTOFF 10:00 UTC+0 */
+       | GT CUTOFF time:t ZONE:z        {: RESULT = RuleCatalog.cutoff(t, z); :}
+       | GT CUTOFF time:t STRING:z      {: RESULT = RuleCatalog.cutoff(t, z); :}
          /* > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH */
        | GT count:n select:a IN PERIOD:p {: RESULT = RuleCatalog.select(Math.abs(n), n < 0, a, p); :}
          /* > {1 FEB, 1 MAY}: the dates of the set in the year of the date */

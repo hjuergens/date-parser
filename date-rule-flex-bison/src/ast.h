@@ -63,7 +63,7 @@ typedef struct Observe {
 } Observe;
 
 typedef enum { S_PLUS, S_MINUS, S_IMM, S_SPOT, S_FIX, S_ROLL, S_NEXT, S_PREV, S_SELECT, S_DATES_IN_YEAR, S_OBSERVANCE,
-               S_NEAREST, S_POSTPONE } ShiftKind;
+               S_NEAREST, S_POSTPONE, S_CUTOFF } ShiftKind;
 
 /* the conventions of > ROLL; MODPRECEDING and > NEAREST ON (ROLL_NEAREST) only in rule files */
 enum { FOLLOWING, PRECEDING, MODFOLLOWING, BOW, EOW, BOM, EOM, BOQ, EOQ, BOH, EOH, BOY, EOY, MODPRECEDING, ROLL_NEAREST };
@@ -83,6 +83,8 @@ typedef struct Shift {
     Calendar *on;          /* rule files: + 1M ON ..., > SPOT ON ..., > FOLLOWING ON ..., > POSTPONE ... ON ... */
     int endend;            /* rule files: + 1M ENDEND */
     int cumulative;        /* rule files: S_POSTPONE ... MAX period CUMULATIVE; the limit is in period */
+    int cutoff, offset;    /* rule files: S_CUTOFF: the time in minutes after midnight; minutes east of UTC */
+    const char *zone;      /* rule files: S_CUTOFF: an IANA time zone ("America/New_York"), else NULL */
     struct Shift *next;
 } Shift;
 

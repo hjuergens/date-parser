@@ -96,9 +96,10 @@ impl RuleCatalog {
         self.0.holidays(scope, year)
     }
 
-    /// a context for schedule(): the base date and the calendar of the scope
-    pub fn context(&self, base: Date, scope: Option<&str>) -> Ctx {
-        self.0.context(base, scope)
+    /// a context for schedule(): the base date, the calendar of the scope and, for > CUTOFF, the base with its time
+    /// of day
+    pub fn context(&self, base: Date, scope: Option<&str>, instant: Option<chrono::DateTime<chrono::Utc>>) -> Ctx {
+        self.0.context(base, scope, instant)
     }
 
     /// one expression of the rule language, evaluated with context(base, scope)

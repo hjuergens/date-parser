@@ -10,6 +10,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -24,7 +29,8 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public class RuleCasesTest {
 
-    private static final Pattern SCHEDULE = Pattern.compile("\\[(\\d{4}-\\d{2}-\\d{2})] (.*)");   // [base] schedule
+    private static final Pattern SCHEDULE =   // [base [hh:mm zone]] schedule
+            Pattern.compile("\\[(\\d{4}-\\d{2}-\\d{2})(?: (\\d{2}:\\d{2}) (\"[^\"]+\"|UTC[+-]\\d+))?] (.*)");
     private static final Pattern SCOPE = Pattern.compile("(\\S+) (\\d{4})");                       // scope year
 
     @Parameterized.Parameters(name = "{index}: {0} => {1}")
@@ -80,7 +86,10 @@ public class RuleCasesTest {
         RuleCatalog catalog = RuleFiles.parseRules(declarations);
         Matcher schedule = SCHEDULE.matcher(text);
         if (schedule.matches()) {
-            return catalog.schedule(schedule.group(2)).evaluate(catalog.context(LocalDate.parse(schedule.group(1)), null))
+            LocalDate base = LocalDate.parse(schedule.group(1));
+            ZonedDateTime instant = schedule.group(2) == null ? null
+                    : LocalDateTime.of(base, LocalTime.parse(schedule.group(2))).atZone(zone(schedule.group(3)));
+            return catalog.schedule(schedule.group(4)).evaluate(catalog.context(base, null, instant))
                     .stream().map(LocalDate::toString).toList();
         }
         Matcher scope = SCOPE.matcher(text);
@@ -89,5 +98,11 @@ public class RuleCasesTest {
         }
         return catalog.holidays(scope.group(1), Integer.parseInt(scope.group(2))).stream()
                 .map(o -> o.date() + (o.scenario() == null ? "" : " " + o.scenario())).toList();
+    }
+
+    /** "America/New_York" or UTC+9 */
+    private static ZoneId zone(String text) {
+        return text.startsWith("UTC") ? ZoneOffset.ofHours(Integer.parseInt(text.substring(3)))
+                : ZoneId.of(text.substring(1, text.length() - 1));
     }
 }

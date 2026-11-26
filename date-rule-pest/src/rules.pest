@@ -122,7 +122,7 @@ date = _{ series | single_date }
 
 shift = _{
     shift_plus | shift_minus | shift_imm | shift_spot | shift_fix | shift_next | shift_prev | shift_nearest | shift_nearest_roll
-  | shift_postpone | shift_roll | shift_select | shift_dates_in_year | shift_observance
+  | shift_cutoff | shift_postpone | shift_roll | shift_select | shift_dates_in_year | shift_observance
 }
 shift_plus = { "+" ~ ws ~ period ~ (ws ~ endend)? ~ (ws ~ on)? }
 shift_minus = { "-" ~ ws ~ period ~ (ws ~ endend)? ~ (ws ~ on)? }
@@ -136,6 +136,8 @@ shift_prev = { ">" ~ ws ~ "PREV" ~ word_end ~ ws ~ (ordinal ~ ws)? ~ anchor }
 shift_nearest = { ">" ~ ws ~ "NEAREST" ~ word_end ~ ws ~ anchor }
 // > NEAREST ON cal: the FpML convention, a roll
 shift_nearest_roll = { ">" ~ ws ~ "NEAREST" ~ word_end ~ ws ~ on }
+// > CUTOFF 17:00 "America/New_York": the trade date of a base with a time of day
+shift_cutoff = { ">" ~ ws ~ "CUTOFF" ~ word_end ~ ws ~ time ~ ws ~ (zone_offset | string) }
 // rolled, but at most the period from the date (with CUMULATIVE from the date before the first postponement)
 shift_postpone = {
     ">" ~ ws ~ "POSTPONE" ~ word_end ~ ws ~ roll_word ~ (ws ~ on)? ~ ws ~ "MAX" ~ word_end ~ ws ~ period ~ (ws ~ cumulative)?

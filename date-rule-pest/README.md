@@ -36,7 +36,7 @@ cargo test
 
 `cargo test` runs the 572 cases of [examples/schedule.txt](../examples/schedule.txt), the 2186 of
 [examples/catalog.txt](../examples/catalog.txt) and the 3347 of [examples/date-holidays.txt](../examples/date-holidays.txt)
-(one test per file), the 102 cases of [examples/rules.txt](../examples/rules.txt) for rule files, and 23 checks of the rule
+(one test per file), the 112 cases of [examples/rules.txt](../examples/rules.txt) for rule files, and 23 checks of the rule
 grammar: 22 declarations, and that it accepts every case of the three files exactly when schedule.pest does.
 
 ## Shared example
@@ -69,7 +69,7 @@ use pest_schedule::parse_rules;
 let catalog = parse_rules(&text, announcements)?;     // announcements: HashMap<String, Vec<NaiveDate>>
 catalog.holidays("country:JP", 2026)?;                 // Occurrence { date, rule, kind, projected, scenario, … }
 catalog.evaluate("fx.spot", trade, None)?;             // a trade-date rule
-catalog.schedule("T > SPOT EURUSD ON usd_eur")?.eval(&catalog.context(trade, None))?;
+catalog.schedule("T > SPOT EURUSD ON usd_eur")?.eval(&catalog.context(trade, None, None))?;
 ```
 
 Scopes and their weekends, `ON` calendars with `ignore at T + 1 unless {…}`, the passes over rules that read the

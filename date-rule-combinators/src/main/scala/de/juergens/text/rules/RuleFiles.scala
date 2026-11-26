@@ -51,7 +51,7 @@ class RuleFiles private () extends RegexParsers {
 
   // without a lexer nothing reserves the six-letter keywords, so the pattern excludes them
   def pair: Parser[String] =
-    "(?!EASTER|ENDEND|FOLLOW|SHABAN|TAMMUZ|TISHRI|KISLEV|SHEVAT|ADARII|SANYUE|LIUYUE|JIUYUE|SHIYUE)[A-Z]{6}(?![A-Z])".r
+    "(?!CUTOFF|EASTER|ENDEND|FOLLOW|SHABAN|TAMMUZ|TISHRI|KISLEV|SHEVAT|ADARII|SANYUE|LIUYUE|JIUYUE|SHIYUE)[A-Z]{6}(?![A-Z])".r
 
   /** a currency, only inside "unless {...}" */
   def ccy: Parser[String] = "[A-Z]{3}(?![A-Z])".r
@@ -206,6 +206,7 @@ class RuleFiles private () extends RegexParsers {
       kw("PREV") ~> opt(ordinal) ~ anchor ^^ { case n ~ a => RuleCatalog.previous(n.getOrElse(1), a) } |
       kw("NEAREST") ~> anchor ^^ (a => RuleCatalog.nearestShift(a)) |   // ties go forward
       kw("NEAREST") ~> on ^^ (c => RuleCatalog.rollShift("NEAREST", c)) |   // the FpML convention
+      kw("CUTOFF") ~> time ~ zone ^^ { case t ~ z => RuleCatalog.cutoff(t, z) } |   // the trade date of a base with a time of day
       kw("POSTPONE") ~> roll ~ opt(on) ~ (kw("MAX") ~> period) ~ opt(kw("CUMULATIVE")) ^^ {
         case r ~ c ~ p ~ cumulative => new Postpone(r, c.orNull, p, cumulative.isDefined): Move
       } |

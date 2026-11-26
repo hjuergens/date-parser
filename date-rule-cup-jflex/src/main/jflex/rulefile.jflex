@@ -72,6 +72,7 @@ private Symbol symbol(int type, Object value) {
 "NEXT"          { return symbol(RuleFileSym.NEXT); }
 "PREV"          { return symbol(RuleFileSym.PREV); }
 "NEAREST"       { return symbol(RuleFileSym.NEAREST); }
+"CUTOFF"        { return symbol(RuleFileSym.CUTOFF); }
 "IN"            { return symbol(RuleFileSym.IN); }
 "POSTPONE"      { return symbol(RuleFileSym.POSTPONE); }
 "MAX"           { return symbol(RuleFileSym.MAX); }

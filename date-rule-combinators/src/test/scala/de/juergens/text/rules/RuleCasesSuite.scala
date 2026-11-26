@@ -2,7 +2,7 @@ package de.juergens.text.rules
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
-import java.time.LocalDate
+import java.time.{LocalDate, LocalDateTime, LocalTime, ZoneId, ZoneOffset, ZonedDateTime}
 
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -14,7 +14,7 @@ import scala.jdk.CollectionConverters._
  */
 class RuleCasesSuite extends AnyFunSuite {
 
-  private val Schedule = """\[(\d{4}-\d{2}-\d{2})] (.*)""".r   // [base] schedule
+  private val Schedule = """\[(\d{4}-\d{2}-\d{2})(?: (\d{2}:\d{2}) ("[^"]+"|UTC[+-]\d+))?] (.*)""".r   // [base [hh:mm zone]] schedule
   private val ScopeYear = """(\S+) (\d{4})""".r                 // scope year
 
   /** (case text, expected, declarations) in the order of the file */
@@ -42,12 +42,18 @@ class RuleCasesSuite extends AnyFunSuite {
   private def evaluate(declarations: String, text: String): Seq[String] = {
     val catalog = RuleFiles.parseRules(declarations)
     text match {
-      case Schedule(base, schedule) =>
-        catalog.schedule(schedule).evaluate(catalog.context(LocalDate.parse(base), null)).asScala.map(_.toString).toSeq
+      case Schedule(base, at, zone, schedule) =>
+        val date = LocalDate.parse(base)
+        val instant: ZonedDateTime = if (at == null) null else LocalDateTime.of(date, LocalTime.parse(at)).atZone(zoneOf(zone))
+        catalog.schedule(schedule).evaluate(catalog.context(date, null, instant)).asScala.map(_.toString).toSeq
       case ScopeYear(scope, year) =>
         catalog.holidays(scope, year.toInt).asScala.map(o => o.date.toString + Option(o.scenario).fold("")(" " + _)).toSeq
     }
   }
+
+  /** "America/New_York" or UTC+9 */
+  private def zoneOf(text: String): ZoneId =
+    if (text.startsWith("UTC")) ZoneOffset.ofHours(text.substring(3).toInt) else ZoneId.of(text.substring(1, text.length - 1))
 
   private def result(declarations: String, text: String): String =
     try {

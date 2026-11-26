@@ -147,6 +147,7 @@ shift
     | '>' 'NEXT' ORDINAL? anchor                # next
     | '>' 'PREV' ORDINAL? anchor                # prev
     | '>' 'NEAREST' anchor                      # nearest   // + ties go forward
+    | '>' 'NEAREST' on                          # nearestRoll   // + the FpML convention, ON required
     | '>' count select 'IN' PERIOD              # selectIn
     | '>' '{' annual (',' annual)* '}'          # datesInYear
     | '>' 'POSTPONE' ROLL on? 'MAX' period cumulative='CUMULATIVE'?   # postpone  // +

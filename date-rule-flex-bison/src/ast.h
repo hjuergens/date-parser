@@ -65,8 +65,8 @@ typedef struct Observe {
 typedef enum { S_PLUS, S_MINUS, S_IMM, S_SPOT, S_FIX, S_ROLL, S_NEXT, S_PREV, S_SELECT, S_DATES_IN_YEAR, S_OBSERVANCE,
                S_NEAREST, S_POSTPONE } ShiftKind;
 
-/* the conventions of > ROLL; MODPRECEDING only in rule files */
-enum { FOLLOWING, PRECEDING, MODFOLLOWING, BOW, EOW, BOM, EOM, BOQ, EOQ, BOH, EOH, BOY, EOY, MODPRECEDING };
+/* the conventions of > ROLL; MODPRECEDING and > NEAREST ON (ROLL_NEAREST) only in rule files */
+enum { FOLLOWING, PRECEDING, MODFOLLOWING, BOW, EOW, BOM, EOM, BOQ, EOQ, BOH, EOH, BOY, EOY, MODPRECEDING, ROLL_NEAREST };
 
 /* the periods of a selection (> 3RD WED IN MONTH) */
 enum { P_WEEK, P_MONTH, P_QUARTER, P_HALFYEAR, P_YEAR };

@@ -286,6 +286,7 @@ Productions
 		| {next} gt next ordinal? anchor
 		| {prev} gt prev ordinal? anchor
 		| {nearest} gt nearest anchor   /* ties go forward */
+		| {nearest_roll} gt nearest on   /* the FpML convention */
 		| {select} gt count select in period_word   /* > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH */
 		| {dates_in_year} gt l_brace annual more_annual* r_brace   /* > {1 FEB, 1 MAY} */
 		| {postpone} gt postpone roll on? max period cumulative?

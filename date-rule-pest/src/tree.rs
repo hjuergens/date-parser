@@ -138,6 +138,7 @@ fn shift(node: &Node) -> R<Shift> {
             direction: if node.is("shift_next") { 1 } else { -1 },
         },
         "shift_nearest" => Shift::Nearest(anchor(&node.children[0])?),
+        "shift_nearest_roll" => Shift::Roll(Roll::Nearest, on(node)?),
         "shift_postpone" => Shift::Postpone {
             roll: roll(&node.child("roll_word").unwrap().text),
             on: on(node)?,

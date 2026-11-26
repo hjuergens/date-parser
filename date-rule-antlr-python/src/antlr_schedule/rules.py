@@ -154,6 +154,9 @@ class RuleVisitor(Rules):
     def visitNearest(self, ctx):
         return catalog.nearest_shift(self.visit(ctx.anchor()))
 
+    def visitNearestRoll(self, ctx):
+        return catalog.roll_shift("NEAREST", self._on(ctx))
+
     def visitPostpone(self, ctx):
         return Postpone(ctx.ROLL().getText(), self._on(ctx), self.visit(ctx.period()), ctx.cumulative is not None)
 

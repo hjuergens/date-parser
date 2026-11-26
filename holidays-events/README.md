@@ -104,6 +104,8 @@ Shifts follow the date and apply left to right.
 | `> PRECEDING` | if the date is not a business day, the business day before | `1 THU FEB > PRECEDING ON country:GB` |
 | `> FOLLOWING` | if it is not a business day, the business day after | `[7 JAN : 1M : 7 DEC] > FOLLOWING` |
 | `> MODFOLLOWING`, `> MODPRECEDING` | as above, but not into another month | |
+| `> NEAREST ON scope` | if it is not a business day: a Sunday or Monday the business day after, any other day the one before (FpML's NEAREST) | `> NEAREST ON country:US` |
+| `> NEAREST MON` | the date itself if it is a Monday, else the nearer Monday (ties forward) | `> NEAREST IMM` (the nearest IMM date) |
 | `> EOM` | the last day of the month (also `BOM`, `EOQ`, `EOY`, ...) | `1 FEB > EOM > PRECEDING` (the last business day of February) |
 | `ON scope` | which calendar the business days come from; without it, the rule's own scope | `> PRECEDING ON central_bank:FED` |
 

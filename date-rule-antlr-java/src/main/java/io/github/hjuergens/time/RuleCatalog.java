@@ -1,5 +1,6 @@
 package io.github.hjuergens.time;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.ZoneId;
@@ -397,8 +398,16 @@ public final class RuleCatalog {
 
     // ================= dates of the rule language =================
 
-    /** the conventions of the schedule language and MODPRECEDING (preceding unless that leaves the month) */
+    /** the conventions of the schedule language, MODPRECEDING (preceding unless that leaves the month) and NEAREST
+     *  (a non-business Sunday or Monday follows, any other non-business day precedes) */
     static LocalDate roll(LocalDate date, String convention, Market market) {
+        if (convention.equals("NEAREST")) {
+            if (market.isBusinessDay(date)) {
+                return date;
+            }
+            DayOfWeek day = date.getDayOfWeek();
+            return ScheduleSemantics.roll(date, day == DayOfWeek.SUNDAY || day == DayOfWeek.MONDAY ? "FOLLOWING" : "PRECEDING", market);
+        }
         if (convention.equals("MODPRECEDING")) {
             LocalDate preceding = ScheduleSemantics.roll(date, "PRECEDING", market);
             return preceding.getMonth() == date.getMonth() ? preceding : ScheduleSemantics.roll(date, "FOLLOWING", market);
@@ -728,8 +737,11 @@ public final class RuleCatalog {
         return date;
     }
 
-    /** the nearer of the next and the previous match; ties go forward */
+    /** the date itself if it matches, else the nearer of the next and the previous match; ties go forward */
     static LocalDate nearest(Anchor anchor, LocalDate date, Context context) {
+        if (anchor.from(date.minusDays(1), 1, context).equals(date)) {
+            return date;
+        }
         LocalDate after = anchor.from(date, 1, context), before = anchor.from(date, -1, context);
         return ChronoUnit.DAYS.between(date, after) <= ChronoUnit.DAYS.between(before, date) ? after : before;
     }

@@ -287,7 +287,10 @@ PRODUCTIONS
       ] Anchor<out a>                     (. m = RuleCatalog.next(n, a); .)
     | "PREV" [ ordinal                    (. n = ordinal(t.val); .)
       ] Anchor<out a>                     (. m = RuleCatalog.previous(n, a); .)
-    | "NEAREST" Anchor<out a>             (. m = RuleCatalog.nearestShift(a); .)   /* ties go forward */
+    | "NEAREST"
+      ( Anchor<out a>                     (. m = RuleCatalog.nearestShift(a); .)   /* ties go forward */
+      | On<out on>                        (. m = RuleCatalog.rollShift("NEAREST", on); .)   /* the FpML convention */
+      )
     | Count<out n> Select<out a>          /* > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH */
       "IN" PeriodWord<out code>           (. m = RuleCatalog.select(Math.abs(n), n < 0, a, code); .)
     | "{" Annual<out an>                  (. annuals.add(an); .)   /* > {1 FEB, 1 MAY}: the dates of the set in the year */

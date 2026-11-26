@@ -87,7 +87,7 @@ open-end     = <'['>
 
 (* shifts are applied from left to right *)
 expr     = date shift*
-<shift>  = plus | minus | imm | spot | fix | roll | next | prev | nearest | select | dates-in-year | postpone | observance
+<shift>  = plus | minus | imm | spot | fix | roll | next | prev | nearest | nearest-roll | select | dates-in-year | postpone | observance
 plus     = <'+'> period endend? on?
 minus    = <'-'> period endend? on?
 endend   = <'ENDEND'>
@@ -99,6 +99,8 @@ next     = <'>'> <'NEXT'> ORDINAL? anchor
 prev     = <'>'> <'PREV'> ORDINAL? anchor
 (* ties go forward *)
 nearest  = <'>'> <'NEAREST'> anchor
+(* the FpML convention *)
+nearest-roll = <'>'> <'NEAREST'> on
 (* > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH *)
 select   = <'>'> count (chosen | any-of) <'IN'> PERIOD
 <count>  = from-start | from-end | last

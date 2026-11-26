@@ -124,8 +124,13 @@
 
   // ================= dates of the rule language =================
 
-  // the conventions of the schedule language and MODPRECEDING (preceding unless that leaves the month)
+  // the conventions of the schedule language, MODPRECEDING (preceding unless that leaves the month) and NEAREST (a
+  // non-business Sunday or Monday follows, any other non-business day precedes)
   function rollConvention(d, convention, m) {
+    if (convention === 'NEAREST') {
+      if (m.isBusinessDay(d)) return d;
+      return roll(d, weekday(d) === 6 || weekday(d) === 0 ? 'FOLLOWING' : 'PRECEDING', m);
+    }
     if (convention === 'MODPRECEDING') {
       const preceding = roll(d, 'PRECEDING', m);
       return preceding.month === d.month ? preceding : roll(d, 'FOLLOWING', m);
@@ -333,8 +338,10 @@
     return d;
   }
 
-  // the nearer of the next and the previous match; ties go forward
+  // the date itself if it matches, else the nearer of the next and the previous match; ties go forward
   function nearest(anchor, d, c) {
+    const same = anchor(plusDays(d, -1), 1, c);
+    if (same.year === d.year && same.month === d.month && same.day === d.day) return d;
     const after = anchor(d, 1, c), before = anchor(d, -1, c);
     const days = (a, b) => (Date.UTC(a.year, a.month - 1, a.day) - Date.UTC(b.year, b.month - 1, b.day)) / 86400000;
     return days(after, d) <= days(d, before) ? after : before;
@@ -751,6 +758,7 @@ shift
     / "NEXT" wordEnd ws n:(@ordinal ws)? a:anchor { return (d, c) => times(n ?? 1, a)(d, 1, c); }
     / "PREV" wordEnd ws n:(@ordinal ws)? a:anchor { return (d, c) => times(n ?? 1, a)(d, -1, c); }
     / "NEAREST" wordEnd ws a:anchor { return nearestShift(a); }   // ties go forward
+    / "NEAREST" wordEnd ws on:on { return rollShift('NEAREST', on); }   // the FpML convention
     / "POSTPONE" wordEnd ws r:rollWord on:(ws @on)? ws "MAX" wordEnd ws p:period cumulative:(ws "CUMULATIVE" wordEnd)? {
         return postpone(r, on, p, cumulative !== null);
       }

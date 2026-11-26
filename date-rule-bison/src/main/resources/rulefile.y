@@ -417,6 +417,7 @@ move:
 | '>' "PREV" anchor                 { $$ = RuleCatalog.previous (1, $3); }
 | '>' "PREV" ORDINAL anchor         { $$ = RuleCatalog.previous (ScheduleSemantics.ordinal ($3), $4); }
 | '>' "NEAREST" anchor              { $$ = RuleCatalog.nearestShift ($3); }   /* ties go forward */
+| '>' "NEAREST" on                  { $$ = RuleCatalog.rollShift ("NEAREST", $3); }   /* the FpML convention */
   /* > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH */
 | '>' count select "IN" PERIOD      { $$ = RuleCatalog.select (Math.abs ($2), $2 < 0, $3, $5); }
   /* > {1 FEB, 1 MAY}: the dates of the set in the year of the date */

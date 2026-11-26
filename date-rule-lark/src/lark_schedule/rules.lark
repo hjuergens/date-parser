@@ -129,6 +129,7 @@ shift: "+" period [ENDEND] [on]            -> plus                 // + ENDEND, 
      | ">" "NEXT" [ORDINAL] anchor         -> next
      | ">" "PREV" [ORDINAL] anchor         -> prev
      | ">" "NEAREST" anchor                -> nearest              // + ties go forward
+     | ">" "NEAREST" on                    -> nearest_roll         // + the FpML convention, ON required
      | ">" count selection "IN" PERIOD     -> select
      | ">" "{" annual ("," annual)* "}"    -> dates_in_year
      | ">" "POSTPONE" ROLL [on] "MAX" period [CUMULATIVE] -> postpone   // + G18

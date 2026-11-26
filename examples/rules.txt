@@ -184,6 +184,33 @@ rule us.thanksgiving for thanksgiving in country:US = 4 THU NOV;
 [2025-01-30] T + 6M ENDEND ON country:US > MODFOLLOWING ON country:US => 2025-07-30
 [2025-01-30] T + 1M ENDEND ON country:US > MODFOLLOWING ON country:US + 1M ENDEND ON country:US > MODFOLLOWING ON country:US + 1M ENDEND ON country:US > MODFOLLOWING ON country:US + 1M ENDEND ON country:US > MODFOLLOWING ON country:US + 1M ENDEND ON country:US > MODFOLLOWING ON country:US + 1M ENDEND ON country:US > MODFOLLOWING ON country:US => 2025-07-31
 
+# COMEX gold futures: the last trading day is the third last business day of the delivery month; delivery runs from
+# its first to its last business day
+rule xcme.good_friday for good_friday in exchange:XCME = EASTER - 2D;
+rule xcme.christmas_day for christmas_day in exchange:XCME = 25 DEC {SAT - 1D, SUN + 1D};
+[2026-02-01] T > 3RD LAST BD ON exchange:XCME IN MONTH => 2026-02-25
+[2026-04-01] T > 3RD LAST BD ON exchange:XCME IN MONTH => 2026-04-28
+[2026-12-01] T > 3RD LAST BD ON exchange:XCME IN MONTH => 2026-12-29
+[2027-02-01] T > 3RD LAST BD ON exchange:XCME IN MONTH => 2027-02-24
+[2026-02-15] T > 1ST BD ON exchange:XCME IN MONTH => 2026-02-02
+[2026-02-15] T > LAST BD ON exchange:XCME IN MONTH => 2026-02-27
+[2026-12-15] T > LAST BD ON exchange:XCME IN MONTH => 2026-12-31
+
+# NEAREST as a roll (FpML): a non-business Sunday or Monday goes to the following business day, any other to the
+# preceding one. NEAREST with an anchor keeps a date that matches, else takes the nearer match (IMM dates: the nearest
+# IMM date, which can be earlier)
+rule us.memorial_day for memorial_day in country:US = LAST MON MAY;
+rule us.thanksgiving for thanksgiving in country:US = 4 THU NOV;
+[2026-11-07] T > NEAREST ON country:US => 2026-11-06
+[2026-11-08] T > NEAREST ON country:US => 2026-11-09
+[2026-05-25] T > NEAREST ON country:US => 2026-05-26
+[2026-11-26] T > NEAREST ON country:US => 2026-11-25
+[2026-11-10] T > NEAREST ON country:US => 2026-11-10
+[2026-11-02] T > NEAREST MON => 2026-11-02
+[2026-05-01] T > NEAREST IMM => 2026-03-18
+[2026-05-10] T > NEAREST IMM => 2026-06-17
+[2026-06-17] T > NEAREST IMM => 2026-06-17
+
 # a rule on the days of another: the FOMC press conference on every decision day, at its own time
 rule fed.fomc_decision for fomc_decision in central_bank:FED = 25 JAN > NEXT WED, 15 MAR > NEXT WED, 25 JUL > NEXT WED
   with kind = event, session 14:00 tz "America/New_York";

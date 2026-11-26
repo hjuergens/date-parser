@@ -440,6 +440,7 @@ shift: '+' period endend_opt on_opt     { $$ = shift(parse, S_PLUS); $$->period 
      | '>' "PREV" anchor                { $$ = shift(parse, S_PREV); $$->count = 1; $$->anchor = $3; }
      | '>' "PREV" ORDINAL anchor        { $$ = shift(parse, S_PREV); $$->count = $3; $$->anchor = $4; }
      | '>' "NEAREST" anchor             { $$ = shift(parse, S_NEAREST); $$->anchor = $3; }   /* ties go forward */
+     | '>' "NEAREST" on                 { $$ = shift(parse, S_ROLL); $$->roll = ROLL_NEAREST; $$->on = $3; }   /* FpML */
        /* > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH */
      | '>' count select "IN" PERIOD
                                         {

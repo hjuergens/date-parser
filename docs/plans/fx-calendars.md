@@ -45,8 +45,9 @@ This plan follows FpML for the conventions; the holidays stay rules of the langu
 | `businessDayConvention` `NONE` | no roll |
 | `FOLLOWING`, `PRECEDING`, `MODFOLLOWING` | the same keywords |
 
-FpML's `MODPRECEDING`, `NEAREST`, `FRN` and `EOM` conventions have no counterpart yet (`> EOM` here only moves to the
-month end and doesn't roll).
+FpML's `MODPRECEDING` and `NEAREST` are `> MODPRECEDING` and `> NEAREST ON <calendar>` in rule files; `FRN` is
+written step by step with `+ 1M ENDEND > MODFOLLOWING` (examples/rules.txt). `EOM` has no counterpart yet (`> EOM` here
+only moves to the month end and doesn't roll).
 
 ### Business centre codes
 

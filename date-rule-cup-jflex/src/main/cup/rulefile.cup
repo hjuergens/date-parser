@@ -315,6 +315,7 @@ move ::= PLUS period:p endend_opt:x on_opt:c  {: RESULT = RuleCatalog.plus(p, 1,
        | GT PREV anchor:a               {: RESULT = RuleCatalog.previous(1, a); :}
        | GT PREV ORDINAL:o anchor:a     {: RESULT = RuleCatalog.previous(ScheduleSemantics.ordinal(o), a); :}
        | GT NEAREST anchor:a            {: RESULT = RuleCatalog.nearestShift(a); :}   /* ties go forward */
+       | GT NEAREST on:c                {: RESULT = RuleCatalog.rollShift("NEAREST", c); :}   /* the FpML convention */
          /* > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH */
        | GT count:n select:a IN PERIOD:p {: RESULT = RuleCatalog.select(Math.abs(n), n < 0, a, p); :}
          /* > {1 FEB, 1 MAY}: the dates of the set in the year of the date */

@@ -419,6 +419,11 @@ public final class RuleVisitor extends RuleFileBaseVisitor<Object> {
     }
 
     @Override
+    public Object visitNearestRoll(RuleFileParser.NearestRollContext ctx) {
+        return RuleCatalog.rollShift("NEAREST", on(ctx.on()));
+    }
+
+    @Override
     public Object visitSelectIn(RuleFileParser.SelectInContext ctx) {
         RuleFileParser.CountContext count = ctx.count();
         return RuleCatalog.select(count(count.ORDINAL()), count.last != null, value(ctx.select()), ctx.PERIOD().getText());

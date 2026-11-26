@@ -363,7 +363,9 @@ Move Shift() :
   | t = <ROLL> ( on = On() )? { return RuleCatalog.rollShift(t.image, on); }
   | "NEXT" ( o = <ORDINAL> )? a = Anchor() { return RuleCatalog.next(o == null ? 1 : ScheduleSemantics.ordinal(o.image), a); }
   | "PREV" ( o = <ORDINAL> )? a = Anchor() { return RuleCatalog.previous(o == null ? 1 : ScheduleSemantics.ordinal(o.image), a); }
-  | "NEAREST" a = Anchor() { return RuleCatalog.nearestShift(a); }   // ties go forward
+  | "NEAREST"
+    ( a = Anchor() { return RuleCatalog.nearestShift(a); }   // ties go forward
+    | on = On() { return RuleCatalog.rollShift("NEAREST", on); } )   // the FpML convention
     // > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH
   | ( o = <ORDINAL> ( "LAST" { fromEnd = true; } )? | "LAST" { fromEnd = true; } )
     a = Select() "IN" period = <PERIOD>

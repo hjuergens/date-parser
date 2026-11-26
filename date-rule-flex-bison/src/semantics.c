@@ -747,6 +747,9 @@ static int roll(Eval *eval, int date, int convention, Market *market) {
         int following = roll(eval, date, FOLLOWING, market);
         return month_of(following) == month ? following : roll(eval, date, PRECEDING, market);
     }
+    case ROLL_NEAREST:     /* rule files: a non-business Sunday or Monday follows, any other day precedes */
+        if (is_business_day(eval, market, date)) return date;
+        return roll(eval, date, weekday_of(date) == 6 || weekday_of(date) == 0 ? FOLLOWING : PRECEDING, market);
     case MODPRECEDING: {   /* rule files: preceding unless that leaves the month */
         int preceding = roll(eval, date, PRECEDING, market);
         return month_of(preceding) == month ? preceding : roll(eval, date, FOLLOWING, market);
@@ -816,8 +819,10 @@ static int plus_on(Eval *eval, int date, const Shift *s, int sign, const Ctx *ct
     return s->endend && date == last_business_day(eval, date, market) ? last_business_day(eval, moved, market) : moved;
 }
 
-/* rule files: > NEAREST: the nearer of the next and the previous match; ties go forward */
+/* rule files: > NEAREST: the date itself if it matches, else the nearer of the next and the previous match; ties go
+ * forward */
 static int nearest(Eval *eval, const Anchor *anchor, int date, const Ctx *ctx) {
+    if (find(eval, anchor, date - 1, 1, ctx) == date) return date;
     int after = find(eval, anchor, date, 1, ctx), before = find(eval, anchor, date, -1, ctx);
     return after - date <= date - before ? after : before;
 }

@@ -653,7 +653,7 @@ pub fn previous_imm(d: Date) -> R<Date> {
     }
 }
 
-/// FOLLOWING, PRECEDING, MODFOLLOWING (following unless that leaves the month, then preceding), MODPRECEDING;
+/// FOLLOWING, PRECEDING, MODFOLLOWING (following unless that leaves the month, then preceding), MODPRECEDING, NEAREST;
 /// BOW, EOW, BOM, EOM, BOQ, EOQ, BOH, EOH, BOY, EOY (first and last day of week (Monday to Sunday), month, quarter,
 /// half year and year)
 pub fn roll(d: Date, convention: Roll, m: &dyn Market) -> R<Date> {
@@ -664,6 +664,13 @@ pub fn roll(d: Date, convention: Roll, m: &dyn Market) -> R<Date> {
         Roll::ModFollowing => {
             let following = roll(d, Roll::Following, m)?;
             if following.month() == d.month() { Ok(following) } else { roll(d, Roll::Preceding, m) }
+        }
+        Roll::Nearest => {
+            if m.is_business_day(d)? {
+                Ok(d)
+            } else {
+                roll(d, if matches!(weekday(d), 0 | 6) { Roll::Following } else { Roll::Preceding }, m)
+            }
         }
         Roll::ModPreceding => {
             let preceding = roll(d, Roll::Preceding, m)?;
@@ -772,8 +779,11 @@ pub fn next_day(mut d: Date, direction: i64, test: impl Fn(Date) -> R<bool>) -> 
     fail(format!("no such day within 3700 days of {d}"))
 }
 
-/// the nearer of the next and the previous match; ties go forward
+/// the date itself if it matches, else the nearer of the next and the previous match; ties go forward
 fn nearest(anchor: &Anchor, d: Date, c: &Ctx) -> R<Date> {
+    if find(anchor, add_days(d, -1)?, 1, c)? == d {
+        return Ok(d);
+    }
     let after = find(anchor, d, 1, c)?;
     let before = find(anchor, d, -1, c)?;
     Ok(if after - d <= d - before { after } else { before })

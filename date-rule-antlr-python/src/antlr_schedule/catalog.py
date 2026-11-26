@@ -178,7 +178,12 @@ class Postpone:
 
 
 def roll(d, convention, m):
-    """the conventions of the schedule language and MODPRECEDING (preceding unless that leaves the month)"""
+    """the conventions of the schedule language, MODPRECEDING (preceding unless that leaves the month) and NEAREST
+    (a non-business Sunday or Monday follows, any other non-business day precedes)"""
+    if convention == "NEAREST":
+        if m.is_business_day(d):
+            return d
+        return semantics.roll(d, "FOLLOWING" if d.weekday() in (6, 0) else "PRECEDING", m)
     if convention == "MODPRECEDING":
         preceding = semantics.roll(d, "PRECEDING", m)
         return preceding if preceding.month == d.month else semantics.roll(d, "FOLLOWING", m)
@@ -447,7 +452,9 @@ def apply_shifts(d, shifts, context):
 
 
 def nearest(anchor, d, context):
-    """the nearer of the next and the previous match; ties go forward"""
+    """the date itself if it matches, else the nearer of the next and the previous match; ties go forward"""
+    if anchor(d - timedelta(days=1), 1, context) == d:
+        return d
     after, before = anchor(d, 1, context), anchor(d, -1, context)
     return after if after - d <= d - before else before
 

@@ -91,6 +91,8 @@ pub enum Roll {
     Preceding,
     ModFollowing,
     ModPreceding,
+    /// > NEAREST ON cal (rule files): a non-business Sunday or Monday follows, any other day precedes (FpML)
+    Nearest,
     Bow,
     Eow,
     Bom,

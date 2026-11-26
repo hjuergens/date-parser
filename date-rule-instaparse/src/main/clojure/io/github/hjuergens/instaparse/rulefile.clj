@@ -115,6 +115,7 @@
    :prev           (fn ([anchor] (RuleCatalog/previous 1 anchor))
                      ([n anchor] (RuleCatalog/previous (count-of n) anchor)))
    :nearest        (fn [anchor] (RuleCatalog/nearestShift anchor))
+   :nearest-roll   (fn [on] (RuleCatalog/rollShift "NEAREST" on))
    :select         (fn [[n from-end] anchor period] (RuleCatalog/select n from-end anchor period))
    :from-start     (fn [ordinal] [(ScheduleSemantics/ordinal ordinal) false])
    :from-end       (fn [ordinal] [(ScheduleSemantics/ordinal ordinal) true])

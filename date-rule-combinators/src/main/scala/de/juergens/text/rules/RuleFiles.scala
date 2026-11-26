@@ -205,6 +205,7 @@ class RuleFiles private () extends RegexParsers {
       kw("NEXT") ~> opt(ordinal) ~ anchor ^^ { case n ~ a => RuleCatalog.next(n.getOrElse(1), a) } |
       kw("PREV") ~> opt(ordinal) ~ anchor ^^ { case n ~ a => RuleCatalog.previous(n.getOrElse(1), a) } |
       kw("NEAREST") ~> anchor ^^ (a => RuleCatalog.nearestShift(a)) |   // ties go forward
+      kw("NEAREST") ~> on ^^ (c => RuleCatalog.rollShift("NEAREST", c)) |   // the FpML convention
       kw("POSTPONE") ~> roll ~ opt(on) ~ (kw("MAX") ~> period) ~ opt(kw("CUMULATIVE")) ^^ {
         case r ~ c ~ p ~ cumulative => new Postpone(r, c.orNull, p, cumulative.isDefined): Move
       } |

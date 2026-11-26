@@ -142,6 +142,9 @@ class RuleTransformer(Rules):
     def nearest(self, anchor):
         return catalog.nearest_shift(anchor)
 
+    def nearest_roll(self, on):
+        return catalog.roll_shift("NEAREST", on)
+
     def postpone(self, convention, on, limit, cumulative):
         return Postpone(str(convention), on, limit, cumulative is not None)
 

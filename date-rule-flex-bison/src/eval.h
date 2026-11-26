@@ -89,5 +89,7 @@ int evaluate_items(const Item *items, const Ctx *ctx, DateList *out, char *error
 /* catalog.c: the calendar of ON ..., the dates of @key in the year */
 Market *catalog_resolve(Eval *eval, const Calendar *calendar, const Ctx *ctx, const char *pair);
 DateList *catalog_references(Eval *eval, const Ctx *ctx, const char *name, int year);
+/* catalog.c: the S_CUTOFF of the cutoff attribute of the calendar declaration key, NULL without one */
+const Shift *catalog_cutoff(const Ctx *ctx, const char *key);
 
 #endif

@@ -113,7 +113,7 @@
 %token L_RULE "rule" L_FOR "for" L_IN "in" L_EXCEPT "except" L_VALID "valid" L_FROM "from" L_TO "to" L_WITH "with"
 %token L_KIND "kind" L_SESSION "session" L_TZ "tz" L_PRECISION "precision" L_NOTE "note" L_CITES "cites" L_ART "art"
 %token L_URL "url" L_LABEL "label" L_WEEKEND "weekend" L_CALENDAR "calendar" L_IGNORE "ignore" L_AT "at"
-%token L_UNLESS "unless"
+%token L_UNLESS "unless" L_CUTOFF "cutoff"
 %token <String> KIND_WORD "kind of day" PRECISION_WORD "day or month" LABEL_WORD "kind of source"
 /* the words of the schedule language */
 %token ONE "ONE" OF "OF" AS "AS" BASE "T" TOM "TOM" SPOT "SPOT" FIX "FIX" IMM "IMM" NEXT "NEXT" PREV "PREV"
@@ -140,7 +140,7 @@
 %type <Expr> item expr date series endpoint single_date subject
 %type <Integer> pick count
 %type <ArrayList<Move>> moves
-%type <Move> move
+%type <Move> move cutoff_opt
 %type <UnaryOperator<Expr>> combine
 %type <ArrayList<UnaryOperator<Expr>>> combines
 %type <IfClause> if_opt
@@ -176,7 +176,15 @@ declaration:
     }
 | "weekend" SCOPE '=' weekday_set from_opt ';'
                                     { $$ = RuleCatalog.weekend ($2, $4, $5); }
-| "calendar" KEY '=' calendar ';'   { $$ = RuleCatalog.calendarDeclaration ($2, $4); }
+| "calendar" KEY '=' calendar cutoff_opt ';'
+                                    { $$ = RuleCatalog.calendarDeclaration ($2, $4, $5); }
+;
+
+/* the cutoff of a calendar: > CUTOFF ON name */
+cutoff_opt:
+  %empty                            { $$ = null; }
+| "cutoff" time ZONE                { $$ = RuleCatalog.cutoff ($2, $3); }
+| "cutoff" time STRING              { $$ = RuleCatalog.cutoff ($2, $3); }
 ;
 
 /* exactly one of the alternatives will happen: ONE OF {item AS name, ...} */
@@ -421,6 +429,7 @@ move:
   /* the trade date of a base with a time of day: > CUTOFF 17:00 "America/New_York", > CUTOFF 10:00 UTC+0 */
 | '>' "CUTOFF" time ZONE            { $$ = RuleCatalog.cutoff ($3, $4); }
 | '>' "CUTOFF" time STRING          { $$ = RuleCatalog.cutoff ($3, $4); }
+| '>' "CUTOFF" on                   { $$ = RuleCatalog.cutoffOn ($3); }   /* the cutoff of a named calendar */
   /* > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH */
 | '>' count select "IN" PERIOD      { $$ = RuleCatalog.select (Math.abs ($2), $2 < 0, $3, $5); }
   /* > {1 FEB, 1 MAY}: the dates of the set in the year of the date */
@@ -625,7 +634,7 @@ class RuleFileLexer implements RuleFiles.Lexer {
       Map.entry ("precision", L_PRECISION), Map.entry ("note", L_NOTE), Map.entry ("cites", L_CITES),
       Map.entry ("art", L_ART), Map.entry ("url", L_URL), Map.entry ("label", L_LABEL), Map.entry ("weekend", L_WEEKEND),
       Map.entry ("calendar", L_CALENDAR), Map.entry ("ignore", L_IGNORE), Map.entry ("at", L_AT),
-      Map.entry ("unless", L_UNLESS));
+      Map.entry ("unless", L_UNLESS), Map.entry ("cutoff", L_CUTOFF));
 
   private static final Map<String, Integer> UPPER = Map.ofEntries (
       Map.entry ("ONE", ONE), Map.entry ("OF", OF), Map.entry ("AS", AS), Map.entry ("T", BASE), Map.entry ("TOM", TOM),

@@ -149,6 +149,8 @@ pub enum Shift {
     Nearest(Anchor),
     /// > CUTOFF hh:mm zone: the date of the base instant in the zone, the next one from the cutoff time on
     Cutoff { hours: u32, minutes: u32, zone: Zone },
+    /// > CUTOFF ON name: the cutoff attribute of the named calendar
+    CutoffOn(Cal),
     Select { count: i64, from_end: bool, anchor: Anchor, period: PeriodKind },
     DatesInYear(Vec<Annual>),
     Postpone { roll: Roll, on: Option<Cal>, limit: Period, cumulative: bool },

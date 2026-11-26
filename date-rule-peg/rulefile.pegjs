@@ -215,6 +215,15 @@
     };
   }
 
+  // > CUTOFF ON name: the cutoff attribute of the named calendar
+  function cutoffOn(on) {
+    return (d, c) => {
+      const shift = on.named && c.catalog.cutoffs.get(on.named);
+      if (!shift) throw new Error(`no cutoff for ${on.named ?? on.scope ?? 'ON (...)'}`);
+      return shift(d, c);
+    };
+  }
+
   // 1 SHAWWAL BY SIGHTING: the method only for Hijri months; all are computed with Umm al-Qura
   function hijriMonthDay(day, month, method, Solar) {
     if (method && !HIJRI.includes(month)) throw new RangeError(`BY ${method} only for Hijri months, not ${month}`);
@@ -393,6 +402,7 @@
       this.rules = declarations.filter((d) => d.expr);
       this.weekends = new Map();
       this.calendars = new Map();
+      this.cutoffs = new Map();   // calendar key -> the > CUTOFF shift of its cutoff attribute
       for (const d of declarations) {
         if (d.weekend) {
           if (!this.weekends.has(d.weekend)) this.weekends.set(d.weekend, []);
@@ -400,6 +410,7 @@
         } else if (d.calendar) {
           if (this.calendars.has(d.calendar)) throw new Error(`calendar ${d.calendar} declared twice`);
           this.calendars.set(d.calendar, d.spec);
+          if (d.cutoff) this.cutoffs.set(d.calendar, d.cutoff);
         }
       }
       for (const regimes of this.weekends.values()) regimes.sort((a, b) => dayNumber(a.from) - dayNumber(b.from));
@@ -636,7 +647,13 @@ weekendDecl
     }
 
 calendarDecl
-  = "calendar" wordEnd ws key:name ws "=" ws spec:calendar ws ";" { return { calendar: key, spec }; }
+  = "calendar" wordEnd ws key:name ws "=" ws spec:calendar cut:(ws @cutoffAttribute)? ws ";" {
+      return { calendar: key, spec, cutoff: cut };
+    }
+
+// calendar key = spec cutoff 10:00 UTC+0: the trade date, > CUTOFF ON key
+cutoffAttribute
+  = "cutoff" wordEnd ws at:time ws z:zone { return cutoff(at, z); }
 
 // exactly one of the alternatives will happen: ONE OF {item AS name, ...}
 body
@@ -788,6 +805,7 @@ shift
     / "NEAREST" wordEnd ws a:anchor { return nearestShift(a); }   // ties go forward
     / "NEAREST" wordEnd ws on:on { return rollShift('NEAREST', on); }   // the FpML convention
     / "CUTOFF" wordEnd ws at:time ws z:zone { return cutoff(at, z); }   // the trade date of a base with a time of day
+    / "CUTOFF" wordEnd ws on:on { return cutoffOn(on); }   // the cutoff of a named calendar
     / "POSTPONE" wordEnd ws r:rollWord on:(ws @on)? ws "MAX" wordEnd ws p:period cumulative:(ws "CUMULATIVE" wordEnd)? {
         return postpone(r, on, p, cumulative !== null);
       }

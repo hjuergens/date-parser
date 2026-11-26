@@ -36,7 +36,7 @@ cargo test
 
 `cargo test` runs the 572 cases of [examples/schedule.txt](../examples/schedule.txt), the 2186 of
 [examples/catalog.txt](../examples/catalog.txt) and the 3347 of [examples/date-holidays.txt](../examples/date-holidays.txt)
-(one test per file), the 112 cases of [examples/rules.txt](../examples/rules.txt) for rule files, and 23 checks of the rule
+(one test per file), the 117 cases of [examples/rules.txt](../examples/rules.txt) for rule files, and 23 checks of the rule
 grammar: 22 declarations, and that it accepts every case of the three files exactly when schedule.pest does.
 
 ## Shared example

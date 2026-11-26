@@ -23,7 +23,7 @@ schedule
 declaration
     : 'rule' key=name 'for' eventClass=name 'in' scopes ('except' excluded=scopes)? validity? '=' body attributes? provenance? ';'  # ruleDecl
     | 'weekend' SCOPE '=' weekdaySet ('from' isoDate)? ';'      # weekendDecl
-    | 'calendar' KEY '=' calendar ';'                           # calendarDecl
+    | 'calendar' KEY '=' calendar ('cutoff' time zone)? ';'     # calendarDecl   // + the cutoff: > CUTOFF ON name
     ;
 
 body
@@ -149,6 +149,7 @@ shift
     | '>' 'NEAREST' anchor                      # nearest   // + ties go forward
     | '>' 'NEAREST' on                          # nearestRoll   // + the FpML convention, ON required
     | '>' 'CUTOFF' time zone                    # cutoff    // + the trade date of a base with a time of day
+    | '>' 'CUTOFF' on                           # cutoffOn  // + the cutoff of a named calendar
     | '>' count select 'IN' PERIOD              # selectIn
     | '>' '{' annual (',' annual)* '}'          # datesInYear
     | '>' 'POSTPONE' ROLL on? 'MAX' period cumulative='CUMULATIVE'?   # postpone  // +

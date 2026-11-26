@@ -55,7 +55,7 @@ action code {:
 :};
 
 terminal            L_RULE, L_FOR, L_IN, L_EXCEPT, L_VALID, L_FROM, L_TO, L_WITH, L_KIND, L_SESSION, L_TZ, L_PRECISION;
-terminal            L_NOTE, L_CITES, L_ART, L_URL, L_LABEL, L_WEEKEND, L_CALENDAR, L_IGNORE, L_AT, L_UNLESS;
+terminal            L_NOTE, L_CITES, L_ART, L_URL, L_LABEL, L_WEEKEND, L_CALENDAR, L_IGNORE, L_AT, L_UNLESS, L_CUTOFF;
 terminal String     KIND_WORD, PRECISION_WORD, LABEL_WORD;
 terminal            ONE, OF, AS, BASE, TOM, SPOT, FIX, IMM, NEXT, PREV, NEAREST, CUTOFF, IN, POSTPONE, MAX, CUMULATIVE, ENDEND;
 terminal            ON, LAST, BD, FD, HOLIDAY, NONHOLIDAY, HOLIDAYS, EASTER, ORTHODOX, SOLARTERM, HINDU, BY, FOLLOW;
@@ -80,7 +80,7 @@ non terminal ArrayList<Expr>                 exprs, operand, operand_exprs;
 non terminal Expr                            item, expr, date, series, endpoint, single_date, subject;
 non terminal Integer                         pick, count;
 non terminal ArrayList<Move>                 moves;
-non terminal Move                            move;
+non terminal Move                            move, cutoff_opt;
 non terminal UnaryOperator<Expr>             combine;
 non terminal ArrayList<UnaryOperator<Expr>>  combines;
 non terminal IfClause                        if_opt;
@@ -112,9 +112,15 @@ declaration ::= L_RULE name:k L_FOR name:c L_IN scopes:inc except_opt:exc validi
                    estimated = false; :}
               | L_WEEKEND SCOPE:s EQ weekday_set:w from_opt:d SEMI
                 {: RESULT = RuleCatalog.weekend(s, w, d); :}
-              | L_CALENDAR KEY:k EQ calendar:c SEMI
-                {: RESULT = RuleCatalog.calendarDeclaration(k, c); :}
+              | L_CALENDAR KEY:k EQ calendar:c cutoff_opt:x SEMI
+                {: RESULT = RuleCatalog.calendarDeclaration(k, c, x); :}
               ;
+
+/* the cutoff of a calendar: > CUTOFF ON name */
+cutoff_opt ::=                          {: RESULT = null; :}
+             | L_CUTOFF time:t ZONE:z   {: RESULT = RuleCatalog.cutoff(t, z); :}
+             | L_CUTOFF time:t STRING:z {: RESULT = RuleCatalog.cutoff(t, z); :}
+             ;
 
 /* exactly one of the alternatives will happen: ONE OF {item AS name, ...} */
 body ::= ONE OF LBRACE alternatives:list RBRACE {: RESULT = RuleCatalog.oneOf(cast(list)); :}
@@ -319,6 +325,7 @@ move ::= PLUS period:p endend_opt:x on_opt:c  {: RESULT = RuleCatalog.plus(p, 1,
          /* the trade date of a base with a time of day: > CUTOFF 17:00 "America/New_York", > CUTOFF 10:00 UTC+0 */
        | GT CUTOFF time:t ZONE:z        {: RESULT = RuleCatalog.cutoff(t, z); :}
        | GT CUTOFF time:t STRING:z      {: RESULT = RuleCatalog.cutoff(t, z); :}
+       | GT CUTOFF on:c                 {: RESULT = RuleCatalog.cutoffOn(c); :}   /* the cutoff of a named calendar */
          /* > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH */
        | GT count:n select:a IN PERIOD:p {: RESULT = RuleCatalog.select(Math.abs(n), n < 0, a, p); :}
          /* > {1 FEB, 1 MAY}: the dates of the set in the year of the date */

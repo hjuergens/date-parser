@@ -163,7 +163,7 @@ static Item *item(RuleParse *parse, Expr *expr, Combine *combines, Condition *co
 %token L_RULE "rule" L_FOR "for" L_IN "in" L_EXCEPT "except" L_VALID "valid" L_FROM "from" L_TO "to" L_WITH "with"
 %token L_KIND "kind" L_SESSION "session" L_TZ "tz" L_PRECISION "precision" L_NOTE "note" L_CITES "cites" L_ART "art"
 %token L_URL "url" L_LABEL "label" L_WEEKEND "weekend" L_CALENDAR "calendar" L_IGNORE "ignore" L_AT "at"
-%token L_UNLESS "unless"
+%token L_UNLESS "unless" L_CUTOFF "cutoff"
 %token <text> KIND_WORD "kind of day" PRECISION_WORD "day or month" LABEL_WORD "kind of source"
 /* the words of the schedule language */
 %token TODAY "T" TOM "TOM" SPOT "SPOT" IMM "IMM" NEXT "NEXT" PREV "PREV" BD "BD" LAST "LAST" EASTER "EASTER"
@@ -187,7 +187,7 @@ static Item *item(RuleParse *parse, Expr *expr, Combine *combines, Condition *co
 %type <item> items item
 %type <expr> expr endpoint subject
 %type <date> date single_date series
-%type <shift> shift moves
+%type <shift> shift moves cutoff cutoff_opt
 %type <combine> combines combine
 %type <operand> operand operand_exprs
 %type <condition> if_condition condition cond_and cond_not cond_atom
@@ -230,8 +230,25 @@ declaration: rule_start name "for" name "in" scopes except_opt validity '=' body
         { $$ = NEW(Declaration); $$->kind = DECL_WEEKEND, $$->key = $2, $$->weekdays = $4; }
     | "weekend" SCOPE '=' weekday_set "from" iso_date ';'
         { $$ = NEW(Declaration); $$->kind = DECL_WEEKEND, $$->key = $2, $$->weekdays = $4, $$->has_from = 1, $$->valid_from = (int) $6; }
-    | "calendar" KEY '=' calendar ';'   { $$ = NEW(Declaration); $$->kind = DECL_CALENDAR, $$->key = $2, $$->calendar = $4; }
+    | "calendar" KEY '=' calendar cutoff_opt ';'
+        { $$ = NEW(Declaration); $$->kind = DECL_CALENDAR, $$->key = $2, $$->calendar = $4, $$->cutoff = $5; }
     ;
+
+/* calendar key = spec cutoff 10:00 UTC+0: the trade date, > CUTOFF ON key */
+cutoff_opt: %empty                      { $$ = NULL; }
+          | "cutoff" cutoff             { $$ = $2; }
+          ;
+
+/* 17:00 "America/New_York" of > CUTOFF and of the cutoff attribute */
+cutoff: NUM ':' NUM zone
+        {
+            if ($1 > 23 || $3 > 59) FAIL("not a time of day: %ld:%02ld", $1, $3);
+            $$ = shift(parse, S_CUTOFF);
+            $$->cutoff = (int) ($1 * 60 + $3);
+            $$->offset = $4.offset;
+            $$->zone = $4.name;
+        }
+      ;
 
 /* exactly one of the alternatives will happen: ONE OF {item AS name, ...}; a new declaration with items or alternatives */
 body: "ONE" "OF" '{' alternatives '}'   { $$ = NEW(Declaration); $$->alternatives = $4; }
@@ -442,14 +459,9 @@ shift: '+' period endend_opt on_opt     { $$ = shift(parse, S_PLUS); $$->period 
      | '>' "NEAREST" anchor             { $$ = shift(parse, S_NEAREST); $$->anchor = $3; }   /* ties go forward */
      | '>' "NEAREST" on                 { $$ = shift(parse, S_ROLL); $$->roll = ROLL_NEAREST; $$->on = $3; }   /* FpML */
        /* > CUTOFF 17:00 "America/New_York": the trade date of a base with a time of day */
-     | '>' "CUTOFF" NUM ':' NUM zone
-                                        {
-                                            if ($3 > 23 || $5 > 59) FAIL("not a time of day: %ld:%02ld", $3, $5);
-                                            $$ = shift(parse, S_CUTOFF);
-                                            $$->cutoff = (int) ($3 * 60 + $5);
-                                            $$->offset = $6.offset;
-                                            $$->zone = $6.name;
-                                        }
+     | '>' "CUTOFF" cutoff              { $$ = $3; }
+       /* > CUTOFF ON usd_php: the cutoff attribute of a named calendar */
+     | '>' "CUTOFF" on                  { $$ = shift(parse, S_CUTOFF_ON); $$->on = $3; }
        /* > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH */
      | '>' count select "IN" PERIOD
                                         {

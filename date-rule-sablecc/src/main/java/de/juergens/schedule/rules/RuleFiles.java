@@ -113,7 +113,9 @@ public final class RuleFiles {
                     weekend.getValidFrom() == null ? null : isoDate(((AValidFrom) weekend.getValidFrom()).getIsoDate()));
         }
         if (node instanceof ACalendarDeclaration calendar) {
-            return RuleCatalog.calendarDeclaration(calendar.getKey().getText(), calendar(calendar.getCalendar()));
+            Move cutoff = calendar.getCutoffAttribute() instanceof ACutoffAttribute attribute
+                    ? RuleCatalog.cutoff(time(attribute.getTime()), zone(attribute.getTimeZone())) : null;
+            return RuleCatalog.calendarDeclaration(calendar.getKey().getText(), calendar(calendar.getCalendar()), cutoff);
         }
         ARuleDeclaration rule = (ARuleDeclaration) node;
         references = new LinkedHashSet<>();
@@ -381,6 +383,9 @@ public final class RuleFiles {
         }
         if (node instanceof ACutoffShift cutoff) {
             return RuleCatalog.cutoff(time(cutoff.getTime()), zone(cutoff.getTimeZone()));
+        }
+        if (node instanceof ACutoffOnShift cutoff) {
+            return RuleCatalog.cutoffOn(on(cutoff.getOn()));
         }
         if (node instanceof ASelectShift select) {
             PCount count = select.getCount();

@@ -68,5 +68,5 @@ mvn -pl date-rule-bison -Pbison -Dbison.executable=/path/to/bison verify   # bis
 
 With the profile active, `maven-antrun-plugin` runs bison in `generate-sources` and writes
 `target/generated-sources/bison/io/github/hjuergens/bison/ScheduleParser.java`. The tests in
-[src/bison-test/java](src/bison-test/java) are only compiled then (TestNG: 6105 schedule cases, 112 rule cases of
+[src/bison-test/java](src/bison-test/java) are only compiled then (TestNG: 6105 schedule cases, 117 rule cases of
 [examples/rules.txt](../examples/rules.txt) and 5 tests of attributes and announcements).

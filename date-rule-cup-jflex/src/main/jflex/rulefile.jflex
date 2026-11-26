@@ -51,6 +51,7 @@ private Symbol symbol(int type, Object value) {
 "ignore"        { return symbol(RuleFileSym.L_IGNORE); }
 "at"            { return symbol(RuleFileSym.L_AT); }
 "unless"        { return symbol(RuleFileSym.L_UNLESS); }
+"cutoff"        { return symbol(RuleFileSym.L_CUTOFF); }
 "closed" | "non_working" | "short_day" | "working_day" | "paid_no_rest" | "tourist" | "event" | "special_session"
   | "changed_hours"
                 { return symbol(RuleFileSym.KIND_WORD, yytext()); }

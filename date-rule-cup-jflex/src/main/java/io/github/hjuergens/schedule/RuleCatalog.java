@@ -140,8 +140,8 @@ public final class RuleCatalog {
     public record WeekendDecl(String scope, Set<String> weekdays, LocalDate validFrom) {
     }
 
-    /** calendar KEY = ... */
-    public record CalendarDecl(String key, CalendarSpec spec) {
+    /** calendar KEY = ... [cutoff 10:00 UTC+0]; cutoff is the &gt; CUTOFF move of the attribute (null without one) */
+    public record CalendarDecl(String key, CalendarSpec spec, Move cutoff) {
     }
 
     /** a rule declaration; equal only to itself, as two versions may look alike */
@@ -612,6 +612,20 @@ public final class RuleCatalog {
         };
     }
 
+    /** &gt; CUTOFF ON name: the cutoff attribute of the named calendar */
+    public static Move cutoffOn(CalendarSpec on) {
+        return (date, context) -> {
+            if (!(context.events() instanceof References references)) {
+                throw new IllegalArgumentException("ON needs a rule catalog");
+            }
+            Move cutoff = on instanceof Named named ? references.catalog.cutoffs.get(named.key()) : null;
+            if (cutoff == null) {
+                throw new IllegalArgumentException("no cutoff for " + on);
+            }
+            return cutoff.apply(date, context);
+        };
+    }
+
     // the moves of the schedule language, for parsers that build moves of a date rather than expressions
 
     /** &gt; IMM */
@@ -737,7 +751,12 @@ public final class RuleCatalog {
     }
 
     public static CalendarDecl calendarDeclaration(String key, CalendarSpec spec) {
-        return new CalendarDecl(key, spec);
+        return new CalendarDecl(key, spec, null);
+    }
+
+    /** calendar KEY = ... cutoff 10:00 UTC+0: cutoff is the &gt; CUTOFF move of the attribute (null: none) */
+    public static CalendarDecl calendarDeclaration(String key, CalendarSpec spec, Move cutoff) {
+        return new CalendarDecl(key, spec, cutoff);
     }
 
     /** session 09:30 - 13:00, or a single time such as a release or a decision: session 14:30 (start = end) */
@@ -792,6 +811,7 @@ public final class RuleCatalog {
     public final List<RuleDecl> rules = new ArrayList<>();
     private final Map<String, List<WeekendDecl>> weekends = new HashMap<>();
     private final Map<String, CalendarSpec> calendars = new HashMap<>();
+    private final Map<String, Move> cutoffs = new HashMap<>();   // calendar KEY = ... cutoff 10:00 UTC+0
     private final Map<String, List<LocalDate>> announcements = new HashMap<>();
     private final Map<String, Map<RuleDecl, Map.Entry<List<LocalDate>, Boolean>>> states = new HashMap<>();
     private final Map<String, Map<RuleDecl, Map.Entry<List<LocalDate>, Boolean>>> shallowStates = new HashMap<>();
@@ -813,6 +833,9 @@ public final class RuleCatalog {
             } else if (declaration instanceof CalendarDecl calendar) {
                 if (calendars.putIfAbsent(calendar.key(), calendar.spec()) != null) {
                     throw new IllegalArgumentException("calendar " + calendar.key() + " declared twice");
+                }
+                if (calendar.cutoff() != null) {
+                    cutoffs.put(calendar.key(), calendar.cutoff());
                 }
             }
         }

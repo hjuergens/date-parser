@@ -94,7 +94,7 @@ static const struct { const char *name; int token; } LOWER[] = {
     { "from", L_FROM }, { "to", L_TO }, { "with", L_WITH }, { "kind", L_KIND }, { "session", L_SESSION },
     { "tz", L_TZ }, { "precision", L_PRECISION }, { "note", L_NOTE }, { "cites", L_CITES }, { "art", L_ART },
     { "url", L_URL }, { "label", L_LABEL }, { "weekend", L_WEEKEND }, { "calendar", L_CALENDAR },
-    { "ignore", L_IGNORE }, { "at", L_AT }, { "unless", L_UNLESS },
+    { "ignore", L_IGNORE }, { "at", L_AT }, { "unless", L_UNLESS }, { "cutoff", L_CUTOFF },
     { NULL, 0 },
 };
 static const char *const KIND_NAMES[] = { "closed", "non_working", "short_day", "working_day", "paid_no_rest", "tourist",

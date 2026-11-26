@@ -429,6 +429,11 @@ public final class RuleVisitor extends RuleFileBaseVisitor<Object> {
     }
 
     @Override
+    public Object visitCutoffOn(RuleFileParser.CutoffOnContext ctx) {
+        return RuleCatalog.cutoffOn(on(ctx.on()));
+    }
+
+    @Override
     public Object visitSelectIn(RuleFileParser.SelectInContext ctx) {
         RuleFileParser.CountContext count = ctx.count();
         return RuleCatalog.select(count(count.ORDINAL()), count.last != null, value(ctx.select()), ctx.PERIOD().getText());
@@ -656,7 +661,8 @@ public final class RuleVisitor extends RuleFileBaseVisitor<Object> {
 
     @Override
     public Object visitCalendarDecl(RuleFileParser.CalendarDeclContext ctx) {
-        return RuleCatalog.calendarDeclaration(ctx.KEY().getText(), value(ctx.calendar()));
+        RuleCatalog.Move cutoff = ctx.time() == null ? null : RuleCatalog.cutoff(value(ctx.time()), zone(ctx.zone()));
+        return RuleCatalog.calendarDeclaration(ctx.KEY().getText(), value(ctx.calendar()), cutoff);
     }
 
     @Override

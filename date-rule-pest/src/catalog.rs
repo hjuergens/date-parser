@@ -86,6 +86,8 @@ pub struct Catalog {
     rules: Vec<RuleDecl>,
     weekends: Vec<(String, Vec<(Date, Weekdays)>)>,
     calendars: HashMap<String, Cal>,
+    /// calendar key -> the > CUTOFF of its cutoff attribute
+    cutoffs: HashMap<String, Shift>,
     announcements: HashMap<String, Vec<Date>>,
     states: RefCell<HashMap<Key, State>>,
     shallow: RefCell<HashMap<Key, State>>,
@@ -194,6 +196,11 @@ impl Catalog {
             }
         }
         SAT_SUN
+    }
+
+    /// the > CUTOFF of the cutoff attribute of a calendar declaration
+    pub(crate) fn cutoff(&self, key: &str) -> Option<&Shift> {
+        self.cutoffs.get(key)
     }
 
     pub(crate) fn resolve(&self, cal: &Cal, c: &Ctx, pair: Option<&str>) -> R<MarketRef> {
@@ -594,6 +601,7 @@ pub fn build(file: &Node, announcements: HashMap<String, Vec<Date>>) -> R<Rc<Cat
     let mut rules = vec![];
     let mut weekends: Vec<(String, Vec<(Date, Weekdays)>)> = vec![];
     let mut calendars = HashMap::new();
+    let mut cutoffs = HashMap::new();
     for declaration in &file.children {
         match declaration.rule.as_str() {
             "rule_decl" => rules.push(rule_declaration(declaration)?),
@@ -613,6 +621,9 @@ pub fn build(file: &Node, announcements: HashMap<String, Vec<Date>>) -> R<Rc<Cat
                 let key = declaration.children[0].text.clone();
                 if calendars.contains_key(&key) {
                     return fail(format!("calendar {key} declared twice"));
+                }
+                if let Some(attribute) = child(declaration, "cutoff_attribute") {
+                    cutoffs.insert(key.clone(), tree::cutoff(attribute)?);
                 }
                 calendars.insert(key, tree::calendar_term(&declaration.children[1])?);
             }
@@ -634,6 +645,7 @@ pub fn build(file: &Node, announcements: HashMap<String, Vec<Date>>) -> R<Rc<Cat
         rules,
         weekends,
         calendars,
+        cutoffs,
         announcements,
         states: RefCell::new(HashMap::new()),
         shallow: RefCell::new(HashMap::new()),

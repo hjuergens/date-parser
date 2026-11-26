@@ -116,6 +116,16 @@ fn on(node: &Node) -> R<Option<Cal>> {
     node.child("on").map(|on| calendar_term(&on.children[0])).transpose()
 }
 
+/// > CUTOFF hh:mm zone and the cutoff attribute of a calendar declaration
+pub fn cutoff(node: &Node) -> R<Shift> {
+    let time = node.child("time").unwrap();
+    let (hours, minutes) = (number(&time.children[0])?, number(&time.children[1])?);
+    if hours > 23 || minutes > 59 {
+        return error(format!("not a time of day: {}", time.text));
+    }
+    Ok(Shift::Cutoff { hours: hours as u32, minutes: minutes as u32, zone: zone(node)? })
+}
+
 fn pair_of(node: &Node) -> Option<String> {
     node.child("pair").map(|p| p.text.clone())
 }
@@ -139,14 +149,8 @@ fn shift(node: &Node) -> R<Shift> {
         },
         "shift_nearest" => Shift::Nearest(anchor(&node.children[0])?),
         "shift_nearest_roll" => Shift::Roll(Roll::Nearest, on(node)?),
-        "shift_cutoff" => {
-            let time = node.child("time").unwrap();
-            let (hours, minutes) = (number(&time.children[0])?, number(&time.children[1])?);
-            if hours > 23 || minutes > 59 {
-                return error(format!("not a time of day: {}", time.text));
-            }
-            Shift::Cutoff { hours: hours as u32, minutes: minutes as u32, zone: zone(node)? }
-        }
+        "shift_cutoff" => cutoff(node)?,
+        "shift_cutoff_on" => Shift::CutoffOn(on(node)?.unwrap()),
         "shift_postpone" => Shift::Postpone {
             roll: roll(&node.child("roll_word").unwrap().text),
             on: on(node)?,

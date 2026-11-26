@@ -160,6 +160,9 @@ class RuleVisitor(Rules):
     def visitCutoff(self, ctx):
         return catalog.cutoff(self.visit(ctx.time()), self._zone(ctx))
 
+    def visitCutoffOn(self, ctx):
+        return catalog.cutoff_on(self._on(ctx))
+
     def visitPostpone(self, ctx):
         return Postpone(ctx.ROLL().getText(), self._on(ctx), self.visit(ctx.period()), ctx.cumulative is not None)
 
@@ -256,7 +259,11 @@ class RuleVisitor(Rules):
                                ctx.isoDate() and self.visit(ctx.isoDate()))
 
     def visitCalendarDecl(self, ctx):
-        return catalog.calendar_declaration(ctx.KEY().getText(), self.visit(ctx.calendar()))
+        cut = ctx.cutoffAttribute()
+        return catalog.calendar_declaration(ctx.KEY().getText(), self.visit(ctx.calendar()), cut and self.visit(cut))
+
+    def visitCutoffAttribute(self, ctx):
+        return catalog.cutoff(self.visit(ctx.time()), self._zone(ctx))
 
     def visitKindAttribute(self, ctx):
         return "kind", ctx.kind.text

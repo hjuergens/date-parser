@@ -44,7 +44,8 @@
                       :attributes (or (tagged more :attributes) [])
                       :citations (or (tagged more :citations) [])})
    :weekend-decl   (fn [scope weekdays & [from]] (RuleCatalog/weekend scope weekdays (:from from)))
-   :calendar-decl  (fn [key calendar] (RuleCatalog/calendarDeclaration key calendar))
+   :calendar-decl  (fn [key calendar & [cutoff]] (RuleCatalog/calendarDeclaration key calendar cutoff))
+   :cutoff-attribute (fn [time zone] (RuleCatalog/cutoff time zone))
    :one-of         (fn [& alternatives] (RuleCatalog/oneOf (vec alternatives)))
    :alternative    (fn [item name] (MapEntry. name (RuleCatalog/exprs [item])))
    :name           identity
@@ -117,6 +118,7 @@
    :nearest        (fn [anchor] (RuleCatalog/nearestShift anchor))
    :nearest-roll   (fn [on] (RuleCatalog/rollShift "NEAREST" on))
    :cutoff         (fn [time zone] (RuleCatalog/cutoff time zone))
+   :cutoff-on      (fn [on] (RuleCatalog/cutoffOn on))
    :select         (fn [[n from-end] anchor period] (RuleCatalog/select n from-end anchor period))
    :from-start     (fn [ordinal] [(ScheduleSemantics/ordinal ordinal) false])
    :from-end       (fn [ordinal] [(ScheduleSemantics/ordinal ordinal) true])

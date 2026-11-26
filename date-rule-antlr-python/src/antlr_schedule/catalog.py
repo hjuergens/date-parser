@@ -426,8 +426,9 @@ def weekend(scope, weekdays, valid_from=None):
     return ("weekend", scope, frozenset(weekdays), valid_from or date.min)
 
 
-def calendar_declaration(key, spec):
-    return ("calendar", key, spec)
+def calendar_declaration(key, spec, cut=None):
+    """calendar key = spec [cutoff 10:00 UTC+0]; cut is the > CUTOFF shift of the attribute"""
+    return ("calendar", key, spec, cut)
 
 
 def session(start, end, tz):
@@ -442,6 +443,15 @@ def time(hours, minutes):
 def tz(zone):
     """a fixed offset (UTC+9) or an IANA zone ("Asia/Tokyo")"""
     return timezone(timedelta(hours=int(zone[3:]))) if zone.startswith("UTC") else ZoneInfo(zone)
+
+
+def cutoff_on(on):
+    """> CUTOFF ON name: the cutoff attribute of the named calendar"""
+    def shift(d, context):
+        if on[0] != "named" or on[1] not in context.catalog.cutoffs:
+            raise ValueError(f"no cutoff for {on[1]}")
+        return context.catalog.cutoffs[on[1]](d, context)
+    return shift
 
 
 def cutoff(at, zone):
@@ -558,7 +568,7 @@ class RuleCatalog:
     def __init__(self, declarations, announcements=None, parse=None):
         self._parse = parse   # text -> expression, for schedule()
         self.rules = [d for d in declarations if isinstance(d, RuleDecl)]
-        self.weekends, self.calendars = {}, {}
+        self.weekends, self.calendars, self.cutoffs = {}, {}, {}
         for d in declarations:
             if isinstance(d, tuple) and d[0] == "weekend":
                 self.weekends.setdefault(d[1], []).append((d[3], d[2]))
@@ -566,6 +576,8 @@ class RuleCatalog:
                 if d[1] in self.calendars:
                     raise ValueError(f"calendar {d[1]} declared twice")
                 self.calendars[d[1]] = d[2]
+                if d[3]:
+                    self.cutoffs[d[1]] = d[3]
         for regimes in self.weekends.values():
             regimes.sort(key=lambda r: r[0])
         self.announcements = {k: sorted(v) for k, v in (announcements or {}).items()}

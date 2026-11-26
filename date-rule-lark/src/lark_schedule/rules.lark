@@ -25,7 +25,8 @@ scopes: SCOPE ("," SCOPE)*
 validity: "valid" ["from" iso_date] ["to" iso_date]
 
 weekend_decl: "weekend" SCOPE "=" weekday_set ["from" iso_date] ";"
-calendar_decl: "calendar" KEY "=" calendar ";"
+calendar_decl: "calendar" KEY "=" calendar [cutoff_attribute] ";"
+cutoff_attribute: "cutoff" time zone              // + the trade date: > CUTOFF ON name
 
 attributes: "with" attribute ("," attribute)*
 attribute: "kind" "=" kind                          -> kind_attribute
@@ -131,6 +132,7 @@ shift: "+" period [ENDEND] [on]            -> plus                 // + ENDEND, 
      | ">" "NEAREST" anchor                -> nearest              // + ties go forward
      | ">" "NEAREST" on                    -> nearest_roll         // + the FpML convention, ON required
      | ">" "CUTOFF" time zone              -> cutoff               // + the trade date of a base with a time of day
+     | ">" "CUTOFF" on                     -> cutoff_on            // + the cutoff of a named calendar
      | ">" count selection "IN" PERIOD     -> select
      | ">" "{" annual ("," annual)* "}"    -> dates_in_year
      | ">" "POSTPONE" ROLL [on] "MAX" period [CUMULATIVE] -> postpone   // + G18

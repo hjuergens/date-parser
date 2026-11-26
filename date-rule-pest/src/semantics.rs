@@ -536,6 +536,14 @@ fn shift(s: &Shift, d: Date, c: &Ctx) -> R<Date> {
         }
         Shift::Nearest(anchor) => nearest(anchor, d, c),
         Shift::Cutoff { hours, minutes, zone } => cutoff(*hours, *minutes, zone, c),
+        Shift::CutoffOn(cal) => match (cal, &c.catalog) {
+            (Cal::Named(key), Some(catalog)) => match catalog.cutoff(key) {
+                Some(cut) => shift(cut, d, c),
+                None => fail(format!("no cutoff for {key}")),
+            },
+            (Cal::Scope(scope, _), _) => fail(format!("no cutoff for {scope}")),
+            _ => fail("CUTOFF ON needs a named calendar of a rule catalog"),
+        },
         Shift::Select { count, from_end, anchor, period } => select(anchor, *count, *from_end, *period, d, c),
         // > {1 FEB, 1 MAY}: the dates of the set in the year of the date, sorted; one value at a time
         Shift::DatesInYear(annuals) => take(c, || {

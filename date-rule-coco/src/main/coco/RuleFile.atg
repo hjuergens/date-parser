@@ -94,7 +94,7 @@ PRODUCTIONS
 
   Declaration                             (. String key, eventClass, s; List<String> include, exclude = new ArrayList<>();
                                              LocalDate from = null, to = null; Object body; Set<String> weekdays;
-                                             LocalDate d = null; CalendarSpec calendar;
+                                             LocalDate d = null; CalendarSpec calendar; Move cutoff = null; String at, z;
                                              List<Map.Entry<String, Object>> attributes = new ArrayList<>();
                                              List<Citation> citations = new ArrayList<>(); .)
   = "rule"                                (. references = new LinkedHashSet<>(); estimated = false; .)
@@ -110,7 +110,9 @@ PRODUCTIONS
     "=" WeekdaySet<out weekdays> [ "from" IsoDate<out d> ] ";"
                                           (. declarations.add(RuleCatalog.weekend(s, weekdays, d)); .)
   | "calendar" key                        (. s = t.val; .)
-    "=" Calendar<out calendar> ";"        (. declarations.add(RuleCatalog.calendarDeclaration(s, calendar)); .)
+    "=" Calendar<out calendar>
+    [ "cutoff" Time<out at> Zone<out z>   (. cutoff = RuleCatalog.cutoff(at, z); .)   /* > CUTOFF ON name */
+    ] ";"                                 (. declarations.add(RuleCatalog.calendarDeclaration(s, calendar, cutoff)); .)
   .
 
   /* exactly one of the alternatives will happen: ONE OF {item AS name, ...} */
@@ -291,7 +293,10 @@ PRODUCTIONS
       ( Anchor<out a>                     (. m = RuleCatalog.nearestShift(a); .)   /* ties go forward */
       | On<out on>                        (. m = RuleCatalog.rollShift("NEAREST", on); .)   /* the FpML convention */
       )
-    | "CUTOFF" Time<out at> Zone<out z>   (. m = RuleCatalog.cutoff(at, z); .)   /* the trade date of a base with a time of day */
+    | "CUTOFF"
+      ( Time<out at> Zone<out z>          (. m = RuleCatalog.cutoff(at, z); .)   /* the trade date of a base with a time of day */
+      | On<out on>                        (. m = RuleCatalog.cutoffOn(on); .)   /* the cutoff of a named calendar */
+      )
     | Count<out n> Select<out a>          /* > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH */
       "IN" PeriodWord<out code>           (. m = RuleCatalog.select(Math.abs(n), n < 0, a, code); .)
     | "{" Annual<out an>                  (. annuals.add(an); .)   /* > {1 FEB, 1 MAY}: the dates of the set in the year */

@@ -42,6 +42,7 @@ Tokens
 	l_ignore = 'ignore';
 	l_at = 'at';
 	l_unless = 'unless';
+	l_cutoff = 'cutoff';
 	kind_word = 'closed' | 'non_working' | 'short_day' | 'working_day' | 'paid_no_rest' | 'tourist' | 'event'
 		| 'special_session' | 'changed_hours';
 	precision_word = 'day' | 'month';
@@ -151,7 +152,10 @@ Productions
 		= {rule} l_rule [key]:name l_for [event_class]:name l_in [include]:scopes excluded? validity? eq body
 		  attributes? provenance? semicolon
 		| {weekend} l_weekend scope eq weekday_set valid_from? semicolon
-		| {calendar} l_calendar key eq calendar semicolon;
+		| {calendar} l_calendar key eq calendar cutoff_attribute? semicolon;
+
+	/* the cutoff of the calendar: > CUTOFF ON name */
+	cutoff_attribute = l_cutoff time time_zone;
 
 	excluded = l_except scopes;
 
@@ -289,6 +293,7 @@ Productions
 		| {nearest} gt nearest anchor   /* ties go forward */
 		| {nearest_roll} gt nearest on   /* the FpML convention */
 		| {cutoff} gt cutoff time time_zone   /* the trade date of a base with a time of day */
+		| {cutoff_on} gt cutoff on   /* the cutoff of a named calendar */
 		| {select} gt count select in period_word   /* > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH */
 		| {dates_in_year} gt l_brace annual more_annual* r_brace   /* > {1 FEB, 1 MAY} */
 		| {postpone} gt postpone roll on? max period cumulative?

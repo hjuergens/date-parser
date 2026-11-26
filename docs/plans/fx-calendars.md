@@ -52,7 +52,8 @@ only moves to the month end and doesn't roll).
 The trade date of a deal with a time of day is `T > CUTOFF 17:00 "America/New_York"` in rule files: the date of the base
 in that zone, the next one from the cutoff on (EBS: 17:00 New York; USD/PHP `10:00 UTC+0`; NZD
 `07:00 "Pacific/Auckland" - 1D`, since NZD takes Wellington's own date). The base gets its time as
-`[2026-11-26 18:30 "America/New_York"]` in the shared cases.
+`[2026-11-26 18:30 "America/New_York"]` in the shared cases. A named calendar can carry its cutoff,
+`calendar usd_php = country:PH & country:US cutoff 10:00 UTC+0;`, used as `T > CUTOFF ON usd_php`.
 
 ### Business centre codes
 

@@ -13,7 +13,9 @@ schedule = items
 
 rule-decl = <'rule'> name <'for'> name <'in'> scopes except? validity? <'='> body attributes? provenance? <';'>
 weekend-decl = <'weekend'> SCOPE <'='> weekday-set valid-from? <';'>
-calendar-decl = <'calendar'> KEY <'='> calendar <';'>
+calendar-decl = <'calendar'> KEY <'='> calendar cutoff-attribute? <';'>
+(* the cutoff of a calendar: > CUTOFF ON name *)
+cutoff-attribute = <'cutoff'> time zone
 
 (* exactly one of the alternatives will happen: ONE OF {item AS name, ...} *)
 <body>   = one-of | items
@@ -87,7 +89,7 @@ open-end     = <'['>
 
 (* shifts are applied from left to right *)
 expr     = date shift*
-<shift>  = plus | minus | imm | spot | fix | roll | next | prev | nearest | nearest-roll | cutoff | select | dates-in-year | postpone | observance
+<shift>  = plus | minus | imm | spot | fix | roll | next | prev | nearest | nearest-roll | cutoff | cutoff-on | select | dates-in-year | postpone | observance
 plus     = <'+'> period endend? on?
 minus    = <'-'> period endend? on?
 endend   = <'ENDEND'>
@@ -103,6 +105,8 @@ nearest  = <'>'> <'NEAREST'> anchor
 nearest-roll = <'>'> <'NEAREST'> on
 (* the trade date of a base with a time of day: > CUTOFF 17:00 "America/New_York", > CUTOFF 10:00 UTC+0 *)
 cutoff   = <'>'> <'CUTOFF'> time zone
+(* the cutoff of a named calendar *)
+cutoff-on = <'>'> <'CUTOFF'> on
 (* > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH *)
 select   = <'>'> count (chosen | any-of) <'IN'> PERIOD
 <count>  = from-start | from-end | last

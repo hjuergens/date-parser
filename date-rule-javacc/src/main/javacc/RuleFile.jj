@@ -95,7 +95,7 @@ SKIP : { " " | "\t" | "\r" | "\n" | < COMMENT : "#" (~["\n", "\r"])* > }
 // keywords first: on a match of the same length the token declared first wins over KEY, PAIR and CCY
 TOKEN : {
   "rule" | "for" | "in" | "except" | "valid" | "from" | "to" | "with" | "kind" | "session" | "tz" | "precision" | "note"
-| "cites" | "art" | "url" | "label" | "weekend" | "calendar" | "ignore" | "at" | "unless"
+| "cites" | "art" | "url" | "label" | "weekend" | "calendar" | "ignore" | "at" | "unless" | "cutoff"
 | "closed" | "non_working" | "short_day" | "working_day" | "paid_no_rest" | "tourist" | "event" | "special_session"
 | "changed_hours" | "day" | "month" | "official" | "benchmark" | "practice" | "secondary"
 | "ONE" | "OF" | "AS" | "T" | "TOM" | "SPOT" | "FIX" | "IMM" | "NEXT" | "PREV" | "NEAREST" | "IN" | "POSTPONE" | "MAX"
@@ -154,7 +154,7 @@ Object Declaration() :
 { String key, eventClass; List<String> include, exclude = new ArrayList<String>(); LocalDate from = null, to = null;
   Object body; List<Map.Entry<String, Object>> attributes = new ArrayList<Map.Entry<String, Object>>();
   List<Citation> citations = new ArrayList<Citation>(); Token t; Set<String> weekdays; LocalDate d = null;
-  CalendarSpec calendar; }
+  CalendarSpec calendar; Move cutoff = null; String time, zone; }
 {
   "rule" { references = new LinkedHashSet<String>(); estimated = false; }
   key = Name() "for" eventClass = Name() "in" include = Scopes() ( "except" exclude = Scopes() )?
@@ -166,8 +166,10 @@ Object Declaration() :
   { return RuleCatalog.rule(key, eventClass, include, exclude, from, to, body, attributes, citations, references, estimated); }
 | "weekend" t = <SCOPE> "=" weekdays = WeekdaySet() ( "from" d = IsoDate() )? ";"
   { return RuleCatalog.weekend(t.image, weekdays, d); }
-| "calendar" t = <KEY> "=" calendar = Calendar() ";"
-  { return RuleCatalog.calendarDeclaration(t.image, calendar); }
+| "calendar" t = <KEY> "=" calendar = Calendar()
+  ( "cutoff" time = Time() zone = Zone() { cutoff = RuleCatalog.cutoff(time, zone); } )?   // > CUTOFF ON name
+  ";"
+  { return RuleCatalog.calendarDeclaration(t.image, calendar, cutoff); }
 }
 
 /** exactly one of the alternatives will happen: ONE OF {item AS name, ...} */
@@ -366,7 +368,9 @@ Move Shift() :
   | "NEAREST"
     ( a = Anchor() { return RuleCatalog.nearestShift(a); }   // ties go forward
     | on = On() { return RuleCatalog.rollShift("NEAREST", on); } )   // the FpML convention
-  | "CUTOFF" time = Time() zone = Zone() { return RuleCatalog.cutoff(time, zone); }   // the trade date of a base with a time of day
+  | "CUTOFF"
+    ( time = Time() zone = Zone() { return RuleCatalog.cutoff(time, zone); }   // the trade date of a base with a time of day
+    | on = On() { return RuleCatalog.cutoffOn(on); } )   // the cutoff of a named calendar
     // > 3RD WED IN MONTH, > 2ND LAST BD IN MONTH
   | ( o = <ORDINAL> ( "LAST" { fromEnd = true; } )? | "LAST" { fromEnd = true; } )
     a = Select() "IN" period = <PERIOD>

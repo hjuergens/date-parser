@@ -90,9 +90,12 @@ class RuleFiles private () extends RegexParsers {
     case s ~ weekdays ~ from => RuleCatalog.weekend(s, weekdays.asJava, from.orNull)
   }
 
-  def calendarDecl: Parser[AnyRef] = kw("calendar") ~> key ~ ("=" ~> calendar) <~ ";" ^^ {
-    case k ~ c => RuleCatalog.calendarDeclaration(k, c)
+  def calendarDecl: Parser[AnyRef] = kw("calendar") ~> key ~ ("=" ~> calendar) ~ opt(cutoffAttribute) <~ ";" ^^ {
+    case k ~ c ~ cut => RuleCatalog.calendarDeclaration(k, c, cut.orNull)
   }
+
+  /** cutoff 10:00 UTC+0: the > CUTOFF of the calendar, for > CUTOFF ON name */
+  def cutoffAttribute: Parser[Move] = kw("cutoff") ~> time ~ zone ^^ { case t ~ z => RuleCatalog.cutoff(t, z) }
 
   /** exactly one of the alternatives will happen: ONE OF {item AS name, ...} */
   def body: Parser[AnyRef] =
@@ -207,6 +210,7 @@ class RuleFiles private () extends RegexParsers {
       kw("NEAREST") ~> anchor ^^ (a => RuleCatalog.nearestShift(a)) |   // ties go forward
       kw("NEAREST") ~> on ^^ (c => RuleCatalog.rollShift("NEAREST", c)) |   // the FpML convention
       kw("CUTOFF") ~> time ~ zone ^^ { case t ~ z => RuleCatalog.cutoff(t, z) } |   // the trade date of a base with a time of day
+      kw("CUTOFF") ~> on ^^ (c => RuleCatalog.cutoffOn(c)) |   // the cutoff of a named calendar
       kw("POSTPONE") ~> roll ~ opt(on) ~ (kw("MAX") ~> period) ~ opt(kw("CUMULATIVE")) ^^ {
         case r ~ c ~ p ~ cumulative => new Postpone(r, c.orNull, p, cumulative.isDefined): Move
       } |

@@ -145,6 +145,9 @@ class RuleTransformer(Rules):
     def cutoff(self, at, zone):
         return catalog.cutoff(at, zone)
 
+    def cutoff_on(self, on):
+        return catalog.cutoff_on(on)
+
     def nearest_roll(self, on):
         return catalog.roll_shift("NEAREST", on)
 
@@ -240,8 +243,11 @@ class RuleTransformer(Rules):
     def weekend_decl(self, scope, weekdays, valid_from):
         return catalog.weekend(str(scope), weekdays, valid_from)
 
-    def calendar_decl(self, key, spec):
-        return catalog.calendar_declaration(str(key), spec)
+    def calendar_decl(self, key, spec, cut=None):
+        return catalog.calendar_declaration(str(key), spec, cut)
+
+    def cutoff_attribute(self, at, zone):
+        return catalog.cutoff(at, zone)
 
     def attributes(self, *attributes):
         return attributes

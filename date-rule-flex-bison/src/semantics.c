@@ -931,6 +931,12 @@ static int shifted(Eval *eval, const Shift *shifts, int date, const Ctx *ctx) {
         case S_ROLL: date = roll(eval, date, s->roll, market_of(eval, s->on, ctx, NULL)); break;
         case S_NEAREST: date = nearest(eval, s->anchor, date, ctx); break;
         case S_CUTOFF: date = cutoff(eval, s, ctx); break;
+        case S_CUTOFF_ON: {
+            const Shift *attribute = s->on->kind == CAL_NAMED ? catalog_cutoff(ctx, s->on->name) : NULL;
+            if (!attribute) fail(eval, "no cutoff for %s", s->on->kind == CAL_COMBINED ? "ON (...)" : s->on->name);
+            date = cutoff(eval, attribute, ctx);
+            break;
+        }
         case S_POSTPONE: {
             if (origin == UNBOUND) origin = date;
             int from = s->cumulative ? origin : date;

@@ -255,6 +255,13 @@ static const Calendar *declared(const RuleCatalog *c, const char *key) {
     return NULL;
 }
 
+const Shift *catalog_cutoff(const Ctx *ctx, const char *key) {
+    const RuleCatalog *c = ctx->catalog;
+    for (int i = 0; c && i < c->calendar_count; i++)
+        if (!strcmp(c->calendars[i]->key, key)) return c->calendars[i]->cutoff;
+    return NULL;
+}
+
 Market *catalog_resolve(Eval *eval, const Calendar *spec, const Ctx *ctx, const char *pair) {
     RuleCatalog *c = ctx->catalog;
     if (spec->kind == CAL_NAMED) {

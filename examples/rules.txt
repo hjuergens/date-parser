@@ -213,10 +213,11 @@ rule us.thanksgiving for thanksgiving in country:US = 4 THU NOV;
 
 # the trade date: [date hh:mm zone] gives the base a time of day; > CUTOFF hh:mm zone takes the date in that zone, the
 # next one from the cutoff on. FX rolls at 17:00 New York, USD/PHP at 10:00 GMT, NZD at 07:00 Wellington (the next
-# date there would be a day late, so - 1D)
+# date there would be a day late, so - 1D). A calendar can carry its cutoff: > CUTOFF ON usd_php
 rule us.thanksgiving for thanksgiving in country:US = 4 THU NOV;
 rule ph.bonifacio_day for bonifacio_day in country:PH = 30 NOV;
-calendar usd_php = country:PH & country:US;
+calendar usd_php = country:PH & country:US cutoff 10:00 UTC+0;
+calendar nzd_usd = country:US cutoff 07:00 "Pacific/Auckland";
 [2026-11-26 18:30 "America/New_York"] T > CUTOFF 17:00 "America/New_York" => 2026-11-27
 [2026-11-26 15:00 "America/New_York"] T > CUTOFF 17:00 "America/New_York" => 2026-11-26
 [2026-07-02 21:30 UTC+0] T > CUTOFF 17:00 "America/New_York" => 2026-07-03
@@ -227,6 +228,11 @@ calendar usd_php = country:PH & country:US;
 [2026-11-26 04:00 "America/New_York"] T > CUTOFF 10:00 UTC+0 => 2026-11-26
 [2026-11-26 15:00 "America/New_York"] T > CUTOFF 10:00 UTC+0 + 1B ON usd_php => 2026-12-01
 [2026-11-26] T > CUTOFF 17:00 "America/New_York" => error
+[2026-11-26 15:00 "America/New_York"] T > CUTOFF ON usd_php => 2026-11-27
+[2026-11-26 04:00 "America/New_York"] T > CUTOFF ON usd_php => 2026-11-26
+[2026-11-26 15:00 "America/New_York"] T > CUTOFF ON usd_php + 1B ON usd_php => 2026-12-01
+[2026-11-26 15:00 "America/New_York"] T > CUTOFF ON nzd_usd - 1D => 2026-11-27
+[2026-11-26 15:00 "America/New_York"] T > CUTOFF ON country:US => error
 
 # a rule on the days of another: the FOMC press conference on every decision day, at its own time
 rule fed.fomc_decision for fomc_decision in central_bank:FED = 25 JAN > NEXT WED, 15 MAR > NEXT WED, 25 JUL > NEXT WED

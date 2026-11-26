@@ -63,7 +63,7 @@ typedef struct Observe {
 } Observe;
 
 typedef enum { S_PLUS, S_MINUS, S_IMM, S_SPOT, S_FIX, S_ROLL, S_NEXT, S_PREV, S_SELECT, S_DATES_IN_YEAR, S_OBSERVANCE,
-               S_NEAREST, S_POSTPONE, S_CUTOFF } ShiftKind;
+               S_NEAREST, S_POSTPONE, S_CUTOFF, S_CUTOFF_ON } ShiftKind;
 
 /* the conventions of > ROLL; MODPRECEDING and > NEAREST ON (ROLL_NEAREST) only in rule files */
 enum { FOLLOWING, PRECEDING, MODFOLLOWING, BOW, EOW, BOM, EOM, BOQ, EOQ, BOH, EOH, BOY, EOY, MODPRECEDING, ROLL_NEAREST };
@@ -80,7 +80,8 @@ typedef struct Shift {
     int from_end, within;  /* S_SELECT: counted back from the end of the period; the period, a P_ code */
     Anchor *anchor;        /* S_DATES_IN_YEAR: a list of AT_ANNUAL anchors */
     Observe *observes;
-    Calendar *on;          /* rule files: + 1M ON ..., > SPOT ON ..., > FOLLOWING ON ..., > POSTPONE ... ON ... */
+    Calendar *on;          /* rule files: + 1M ON ..., > SPOT ON ..., > FOLLOWING ON ..., > POSTPONE ... ON ...,
+                            * > CUTOFF ON ... */
     int endend;            /* rule files: + 1M ENDEND */
     int cumulative;        /* rule files: S_POSTPONE ... MAX period CUMULATIVE; the limit is in period */
     int cutoff, offset;    /* rule files: S_CUTOFF: the time in minutes after midnight; minutes east of UTC */
@@ -176,6 +177,7 @@ typedef struct Declaration {
     Citation *citations;
     int weekdays;               /* weekend: a bit per weekday */
     Calendar *calendar;         /* calendar declaration */
+    struct Shift *cutoff;       /* calendar declaration: the S_CUTOFF of cutoff hh:mm zone, NULL without one */
     Name *references;           /* the @keys of the rule */
     int estimated;              /* a Hijri method other than UMMALQURA */
     struct Declaration *next;

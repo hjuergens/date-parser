@@ -1,4 +1,5 @@
-// Starts the server over stdio with the MCP client of the SDK and calls each tool once.
+// Starts the server over stdio with the MCP client of the SDK and calls each tool once: the source and the npm bundle
+// (dist/server.mjs, built by pretest).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -7,10 +8,10 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 const RULES = 'rule us.thanksgiving for thanksgiving in country:US = 4 THU NOV;\n'
   + 'rule us.memorial_day for memorial_day in country:US = LAST MON MAY;';
 
-test('the three tools over stdio', async () => {
+for (const server of ['../server.mjs', '../dist/server.mjs']) test(`the three tools over stdio: ${server}`, async () => {
   const client = new Client({ name: 'test', version: '0.0.1' });
   await client.connect(new StdioClientTransport({ command: process.execPath,
-    args: [new URL('../server.mjs', import.meta.url).pathname] }));
+    args: [new URL(server, import.meta.url).pathname] }));
   try {
     const { tools } = await client.listTools();
     assert.deepEqual(tools.map((t) => t.name).sort(), ['check_syntax', 'evaluate_schedule', 'rule_dates']);

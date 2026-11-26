@@ -1,7 +1,7 @@
 # date-rule-mcp
 
 An [MCP](https://modelcontextprotocol.io/) server for the date rule language, on the parser of
-[date-rule-peg](../date-rule-peg/README.md) (Peggy, JavaScript). It speaks MCP over stdio, so an AI client can evaluate
+[date-rule-peg](https://github.com/hjuergens/date-parser/tree/main/date-rule-peg) (Peggy, JavaScript). It speaks MCP over stdio, so an AI client can evaluate
 schedules and rule files while it writes them.
 
 ## Tools
@@ -24,18 +24,22 @@ evaluate_schedule  { "schedule": "T > NEAREST ON country:US", "base": "2026-11-2
 
 ## Run
 
-```
-cd date-rule-mcp && npm ci
-```
-
-Then register it with the client, for Claude Code for example:
+From npm, for Claude Code for example:
 
 ```
-claude mcp add date-rule -- node /path/to/date-parser/date-rule-mcp/server.mjs
+claude mcp add date-rule -- npx -y date-rule-mcp
 ```
 
-`npm test` (or `mise run test:mcp`) starts the server and calls each tool through the SDK's MCP client.
+Other clients take the same command (`npx -y date-rule-mcp`) in their MCP server configuration. Node 20 or later.
 
-## Status
+From the repository: `cd date-rule-mcp && npm ci`, then `node /path/to/date-parser/date-rule-mcp/server.mjs` as the
+command.
 
-Working, local only: the package depends on `../date-rule-peg` and is not published.
+## Build
+
+`npm run build` writes `dist/server.mjs`, the file published to npm: the rule-file parser generated ahead of time from
+the grammars of date-rule-peg, bundled with esbuild together with the MCP SDK, zod and lunar-javascript, so the package
+has no runtime dependencies. `npm pack` and `npm publish` build it first. Building needs Node 22 (Peggy).
+
+`npm test` (or `mise run test:mcp`) builds, then starts both the source and the bundle and calls each tool through the
+SDK's MCP client.

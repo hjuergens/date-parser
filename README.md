@@ -46,6 +46,8 @@ atomically and reloaded when it is saved, in Java and without HotSwap or JVMTI.
 [date-rule-compiled](date-rule-compiled/README.md) compiles a rule of the same grammar to JVM bytecode with
 [ASM](https://asm.ow2.io/): one class per rule, loaded by a class loader of its own, so a replaced rule is unloaded with
 its loader (6070 TestNG).
+[date-rule-mcp](date-rule-mcp/README.md) is an MCP server on the Peggy parser: an AI client can evaluate schedules,
+check syntax and list the dates of a rule.
 
 Each module also implements the [shared schedule example](#shared-example-schedule), so all thirteen implementations
 can be compared on the same language. Each module README has a section on how its tool handles it.

@@ -1,0 +1,25 @@
+{
+  "name": "date-rule-mcp",
+  "version": "0.0.1",
+  "description": "MCP server for the date rule language: evaluate schedules, check syntax, list the dates of a rule.",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "date-rule-mcp": "server.mjs"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "date-rule-peg": "file:../date-rule-peg",
+    "zod": "3.25.76"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/hjuergens/date-parser.git",
+    "directory": "date-rule-mcp"
+  }
+}

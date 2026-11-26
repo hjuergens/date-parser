@@ -12,7 +12,7 @@ rust = "1.97.1"
 
 [tasks.test]
 description = "Test all modules (the tasks below run in parallel)"
-depends = ["test:jvm", "test:peg", "test:pest", "test:lark", "test:antlr-python", "test:flex-bison", "test:flex-bison-go"]
+depends = ["test:jvm", "test:peg", "test:mcp", "test:pest", "test:lark", "test:antlr-python", "test:flex-bison", "test:flex-bison-go"]
 
 [tasks."test:jvm"]
 description = "Java and Scala modules; date-rule-bison only if /usr/bin/bison exists"
@@ -21,6 +21,12 @@ run = "mvn -B verify"
 [tasks."test:peg"]
 description = "Peggy (JavaScript)"
 dir = "{{config_root}}/date-rule-peg"
+run = ["npm ci --no-audit --no-fund", "npm test"]
+
+[tasks."test:mcp"]
+description = "MCP server on the Peggy parser"
+dir = "{{config_root}}/date-rule-mcp"
+depends = ["test:peg"]   # uses date-rule-peg's node_modules
 run = ["npm ci --no-audit --no-fund", "npm test"]
 
 [tasks."test:pest"]

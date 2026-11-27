@@ -1,7 +1,7 @@
 # Asia-Pacific and other markets: the rate decisions and minutes of the central banks of Japan, China, Korea, India,
 # Malaysia, Indonesia, Thailand, Singapore, the Philippines, Taiwan, Australia, New Zealand and Hong Kong; Japan's
 # GDP release; China's Spring Festival holiday and its make-up working days; the Muhurat trading session of the
-# National Stock Exchange of India; India's national holidays and the bank Saturdays in Mumbai; Yom Kippur at the Tel Aviv Stock Exchange; the quarterly MSCI index review; and
+# National Stock Exchange of India; India's national holidays, the bank Saturdays and the NSE trading holidays; Yom Kippur at the Tel Aviv Stock Exchange; the quarterly MSCI index review; and
 # the closing days of two payment systems: BOJ-NET (Japanese yen) and RITS (Australian dollar).
 #
 # Translated from holidays-events rules/catalog/apac_other.yaml.
@@ -24,7 +24,7 @@
 # announcement time). "cites" names the source the rule is taken from; "label official" means that source is the
 # authority itself. The full syntax is in README.md in this directory. Weekends are declared in weekends.rules (every
 # scope here has the Saturday-Sunday weekend except the Tel Aviv Stock Exchange, which traded Sunday to Thursday
-# until 4 January 2026, and the banks in Mumbai, which have only Sunday since 1 September 2015).
+# until 4 January 2026).
 #
 # Projected meeting dates: many central banks publish their meeting dates only a year or so ahead. For years not yet
 # published, holidays-events projects a date only where the bank itself states a pattern or where an observed pattern
@@ -46,8 +46,8 @@
 #   central_bank:BOK           Bank of Korea, South Korea's central bank (Asia/Seoul).
 #   central_bank:RBI           Reserve Bank of India, India's central bank (Asia/Kolkata).
 #   country:IN                 India, country (Asia/Kolkata).
-#   subdivision:IN_MH          Maharashtra (Mumbai), India: the bank holidays under the Negotiable Instruments Act
-#                              of RBI's Mumbai regional office, behind the business centre INMU (Asia/Kolkata).
+#   subdivision:IN_MH          Maharashtra (Mumbai), India: the holidays of RBI's Mumbai regional office, behind the
+#                              business centre INMU (Asia/Kolkata).
 #   central_bank:BNM           Bank Negara Malaysia, Malaysia's central bank (Asia/Kuala_Lumpur).
 #   central_bank:BI            Bank Indonesia, Indonesia's central bank (Asia/Jakarta).
 #   central_bank:BOT           Bank of Thailand, Thailand's central bank (Asia/Bangkok).
@@ -159,6 +159,80 @@ rule pboc.lpr for pboc_lpr in central_bank:PBOC
 # xnse.muhurat_session.
 
 
+# Trading holidays: the NSE (and the BSE) publish the year's list by circular, usually in mid-December. The rules
+# below are the holidays with a computable date; a holiday that falls on a Saturday or Sunday is listed separately in
+# the circular and not moved. Checked against the weekday holidays of 2024 to 2026 (exchange_calendars XBOM, as
+# collected by market-calendar; the NSE circulars themselves could not be read): every date of these rules on a
+# weekday agrees.
+#
+# Not computable here, so no rule: the Hindu, Sikh and Jain festivals, which follow the Hindu lunisolar calendar
+# (HINDU is not implemented) and are only known from the circular. Their dates 2024 to 2026: Mahashivratri
+# 2024-03-08, 2025-02-26; Holi 2024-03-25, 2025-03-14, 2026-03-03; Ram Navami 2024-04-17, 2026-03-26; Mahavir
+# Jayanti 2025-04-10, 2026-03-31; Ganesh Chaturthi 2025-08-27, 2026-09-14; Dussehra 2025-10-02 (with Gandhi
+# Jayanti), 2026-10-20; Diwali Laxmi Pujan 2024-11-01, 2025-10-21 (Muhurat session in the evening; 2026-11-08 is a
+# Sunday); Diwali Balipratipada 2025-10-22, 2026-11-10; Guru Nanak Jayanti 2024-11-15, 2025-11-05, 2026-11-24.
+# Nor the one-off closures: 2024-01-22 (consecration of the Ayodhya temple), 2024-05-20 (Lok Sabha election in
+# Mumbai), 2024-11-20 (Maharashtra assembly election), 2026-01-15 (Mumbai municipal elections).
+
+# Republic Day (26 January).
+rule xnse.republic_day for republic_day in exchange:XNSE = 26 JAN
+  with kind = closed
+  cites "Trading holidays of the BSE (exchange_calendars, calendar XBOM; NSE and BSE share their holidays), via market-calendar; not checked against the NSE circulars" url "https://github.com/gerrymanoim/exchange_calendars" label secondary;
+
+# Dr. Baba Saheb Ambedkar Jayanti: the birthday of B. R. Ambedkar (14 April 1891).
+rule xnse.ambedkar_jayanti for ambedkar_jayanti in exchange:XNSE = 14 APR
+  with kind = closed
+  cites "Trading holidays of the BSE (exchange_calendars, calendar XBOM; NSE and BSE share their holidays), via market-calendar; not checked against the NSE circulars" url "https://github.com/gerrymanoim/exchange_calendars" label secondary;
+
+# Maharashtra Day: the founding of the state of Maharashtra (1 May 1960); a holiday of the exchange in Mumbai.
+rule xnse.maharashtra_day for maharashtra_day in exchange:XNSE = 1 MAY
+  with kind = closed
+  cites "Trading holidays of the BSE (exchange_calendars, calendar XBOM; NSE and BSE share their holidays), via market-calendar; not checked against the NSE circulars" url "https://github.com/gerrymanoim/exchange_calendars" label secondary;
+
+# Good Friday.
+rule xnse.good_friday for good_friday in exchange:XNSE = EASTER - 2D
+  with kind = closed
+  cites "Trading holidays of the BSE (exchange_calendars, calendar XBOM; NSE and BSE share their holidays), via market-calendar; not checked against the NSE circulars" url "https://github.com/gerrymanoim/exchange_calendars" label secondary;
+
+# Independence Day (15 August).
+rule xnse.independence_day for independence_day in exchange:XNSE = 15 AUG
+  with kind = closed
+  cites "Trading holidays of the BSE (exchange_calendars, calendar XBOM; NSE and BSE share their holidays), via market-calendar; not checked against the NSE circulars" url "https://github.com/gerrymanoim/exchange_calendars" label secondary;
+
+# Gandhi Jayanti (2 October).
+rule xnse.gandhi_jayanti for gandhi_jayanti in exchange:XNSE = 2 OCT
+  with kind = closed
+  cites "Trading holidays of the BSE (exchange_calendars, calendar XBOM; NSE and BSE share their holidays), via market-calendar; not checked against the NSE circulars" url "https://github.com/gerrymanoim/exchange_calendars" label secondary;
+
+# Christmas Day.
+rule xnse.christmas_day for christmas_day in exchange:XNSE = 25 DEC
+  with kind = closed
+  cites "Trading holidays of the BSE (exchange_calendars, calendar XBOM; NSE and BSE share their holidays), via market-calendar; not checked against the NSE circulars" url "https://github.com/gerrymanoim/exchange_calendars" label secondary;
+
+# The Islamic holidays: in every case of 2024 to 2026 the Indian date is one day after the Umm al-Qura (Saudi)
+# date, as India's moon sighting usually comes a day later: 1 Shawwal, 10 Dhu al-Hijja and 10 Muharram by Umm
+# al-Qura plus one day, written as the 2nd, 11th and 11th. Provisional: six NSE weekday dates (and nine of the
+# python-holidays list for India) over less than three years; the exchange announces them provisionally and can move
+# them by a day after the sighting.
+# Id-ul-Fitr (Ramzan Id), the end of Ramadan.
+rule xnse.eid_al_fitr for eid_al_fitr in exchange:XNSE = 2 SHAWWAL
+  with kind = closed,
+       note "Umm al-Qura date + 1 day; provisional, the exchange can move it by a day after the moon sighting"
+  cites "Trading holidays of the BSE (exchange_calendars, calendar XBOM; NSE and BSE share their holidays), via market-calendar; not checked against the NSE circulars" url "https://github.com/gerrymanoim/exchange_calendars" label secondary;
+
+# Bakri Id (Id-ul-Zuha, Eid al-Adha).
+rule xnse.eid_al_adha for eid_al_adha in exchange:XNSE = 11 DHULHIJJAH
+  with kind = closed,
+       note "Umm al-Qura date + 1 day; provisional, the exchange can move it by a day after the moon sighting"
+  cites "Trading holidays of the BSE (exchange_calendars, calendar XBOM; NSE and BSE share their holidays), via market-calendar; not checked against the NSE circulars" url "https://github.com/gerrymanoim/exchange_calendars" label secondary;
+
+# Ashura, the 10th day of Muharram (the NSE calls the holiday "Muharram").
+rule xnse.ashura for ashura in exchange:XNSE = 11 MUHARRAM
+  with kind = closed,
+       note "Umm al-Qura date + 1 day; provisional, the exchange can move it by a day after the moon sighting"
+  cites "Trading holidays of the BSE (exchange_calendars, calendar XBOM; NSE and BSE share their holidays), via market-calendar; not checked against the NSE circulars" url "https://github.com/gerrymanoim/exchange_calendars" label secondary;
+
+
 # ===================================================================================================================
 # Tel Aviv Stock Exchange (exchange:XTAE)
 # ===================================================================================================================
@@ -227,15 +301,26 @@ rule rbi.mpc_decision for rbi_decision in central_bank:RBI
   cites "Reserve Bank of India Monetary Policy Committee meeting schedule, Reserve Bank of India" url "https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=62422" label official;
 
 
+# The second and fourth Saturday of every month (not from the holidays-events catalog): public holidays for banks in
+# all of India under section 25 of the Negotiable Instruments Act, 1881, from 1 September 2015 (Government of India
+# notification, RBI press release of August 2015; the release itself is still to be verified). The first, third and
+# fifth Saturdays are working days for bank branches. central_bank:RBI keeps the Saturday-Sunday weekend (as do subdivision:IN_MH, the business centre
+# INMU, and the exchanges), so the rule records the dates without changing a business day here.
+rule rbi.second_fourth_saturday for bank_saturday in central_bank:RBI valid from 2015-09-01
+  = [1 JAN : 1M : 1 DEC] > 2ND SAT IN MONTH, [1 JAN : 1M : 1 DEC] > 4TH SAT IN MONTH
+  with kind = closed
+  cites "Holiday matrix (Negotiable Instruments Act holidays per regional office), Reserve Bank of India" url "https://www.rbi.org.in/Scripts/HolidayMatrixDisplay.aspx" label official;
+
+
 # ===================================================================================================================
-# India (country:IN) and the banks in Mumbai (subdivision:IN_MH)
+# India (country:IN)
 # ===================================================================================================================
 
-# Not from the holidays-events catalog: written in date-parser from the RBI holiday matrix and the 2015 Saturday
-# rule (both as recorded in market-calendar). The three national holidays are fixed dates and are not moved when
-# they fall on a weekend. The other bank and exchange holidays (Holi, Diwali, Eid, Good Friday, ...) follow the
-# central and state governments' notified lists and the NSE's yearly circular, which give the exact day; they have
-# no rule here. A scope list names subdivision:IN_MH again, since these rule files have no parent scopes.
+# Not from the holidays-events catalog: written in date-parser from the RBI holiday matrix (as recorded in
+# market-calendar). The three national holidays are fixed dates and are not moved when they fall on a weekend. The
+# other bank holidays (Holi, Diwali, Eid, Good Friday, ...) follow the central and state governments' notified lists,
+# which give the exact day; they have no rule here (the NSE's are in the NSE section). A scope list names
+# subdivision:IN_MH again, since these rule files have no parent scopes.
 
 # Republic Day: the Constitution of India came into force on 26 January 1950.
 rule in.republic_day for republic_day in country:IN, subdivision:IN_MH = 26 JAN
@@ -252,15 +337,6 @@ rule in.gandhi_jayanti for gandhi_jayanti in country:IN, subdivision:IN_MH = 2 O
   with kind = closed
   cites "Holiday matrix (Negotiable Instruments Act holidays per regional office), Reserve Bank of India" url "https://www.rbi.org.in/Scripts/HolidayMatrixDisplay.aspx" label official;
 
-# The second and fourth Saturday of every month: public holidays for banks under section 25 of the Negotiable
-# Instruments Act, 1881, from 1 September 2015 (Government of India notification, RBI press release of August 2015;
-# the release itself is still to be verified). The first, third and fifth Saturdays are working days for banks, so
-# the weekend of subdivision:IN_MH is Sunday only from that date (weekends.rules). Exchanges (NSE, BSE) stay closed
-# on every Saturday.
-rule in_mh.second_fourth_saturday for bank_saturday in subdivision:IN_MH valid from 2015-09-01
-  = [1 JAN : 1M : 1 DEC] > 2ND SAT IN MONTH, [1 JAN : 1M : 1 DEC] > 4TH SAT IN MONTH
-  with kind = closed
-  cites "Holiday matrix (Negotiable Instruments Act holidays per regional office), Reserve Bank of India" url "https://www.rbi.org.in/Scripts/HolidayMatrixDisplay.aspx" label official;
 
 
 # ===================================================================================================================

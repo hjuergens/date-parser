@@ -58,7 +58,7 @@ def declarations(text):
         i += 1
 
 
-HEAD = re.compile(r"rule\s+(\S+)\s+for\s+(\S+)\s+in\s+(\S+)((?:\s+valid\s+(?:from\s+\S+)?\s*(?:to\s+\S+)?)?)\s*=\s*(.*?)\s+with\s+(.*);$", re.S)
+HEAD = re.compile(r"rule\s+(\S+)\s+for\s+(\S+)\s+in\s+([\w:]+(?:\s*,\s*[\w:]+)*)((?:\s+valid\s+(?:from\s+\S+)?\s*(?:to\s+\S+)?)?)\s*=\s*(.*?)\s+with\s+(.*);$", re.S)
 
 # occurrence shape per event, from the "Shape per event" table of market-calendar's docs/event-key.md
 SHAPES = {}
@@ -73,18 +73,19 @@ for f in sorted(src.glob("*.rules")):
         m = HEAD.match(decl)
         if not m:
             sys.exit(f"{f.name}: cannot read {decl[:80]}")
-        rule_key, event, scope, valid, expr, attrs = m.groups()
-        stype, code = scope.split(":", 1)
+        rule_key, event, scope_list, valid, expr, attrs = m.groups()
         kind = re.search(r"kind\s*=\s*(\w+)", attrs).group(1)
         note = re.search(r'note\s+"([^"]*)"', attrs)
         desc = " ".join(comments)
         if note:
             desc = f"{desc} Note: {note.group(1)}".strip()
-        rows.append({
-            "Key": f"{event}:{code}", "Occurrence": SHAPES.get(event, ""), "Rule": " ".join(expr.split()),
-            "Description": desc, "Scope type": stype, "Kind": kind, "Valid": " ".join(valid.split()),
-            "Rule key": rule_key,
-        })
+        for scope in re.split(r"\s*,\s*", scope_list):  # one row per scope: the key is {event}:{scope}
+            stype, code = scope.split(":", 1)
+            rows.append({
+                "Key": f"{event}:{code}", "Occurrence": SHAPES.get(event, ""), "Rule": " ".join(expr.split()),
+                "Description": desc, "Scope type": stype, "Kind": kind, "Valid": " ".join(valid.split()),
+                "Rule key": rule_key,
+            })
 
 COLUMNS = {"Key": 40, "Occurrence": 12, "Rule": 60, "Description": 100, "Scope type": 18, "Kind": 11, "Valid": 30, "Rule key": 34}
 wb = Workbook()

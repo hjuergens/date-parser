@@ -76,3 +76,7 @@ weekend central_bank:CBUAE = {SAT, SUN} from 2022-01-01;   # [Sat-Sun weekend si
 # Central Bank of Oman (as its parent country:OM)
 weekend central_bank:CBO = {THU, FRI};   # [Thu-Fri weekend (switch date to verify)]
 weekend central_bank:CBO = {FRI, SAT} from 2013-05-01;   # [Fri-Sat weekend since May 2013 (date to verify)]
+
+# Banks in Mumbai (subdivision:IN_MH): the 2nd and 4th Saturday are holidays (rule in_mh.second_fourth_saturday in
+# apac_other.rules), the 1st, 3rd and 5th are working days
+weekend subdivision:IN_MH = {SUN} from 2015-09-01;

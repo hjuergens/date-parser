@@ -236,7 +236,7 @@ are the catalog's own remarks, including switch dates still to be verified (Oman
 |---|---|---|
 | `us.rules` | NYSE holidays and early closes, Federal Reserve holidays (K.8), US bond market (SIFMA), FOMC decisions, minutes and press conferences, Fed blackout, BLS jobs report, New York Fed consumer expectations survey | 41 |
 | `uk_ch.rules` | Bank holidays of England and Wales (most also apply in Northern Ireland), Bank of England decisions, UK CPI (ONS), SIX Swiss Exchange, Swiss payment systems SIC and euroSIC, Swiss National Bank | 41 |
-| `apac_other.rules` | Rate decisions of 11 Asia-Pacific central banks, China's Spring Festival, Yom Kippur at Tel Aviv, MSCI quarterly reviews, BOJ-NET and RITS closing days | 23 (24 declarations) |
+| `apac_other.rules` | Rate decisions of 11 Asia-Pacific central banks, China's Spring Festival, India's national holidays and the bank Saturdays in Mumbai, Yom Kippur at Tel Aviv, MSCI quarterly reviews, BOJ-NET and RITS closing days | 27 (28 declarations) |
 | `de_ez.rules` | TARGET2 (euro payment system), Bundesbank, Xetra, German nationwide and regional holidays, Eurex quarterly expiry | 30 |
 | `cz.rules` | Czech National Bank rate decisions (Czech holidays come from libraries, not rules) | 1 |
 | `gcc.rules` | Islamic holidays and national days of Saudi Arabia and the UAE, Gulf central-bank decisions following the Fed | 11 (12 declarations) |
@@ -244,12 +244,12 @@ are the catalog's own remarks, including switch dates still to be verified (Oman
 | `br.rules` | Days on which Brazil's central bank publishes no PTAX dollar fixing | 16 |
 | `ca.rules` | Closing days of Lynx, Canada's large-value payment system; Bank of Canada rate announcements (announced only) | 10 |
 | `ru_cis.rules` | Russian non-working holidays, Bank of Russia key-rate meetings | 9 |
-| `weekends.rules` | Weekend regimes that are not Saturday-Sunday | 0 (31 weekend lines) |
-| **Total** | | **188** |
+| `weekends.rules` | Weekend regimes that are not Saturday-Sunday | 0 (32 weekend lines) |
+| **Total** | | **192** |
 
-By kind, 152 rules are closing days (`closed`), 31 are events and 5 are early closes (`short_day`). By scope, 47
+By kind, 156 rules are closing days (`closed`), 31 are events and 5 are early closes (`short_day`). By scope, 47
 belong to central banks (26 closing days, 21 events such as rate decisions), 43 to settlement systems, 36 to
-exchanges, 34 to countries, 11 to segments, 9 to subdivisions, 6 to issuers and 2 to statistics offices.
+exchanges, 37 to countries, 11 to segments, 10 to subdivisions, 6 to issuers and 2 to statistics offices.
 
 The 43 events whose dates are only ever announced have no rule; each has a comment with its key and source.
 
@@ -336,6 +336,8 @@ scenario names of the moon-sighting rules included.
 A rule with several versions counts once (`cn.chinese_new_year`, `ae.eid_al_fitr`).
 
 `fed.fomc_press_conference`, added later, is not in the comparison; its dates are those of `fed.fomc_decision`.
+The four Indian rules (`in.republic_day`, `in.independence_day`, `in.gandhi_jayanti`, `in_mh.second_fourth_saturday`)
+were written here from RBI sources; the catalog has no rule for them, so they are not in the comparison either.
 
 Checked again on 2026-11-20 against the catalog of 2026-11-19: the 184 rules with dates in 2021 to 2031 agree day
 by day (the other three wait for an announced AGM); the only rule here without one there is the press conference.

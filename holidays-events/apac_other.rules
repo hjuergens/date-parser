@@ -1,7 +1,7 @@
 # Asia-Pacific and other markets: the rate decisions and minutes of the central banks of Japan, China, Korea, India,
 # Malaysia, Indonesia, Thailand, Singapore, the Philippines, Taiwan, Australia, New Zealand and Hong Kong; Japan's
 # GDP release; China's Spring Festival holiday and its make-up working days; the Muhurat trading session of the
-# National Stock Exchange of India; Yom Kippur at the Tel Aviv Stock Exchange; the quarterly MSCI index review; and
+# National Stock Exchange of India; India's national holidays and the bank Saturdays in Mumbai; Yom Kippur at the Tel Aviv Stock Exchange; the quarterly MSCI index review; and
 # the closing days of two payment systems: BOJ-NET (Japanese yen) and RITS (Australian dollar).
 #
 # Translated from holidays-events rules/catalog/apac_other.yaml.
@@ -24,7 +24,7 @@
 # announcement time). "cites" names the source the rule is taken from; "label official" means that source is the
 # authority itself. The full syntax is in README.md in this directory. Weekends are declared in weekends.rules (every
 # scope here has the Saturday-Sunday weekend except the Tel Aviv Stock Exchange, which traded Sunday to Thursday
-# until 4 January 2026).
+# until 4 January 2026, and the banks in Mumbai, which have only Sunday since 1 September 2015).
 #
 # Projected meeting dates: many central banks publish their meeting dates only a year or so ahead. For years not yet
 # published, holidays-events projects a date only where the bank itself states a pattern or where an observed pattern
@@ -45,6 +45,9 @@
 #                              (America/New_York); used here as the business-day calendar of the MSCI index reviews.
 #   central_bank:BOK           Bank of Korea, South Korea's central bank (Asia/Seoul).
 #   central_bank:RBI           Reserve Bank of India, India's central bank (Asia/Kolkata).
+#   country:IN                 India, country (Asia/Kolkata).
+#   subdivision:IN_MH          Maharashtra (Mumbai), India: the bank holidays under the Negotiable Instruments Act
+#                              of RBI's Mumbai regional office, behind the business centre INMU (Asia/Kolkata).
 #   central_bank:BNM           Bank Negara Malaysia, Malaysia's central bank (Asia/Kuala_Lumpur).
 #   central_bank:BI            Bank Indonesia, Indonesia's central bank (Asia/Jakarta).
 #   central_bank:BOT           Bank of Thailand, Thailand's central bank (Asia/Bangkok).
@@ -222,6 +225,42 @@ rule rbi.mpc_decision for rbi_decision in central_bank:RBI
   with kind = event, precision = month,
        note "Press release for the fiscal year (April-March), late March; Feb, Apr, Jun, Aug, Dec projected by month"
   cites "Reserve Bank of India Monetary Policy Committee meeting schedule, Reserve Bank of India" url "https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=62422" label official;
+
+
+# ===================================================================================================================
+# India (country:IN) and the banks in Mumbai (subdivision:IN_MH)
+# ===================================================================================================================
+
+# Not from the holidays-events catalog: written in date-parser from the RBI holiday matrix and the 2015 Saturday
+# rule (both as recorded in market-calendar). The three national holidays are fixed dates and are not moved when
+# they fall on a weekend. The other bank and exchange holidays (Holi, Diwali, Eid, Good Friday, ...) follow the
+# central and state governments' notified lists and the NSE's yearly circular, which give the exact day; they have
+# no rule here. A scope list names subdivision:IN_MH again, since these rule files have no parent scopes.
+
+# Republic Day: the Constitution of India came into force on 26 January 1950.
+rule in.republic_day for republic_day in country:IN, subdivision:IN_MH = 26 JAN
+  with kind = closed
+  cites "Holiday matrix (Negotiable Instruments Act holidays per regional office), Reserve Bank of India" url "https://www.rbi.org.in/Scripts/HolidayMatrixDisplay.aspx" label official;
+
+# Independence Day: independence from British rule on 15 August 1947.
+rule in.independence_day for independence_day in country:IN, subdivision:IN_MH = 15 AUG
+  with kind = closed
+  cites "Holiday matrix (Negotiable Instruments Act holidays per regional office), Reserve Bank of India" url "https://www.rbi.org.in/Scripts/HolidayMatrixDisplay.aspx" label official;
+
+# Gandhi Jayanti: the birthday of Mahatma Gandhi (2 October 1869).
+rule in.gandhi_jayanti for gandhi_jayanti in country:IN, subdivision:IN_MH = 2 OCT
+  with kind = closed
+  cites "Holiday matrix (Negotiable Instruments Act holidays per regional office), Reserve Bank of India" url "https://www.rbi.org.in/Scripts/HolidayMatrixDisplay.aspx" label official;
+
+# The second and fourth Saturday of every month: public holidays for banks under section 25 of the Negotiable
+# Instruments Act, 1881, from 1 September 2015 (Government of India notification, RBI press release of August 2015;
+# the release itself is still to be verified). The first, third and fifth Saturdays are working days for banks, so
+# the weekend of subdivision:IN_MH is Sunday only from that date (weekends.rules). Exchanges (NSE, BSE) stay closed
+# on every Saturday.
+rule in_mh.second_fourth_saturday for bank_saturday in subdivision:IN_MH valid from 2015-09-01
+  = [1 JAN : 1M : 1 DEC] > 2ND SAT IN MONTH, [1 JAN : 1M : 1 DEC] > 4TH SAT IN MONTH
+  with kind = closed
+  cites "Holiday matrix (Negotiable Instruments Act holidays per regional office), Reserve Bank of India" url "https://www.rbi.org.in/Scripts/HolidayMatrixDisplay.aspx" label official;
 
 
 # ===================================================================================================================
